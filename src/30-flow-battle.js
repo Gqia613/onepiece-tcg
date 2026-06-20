@@ -28,10 +28,8 @@
       if (hasEnter) await fxNote(side, '登場時効果', card.base.name);
       else if (G.players[side].isCPU) await fxNote(side, '登場', card.base.name);
       if (hasEnter) await runFx(card.base.fx.onPlay, { self: card, side });
-      // ナミ: キャラ登場時誘発
-      if (P.leader.base.leader === 'nami' && side === G.active && !isNegated(P.leader)) await namiOnEnter(side);
-      // ハンコック: 相手ターン中に自分のキャラが登場した時、1ドロー（ターン1回制限なし）
-      if (P.leader.base.leader === 'hancock' && side !== G.active && !isNegated(P.leader)) { if (draw(side, 1)) { floatOn(P.leader.uid, 'DRAW', 'heal'); flog(side, '【ハンコック】相手ターン中のキャラ登場で1ドロー'); } }
+      // リーダーの【キャラ登場時】誘発（ナミ/ハンコック等。データ駆動 onAllyEnter）
+      await checkAllyEnter(side, card);
       render();
     }
     // リーダーの onReviveFromTrash: トラッシュから filter一致のキャラが登場した時、そのキャラにキーワード付与
@@ -43,6 +41,19 @@
       const kw = cfg.kw || 'rush';
       card.kwGrant.push({ kw, dur: durTag(cfg.duration, 'turn') });
       flog(side, `【${L.base.name}】トラッシュから登場した「${card.base.name}」に【${kwJa(kw)}】`);
+    }
+    // リーダーの onAllyEnter: 自分のキャラが登場した時に誘発（when:'selfTurn'|'oppTurn', filter/cond/once対応）
+    async function checkAllyEnter(side, card) {
+      const L = G.players[side].leader;
+      const cfg = !isNegated(L) && L.base.fx && L.base.fx.onAllyEnter;
+      if (!cfg) return;
+      if (cfg.when === 'selfTurn' && side !== G.active) return;
+      if (cfg.when === 'oppTurn' && side === G.active) return;
+      if (cfg.filter && !matchFilter(card, cfg.filter)) return;
+      if (cfg.cond && !checkCond(cfg.cond, side, L)) return;
+      if (cfg.once === 'turn') { if (L._allyEnterTurn === G.turnSeq) return; L._allyEnterTurn = G.turnSeq; }
+      await fxNote(side, 'キャラ登場時', L.base.name);
+      await runFx(cfg.fx, { self: L, side, entered: card });
     }
     // リーダーの onAllyLeave: 自分の filter一致キャラが場を離れた時に誘発（once/cond対応）
     async function checkAllyLeave(side, card) {
@@ -531,15 +542,6 @@
           await lucyCounter(side, P.leader);
         }
       }
-    }
-    async function namiOnEnter(side) {
-      const P = G.players[side];
-      if (P._namiUsedTurn === G.turnSeq) return;
-      if (P.leader.attachedDon < 1) return; // 【ドン×1】
-      P._namiUsedTurn = G.turnSeq;
-      draw(side, 1);
-      if (P.hand.length) { const c = await chooseFromHand(side, P.hand, 'デッキ下に置く手札を選択'); if (c) { P.hand.splice(P.hand.indexOf(c), 1); P.deck.push(reset(c)); } }
-      flog(side, '【ナミ】1ドローし手札1枚をデッキ下');
     }
     /* 【ティーチ】相手のアタック時：手札のトリガー1枚を捨て、対象をリーダーか黒ひげキャラに変更（ターン1回） */
     async function teachRedirect(dSide, attacker, target) {

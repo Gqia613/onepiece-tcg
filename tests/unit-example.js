@@ -161,6 +161,27 @@ function setupG(leaderNo){G.active='me';G.turnSeq=5;G.winner=null;const mkP=(ln,
     await doOp({op:'restChar',count:1},{side:'me',self:G.players.me.leader});   // レストも通る
     ok(imm.rested===true, 'OP09-086: KO耐性でもレストは対象に選べる');
 
+    // 例(リファクタ): リーダー登場時誘発を data駆動 onAllyEnter フックに移行（挙動不変）
+    // ハンコック(OP14-041): 相手ターン中に自分のキャラ登場で1ドロー
+    setupG('OP14-041'); G.active='cpu'; let Hp=G.players.me; Hp.deck=[mkc('OP15-067'),mkc('OP15-067')]; Hp.hand=[];
+    await summon('me', mkc('OP15-067'), true);
+    ok(Hp.hand.length===1 && Hp.deck.length===1, 'ハンコック onAllyEnter: 相手ターン中の登場で1ドロー');
+    // 自分ターン中は発動しない（when:oppTurn）
+    setupG('OP14-041'); G.active='me'; Hp=G.players.me; Hp.deck=[mkc('OP15-067')]; Hp.hand=[];
+    await summon('me', mkc('OP15-067'), true);
+    ok(Hp.hand.length===0, 'ハンコック onAllyEnter: 自分ターン中は発動しない');
+    // ナミ(OP11-041): 【ドン×1】自ターン中の登場で1ドロー＆1枚デッキ下（枚数保存・ターン1回）
+    setupG('OP11-041'); let Np=G.players.me; Np.leader.attachedDon=1;
+    Np.deck=[mkc('OP15-067'),mkc('OP15-067'),mkc('OP15-067')]; Np.hand=[mkc('OP15-067')];
+    await summon('me', mkc('OP15-067'), true);
+    ok(Np.deck.length===3 && Np.hand.length===1 && Np.leader._allyEnterTurn===G.turnSeq, 'ナミ onAllyEnter: ドン×1で1ドロー＆1枚デッキ下(枚数保存)');
+    await summon('me', mkc('OP15-067'), true); // 2体目→once:turnで不発
+    ok(Np.hand.length===1, 'ナミ onAllyEnter: ターン1回(2体目では発動しない)');
+    // ドン×1未満（attachedDon=0）では発動しない
+    setupG('OP11-041'); Np=G.players.me; Np.leader.attachedDon=0; Np.deck=[mkc('OP15-067')]; Np.hand=[];
+    await summon('me', mkc('OP15-067'), true);
+    ok(Np.hand.length===0, 'ナミ onAllyEnter: ドン×1未満は発動しない(cond)');
+
     // 例14: デッキビルダー — 色合致50枚で構築でき、自分/CPU両方のデッキを生成できる
     G.customDecks = [];
     const bdr = { leaderNo: 'OP15-058', list: {}, name: 'UTカスタム' };
