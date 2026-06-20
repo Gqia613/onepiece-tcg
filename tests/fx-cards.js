@@ -491,6 +491,22 @@ humanPick=function(c){return Promise.resolve((c||[])[0]||null);};
     { const me=G.players.me; me.don.active=2; me.don.rested=0; me.donMax=10;                    // donTotal2→デッキ余裕
       const bel=I('OP10-077','me'); await runFx(bel.base.fx.onBlock,{self:bel,side:'me',attacker:I('OP15-067','cpu')});
       ok(me.don.rested===2 && me.don.active===1 && donTotal('me')===3, 'OP10-077 onBlock: ドン2レスト→ドンデッキからアクティブ+1'); }
+    // 追加バッチ統合（再録_r1含む）
+    ok(['OP01-014','OP01-039','OP01-039_r1','OP01-078','OP01-078_r1','OP05-036_r1','ST05-004','ST05-004_r1'].every(no=>C[no]&&C[no].fx&&C[no].fx.onBlock&&C[no].blocker===true), 'onBlock: 追加8枚にblocker＋onBlock fx統合');
+    // OP01-039 キラー: ドン×1＋自キャラ3枚以上で1ドロー（複合cond and）／条件未達は引かない
+    G.players={me:mkP('OP13-002',false),cpu:mkP('OP11-041',true)}; G.active='me';
+    { const me=G.players.me; me.deck=[I('OP15-067','me'),I('OP15-067','me')]; me.hand=[];
+      const kil=I('OP01-039','me'); kil.attachedDon=1; me.chars=[kil,I('OP15-067','me'),I('OP15-067','me')]; // 自キャラ3体
+      await runFx(kil.base.fx.onBlock,{self:kil,side:'me',attacker:I('OP15-067','cpu')});
+      ok(me.hand.length===1, 'OP01-039 onBlock: ドン×1＋自キャラ3枚で1ドロー');
+      me.hand=[]; kil.attachedDon=0; await runFx(kil.base.fx.onBlock,{self:kil,side:'me',attacker:I('OP15-067','cpu')});
+      ok(me.hand.length===0, 'OP01-039 onBlock: ドン×1未満なら引かない(and条件)'); }
+    // ST05-004 ウタ: ドン-1で相手のコスト5以下キャラをレスト
+    G.players={me:mkP('OP13-002',false),cpu:mkP('OP11-041',true)}; G.active='me';
+    { const me=G.players.me; me.don.active=3;
+      const tgt=I('OP15-067','cpu'); tgt.rested=false; G.players.cpu.chars=[tgt];
+      const uta=I('ST05-004','me'); await runFx(uta.base.fx.onBlock,{self:uta,side:'me',attacker:I('OP15-067','cpu')});
+      ok(tgt.rested===true && donTotal('me')===2, 'ST05-004 onBlock: ドン-1で相手コスト5以下キャラをレスト'); }
   }catch(e){ console.log('EXCEPTION:', e.message); fail++; }
   console.log('Phase3 fxテスト: pass='+pass+' fail='+fail);
   process.exit(fail?1:0);

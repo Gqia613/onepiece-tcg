@@ -20,6 +20,19 @@ window.CARD_FX = {
   "EB04-053": {"onBlock":[{"op":"draw","n":1,"cond":"life<=2"}]},
   // OP10-077 ベラミー:【ブロック時】自分のドン‼2枚をレストにできる：ドン!!デッキからドン!!1枚までを、アクティブで追加する。
   "OP10-077": {"onBlock":[{"op":"restDonCost","n":2,"then":[{"op":"donFromDeck","n":1,"mode":"active"}]}]},
+  // OP01-014 ジンベエ:【ドン‼×1】【ブロック時】手札からコスト2以下の赤のキャラ1枚までを登場
+  "OP01-014": {"onBlock":[{"op":"cond","check":"donX1Self","then":[{"op":"playCharFromHand","filter":{"maxCost":2,"color":"赤"},"count":1,"optional":true}]}]},
+  // OP01-039 キラー:【ドン‼×1】【ブロック時】自分のキャラが3枚以上いる場合、1ドロー
+  "OP01-039": {"onBlock":[{"op":"draw","n":1,"cond":{"and":["donX1Self",{"selfCharCount":{"min":3}}]}}]},
+  "OP01-039_r1": {"onBlock":[{"op":"draw","n":1,"cond":{"and":["donX1Self",{"selfCharCount":{"min":3}}]}}]},
+  // OP01-078 ボア・ハンコック:【ドン‼×1】【アタック時】/【ブロック時】自分の手札が5枚以下なら1ドロー
+  "OP01-078": {"onAttack":[{"op":"draw","n":1,"cond":{"and":["donX1Self",{"selfHandAtMost":5}]}}],"onBlock":[{"op":"draw","n":1,"cond":{"and":["donX1Self",{"selfHandAtMost":5}]}}]},
+  "OP01-078_r1": {"onAttack":[{"op":"draw","n":1,"cond":{"and":["donX1Self",{"selfHandAtMost":5}]}}],"onBlock":[{"op":"draw","n":1,"cond":{"and":["donX1Self",{"selfHandAtMost":5}]}}]},
+  // OP05-036_r1 モネ(再録): OP05-036と同一
+  "OP05-036_r1": {"onBlock":[{"op":"restChar","side":"opp","maxCost":4,"count":1,"optional":true}]},
+  // ST05-004 ウタ:【ブロック時】ドン‼-1：相手のコスト5以下のキャラ1枚までを、レストにする。
+  "ST05-004": {"onBlock":[{"op":"donMinus","n":1},{"op":"restChar","side":"opp","maxCost":5,"count":1,"optional":true}]},
+  "ST05-004_r1": {"onBlock":[{"op":"donMinus","n":1},{"op":"restChar","side":"opp","maxCost":5,"count":1,"optional":true}]},
 "OP15-067": {"onPlay":[{"op":"donMinus","n":1},{"op":"draw","n":1}]},
   "OP15-061": {"onPlay":[{"op":"donMinus","n":1},{"op":"draw","n":1}],"onAttack":[{"op":"powerMod","side":"opp","amount":-1000,"count":1,"cond":"don<=6"}]},
   "OP15-066": {"onPlay":[{"op":"donMinus","n":1},{"op":"draw","n":1}],"onAttack":[{"op":"scry","n":2,"cond":"don<=6"}]},

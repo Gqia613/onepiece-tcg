@@ -189,7 +189,7 @@ node -e 'const fs=require("fs");fs.writeFileSync("/tmp/app.js",fs.readFileSync("
 ## 8. 既知のギャップ / ロードマップ（設計図 §10 と対応）
 
 - ✅(部分): コストの統一 → `revealCost`/`discardCost`/`restDonCost`/`trashOwnCharCost`/`trashSelfCost`/`bounceOwnCharCost`/`restOwnAsCost` の `{op,..,then}` 形で統一済。完全な単一`payCost()`化は将来課題。
-- ✅: タイミングフック → `onOppAttack`/`onTurnEnd`/`onAllyLeave`/`onReviveFromTrash`/**`onBlock`（【ブロック時】）** を追加済。onBlockは`declareAttack`のブロック宣言後・カウンター前に誘発（`{self:blocker,side:dSide,attacker}`）。代表5枚実装済（モネOP05-036/ヘルメッポOP12-033/ヒナOP02-110/戦桃丸EB04-053/ベラミーOP10-077）。残りの【ブロック時】カード（キラー/クロコダイル等13枚）は同フックにfx追加で対応可（一部は`自分のキャラN枚以上`/`手札N枚以下`の新condが必要）。
+- ✅: タイミングフック → `onOppAttack`/`onTurnEnd`/`onAllyLeave`/`onReviveFromTrash`/**`onBlock`（【ブロック時】）** を追加済。onBlockは`declareAttack`のブロック宣言後・カウンター前に誘発（`{self:blocker,side:dSide,attacker}`）。13枚実装済（モネOP05-036(+_r1)/ヘルメッポOP12-033/ヒナOP02-110/戦桃丸EB04-053/ベラミーOP10-077/ジンベエOP01-014/キラーOP01-039(+_r1)/ハンコックOP01-078(+_r1・onAttack兼)/ウタST05-004(+_r1)）。複合条件は`{and:[...]}`＋既存obj cond(`selfCharCount`/`selfHandAtMost`等)で表現。**未実装5枚**（ブラックマリアOP01-111・ホーキンスOP05-047・しのぶST09-007=「このキャラ自身に+N」、シュライヤOP06-009=once:'turn'＋setPower、クロコダイルST03-003=対象が曖昧）は**self対象のpowerMod(addBuff)opとonBlockのonce:'turn'ゲート**を足せば対応可。
 - 中: 期限(`duration`)の一元管理。パワー/無効/凍結の失効漏れ防止（`turnEnd`/`battle`/`ownerNextStart`/`oppNextEnd`タグで運用中）。
 - ✅: `donFromDeck` / `donActivate` op 追加済（海軍ランプ・エネル系）。
 - 低: カードデータを設計図 §9 の統一スキーマへ段階移行（新カードがデータ追加だけで済む状態を目指す）。
