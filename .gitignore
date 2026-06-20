@@ -12,3 +12,6 @@ node_modules/
 # editor
 .vscode/
 .idea/
+
+# Claude Code (machine-local config / session data)
+.claude/
