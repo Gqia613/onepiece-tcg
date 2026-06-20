@@ -69,6 +69,29 @@ window.CARD_FX = {
   "OP05-041": {"act":{"label":"手札1捨て1ドロー","cost":{},"fx":[{"op":"discardCost","count":1,"then":[{"op":"draw","n":1}]}]},"onAttack":[{"op":"addCostBuff","side":"opp","amount":-1,"count":1,"optional":true}]},
   // ST07-001 ハンコック(L): 【ドン!!×2】【アタック時】ライフ上下1枚を手札に加えられる：ライフ2以下なら手札1枚をライフ上へ
   "ST07-001": {"onAttack":[{"op":"cond","check":"donX2","then":[{"op":"lifeCost","action":"toHand","pos":"choose","then":[{"op":"cond","check":"life<=2","then":[{"op":"handToLife"}]}]}]}]},
+  /* ----- 軽量リーダー バッチ2（既存フック/op/condのみ・src非干渉） ----- */
+  // OP06-021 サー・クロコダイル: 【起動メイン】【ターン1回】以下から1つ：相手コスト4以下1枚レスト／相手キャラ1枚コスト-1
+  "OP06-021": {"act":{"label":"レスト or コスト-1を選ぶ","cost":{},"fx":[{"op":"chooseOption","options":[{"label":"相手コスト4以下を1枚レスト","fx":[{"op":"restChar","side":"opp","maxCost":4,"count":1,"optional":true}]},{"label":"相手キャラ1枚をコスト-1","fx":[{"op":"addCostBuff","side":"opp","amount":-1,"count":1,"optional":true}]}]}]}},
+  // ST06-001 ドフラミンゴ(L): 【起動メイン】【ターン1回】③＋手札1枚捨て：相手コスト0キャラ1枚までKO
+  "ST06-001": {"act":{"label":"③＋手札捨て:相手コスト0KO","cost":{},"fx":[{"op":"restDonCost","n":3,"then":[{"op":"discardCost","count":1,"then":[{"op":"ko","side":"opp","maxCost":0,"count":1,"optional":true}]}]}]}},
+  // OP09-042 バギー: 【起動メイン】自ドン5枚レスト＋手札1捨て：手札の《クロスギルド》キャラ1枚まで登場
+  "OP09-042": {"act":{"label":"ドン5レスト＋捨て:クロスギルド登場","cost":{},"fx":[{"op":"restDonCost","n":5,"then":[{"op":"discardCost","count":1,"then":[{"op":"playCharFromHand","filter":{"traitIncludes":"クロスギルド"},"count":1,"optional":true}]}]}]}},
+  // EB02-010 ルフィ(麦わら): 【起動メイン】【ターン1回】ドン!!-2：自キャラが《麦わら》のみならドン2アクティブ＋次相手ターン終了まで+1000
+  "EB02-010": {"act":{"label":"ドン-2:麦わらのみでドン2＋自+1000","cost":{},"fx":[{"op":"donMinus","n":2},{"op":"cond","check":{"allSelfChar":{"traitIncludes":"麦わらの一味"}},"then":[{"op":"donActivate","n":2},{"op":"leaderBuff","amount":1000,"duration":"untilNextEnd"}]}]}},
+  // ST12-001 ルフィ(L): 【ドン!!×1】【アタック時】【ターン1回】コスト2以上キャラ手札に戻す：自パワー7000以下1枚アクティブ
+  "ST12-001": {"onAttack":[{"op":"cond","check":"donX1Self","once":"turn","then":[{"op":"bounceOwnCharCost","filter":{"minCost":2},"then":[{"op":"activateOwnChar","filter":{"maxEffPower":7000},"count":1,"optional":true}]}]}]},
+  // ST10-001 ロー(L): 【起動メイン】【ターン1回】ドン!!-3：相手パワー3000以下1枚をデッキ下＋手札からコスト4以下キャラ登場
+  "ST10-001": {"act":{"label":"ドン-3:相手をデッキ下＋登場","cost":{},"fx":[{"op":"donMinus","n":3},{"op":"deckBottom","side":"opp","filter":{"maxEffPower":3000},"count":1,"optional":true},{"op":"playCharFromHand","maxCost":4,"count":1,"optional":true}]}},
+  // EB01-021 マゼラン(EB): 【自分のターン終了時】コスト2以上《インペルダウン》1枚を手札に戻せる：ドンデッキからアクティブ追加
+  "EB01-021": {"onTurnEnd":[{"op":"bounceOwnCharCost","filter":{"minCost":2,"traitIncludes":"インペルダウン"},"then":[{"op":"donFromDeck","n":1,"mode":"active"}]}]},
+  // OP07-079 ブルック: 【アタック時】デッキ上2枚をトラッシュできる：相手キャラ1枚までコスト-1
+  "OP07-079": {"onAttack":[{"op":"deckTrashCost","n":2,"then":[{"op":"addCostBuff","side":"opp","amount":-1,"count":1,"optional":true}]}]},
+  // OP12-001 ボニー: 【起動メイン】【ターン1回】手札のイベント2枚を公開できる：自元々パワー4000以下1枚を このターン中+2000
+  "OP12-001": {"act":{"label":"イベ2公開:自P4000以下+2000","cost":{},"fx":[{"op":"revealCost","count":2,"filter":{"type":"EVENT"},"then":[{"op":"powerMod","side":"self","amount":2000,"count":1,"filter":{"maxPower":4000}}]}]}},
+  // OP07-019 たしぎ: 【相手のアタック時】【ターン1回】①：相手のリーダーかキャラ1枚までレスト
+  "OP07-019": {"onOppAttack":[{"op":"restDonCost","n":1,"once":"turn","then":[{"op":"restChar","side":"opp","count":1,"includeLeader":true,"optional":true}]}]},
+  // OP14-040 ジンベエ(L): 【起動メイン】手札1枚捨て：《魚人族》か《人魚族》のリーダーかキャラ1枚にレストのドン2付与
+  "OP14-040": {"act":{"label":"捨て:魚人/人魚にレストのドン2付与","cost":{},"fx":[{"op":"discardCost","count":1,"then":[{"op":"donAttach","target":"chooseOwn","n":2,"filter":{"or":[{"traitIncludes":"魚人族"},{"traitIncludes":"人魚族"}]}}]}]}},
   /* ===== index.html def() から移行した効果（一元化） ===== */
   // OP05-077 ガンマナイフ(イベント/紫/コスト2/ハートの海賊団): 公式 tcg-portal/cardrush で照合
   // 【メイン】ドン!!-1：相手のキャラ1枚までを、このターン中、パワー-5000。 【トリガー】ドン!!デッキからドン!!1枚までを、アクティブで追加する。

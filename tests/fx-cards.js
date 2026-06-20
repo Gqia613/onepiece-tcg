@@ -720,6 +720,57 @@ humanPick=function(c){return Promise.resolve((c||[])[0]||null);};
     { const me=LP('ST07-001'); me.leader.attachedDon=2; me.life=[I('ST01-006','me'),I('ST01-006','me')]; me.hand=[I('OP15-067','me')];
       await runFx(me.leader.base.fx.onAttack,{self:me.leader,side:'me'});
       ok(me.hand.length===1 && me.life.length===2, 'ST07-001 onAttack: ライフ1枚手札→ライフ2以下で手札1枚ライフ上(枚数保存)'); }
+
+    // === 軽量リーダー バッチ2 ===
+    { const me=LP('OP06-021'); const v=I('OP15-067','cpu'); v.rested=false; G.players.cpu.chars=[v]; // chooseOptionは先頭=レスト
+      await runFx(me.leader.base.fx.act.fx,{self:me.leader,side:'me'});
+      ok(v.rested===true, 'OP06-021 act: 二択の先頭(相手コスト4以下レスト)'); }
+    { const me=LP('ST06-001'); me.don.active=3; me.hand=[I('OP15-067','me')];
+      C['__c0b__']={no:'__c0b__',name:'コスト0',type:'CHAR',color:[],cost:0,power:1000,counter:0,traits:[]};
+      const v=mkSyn('__c0b__',C['__c0b__']); v.owner='cpu'; G.players.cpu.chars=[v];
+      await runFx(me.leader.base.fx.act.fx,{self:me.leader,side:'me'});
+      ok(!G.players.cpu.chars.includes(v) && me.hand.length===0, 'ST06-001 act: ③＋捨て→相手コスト0KO'); delete C['__c0b__']; }
+    { const me=LP('OP09-042'); me.don.active=5;
+      C['__cg__']={no:'__cg__',name:'クロスギルドの誰か',type:'CHAR',color:[],cost:4,power:5000,counter:1000,traits:['クロスギルド']};
+      me.hand=[I('OP15-067','me'),mkSyn('__cg__',C['__cg__'])];
+      await runFx(me.leader.base.fx.act.fx,{self:me.leader,side:'me'});
+      ok(me.chars.some(c=>c.no==='__cg__'), 'OP09-042 act: ドン5レスト＋捨て→クロスギルド登場'); delete C['__cg__']; }
+    { const me=LP('EB02-010'); me.don.active=2; me.don.rested=4; me.donMax=12;
+      C['__mu2__']={no:'__mu2__',name:'麦わら',type:'CHAR',color:[],cost:3,power:4000,counter:1000,traits:['麦わらの一味']};
+      me.chars=[mkSyn('__mu2__',C['__mu2__'])]; const p0=power(me.leader);
+      await runFx(me.leader.base.fx.act.fx,{self:me.leader,side:'me'});
+      ok(power(me.leader)===p0+1000 && donTotal('me')===4, 'EB02-010 act: ドン-2＋麦わらのみでドン2＋自+1000'); delete C['__mu2__']; }
+    { const me=LP('ST12-001'); me.leader.attachedDon=1;
+      C['__c3__']={no:'__c3__',name:'コスト3',type:'CHAR',color:[],cost:3,power:4000,counter:1000,traits:[]};
+      const bouncee=mkSyn('__c3__',C['__c3__']); const actee=I('OP15-067','me'); actee.rested=true;
+      me.chars=[bouncee, actee];
+      await runFx(me.leader.base.fx.onAttack,{self:me.leader,side:'me'});
+      ok(actee.rested===false, 'ST12-001 onAttack: コスト2以上を戻し→自P7000以下をアクティブ'); delete C['__c3__']; }
+    { const me=LP('ST10-001'); me.don.active=3; const v=I('OP15-067','cpu'); G.players.cpu.chars=[v]; const dk0=G.players.cpu.deck.length;
+      const h=I('OP15-067','me'); me.hand=[h]; // コスト1≤4のキャラ
+      await runFx(me.leader.base.fx.act.fx,{self:me.leader,side:'me'});
+      ok(!G.players.cpu.chars.includes(v) && G.players.cpu.deck.length===dk0+1 && me.chars.includes(h), 'ST10-001 act: ドン-3で相手デッキ下＋手札から登場'); }
+    { const me=LP('EB01-021'); me.donMax=12; me.don.active=0;
+      C['__imp2__']={no:'__imp2__',name:'インペルダウン',type:'CHAR',color:[],cost:3,power:4000,counter:1000,traits:['インペルダウン']};
+      const ch=mkSyn('__imp2__',C['__imp2__']); me.chars=[ch];
+      await runFx(me.leader.base.fx.onTurnEnd,{self:me.leader,side:'me'});
+      ok(!me.chars.includes(ch) && me.hand.includes(ch) && me.don.active===1, 'EB01-021 onTurnEnd: ID戻して→ドンデッキからアクティブ+1'); delete C['__imp2__']; }
+    { const me=LP('OP07-079'); me.deck=[I('OP15-067','me'),I('OP15-067','me'),I('OP15-067','me')]; const v=I('OP15-067','cpu'); G.players.cpu.chars=[v]; const dk0=me.deck.length;
+      await runFx(me.leader.base.fx.onAttack,{self:me.leader,side:'me'});
+      ok(me.deck.length===dk0-2 && v.buffs.some(b=>b.costAmt===-1), 'OP07-079 onAttack: デッキ2トラッシュ→相手コスト-1'); }
+    { const me=LP('OP12-001');
+      C['__ev__']={no:'__ev__',name:'イベント',type:'EVENT',color:[],cost:1,power:0,counter:0,traits:[]};
+      me.hand=[mkSyn('__ev__',C['__ev__']),mkSyn('__ev__',C['__ev__'])]; const ch=I('OP15-067','me'); me.chars=[ch]; const p0=power(ch); // base2000≤4000
+      await runFx(me.leader.base.fx.act.fx,{self:me.leader,side:'me'});
+      ok(power(ch)===p0+2000, 'OP12-001 act: イベ2公開→自P4000以下+2000'); delete C['__ev__']; }
+    { const me=LP('OP07-019'); me.don.active=1; const v=I('OP15-067','cpu'); v.rested=false; G.players.cpu.chars=[v]; G.players.cpu.leader.rested=true; // リーダーは既レスト→先頭はキャラ
+      await runFx(me.leader.base.fx.onOppAttack,{self:me.leader,side:'me',attacker:I('OP15-067','cpu')});
+      ok(v.rested===true, 'OP07-019 onOppAttack: ①で相手リーダー/キャラをレスト'); }
+    { const me=LP('OP14-040'); me.don.rested=2; me.don.active=0; me.hand=[I('OP15-067','me')];
+      C['__fish__']={no:'__fish__',name:'魚人',type:'CHAR',color:[],cost:3,power:4000,counter:1000,traits:['魚人族']};
+      const fch=mkSyn('__fish__',C['__fish__']); me.chars=[fch];
+      await runFx(me.leader.base.fx.act.fx,{self:me.leader,side:'me'});
+      ok((me.leader.attachedDon+fch.attachedDon)===2 && me.hand.length===0, 'OP14-040 act: 捨て→魚人/人魚にレストのドン2付与'); delete C['__fish__']; }
   }catch(e){ console.log('EXCEPTION:', e.message); fail++; }
   console.log('Phase3 fxテスト: pass='+pass+' fail='+fail);
   process.exit(fail?1:0);
