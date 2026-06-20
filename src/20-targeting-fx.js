@@ -693,6 +693,8 @@
       if (!target) return false;
       // 「相手の効果ではKOされない」自身の常在: 効果KOのみ無効化（選択・パワー減少等は通すのでバックストップ）
       if (cause === 'ko' && isKoImmune(target)) { flog(target.owner, `「${target.base.name}」は相手の効果ではKOされない`); return true; }
+      // 「相手の効果で場を離れない」自身の常在(condBuff immune): バウンス/デッキ送りも無効化（選択・無効化・パワー減少は通す）
+      if ((cause === 'bounce' || cause === 'deckBottom') && isLeaveImmune(target)) { flog(target.owner, `「${target.base.name}」は相手の効果で場を離れない`); return true; }
       const ow = G.players[target.owner];
       for (const p of [ow.leader, ...ow.chars]) { // リーダー提供の身代わりも拾う
         if (!p || isNegated(p)) continue; // 効果無効中のキャラは身代わり保護を提供しない

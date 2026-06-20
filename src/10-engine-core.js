@@ -273,18 +273,23 @@
       } finally { _pwEval.delete(card); }
     }
     // 相手の効果で「選ばれない/対象にならない」= あらゆる効果の対象から除外（koOnly はKO限定なので除外しない）
+    // blanket「相手の効果の対象にならない/選ばれない」のみ（候補から除外）。「場を離れない」は除去のみ無効＝選択は通すので含めない
     function isImmune(card) {
       if (isNegated(card)) return false; const st = card.base.fx && card.base.fx.static;
       if (st) for (const o of st) {
         if (o.op === 'effectImmune' && !o.koOnly) return true;
-        if (o.op === 'condBuff' && o.immune && checkCond(o.cond, card.owner, card)) return true;
       }
       return false;
     }
-    // 「相手の効果ではKOされない」= 効果によるKOのみ無効（選択・パワー減少・レスト・バウンス等は通す。バトルKOも通す）
+    // 「相手の効果で場を離れない」(condBuff immune): 効果によるKO/バウンス/デッキ送りを無効化（選択・無効化・パワー減少・レスト等は通す）
+    function isLeaveImmune(card) {
+      if (!card || isNegated(card)) return false; const st = card.base.fx && card.base.fx.static;
+      return !!(st && st.some(o => o.op === 'condBuff' && o.immune && (!o.cond || checkCond(o.cond, card.owner, card))));
+    }
+    // 「相手の効果ではKOされない」= 効果KOを無効（effectImmune＝KO限定／「場を離れない」＝KO含む）。選択・パワー減少・レスト等は通す。バトルKOも通す
     function isKoImmune(card) {
       if (!card || isNegated(card)) return false; const st = card.base.fx && card.base.fx.static;
-      return !!(st && st.some(o => o.op === 'effectImmune')); // blanket/koOnly どちらも効果KO不可
+      return (!!(st && st.some(o => o.op === 'effectImmune'))) || isLeaveImmune(card);
     }
     function hasKw(card, kw) {
       if (!card) return false; const b = card.base;

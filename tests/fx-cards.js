@@ -804,6 +804,30 @@ humanPick=function(c){return Promise.resolve((c||[])[0]||null);};
       me.chars=[mkSyn('__ph__',C['__ph__'])]; const v=I('OP15-067','cpu'); G.players.cpu.chars=[v]; // P2000≤4000
       await runFx(me.leader.base.fx.onAttack,{self:me.leader,side:'me'});
       ok(!G.players.cpu.chars.includes(v), 'OP10-002 onAttack: PH戻して→相手パワー4000以下KO'); delete C['__ph__']; }
+
+    // === バグ修正: OP15-060 エネル「相手の効果で場を離れない」はKO/バウンス/デッキ送りのみ無効。無効化(negateEffect)等は選べる ===
+    G.players={me:mkP('OP13-002',false),cpu:mkP('OP11-041',true)}; G.active='me'; G.turnSeq=5; G.winner=null;
+    { const en=I('OP15-060','cpu'); G.players.cpu.chars=[en]; G.players.cpu.don.active=0; // donTotal0≤6→「場を離れない」発動
+      await doOp({op:'negateEffect'},{side:'me',self:G.players.me.leader}); // ティーチの無効化＋アタック不可
+      ok(en.negSeq!=null && en.noAtkSeq!=null, 'OP15-060: 場を離れない中でも無効化＆アタック不可(negateEffect)で選べる(=ティーチで止められる)');
+      en.negSeq=null; en.noAtkSeq=null; G.players.cpu.chars=[en];
+      await doOp({op:'ko'},{side:'me',self:G.players.me.leader});
+      ok(G.players.cpu.chars.includes(en), 'OP15-060: 効果KOは無効(場を離れない)');
+      await doOp({op:'bounce'},{side:'me',self:G.players.me.leader});
+      ok(G.players.cpu.chars.includes(en), 'OP15-060: 効果バウンスは無効(場を離れない)');
+      G.players.cpu.don.active=7; const en2=I('OP15-060','cpu'); G.players.cpu.chars=[en2]; // donTotal7>6→解除
+      await doOp({op:'ko'},{side:'me',self:G.players.me.leader});
+      ok(!G.players.cpu.chars.includes(en2), 'OP15-060: ドン7枚(>6)では場を離れない解除→効果KO可'); }
+    // OP09-086_r2(再録): OP09-086と同一のKO限定耐性
+    ok(C['OP09-086_r2']&&C['OP09-086_r2'].fx&&C['OP09-086_r2'].fx.static&&C['OP09-086_r2'].fx.static.some(o=>o.op==='effectImmune'&&o.koOnly), 'OP09-086_r2: 再録もKO限定耐性を実装(穴埋め)');
+    // OP02-027 イヌアラシ: 全ドンレスト(active0)で場を離れない（KO無効・選択は可）／active>0で解除
+    G.players={me:mkP('OP13-002',false),cpu:mkP('OP11-041',true)}; G.active='me';
+    { const inu=I('OP02-027','cpu'); G.players.cpu.chars=[inu]; G.players.cpu.don.active=0; G.players.cpu.don.rested=2;
+      await doOp({op:'ko'},{side:'me',self:G.players.me.leader});
+      ok(G.players.cpu.chars.includes(inu), 'OP02-027: 全ドンレスト(active0)で効果KO無効(場を離れない)');
+      G.players.cpu.don.active=1;
+      await doOp({op:'ko'},{side:'me',self:G.players.me.leader});
+      ok(!G.players.cpu.chars.includes(inu), 'OP02-027: active>0なら場を離れない解除→KO可'); }
   }catch(e){ console.log('EXCEPTION:', e.message); fail++; }
   console.log('Phase3 fxテスト: pass='+pass+' fail='+fail);
   process.exit(fail?1:0);
