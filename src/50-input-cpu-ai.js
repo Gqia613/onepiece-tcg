@@ -279,6 +279,10 @@
           if (isUnblockable(a) && oppActiveBlockers > 0) score += 6;
           if (aggr === 'high') score += 8; else if (aggr === 'low') score -= 5;
           score -= donL * 2;                              // 付与は控えめ減点（リーダー圧は基本得）
+          // ★CPU改良（測定駆動・採用済・ユーザー観察由来）: この攻撃役が「フリー(ドン不要)でレストキャラをKOできる」のに
+          //   2ドン+を付与して顔1点を取るのは損→そのリーダー攻撃を抑制し、フリーのボード除去を優先させる。
+          //   低相手ライフ(+20/+30の加点)では加点が勝ち顔殴りのまま＝詰めは優先（自己対戦で害なし・改善4/退行1）。
+          if (donL >= 2 && D.chars.some(c => c.rested && power(c) <= pw)) score -= 12;
           if (isBlk && holdBlk) score -= 30;
           if (!best || score > best.score) best = { attacker: a, target: D.leader, score, donNeed: donL };
         }

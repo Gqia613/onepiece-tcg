@@ -85,6 +85,20 @@ function chk(name, cond) { if (cond) pass++; else { fail++; console.log('  ✗ '
   cp.life = cp.deck.splice(0, 3); cp.life.push({}, {}); op.chars = []; // 自ライフ5・相手盤面0
   chk('リスク無し(相手盤面が空)→温存判定false', oppCanThreatenLethal('cpu') === false);
 
+  // 7) ★heuristic改良の回帰: フリー(ドン不要)でレストキャラをKOできるなら、ドンを払って顔を殴らずKOを選ぶ（相手ライフに余裕がある時）
+  const _warn = console.warn; console.warn = () => {};
+  seedRng(3); G.players = {}; G.turnSeq = 6; G.active = 'cpu';
+  G.players.cpu = buildPlayer('cpu', 'enel', true); G.players.me = buildPlayer('me', 'teach', false);
+  const c2 = G.players.cpu, m2 = G.players.me; c2.turnsTaken = 2; c2.don = { active: 4, rested: 0 };
+  c2.leader.rested = true;                                  // CPUリーダーは攻撃不可（2000キャラの選択だけ見る）
+  const a2 = inst('ZZA', 'cpu'); a2.summonedTurn = 1; a2.rested = false; a2.buffs = [{ amt: 1000, until: 'turnEnd' }]; c2.chars = [a2]; // P2000
+  const r2 = inst('ZZR', 'me'); r2.summonedTurn = 1; r2.rested = true; m2.chars = [r2];   // P1000・レスト（フリーKO可）
+  m2.life = []; for (let i = 0; i < 5; i++) m2.life.push(inst('ZZL', 'me'));               // 相手ライフ5（顔殴りが急務でない）
+  console.warn = _warn;
+  const needsDon = power(m2.leader) - power(a2) >= 2000;     // 2000キャラはリーダー連結に2ドン以上必要
+  const pk = cpuPickAttack('cpu', { aggression: 'mid', removalPriority: [] });
+  chk('フリーKO可能なら3ドン顔殴りでなくレストKOを選ぶ', needsDon && pk && pk.target === r2);
+
   console.log('  AI基盤テスト: pass=' + pass + ' fail=' + fail);
   process.exit(fail ? 1 : 0);
 })();
