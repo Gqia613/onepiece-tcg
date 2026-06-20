@@ -421,7 +421,12 @@
       if (isLeader) {
         const lifeAfter = D.life.length - (dbl ? 2 : 1);
         if (lifeAfter < 0 || (lifeAfter <= 1 && incoming >= 1)) mode = 'survival';
-        else mode = 'skip'; // ライフに余裕→素受け（実質ドロー）。カウンターは致死圏まで温存
+        // 残りライフ1：致死でなくても、止められるなら確実に守る（最後のライフを安売りしない）
+        else if (lifeAfter <= 1) { mode = 'efficient'; maxCards = 2; allowBig = true; }
+        // 中盤ライフ2-3＋手札に余裕：1枚で効率的に止められるリーダーアタックは受け止める
+        // （素受けしすぎ＝指摘3対策。止められない/小さすぎるアタックはefficientが自動でskip＝手札は浪費しない）
+        else if (lifeAfter <= 3 && D.hand.length >= 3) { mode = 'efficient'; maxCards = 1; allowBig = true; }
+        else mode = 'skip'; // 高ライフ(4+)→素受け（実質ドロー）でカウンター温存
       } else {
         // 自分が今ターン負けそうな時は、キャラを守るためにカウンターを切らない（手札は致死回避＝リーダー防御へ温存）
         const safe = D.life.length - incoming >= 2; // 残りの被弾を最大で食らってもライフが2枚以上残るか

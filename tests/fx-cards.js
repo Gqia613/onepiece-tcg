@@ -454,6 +454,18 @@ humanPick=function(c){return Promise.resolve((c||[])[0]||null);};
       await declareAttack(atk, G.players.cpu.leader);
       ok(G.busy===false && G.myActable===true,'アタック中断後も操作権が戻る(G.busy=false/myActable=true)');
       delete C['__INTR__']; }
+
+    // OP05-077 ガンマナイフ: 【メイン】ドン!!-1→相手キャラ1枚をパワー-5000 / 【トリガー】ドンデッキからアクティブ+1
+    G.players={me:mkP('OP13-002',false),cpu:mkP('OP11-041',true)}; G.active='me'; G.turnSeq=5; G.winner=null;
+    { const me=G.players.me; me.don.active=3; me.donMax=10;
+      const tgt=I('OP15-067','cpu'); G.players.cpu.chars=[tgt]; const p0=power(tgt);
+      const ev=I('OP05-077','me'); await runFx(ev.base.fx.main.fx,{self:ev,side:'me'});
+      ok(power(tgt)===p0-5000, 'OP05-077 main: 相手キャラをこのターン中パワー-5000');
+      ok(donTotal('me')===2, 'OP05-077 main: ドン!!-1で総ドンが3→2に減る'); }
+    G.players={me:mkP('OP13-002',false),cpu:mkP('OP11-041',true)}; G.active='me';
+    { const me=G.players.me; me.don.active=0; me.don.rested=0; me.donMax=10; // donTotal=0→ドンデッキに余裕
+      const ev=I('OP05-077','me'); await runFx(ev.base.fx.trigger,{self:ev,side:'me'});
+      ok(me.don.active===1, 'OP05-077 trigger: ドンデッキからドンを1枚アクティブで追加'); }
   }catch(e){ console.log('EXCEPTION:', e.message); fail++; }
   console.log('Phase3 fxテスト: pass='+pass+' fail='+fail);
   process.exit(fail?1:0);

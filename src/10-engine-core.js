@@ -256,13 +256,19 @@
       return p;
       } finally { _pwEval.delete(card); }
     }
+    // 相手の効果で「選ばれない/対象にならない」= あらゆる効果の対象から除外（koOnly はKO限定なので除外しない）
     function isImmune(card) {
       if (isNegated(card)) return false; const st = card.base.fx && card.base.fx.static;
       if (st) for (const o of st) {
-        if (o.op === 'effectImmune') return true;
+        if (o.op === 'effectImmune' && !o.koOnly) return true;
         if (o.op === 'condBuff' && o.immune && checkCond(o.cond, card.owner, card)) return true;
       }
       return false;
+    }
+    // 「相手の効果ではKOされない」= 効果によるKOのみ無効（選択・パワー減少・レスト・バウンス等は通す。バトルKOも通す）
+    function isKoImmune(card) {
+      if (!card || isNegated(card)) return false; const st = card.base.fx && card.base.fx.static;
+      return !!(st && st.some(o => o.op === 'effectImmune')); // blanket/koOnly どちらも効果KO不可
     }
     function hasKw(card, kw) {
       if (!card) return false; const b = card.base;

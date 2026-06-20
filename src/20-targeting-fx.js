@@ -100,17 +100,17 @@
           break;
         }
         case 'ko': {
-          if (op.all) { for (const t of oppChars(side, opFilter(op)).slice()) { if (!(await protectFromEffect(t, 'ko'))) await koCard(t, 'oppEffect'); } break; } // 条件一致の相手キャラを全てKO
-          let cands = oppChars(side, opFilter(op));
+          // KO効果は「相手の効果ではKOされない」(isKoImmune)を候補から除外（無駄打ち/同一カード再選択ループ防止。protectFromEffectでも二重に防ぐ）
+          if (op.all) { for (const t of oppChars(side, opFilter(op)).filter(c => !isKoImmune(c))) { if (!(await protectFromEffect(t, 'ko'))) await koCard(t, 'oppEffect'); } break; } // 条件一致の相手キャラを全てKO
           for (let i = 0; i < (op.count || 1); i++) {
-            cands = oppChars(side, opFilter(op));
+            const cands = oppChars(side, opFilter(op)).filter(c => !isKoImmune(c));
             const t = await chooseCard(side, cands, `KOする相手キャラを選択`, 'oppBig', op.optional);
             if (!t) break; if (await protectFromEffect(t, 'ko')) continue; await koCard(t, 'oppEffect');
           }
           break;
         }
         case 'koZero': {
-          const dead = G.players[o].chars.filter(c => power(c) <= 0 && !isImmune(c));
+          const dead = G.players[o].chars.filter(c => power(c) <= 0 && !isImmune(c) && !isKoImmune(c));
           for (const c of dead.slice()) { if (!G.players[o].chars.includes(c)) continue; if (await protectFromEffect(c, 'ko')) continue; await koCard(c, 'oppEffect'); }
           break;
         }
@@ -489,7 +489,7 @@
         }
         // 相手キャラ1枚を選び、そのコスト＝付与ドン枚数 が一致する場合のみKO
         case 'selectKoIfCostEqualsDon': {
-          const cands = oppChars(side, opFilter(op));
+          const cands = oppChars(side, opFilter(op)).filter(c => !isKoImmune(c));
           const t = P.isCPU ? (cands.find(c => (c.base.cost || 0) === (c.attachedDon || 0)) || cands[0]) : await chooseCard(side, cands, '対象の相手キャラを選択', 'oppBig', op.optional !== false);
           if (!t) break;
           if ((t.base.cost || 0) === (t.attachedDon || 0)) { if (!(await protectFromEffect(t, 'ko'))) await koCard(t, 'oppEffect'); }
@@ -648,6 +648,8 @@
     /* ノラ/レオ系: 自分の元々パワー7000以下のキャラが相手効果で場を離れる時、代わりのコストで防ぐ（自動） */
     async function protectFromEffect(target, cause) {
       if (!target) return false;
+      // 「相手の効果ではKOされない」自身の常在: 効果KOのみ無効化（選択・パワー減少等は通すのでバックストップ）
+      if (cause === 'ko' && isKoImmune(target)) { flog(target.owner, `「${target.base.name}」は相手の効果ではKOされない`); return true; }
       const ow = G.players[target.owner];
       for (const p of [ow.leader, ...ow.chars]) { // リーダー提供の身代わりも拾う
         if (!p || isNegated(p)) continue; // 効果無効中のキャラは身代わり保護を提供しない
