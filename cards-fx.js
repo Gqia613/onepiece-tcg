@@ -30,6 +30,19 @@ window.CARD_FX = {
   // OP03-040 / P-117 ナミ: デッキ0で勝利＋【ドン×1】このリーダーのアタックで相手ライフにダメージ時、自分のデッキ上1枚をトラッシュしてもよい（自爆デッキ）
   "OP03-040": {"static":[{"op":"deckOutWin"}],"onLeaderHitLife":{"cond":"donX1Self","fx":[{"op":"deckTrashCost","n":1,"then":[]}]}},
   "P-117": {"static":[{"op":"deckOutWin"}],"onLeaderHitLife":{"cond":"donX1Self","fx":[{"op":"deckTrashCost","n":1,"then":[]}]}},
+  /* ----- 既存フックに載る未実装リーダーの追加実装（hot pathに触れずcards-fx.jsのみ） ----- */
+  // OP02-001 エドワード・ニューゲート(白ひげ): 【自分のターン終了時】自分のライフ上1枚を手札に加える
+  "OP02-001": {"onTurnEnd":[{"op":"lifeToHand"}]},
+  // OP02-049 エンポリオ・イワンコフ: 【自分のターン終了時】手札0枚なら2ドロー
+  "OP02-049": {"onTurnEnd":[{"op":"draw","n":2,"cond":{"selfHandAtMost":0}}]},
+  // OP01-031 光月おでん: 【起動メイン】【ターン1回】手札の《ワノ国》1枚を捨てられる：ドン!!2枚までアクティブ
+  "OP01-031": {"act":{"label":"ワノ国捨て:ドン2アクティブ","cost":{},"fx":[{"op":"discardCost","filter":{"traitIncludes":"ワノ国"},"count":1,"then":[{"op":"donActivate","n":2}]}]}},
+  // OP02-072 ゼット: 【アタック時】ドン!!-4：相手のコスト3以下キャラ1枚までKO、その後このリーダーをこのターン中+1000（KO対象がいる時のみ＝ドン浪費防止）
+  "OP02-072": {"onAttack":[{"op":"cond","check":{"oppChar":{"maxCost":3}},"then":[{"op":"donMinus","n":4},{"op":"ko","side":"opp","maxCost":3,"count":1,"optional":true},{"op":"leaderBuff","amount":1000}]}]},
+  // OP02-093 スモーカー: 【ドン!!×1】【起動メイン】【ターン1回】相手キャラ1枚までこのターン中コスト-1。その後コスト0のキャラがいればこのリーダー+1000
+  "OP02-093": {"act":{"label":"相手コスト-1→0なら自分+1000","cost":{},"fx":[{"op":"cond","check":"donX1Self","then":[{"op":"addCostBuff","side":"opp","amount":-1,"count":1,"optional":true},{"op":"cond","check":{"oppChar":{"maxCost":0}},"then":[{"op":"leaderBuff","amount":1000}]}]}]}},
+  // OP03-022 アーロン: 【ドン!!×2】【アタック時】①：手札からコスト4以下の【トリガー】持ちキャラ1枚までを登場
+  "OP03-022": {"onAttack":[{"op":"cond","check":"donX2","then":[{"op":"restDonCost","n":1,"then":[{"op":"playCharFromHand","maxCost":4,"needsTrigger":true,"count":1,"optional":true}]}]}]},
   /* ===== index.html def() から移行した効果（一元化） ===== */
   // OP05-077 ガンマナイフ(イベント/紫/コスト2/ハートの海賊団): 公式 tcg-portal/cardrush で照合
   // 【メイン】ドン!!-1：相手のキャラ1枚までを、このターン中、パワー-5000。 【トリガー】ドン!!デッキからドン!!1枚までを、アクティブで追加する。

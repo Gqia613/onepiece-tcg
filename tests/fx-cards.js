@@ -632,6 +632,48 @@ humanPick=function(c){return Promise.resolve((c||[])[0]||null);};
       const me2=G.players.me; me2.leader.attachedDon=1; me2.deck=[I('ST01-006','me'),I('ST01-006','me')]; const dk0=me2.deck.length,tr0=me2.trash.length;
       await checkLeaderHitLife(me2.leader);
       ok(me2.deck.length===dk0-1 && me2.trash.length===tr0+1, 'OP03-040 onLeaderHitLife: ドン×1で自分のデッキを1ミル'); }
+
+    // === 既存フックに載る未実装リーダー6枚 ===
+    // OP02-001 白ひげ: onTurnEnd 自ライフ上1枚を手札へ
+    G.players={me:mkP('OP02-001',false),cpu:mkP('OP11-041',true)}; G.active='me'; G.turnSeq=5; G.winner=null;
+    { const me=G.players.me; me.life=[I('ST01-006','me')]; me.hand=[];
+      await runFx(me.leader.base.fx.onTurnEnd,{self:me.leader,side:'me'});
+      ok(me.life.length===0 && me.hand.length===1, 'OP02-001 onTurnEnd: 自ライフ上1枚を手札に'); }
+    // OP02-049 イワンコフ: onTurnEnd 手札0で2ドロー
+    G.players={me:mkP('OP02-049',false),cpu:mkP('OP11-041',true)}; G.active='me';
+    { const me=G.players.me; me.hand=[]; me.deck=[I('OP15-067','me'),I('OP15-067','me'),I('OP15-067','me')];
+      await runFx(me.leader.base.fx.onTurnEnd,{self:me.leader,side:'me'});
+      ok(me.hand.length===2, 'OP02-049 onTurnEnd: 手札0で2ドロー');
+      me.hand=[I('OP15-067','me')]; const d1=me.deck.length; await runFx(me.leader.base.fx.onTurnEnd,{self:me.leader,side:'me'});
+      ok(me.deck.length===d1, 'OP02-049 onTurnEnd: 手札ありでは引かない(cond)'); }
+    // OP01-031 おでん: act 《ワノ国》1枚捨て→ドン2アクティブ
+    G.players={me:mkP('OP01-031',false),cpu:mkP('OP11-041',true)}; G.active='me';
+    { const me=G.players.me; me.don.rested=2; me.don.active=0;
+      C['__wano__']={no:'__wano__',name:'ワノ国の誰か',type:'CHAR',color:[],cost:2,power:3000,counter:1000,traits:['ワノ国']};
+      me.hand=[mkSyn('__wano__',C['__wano__'])];
+      await runFx(me.leader.base.fx.act.fx,{self:me.leader,side:'me'});
+      ok(me.don.active===2 && me.don.rested===0 && me.hand.length===0, 'OP01-031 act: ワノ国捨て→ドン2アクティブ');
+      delete C['__wano__']; }
+    // OP02-072 ゼット: onAttack ドン-4→相手コスト3以下KO＋自分+1000（対象あり時）
+    G.players={me:mkP('OP02-072',false),cpu:mkP('OP11-041',true)}; G.active='me';
+    { const me=G.players.me; me.don.active=4; me.don.rested=0;
+      const v=I('OP15-067','cpu'); G.players.cpu.chars=[v]; const p0=power(me.leader);
+      await runFx(me.leader.base.fx.onAttack,{self:me.leader,side:'me'});
+      ok(!G.players.cpu.chars.includes(v) && power(me.leader)===p0+1000 && donTotal('me')===0, 'OP02-072 onAttack: ドン-4で相手KO＋自分+1000'); }
+    // OP02-093 スモーカー: act 相手コスト-1→0なら自分+1000
+    G.players={me:mkP('OP02-093',false),cpu:mkP('OP11-041',true)}; G.active='me';
+    { const me=G.players.me; me.leader.attachedDon=1;
+      const v=I('OP15-067','cpu'); G.players.cpu.chars=[v]; const p0=power(me.leader); // OP15-067=コスト1→-1で0
+      await runFx(me.leader.base.fx.act.fx,{self:me.leader,side:'me'});
+      ok(power(me.leader)===p0+1000, 'OP02-093 act: 相手コスト-1で0→自分+1000'); }
+    // OP03-022 アーロン: onAttack ドン×2＆①→手札からコスト4以下トリガー持ちキャラ登場
+    G.players={me:mkP('OP03-022',false),cpu:mkP('OP11-041',true)}; G.active='me';
+    { const me=G.players.me; me.leader.attachedDon=2; me.don.active=1; me.don.rested=0;
+      C['__trchar__']={no:'__trchar__',name:'トリガー持ち',type:'CHAR',color:[],cost:3,power:4000,counter:1000,traits:[],fx:{trigger:[{op:'draw','n':1}]}};
+      const tc=mkSyn('__trchar__',C['__trchar__']); me.hand=[tc];
+      await runFx(me.leader.base.fx.onAttack,{self:me.leader,side:'me'});
+      ok(me.chars.includes(tc) && me.don.rested===1, 'OP03-022 onAttack: ドン×2＆①で手札のトリガー持ちを登場');
+      delete C['__trchar__']; }
   }catch(e){ console.log('EXCEPTION:', e.message); fail++; }
   console.log('Phase3 fxテスト: pass='+pass+' fail='+fail);
   process.exit(fail?1:0);
