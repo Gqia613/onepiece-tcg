@@ -10,7 +10,7 @@
       if (P.isCPU) sac = P.chars.slice().sort((a, b) => scoreChar(a) - scoreChar(b))[0];
       else sac = await chooseCard(side, P.chars, '場が5体です。トラッシュに送るキャラを選択', 'ownSmall', optional);
       if (!sac) return false; // 人間がキャンセル
-      P.don.active += sac.attachedDon; removeChar(sac); P.trash.push(reset(sac));
+      removeCharTo(sac, P.trash);
       flog(side, `「${sac.base.name}」をトラッシュに送った`);
       render();
       return true;
@@ -68,8 +68,10 @@
       await checkAllyLeave(card.owner, card); // 自分のキャラが場を離れた時のリーダー誘発
       render();
     }
-    function bounceCard(card) { const ow = G.players[card.owner]; ow.don.active += card.attachedDon; removeChar(card); ow.hand.push(reset(card)); }
+    function bounceCard(card) { removeCharTo(card, G.players[card.owner].hand); }
     function removeChar(card) { const ow = G.players[card.owner]; const i = ow.chars.indexOf(card); if (i >= 0) ow.chars.splice(i, 1); if (ow.stage === card) ow.stage = null; }
+    // キャラを場から取り除き、付与ドンを持ち主のアクティブに戻して destPile に裏向き(reset)で置く（除去/コスト/バウンス共通）
+    function removeCharTo(card, destPile) { G.players[card.owner].don.active += card.attachedDon || 0; removeChar(card); destPile.push(reset(card)); }
 
     /* ---------- ドロー / 敗北 ---------- */
     // ブルック等「デッキ0でも即敗北せず、0枚になったターン終了時に敗北」

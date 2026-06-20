@@ -127,7 +127,7 @@
           if (op.condLeader && !checkCond(op.condLeader, side, self)) break;
           const cands = oppChars(side, opFilter(op));
           const t = await chooseCard(side, cands, `デッキ下に送る相手キャラを選択`, 'oppBig', op.optional);
-          if (t && !(await protectFromEffect(t, 'deckBottom'))) { const ow = G.players[t.owner]; ow.don.active += t.attachedDon; removeChar(t); ow.deck.push(reset(t)); flog(side, `「${t.base.name}」をデッキ下へ`); await checkAllyLeave(t.owner, t); }
+          if (t && !(await protectFromEffect(t, 'deckBottom'))) { removeCharTo(t, G.players[t.owner].deck); flog(side, `「${t.base.name}」をデッキ下へ`); await checkAllyLeave(t.owner, t); }
           break;
         }
         case 'restChar': {
@@ -318,7 +318,7 @@
           if (P.isCPU) sac = cands.slice().sort((a, b) => scoreChar(a) - scoreChar(b))[0];
           else sac = await chooseCard(side, cands, 'トラッシュに置くキャラを選択（効果のコスト）', 'ownSmall', true);
           if (!sac) break;
-          P.don.active += sac.attachedDon; removeChar(sac); P.trash.push(reset(sac)); flog(side, `「${sac.base.name}」をトラッシュに置いた`);
+          removeCharTo(sac, P.trash); flog(side, `「${sac.base.name}」をトラッシュに置いた`);
           await runFx(op.then, ctx);
           break;
         }
@@ -426,7 +426,7 @@
           if (!cands.length) break;
           if (!(await confirmUse(side, '自キャラをデッキ下', '自分のキャラ1枚をデッキの下に置いて効果を使いますか？', '置いて使う'))) break;
           const t = P.isCPU ? cands.slice().sort((a, b) => scoreChar(a) - scoreChar(b))[0] : await chooseCard(side, cands, 'デッキ下に置くキャラを選択（コスト）', 'ownSmall', true);
-          if (!t) break; P.don.active += t.attachedDon; removeChar(t); P.deck.push(reset(t)); flog(side, `「${t.base.name}」をデッキの下に置いた`);
+          if (!t) break; removeCharTo(t, P.deck); flog(side, `「${t.base.name}」をデッキの下に置いた`);
           await runFx(op.then, ctx); break;
         }
         // 自分のデッキの上 n枚をトラッシュに置くコスト（任意ミル）。払えた時 then 実行
@@ -684,7 +684,7 @@
           // このキャラ(p)自身をKO(代わりにトラッシュへ)して target を守る。p===target は不可
           if (p === target) continue;
           if (!(await confirmUse(target.owner, `【${p.base.name}】身代わり`, `「${p.base.name}」をKOして「${target.base.name}」を守りますか？`, '守る（このキャラをKO）', '守らない'))) continue;
-          ow.don.active += p.attachedDon; removeChar(p); ow.trash.push(reset(p));
+          removeCharTo(p, ow.trash);
           flog(target.owner, `【${p.base.name}】自身をKOして「${target.base.name}」を守った`); return true;
         } else if (prot.pay === 'discardFromHand') {
           const f = prot.discardFilter || {};
@@ -709,7 +709,7 @@
           let sac;
           if (ow.isCPU) sac = others.slice().sort((a, b) => (power(a) - power(b)) || ((a.base.cost || 0) - (b.base.cost || 0)))[0]; // CPUは低価値キャラを犠牲
           else { sac = await chooseCard(target.owner, others, `「${target.base.name}」を守るためデッキ下に置くキャラを選択（守らないならスキップ）`, 'ownSmall', true); if (!sac) continue; }
-          ow.don.active += sac.attachedDon; removeChar(sac); ow.deck.push(reset(sac));
+          removeCharTo(sac, ow.deck);
           flog(target.owner, `【${p.base.name}】「${sac.base.name}」をデッキ下に置き「${target.base.name}」を守った`); return true;
         }
       }

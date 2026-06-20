@@ -278,7 +278,7 @@
           // 盤面が埋まっている：最弱キャラより十分強い時だけ入れ替え（無駄な入れ替えはしない）
           const worst = P.chars.slice().sort((a, b) => scoreChar(a) - scoreChar(b))[0];
           if (!worst || scoreChar(c) <= scoreChar(worst) + 1) break;
-          P.don.active += worst.attachedDon; removeChar(worst); P.trash.push(reset(worst));
+          removeCharTo(worst, P.trash);
           flog(side, `「${worst.base.name}」をトラッシュに送った`);
         }
         payDon(side, effCost(side, c)); P.hand.splice(P.hand.indexOf(c), 1);
