@@ -181,6 +181,10 @@
         }
         case 'powerMod': {
           const dur = op.battle ? 'battle' : durTag(op.duration, 'turnEnd');
+          if (op.target === 'self') { // 「このキャラは…パワー+N」= ctx.self自身に付与（選択なし）
+            if (self) { const amt = op.perAttachedDon ? (op.amount * (self.attachedDon || 0)) : op.amount; if (amt) { addBuff(self, amt, dur); floatOn(self.uid, `${amt > 0 ? '+' : ''}${amt}`, amt > 0 ? 'buff' : 'dmg'); } }
+            break;
+          }
           const targetSide = op.side === 'self' ? side : o;
           if (op.all) { // 条件一致の対象（自分側 or 相手側）全てにパワー±
             let cands = op.side === 'self' ? (op.leader ? [P.leader, ...P.chars] : P.chars).filter(c => matchFilter(c, opFilter(op))) : oppChars(side, opFilter(op));

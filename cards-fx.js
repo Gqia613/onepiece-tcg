@@ -33,6 +33,10 @@ window.CARD_FX = {
   // ST05-004 ウタ:【ブロック時】ドン‼-1：相手のコスト5以下のキャラ1枚までを、レストにする。
   "ST05-004": {"onBlock":[{"op":"donMinus","n":1},{"op":"restChar","side":"opp","maxCost":5,"count":1,"optional":true}]},
   "ST05-004_r1": {"onBlock":[{"op":"donMinus","n":1},{"op":"restChar","side":"opp","maxCost":5,"count":1,"optional":true}]},
+  // OP01-111 ブラックマリア:【ブロック時】ドン‼-1：このターン中、このキャラはパワー+1000。
+  "OP01-111": {"onBlock":[{"op":"donMinus","n":1},{"op":"powerMod","target":"self","amount":1000}]},
+  // OP05-047 バジル・ホーキンス:【ブロック時】自分の手札が3枚以下なら1ドロー。その後このキャラはこのバトル中パワー+1000。
+  "OP05-047": {"onBlock":[{"op":"cond","check":{"selfHandAtMost":3},"then":[{"op":"draw","n":1},{"op":"powerMod","target":"self","amount":1000,"battle":true}]}]},
 "OP15-067": {"onPlay":[{"op":"donMinus","n":1},{"op":"draw","n":1}]},
   "OP15-061": {"onPlay":[{"op":"donMinus","n":1},{"op":"draw","n":1}],"onAttack":[{"op":"powerMod","side":"opp","amount":-1000,"count":1,"cond":"don<=6"}]},
   "OP15-066": {"onPlay":[{"op":"donMinus","n":1},{"op":"draw","n":1}],"onAttack":[{"op":"scry","n":2,"cond":"don<=6"}]},

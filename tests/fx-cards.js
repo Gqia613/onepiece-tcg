@@ -507,6 +507,11 @@ humanPick=function(c){return Promise.resolve((c||[])[0]||null);};
       const tgt=I('OP15-067','cpu'); tgt.rested=false; G.players.cpu.chars=[tgt];
       const uta=I('ST05-004','me'); await runFx(uta.base.fx.onBlock,{self:uta,side:'me',attacker:I('OP15-067','cpu')});
       ok(tgt.rested===true && donTotal('me')===2, 'ST05-004 onBlock: ドン-1で相手コスト5以下キャラをレスト'); }
+    // OP01-111 ブラックマリア: powerMod target:self（このキャラ自身に+1000）＋ドン-1
+    G.players={me:mkP('OP13-002',false),cpu:mkP('OP11-041',true)}; G.active='me';
+    { const me=G.players.me; me.don.active=2; const bm=I('OP01-111','me'); me.chars=[bm]; const p0=power(bm);
+      await runFx(bm.base.fx.onBlock,{self:bm,side:'me',attacker:I('OP15-067','cpu')});
+      ok(power(bm)===p0+1000 && donTotal('me')===1, 'OP01-111 onBlock: ドン-1で自身に+1000(powerMod target:self)'); }
   }catch(e){ console.log('EXCEPTION:', e.message); fail++; }
   console.log('Phase3 fxテスト: pass='+pass+' fail='+fail);
   process.exit(fail?1:0);
