@@ -838,6 +838,11 @@ humanPick=function(c){return Promise.resolve((c||[])[0]||null);};
     // バグ修正: 2色リーダーのライフをdefで5に誤っていた→公式=4。全デッキリーダーのlife整合
     ok(C['OP16-080'].life===4 && C['OP11-041'].life===4 && C['OP14-041'].life===4, '黒黄ティーチ/ナミ/ハンコック(2色)のライフ=4(公式準拠)');
     ok(C['OP15-058'].life===5 && C['OP15-002'].life===4 && C['OP13-002'].life===3, '6デッキリーダーのライフ: エネル5/ルーシー4/エース3も公式準拠');
+    // バグ修正: def()の数値ずれを一掃（全def札のcost/power/counter/lifeが公式CARD_DBと一致）
+    { const DB=(typeof window!=='undefined'&&window.CARD_DB)||[]; let bad=0;
+      for(const k in C){ const c=C[k]; if(!c||c.dataOnly)continue; const off=DB.find(x=>x&&x.no===c.no); if(!off)continue;
+        for(const f of ['cost','power','counter','life']){ if(c[f]!=null&&off[f]!=null&&c[f]!==off[f]) bad++; } }
+      ok(bad===0, 'def札のcost/power/counter/lifeが公式CARD_DBと一致(数値ずれ0)'); }
   }catch(e){ console.log('EXCEPTION:', e.message); fail++; }
   console.log('Phase3 fxテスト: pass='+pass+' fail='+fail);
   process.exit(fail?1:0);

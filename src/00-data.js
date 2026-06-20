@@ -101,7 +101,7 @@
       no: 'OP15-053', name: 'レベッカ', color: ['青'], type: 'CHAR', cost: 1, power: 0, counter: 1000, traits: ['ドレスローザ'], condBlocker: 'donX1', text: 'ドン付与1以上で【ブロッカー】。【登場時】デッキ上3枚からドレスローザ1枚'
     });
     def({
-      no: 'OP10-045', name: 'キャベンディッシュ', color: ['青'], type: 'CHAR', cost: 2, power: 3000, counter: 1000, traits: ['美しき海賊団'], text: '【登場時】1ドロー、手札1枚をデッキ下'
+      no: 'OP10-045', name: 'キャベンディッシュ', color: ['青'], type: 'CHAR', cost: 4, power: 6000, counter: 0, traits: ['美しき海賊団'], text: '【登場時】1ドロー、手札1枚をデッキ下'
     });
     def({
       no: 'OP15-047', name: 'サンジ', color: ['青'], type: 'CHAR', cost: 3, power: 4000, counter: 1000, blocker: true, traits: ['ドレスローザ', '麦わらの一味'], text: '【ブロッカー】【登場時】自キャラ1枚に【ブロック不可】'
@@ -121,7 +121,7 @@
       text: '【メイン】2ドロー手札1枚捨て、コスト4以下のドレスローザを登場'
     });
     def({
-      no: 'OP04-056', name: 'ゴムゴムの業火拳銃', color: ['青'], type: 'EVENT', cost: 4, traits: ['麦わらの一味'],
+      no: 'OP04-056', name: 'ゴムゴムの業火拳銃', color: ['青'], type: 'EVENT', cost: 6, traits: ['麦わらの一味'],
       text: '【メイン】相手コスト7以下を手札に戻す 【カウンター】+2000'
     });
     def({
@@ -149,36 +149,36 @@
       no: 'OP13-016', name: 'モンキー・D・ガープ', color: ['赤'], type: 'CHAR', cost: 1, power: 2000, counter: 1000, traits: ['海軍'], text: '【登場時】デッキ上4枚からコスト3以上1枚を手札に'
     });
     def({
-      no: 'ST22-002', name: 'イゾウ', color: ['青'], type: 'CHAR', cost: 1, power: 0, counter: 0, traits: ['ワノ国', '元白ひげ海賊団'], text: '【登場時】デッキ上5枚から白ひげ海賊団1枚を手札に'
+      no: 'ST22-002', name: 'イゾウ', color: ['青'], type: 'CHAR', cost: 1, power: 0, counter: 1000, traits: ['ワノ国', '元白ひげ海賊団'], text: '【登場時】デッキ上5枚から白ひげ海賊団1枚を手札に'
     });
     def({
       no: 'PRB02-008', name: 'マルコ', color: ['青'], type: 'CHAR', cost: 4, power: 6000, blocker: true, traits: ['ワノ国', '元白ひげ海賊団'], text: '【ブロッカー】【KO時】2ドロー'
     });
     def({
-      no: 'OP13-043', name: 'お玉', color: ['青'], type: 'CHAR', cost: 5, power: 6000, traits: ['ワノ国'],
+      no: 'OP13-043', name: 'お玉', color: ['青'], type: 'CHAR', cost: 1, power: 0, traits: ['ワノ国'],
       text: '【登場時】ライフ3以下:2ドロー手札1枚捨て、リーダーにドン1付与'
     });
     def({
-      no: 'OP13-054', name: 'ヤマト', color: ['青'], type: 'CHAR', cost: 6, power: 7000, traits: ['ワノ国'],
+      no: 'OP13-054', name: 'ヤマト', color: ['青'], type: 'CHAR', cost: 5, power: 6000, traits: ['ワノ国'],
       text: '【登場時】相手コスト5以下を手札に戻す、リーダーにドン1付与。【ドン×1】+1000'
     });
     def({
-      no: 'ST23-001', name: 'ウタ', color: ['赤'], type: 'CHAR', cost: 8, costMod: { cond: 'leaderRB', amount: -4 }, power: 8000, blocker: true, traits: ['FILM'],
+      no: 'ST23-001', name: 'ウタ', color: ['赤'], type: 'CHAR', cost: 6, costMod: { cond: 'leaderRB', amount: -4 }, power: 4000, blocker: true, traits: ['FILM'],
       text: 'リーダー赤/青でコスト-4。【ブロッカー】【登場時】相手コスト6以下をデッキ下'
     });
     def({
-      no: 'OP08-047', name: 'ジョズ', color: ['青'], type: 'CHAR', cost: 8, costMod: { cond: 'leaderWB', amount: -4 }, power: 8000, blocker: true, traits: ['白ひげ海賊団'], text: '白ひげリーダーでコスト-4。【ブロッカー】【登場時】相手コスト4以下を手札に戻す'
+      no: 'OP08-047', name: 'ジョズ', color: ['青'], type: 'CHAR', cost: 6, costMod: { cond: 'leaderWB', amount: -4 }, power: 7000, blocker: true, traits: ['白ひげ海賊団'], text: '白ひげリーダーでコスト-4。【ブロッカー】【登場時】相手コスト4以下を手札に戻す'
     });
     def({
       no: 'OP13-042', name: 'エドワード・ニューゲート', color: ['青'], type: 'CHAR', cost: 10, power: 12000, blocker: true, traits: ['四皇', '白ひげ海賊団'],
       text: '【ブロッカー】【登場時】2ドロー手札1枚捨て、リーダーとキャラにドン2ずつ付与'
     });
     def({
-      no: 'OP08-043', name: 'エドワード・ニューゲート', color: ['赤'], type: 'CHAR', cost: 9, power: 10000, traits: ['四皇', '白ひげ海賊団'],
+      no: 'OP08-043', name: 'エドワード・ニューゲート', color: ['赤'], type: 'CHAR', cost: 10, power: 12000, traits: ['四皇', '白ひげ海賊団'],
       text: '【登場時】自リーダー+2000(次の自ターンまで)。【ドン×2】【アタック時】相手3000以下KO'
     });
     def({
-      no: 'OP09-118', name: 'ゴール・D・ロジャー', color: ['赤'], type: 'CHAR', cost: 10, power: 12000, rush: true, traits: ['ロジャー海賊団'],
+      no: 'OP09-118', name: 'ゴール・D・ロジャー', color: ['赤'], type: 'CHAR', cost: 10, power: 13000, rush: true, traits: ['ロジャー海賊団'],
       text: '【速攻】アタック時ブロッカー不可。【登場時】自ライフ上1枚を手札に'
     });
     def({
@@ -186,7 +186,7 @@
       text: '【起動】【ターン1】リーダーにドン1付与し、自身【速攻】'
     });
     def({
-      no: 'ST22-015', name: 'おれァ“白ひげ”だァア!!!!', color: ['青'], type: 'EVENT', cost: 2, traits: ['白ひげ海賊団'],
+      no: 'ST22-015', name: 'おれァ“白ひげ”だァア!!!!', color: ['青'], type: 'EVENT', cost: 8, traits: ['白ひげ海賊団'],
       text: '【メイン】手札の「エドワード・ニューゲート」を登場（登場時効果なし）'
     });
     def({
@@ -200,7 +200,7 @@
       text: '【ドン×1】【自分のターン中】自分のキャラが登場した時、1ドローし手札1枚をデッキ下（ターン1）'
     });
     def({
-      no: 'OP11-054', name: 'ナミ', color: ['青'], type: 'CHAR', cost: 5, power: 5000, counter: 1000, blocker: true, traits: ['麦わらの一味'], text: '【ブロッカー】【登場時】3ドロー、手札2枚をデッキ上か下'
+      no: 'OP11-054', name: 'ナミ', color: ['青'], type: 'CHAR', cost: 5, power: 6000, counter: 1000, blocker: true, traits: ['麦わらの一味'], text: '【ブロッカー】【登場時】3ドロー、手札2枚をデッキ上か下'
     });
     def({
       no: 'EB03-053', name: 'ナミ', color: ['黄'], type: 'CHAR', cost: 5, power: 6000, counter: 1000, traits: ['麦わらの一味'],
@@ -243,7 +243,7 @@
       text: '【登場時】トラッシュからコスト4以下のスリラーバーク1枚をライフ上に加えるか登場 【トリガー】トラッシュからコスト4以下のキャラ1枚を登場'
     });
     def({
-      no: 'OP15-113', name: 'ロロノア・ゾロ', color: ['黄'], type: 'CHAR', cost: 4, power: 6000, counter: 1000, traits: ['麦わらの一味'], text: '【登場時】自分の手札1枚を捨てられる:デッキの上から1枚をライフの上に加える'
+      no: 'OP15-113', name: 'ロロノア・ゾロ', color: ['黄'], type: 'CHAR', cost: 4, power: 6000, counter: 0, traits: ['麦わらの一味'], text: '【登場時】自分の手札1枚を捨てられる:デッキの上から1枚をライフの上に加える'
     });
     def({
       no: 'OP14-112', name: 'ボア・ハンコック', color: ['黄'], type: 'CHAR', cost: 9, power: 10000, traits: ['王下七武海', '九蛇海賊団'],
@@ -306,7 +306,7 @@
       text: '自分の場のドン6枚以上で【速攻】。相手がイベントかブロッカーを発動した時、自分のライフ上1枚を公開しコスト1につきこのターン中パワー+1000'
     });
     def({
-      no: 'OP07-054', name: 'マーガレット', color: ['青'], type: 'CHAR', cost: 3, power: 2000, counter: 2000, blocker: true, traits: ['アマゾン・リリー'], text: '【ブロッカー】【登場時】カード1枚を引く'
+      no: 'OP07-054', name: 'マーガレット', color: ['青'], type: 'CHAR', cost: 3, power: 2000, counter: 0, blocker: true, traits: ['アマゾン・リリー'], text: '【ブロッカー】【登場時】カード1枚を引く'
     });
     def({
       no: 'OP14-101', name: 'オーズ', color: ['黄'], type: 'CHAR', cost: 8, power: 10000, counter: 1000, traits: ['巨人族', 'スリラーバーク海賊団'],
