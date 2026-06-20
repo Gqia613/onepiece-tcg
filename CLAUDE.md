@@ -25,7 +25,8 @@
 >   40-ui-render.js   # img系・log/toast/アニメ・render とHTMLビルダ群
 >   50-input-cpu-ai.js# プロンプト/入力ハンドラ・CPUヒューリスティック・AI連携(callClaude)
 >   60-screens-init.js# デッキ選択・モーダル/RULES_HTML・デッキビルダー・onHover/init/DOMContentLoaded登録
->   70-ai.js          # ★強いCPUのAI基盤（前向きモデル）。cloneGameState/loadGameState。UI不要だが探索/学習の土台
+>   70-ai.js          # ★強いCPU基盤＋L2決定化MCTS＋L3学習eval。clone/load/determinize/mctsTurn/evalFeatures/evalWinProb・AGENTS.mcts。詳細 docs/ai-design.md
+>   ai-weights.js     # ★L3: 自己対戦で学習した盤面評価の重み(window.AI_WEIGHTS)。tools/selfplay-train.js が自動生成（手編集禁止・nullなら手作りevalにフォールバック）
 > cards.js          # window.CARD_DB（全カードデータ 3000枚超。dataOnly）。tools/scrape-cards.js で公式から生成
 > cards-fx.js       # window.CARD_FX（★全カードの効果fxを一元化。番号→fx の対応表。264枚）
 > CLAUDE.md                   # この指示書
@@ -36,6 +37,9 @@
 >   SKILL.md, *_guide.md           # デッキ構築スキル・攻略ガイド
 > tools/
 >   scrape-cards.js  # 公式カードリストから cards.js を再生成
+>   selfplay-train.js # ★L3学習: 自己対戦→盤面評価をロジ回帰で学習→src/ai-weights.js 生成。OPCG_DECKS='teach,enel'で対戦を限定（特化学習）/OPCG_GAMES/OPCG_MCTS_GAMES
+>   measure-matchup.js # ★マッチアップ精密測定: 同一seedのペア比較でAGENT(mcts/vlook/heur2)の実効果を大Nで測る（改善/退行flip＋符号検定）。N=30のノイズで判定不能を解消
+>   analyze-heuristic.js # ★負け局の自動分析: heuristic自己対戦を回し勝側vs負側で各指標(手札残/未使用ドン/盤面/攻撃/打ち損ね)を比較し弱点候補を出す（改良仮説の種）
 > tests/
 >   test.js          # 全自動検証（これを最初に回す。8ステップ）
 >   _load-app.js     # ★本体JS読み込み共有ヘルパー。index.html記載の<script src="src/...">順でsrc/*.jsを連結。全ハーネスが使用
@@ -47,8 +51,10 @@
 >   custom-decks.js  # 新効果カード中心のカスタムデッキでCPU対戦30戦（フリーズ/二重アタック検出＋新カード稼働の証跡）
 >   deck-builder.js  # デッキビルダーの検証(50枚/色/枚数制限)＋JSON入出力の往復
 >   arena.js         # ★エージェント対戦アリーナ（node単体実行）。2エージェントをN戦・席入替・seed固定で勝率/Elo測定（強さの正＝測定土台）
+>   ai-core.js       # ★強いCPU(AI)基盤の回帰: RNG再現/clone往復/特徴量・学習重み整合/MCTS完走（L1/L2/L3）
 > ```
-> `node tests/test.js` は8ステップ（構文／デッキ整合／CPU対CPU30戦／人間オートパイロット30戦／ユニット／Phase3効果／カスタムデッキCPU30戦／デッキビルダー検証）。
+> `node tests/test.js` は9ステップ（構文／デッキ整合／CPU対CPU30戦／人間オートパイロット30戦／ユニット／Phase3効果／カスタムデッキCPU30戦／デッキビルダー検証／AI基盤）。
+> AI学習: `node tools/selfplay-train.js`（自己対戦→評価関数を学習→`src/ai-weights.js`生成）。`node tests/arena.js`の「L2 MCTS」節で heuristic比の実効果を測定。
 >
 > **★重要（ファイル依存）**: `index.html` は単体では動かない。`cards.js`・`cards-fx.js`・`css/styles.css`・`src/*.js` 一式が**同じ階層構造**で揃っている必要がある（ブラウザ・テストとも）。テストは `tests/_load-app.js` が index.html の `<script src="src/...">` 順に `src/*.js` を連結し、cards.js/cards-fx.js を前置して実行する。
 >
@@ -190,6 +196,9 @@ node -e 'const fs=require("fs");fs.writeFileSync("/tmp/app.js",fs.readFileSync("
 ---
 
 ## 8. 既知のギャップ / ロードマップ（設計図 §10 と対応）
+
+- ✅ **強いCPU（AI）**: L1基盤（シード可能`rng()`/`cloneGameState`/`loadGameState`/seam`AGENTS`/アリーナ`tests/arena.js`）＋ **L2 決定化MCTS**（`src/70-ai.js`・`AGENTS.mcts`）＋ **L3 評価関数の自己対戦学習（🧪experimental・既定off）**（`tools/selfplay-train.js`→`src/ai-weights.js`・`evalFeatures`(17特徴・相手リーダーone-hot)/`evalWinProb`(リーダー別)）を実装。**★非決定性バグ修正後の決定的測定での正直な結論**: **確実に強いのは「よく調整された heuristic」**。L2決定化MCTSの対heuristicは**小さく不安定**（決定的測定で enelミラー+7.5/teachミラー-2.5/teach対enel±0pt＝heuristicが既に強くMCTSはめったに別手を選ばない）。L3学習evalは**手作りと差なし(±0〜2.5pt・測定限界以下)**→`AI_WEIGHTS=null`で手作りeval既定。**以前の「+6.7〜10pt」は下記の非決定性バグによる測定の幻だった**。設計と知見は `docs/ai-design.md`。**★ハマった罠（再発防止）**: per-action探索はmaskingで効かない／**先読み後の状態復元は`loadGameState(複製)`でなく“元オブジェクト参照”を戻す**（識別子差し替えで実プレイが劣化）／rng隔離(`rngState`)／ロールアウトは`_noChain`完全await（残留async防止）／seed帯の席バイアスは同一seedの h-vs-h基準を引いて評価／**特徴量を安易に増やすと逆効果**（17→23で検証精度同等でもarenaは lucy +10pt→0pt に悪化。線形evalがheuristic分布に過適合＋相手手札ベース特徴は決定化でノイズ注入→17に差し戻し済。**「検証精度≠強さ・アリーナが正」**、特徴はarena確認後に1つずつ）。**★★最重要バグ＝MCTSが非決定的だった**：同一プロセスで複数局を連続実行すると前局の投げっぱなし`beginTurn`連鎖の保留タスクが次局に持ち越し汚染（同一seedでも勝敗が変わる・自己対戦学習データも水増し汚染）→ **今までの測定値(+10pt等)が全て信用できなかった真因**。**解決＝各局終了後にイベントループをドレイン**（`for(k<40)await setImmediate`）。`tools/measure-matchup.js`/`selfplay-train.js`/`tests/arena.js`に導入済。**複数局を回す新ハーネスは必ずドレインを入れる**。対戦相手としては無害（毎回違う手＝良相手）、問題は測定/学習の再現性だけ。改善判定は **`tools/measure-matchup.js` の同一seedペア比較＋符号検定**で（N=30はノイズ±9%で判定不能）。MCTSは1手数秒なので対人UIでは任意有効化（`G.players.cpu.agent='mcts'`）。**heuristic改良の測定駆動ループ**: `AGENTS.heur2`（=heuristic＋`isHeur2(side)`分岐で実験改良）を `OPCG_AGENT=heur2 node tools/measure-matchup.js` でA/B（改善/退行flip＋符号検定）→有意に勝つ時だけ既定化。**★採用済の改良**: エネルのリーダー「レストのドン付与」先を**アタックできる役へ**修正（旧:最大パワーをアタック可否無視で選び当ターン死に）＝**全6対面+~6pt・合算p<0.0001で有意**（`src/30-flow-battle.js` leaderActivate enel・回帰テストは`tests/ai-core.js`）。**仮説源はユーザーのプレイ観察**が最良（自動分析`tools/analyze-heuristic.js`は補助）。却下例: aggression(0flip)/KO価値(7が最適)/mulligan(発火せず)。詳細 docs/ai-design.md §7.1。policy学習(vlook=価値貪欲)/value学習も heuristic 未満（価値貪欲は価値誤差を突いて自滅）。本当に超えるのは AlphaZero規模(Python/GPU)。
+
 
 - ✅(部分): コストの統一 → `revealCost`/`discardCost`/`restDonCost`/`trashOwnCharCost`/`trashSelfCost`/`bounceOwnCharCost`/`restOwnAsCost` の `{op,..,then}` 形で統一済。完全な単一`payCost()`化は将来課題。
 - ✅: タイミングフック → `onOppAttack`/`onTurnEnd`/`onAllyLeave`/`onReviveFromTrash`/**`onBlock`（【ブロック時】）**/**`onAllyEnter`（リーダーの【キャラ登場時】）** を追加済。`onAllyEnter`は`summon`内の`checkAllyEnter`で誘発（`when:'selfTurn'|'oppTurn'`/`filter`/`cond`/`once`対応）。**ナミOP11-041・ハンコックOP14-041の登場時ロジックをハードコードからデータ駆動fxへ移行済**（`namiOnEnter`関数は削除）。リーダー固有ロジックの残りハードコード（lucy/aceの被ダメ時カウンター反応・enelの起動メイン・teachのコスト+1静的）は今後同様にfxフック化していく。**同名・別Noの未実装リーダーを番号キーfxで実装開始**（curatedの短縮キーと独立＝名前衝突しない）: OP15-098ルフィ(空島=leaveProtect静的)/ST29-001ルフィ(リーダーのonAttack)/OP16-022ルフィ(fx.act donActivate＋allSelfChar)/OP16-001エース(fx.act giveKeyword・orフィルタ)。**リーダーも`fx.act`で起動メイン可**（人間=openOwnMenu、CPU=act loopに`P.leader`追加済）。**複合リーダー5枚も新フックで実装完了**: OP03-040/P-117ナミ(static `deckOutWin`=デッキ0でlose(opp)＝勝利／`onLeaderHitLife`=このリーダーのアタックでライフダメージ時に`deckTrashCost`で自爆ミル)・OP07-038ハンコック(`onAllyLeave`に`cause:'ownEffect'`＋`when`追加。自己除去コストop群がcause付きでcheckAllyLeave発火)・OP05-098エネル(`onLifeZero`=dealLeaderDamageでライフ0時に補充＋捨て)・OP11-040ルフィ(`onTurnStart`=beginTurnのメイン直前。search簡略=残りはデッキ下)・OP13-001ルフィ(リーダーの`onOppAttack`＝declareAttackのループに`P.leader`追加＋新op`restDonForBuff`)。新condは`activeDonAtMost`/`activeDonAtLeast`。**リーダーの`onAttack`/`onOppAttack`もキャラ同様に誘発する**（declareAttackがattacker/防御側leaderを走査）。onBlockは`declareAttack`のブロック宣言後・カウンター前に誘発（`{self:blocker,side:dSide,attacker}`）。**【ブロック時】カード18枚すべて実装済**（モネOP05-036(+_r1)/ヘルメッポOP12-033/ヒナOP02-110/戦桃丸EB04-053/ベラミーOP10-077/ジンベエOP01-014/キラーOP01-039(+_r1)/ハンコックOP01-078(+_r1・onAttack兼)/ウタST05-004(+_r1)/ブラックマリアOP01-111/ホーキンスOP05-047/シュライヤOP06-009/しのぶST09-007/クロコダイルST03-003）。複合条件は`{and:[...]}`＋既存obj cond(`selfCharCount`/`selfHandAtMost`)。実装中に追加したprimitive: **`powerMod target:'self'`**（このキャラ自身にaddBuff）、**`lifeCost pos:'choose'`**（ライフ上/下を選んで手札）、**onAttack/onBlockの`once:'turn'`ゲート**（共有フラグ`_onceAtkBlkTurn`で【ターン1回】＝両タイミング横断）。クロコダイルST03-003は公式文「コスト2以下のキャラ」が相手/自分の明記なし→相手除去用途で`deckBottom`(相手専用)実装（自キャラ送りは利得無し）。

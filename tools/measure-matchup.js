@@ -1,0 +1,96 @@
+#!/usr/bin/env node
+/* tools/measure-matchup.js — 指定マッチアップでMCTSの実効果を【ペア比較・大N】で精密測定する。
+   使い方: node tools/measure-matchup.js                （既定: teach と enel を相互対戦・各N=60）
+           OPCG_HERO=teach OPCG_VILLAIN=enel OPCG_N=80 node tools/measure-matchup.js
+   なぜペア比較か: 同一seed(=同じ運)で「heuristic」と「mcts」を打ち比べ、勝敗の食い違い(flip)だけを数える。
+     運の分散が相殺されN=数十でも差が見える（独立N=数百相当）。N=30の「ノイズで判定不能」を解消する道具。
+   出力: 各heroについて h-h勝率 / mcts勝率 / 実効果 / ペア(mctsが勝ちheuristicが負け=改善, 逆=退行) / 二項片側p値。
+   ★mcts局は重い(~8s)。harness制限(590s)に収まるよう CHUNK 件ずつ分割実行して集計する。
+     学習eval(src/ai-weights.js)があればmctsは自動でそれを使う＝学習前後をこの道具で同条件比較できる。 */
+const { runHarness } = require('./../tests/_load-app');
+
+const PAIRS = process.env.OPCG_HERO
+  ? [[process.env.OPCG_HERO, process.env.OPCG_VILLAIN || 'enel']]
+  : [['teach', 'enel'], ['enel', 'teach']];   // 既定: ティーチ視点・エネル視点の両方
+const N = +(process.env.OPCG_N || 60);
+const AGENT = process.env.OPCG_AGENT || 'mcts';   // 評価するhero方策（mcts / vlook 等）。heuristicと同一seedで比較
+const SEED0 = +(process.env.OPCG_SEED0 || 600000);
+const CHUNK = +(process.env.OPCG_CHUNK || 50);   // 1harnessあたりの試合数（mcts ~8s なので 50×8=400s<590s）
+
+function chunkHarness(hero, villain, s0, n) {
+  return String.raw`
+process.on('unhandledRejection', e => { console.error('UNHANDLED', e && e.stack || e); process.exit(1); });
+G.aiOn = false;
+showPrompt = function (cfg) { const t = cfg.title || ''; let v;
+  if (t.indexOf('マリガン') >= 0) v = cpuShouldMulligan(G.players.me);
+  else { const o = cfg.opts || []; const x = o.find(z => z.primary) || o[0]; v = x ? x.v : undefined; }
+  if (cfg.onPick) cfg.onPick(v); return Promise.resolve(v); };
+humanPick = function (c) { return Promise.resolve(c[0] || null); };
+const HERO = ` + JSON.stringify(hero) + `, VILLAIN = ` + JSON.stringify(villain) + `, S0 = ` + s0 + `, N = ` + n + `, AGENT = ` + JSON.stringify(AGENT) + `;
+const SAVED_W = (typeof window !== 'undefined') ? window.AI_WEIGHTS : null;  // ロード済み学習重み（あれば）
+const HAS_LEARNED = !!(SAVED_W && (SAVED_W.byLeader || SAVED_W.w));
+// hero=me(評価対象), villain=cpu(常にheuristic)。heroAgent/学習eval使用 を切替。勝者の席を返す。
+async function pg(seed, heroAgent, useLearned) {
+  if (typeof window !== 'undefined') window.AI_WEIGHTS = useLearned ? SAVED_W : null;  // mctsのeval切替
+  G.players = {}; G.winner = null; G.inGame = false;
+  seedRng(seed);
+  startGame(HERO, VILLAIN);
+  G.players.me.isCPU = true; G.players.me.agent = heroAgent; G.players.cpu.agent = 'heuristic';
+  let it = 0; while (!(G.winner && !G._sim) && it < 5000000) { await new Promise(r => setImmediate(r)); it++; }
+  for (let k = 0; k < 40; k++) await new Promise(r => setImmediate(r));  // ★保留タスクを消化（次局に漏らさない＝再現性確保）
+  return G.winner === 'me';
+}
+(async () => {
+  // 同一seedで3アーム: heuristic / AGENT(手作りeval) / AGENT(学習eval)。学習無しならmLは省略。
+  let hWin = 0, mhWin = 0, mlWin = 0, imp = 0, reg = 0;     // imp/reg = 学習 vs 手作り のflip
+  let impH = 0, regH = 0;                                   // impH/regH = AGENT(手作り) vs heuristic のflip
+  for (let i = 0; i < N; i++) {
+    const seed = S0 + i;
+    const h = await pg(seed, 'heuristic', false);
+    const mh = await pg(seed, AGENT, false);               // hero方策（手作りeval）
+    if (h) hWin++; if (mh) mhWin++;
+    if (mh && !h) impH++; else if (!mh && h) regH++;        // 同一seedでAGENTが勝ちheuristicが負け=改善
+    if (HAS_LEARNED) {
+      const ml = await pg(seed, AGENT, true);              // hero方策（学習eval）
+      if (ml) mlWin++;
+      if (ml && !mh) imp++; else if (!ml && mh) reg++;
+    }
+  }
+  console.log('CHUNK ' + JSON.stringify({ hWin, mhWin, mlWin, imp, reg, impH, regH, n: N, learned: HAS_LEARNED }));
+  process.exit(0);
+})();
+`;
+}
+
+// 二項片側p値（improvements vs regressions の不一致ペアで符号検定）
+function signTestP(imp, reg) {
+  const n = imp + reg; if (n === 0) return 1;
+  const k = Math.min(imp, reg);
+  let p = 0; for (let i = 0; i <= k; i++) { let c = 0; const lg = x => { let s = 0; for (let j = 2; j <= x; j++) s += Math.log(j); return s; }; c = lg(n) - lg(i) - lg(n - i); p += Math.exp(c + n * Math.log(0.5)); }
+  return Math.min(1, 2 * p); // 両側
+}
+
+(async () => {
+  console.log('▶ マッチアップ精密測定（ペア比較・同一seed, N=' + N + ' /hero, eval=' + (require('fs').existsSync(require('path').join(__dirname, '..', 'src', 'ai-weights.js')) ? 'src/ai-weights.js' : 'なし') + '）');
+  for (const [hero, villain] of PAIRS) {
+    let hWin = 0, mhWin = 0, mlWin = 0, imp = 0, reg = 0, impH = 0, regH = 0, done = 0, learned = false;
+    while (done < N) {
+      const n = Math.min(CHUNK, N - done);
+      let out;
+      try { out = runHarness('measure', chunkHarness(hero, villain, SEED0 + done, n), { timeout: 590000 }); }
+      catch (e) { process.stdout.write((e.stdout || '') + (e.stderr || '')); process.exit(1); }
+      const m = out.match(/CHUNK (\{.*\})/); if (!m) { console.error('✗ chunk結果なし\n' + out); process.exit(1); }
+      const r = JSON.parse(m[1]); hWin += r.hWin; mhWin += r.mhWin; mlWin += r.mlWin; imp += r.imp; reg += r.reg; impH += r.impH || 0; regH += r.regH || 0; learned = learned || r.learned; done += n;
+    }
+    const effH = ((mhWin - hWin) / N * 100), pH = signTestP(impH, regH);
+    let line = '  ' + hero + ' vs ' + villain + ' (N=' + N + '): heuristic=' + (100 * hWin / N).toFixed(1) + '%  ' + AGENT + '=' + (100 * mhWin / N).toFixed(1)
+      + '%(対h ' + (effH >= 0 ? '+' : '') + effH.toFixed(1) + 'pt 改善' + impH + '/退行' + regH + ' p=' + pH.toFixed(3) + (pH < 0.05 ? '★' : '') + ')';
+    if (learned) {
+      const effL = ((mlWin - hWin) / N * 100), effLvsH = ((mlWin - mhWin) / N * 100), p = signTestP(imp, reg);
+      line += '  ' + AGENT + '学習=' + (100 * mlWin / N).toFixed(1) + '%(対h ' + (effL >= 0 ? '+' : '') + effL.toFixed(1) + 'pt)'
+        + '  | 学習 vs 手作り: ' + (effLvsH >= 0 ? '+' : '') + effLvsH.toFixed(1) + 'pt  改善=' + imp + ' 退行=' + reg + ' (符号検定 p=' + p.toFixed(3) + (p < 0.05 ? ' ★有意' : '') + ')';
+    }
+    console.log(line);
+  }
+  process.exit(0);
+})();

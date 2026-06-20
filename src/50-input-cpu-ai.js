@@ -5,10 +5,11 @@
     function showPrompt(cfg) {
       return new Promise(resolve => {
         G.promptState = {
-          title: cfg.title, text: cfg.text, opts: cfg.opts || [],
-          pick: v => { G.promptState = null; render(); if (cfg.onPick) cfg.onPick(v); resolve(v); }
+          title: cfg.title, text: cfg.text, opts: cfg.opts || [], cls: cfg.cls || '',
+          // プロンプトの表示/消去は盤面を再描画せず #promptHost だけ更新（クリックごとのちらつき防止）
+          pick: v => { G.promptState = null; renderPrompt(); if (cfg.onPick) cfg.onPick(v); resolve(v); }
         };
-        render();
+        renderPrompt();
       });
     }
     function promptPick(i) { const ps = G.promptState; if (!ps) return; const o = ps.opts[i]; if (o) ps.pick(o.v); }
@@ -65,10 +66,11 @@
       if (P.don.active < 1) { toast('アクティブなドンがありません'); return; }
       if (P.don.active === 1) { card.attachedDon++; P.don.active--; floatOn(card.uid, 'ドン+1', 'buff'); render(); return; }
       const max = P.don.active;
+      const base = power(card);
       const opts = [];
-      for (let i = 1; i <= max; i++)opts.push({ t: i + '枚' + (i === max ? ' (全部)' : ''), v: String(i), primary: i === max });
+      for (let i = 1; i <= max; i++)opts.push({ t: i + '枚 → P' + (base + i * 1000) + (i === max ? '（全部）' : ''), v: String(i), primary: i === max });
       opts.push({ t: 'やめる', v: '0', ghost: true });
-      const sel = await showPrompt({ title: card.base.name + ' にドン付与', text: '付与する枚数を選択（アクティブなドン: ' + max + '枚）', opts });
+      const sel = await showPrompt({ title: card.base.name + ' にドン付与', text: '付与する枚数を選択（現在 P' + base + ' ／ アクティブなドン ' + max + '枚・1枚=+1000）', opts });
       const n = parseInt(sel, 10) || 0;
       if (n > 0) { card.attachedDon += n; P.don.active -= n; floatOn(card.uid, 'ドン+' + n, 'buff'); flog('me', '「' + card.base.name + '」にドン' + n + '枚付与（パワー' + power(card) + '）'); render(); }
     }
@@ -76,6 +78,7 @@
       if (legalTargets('me').length === 0) { toast('攻撃できる対象がいません'); return; }
       G.attackSel = { attacker: card }; render(); toast('攻撃対象をクリック');
     }
+    function cancelAttackSel() { if (G.attackSel) { G.attackSel = null; render(); } }
     async function activateAbility(card) {
       if (isNegated(card)) { toast('このキャラの効果は無効化されている'); return; }
       const act = card.base.fx.act; const c = act.cost || {};
@@ -110,16 +113,26 @@
       }
     }
     function uiEndTurn() { if (G.busy || G.active !== 'me' || !G.myActable || G.promptState || G.pendingChoice) return; G.attackSel = null; G.busy = true; G.myActable = false; render(); endTurn('me'); }
-    function setTab(t) { G._tab = t; render(); }
+    function setTab(t) { // 部分更新：フル再描画せずパネルの表示切替のみ（ログのスクロール位置を保つ）
+      G._tab = t; const hintsActive = t !== 'log';
+      const hp = document.getElementById('hintsPanel'), lp = document.getElementById('logPanel');
+      if (!hp || !lp) { render(); return; }
+      hp.classList.toggle('hidden', !hintsActive); lp.classList.toggle('hidden', hintsActive);
+      const tabs = document.querySelectorAll('#side .tab');
+      if (tabs[0]) tabs[0].classList.toggle('active', hintsActive);
+      if (tabs[1]) tabs[1].classList.toggle('active', !hintsActive);
+      if (!hintsActive) { const box = document.getElementById('logbox'); if (box) box.scrollTop = box.scrollHeight; }
+    }
     function backToSelect() {
-      removeEndScreen();
-      G.inGame = false; G.winner = null; G.log = []; G._hints = null; G._aiIntent = null; G.attackSel = null; G.pendingChoice = null; G.promptState = null; G.busy = false; G.myActable = false;
+      removeEndScreen(); if (typeof clearBanner === 'function') clearBanner(); if (typeof clearPromptHost === 'function') clearPromptHost();
+      G.inGame = false; G.winner = null; G.log = []; G._hints = null; G._aiIntent = null; G._lastCpuSummary = null; G.attackSel = null; G.pendingChoice = null; G.promptState = null; G.busy = false; G.myActable = false;
       ['turnpill', 'aiToggleWrap', 'menuBtn', 'sideToggle'].forEach(id => { const e = document.getElementById(id); if (e) e.style.display = 'none'; });
       closeHam();
       renderSelect();
     }
     function menuBtnAction() { if (confirm('デッキ選択に戻りますか？（対戦は破棄されます）')) backToSelect(); }
     function toggleSide() { G._sideOpen = !G._sideOpen; const s = document.getElementById('side'); if (s) s.classList.toggle('open', G._sideOpen); }
+    function closeSidePanel() { G._sideOpen = false; const s = document.getElementById('side'); if (s) s.classList.remove('open'); }
     function buildHamMenu() {
       let html = '<button class="ham-item" onclick="closeHam();showRules()">ルール</button>';
       if (G.inGame) {
@@ -215,6 +228,14 @@
       const defense = D.chars.filter(c => !c.rested && hasKw(c, 'blocker')).length + Math.ceil(D.hand.length * 0.5);
       return dmg - defense >= D.life.length + 1;
     }
+    // 相手が次の自分のターンに「リーサル級の打点」を出せそうか（概算）＝ブロッカーを守りに温存すべきリスク判定。
+    // 真なら「ブロッカーで攻撃して寝かせると次に防げず負ける」リスク高→温存。偽ならリスク低→攻撃に回してよい。
+    function oppCanThreatenLethal(side) {
+      const P = G.players[side], D = G.players[opp(side)];
+      const oppAtk = D.chars.reduce((n, c) => n + (hasKw(c, 'doubleAttack') ? 2 : 1), 0) + 1; // 相手の次ターン攻撃数(盤面のみ・過剰温存を避け明確なリスクだけ拾う)
+      const myActiveBlk = P.chars.filter(c => hasKw(c, 'blocker') && !c.rested).length;        // 守りに使えるブロッカー
+      return oppAtk >= P.life.length + Math.max(0, myActiveBlk - 1);                            // 1枚攻撃に回した後でも守り切れない＝危険
+    }
     function cpuPickAttack(side, plan) {
       const P = G.players[side], D = G.players[opp(side)];
       const Lp = power(D.leader);
@@ -222,6 +243,9 @@
       const attackers = [P.leader, ...P.chars].filter(c => canCardAttack(c));
       if (!attackers.length) return null;
       const lowLife = P.life.length <= 2;                 // 自分が劣勢→ブロッカーは守りに残す
+      // ★CPU改良（測定駆動・採用済）: ブロッカー温存を「ライフ≤2」だけでなく「相手が次ターンにリーサルを出せるか(盤面リスク)」でも判断。
+      //   ＝ライフに余裕があっても相手盤面が脅威ならブロッカーで攻撃して寝かせない（自滅防止）。有意な悪化は無く、teach対enel等で+4〜5pt。
+      const holdBlk = lowLife || oppCanThreatenLethal(side);
       const pri = ((plan && Array.isArray(plan.removalPriority)) ? plan.removalPriority : []).filter(n => typeof n === 'string' && n.trim().length > 0).map(n => n.trim());
       const aggr = plan && plan.aggression;
       const lethal = plan && plan.lethal;                 // リーサル成立時は全攻撃をリーダーに集中
@@ -238,10 +262,10 @@
           if (donNeed > spare) continue;                  // ドンを足しても届かない→対象外
           const cBlk = hasKw(c, 'blocker');
           let score = cBlk ? (28 + power(c) / 700 + (c.base.cost || 0) * 1.2)   // ブロッカー＝ライフ圧の栓。除去は最優先級
-                           : (7 + power(c) / 1500 + (c.base.cost || 0) * 0.5);  // レスト済み雑魚の除去は低価値
+                           : (7 + power(c) / 1500 + (c.base.cost || 0) * 0.5);  // レスト済み雑魚の除去は低価値（heur2でKO価値↑↓を測定→7が最適と確認）
           if (pri.some(n => c.base.name.includes(n) || n.includes(c.base.name))) score += 12;
           score -= donNeed * (cBlk ? 3 : 9);              // 雑魚をドン付与で倒すのはテンポ損→強く減点（指摘3対策）
-          if (isBlk && lowLife) score -= 30;
+          if (isBlk && holdBlk) score -= 30;
           if (!best || score > best.score) best = { attacker: a, target: c, score, donNeed };
         }
         // (2) リーダーへアタック＝勝ち筋。ライフが減るほど価値が跳ね上がる
@@ -255,7 +279,7 @@
           if (isUnblockable(a) && oppActiveBlockers > 0) score += 6;
           if (aggr === 'high') score += 8; else if (aggr === 'low') score -= 5;
           score -= donL * 2;                              // 付与は控えめ減点（リーダー圧は基本得）
-          if (isBlk && lowLife) score -= 30;
+          if (isBlk && holdBlk) score -= 30;
           if (!best || score > best.score) best = { attacker: a, target: D.leader, score, donNeed: donL };
         }
       }
@@ -267,6 +291,7 @@
       side = side || 'cpu'; const P = G.players[side];
       let plan = localPlan(side); // aiOff でも一貫方針を持つ
       if (G.aiOn) { render(); const aip = await aiThink(side).catch(() => null); if (aip) { plan = Object.assign({}, plan, aip); if (aip.intent) showAIIntent(aip.intent); } }
+      if (G._planOverride) plan = Object.assign(plan, G._planOverride); // MCTSが戦術方針(aggression/donReserve等)を上書きして探索する
       await sleep(350);
       // 1) キャラ展開
       let g = 0;
@@ -360,15 +385,30 @@
         else if (p.k === 'atk') { await declareAttack(p.c, p.t); }
       }
     }
+    // heur2 = heuristic ＋ 実験的改良（各意思決定関数が isHeur2(side) で分岐）。measure-matchupで heuristic とA/B比較し、
+    //   有意に勝った改良だけ本採用（フラグを外して既定化）する＝測定駆動の改良ループ。詳細 docs/ai-design.md §7。
+    function isHeur2(side) { return !!(G.players[side] && G.players[side].agent === 'heur2'); }
     const AGENTS = {
       heuristic: { takeTurn: heuristicTurn },
-      random: { takeTurn: randomTurn }
+      random: { takeTurn: randomTurn },
+      heur2: { takeTurn: heuristicTurn }   // 能動ターンは同じ。差は isHeur2 で分岐する各種ヒューリスティック改良
     };
     // 能動ターンのエントリ。beginTurn から side を受けて、そのサイドのエージェントに委譲。
     async function cpuTurn(side) {
       side = side || 'cpu';
+      G._cpuLogStart = G.log.length; // このCPUターンのログ開始位置（観戦サマリ用）
       const a = AGENTS[agentName(side)] || AGENTS.heuristic;
-      return a.takeTurn(side);
+      const r = await a.takeTurn(side);
+      buildCpuSummary();
+      return r;
+    }
+    // 直前のCPUターンの行動を要約してサイドパネルにピン留め（消える fxNote を補い、後から追える）
+    function buildCpuSummary() {
+      const start = G._cpuLogStart || 0;
+      const lines = G.log.slice(start).filter(l => l.cls === 'cpu').map(l => (l.html || '').replace(/<[^>]+>/g, '').trim()).filter(Boolean);
+      const seen = new Set(); const out = [];
+      for (const t of lines) { if (seen.has(t)) continue; seen.add(t); out.push(t); }
+      G._lastCpuSummary = out.slice(-8);
     }
 
     /* =========================================================================

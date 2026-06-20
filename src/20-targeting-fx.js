@@ -2,12 +2,12 @@
     /* =========================================================================
        対象選択 (人間=UIハイライト / CPU=ヒューリスティック)
        ========================================================================= */
-    async function chooseCard(side, cands, text, prefer, optional) {
+    async function chooseCard(side, cands, text, prefer, optional, cls) {
       cands = cands.filter(Boolean);
       if (cands.length === 0) return null;
       if (G.players[side].isCPU) return cpuPick(cands, prefer);
       if (cands.length === 1 && !optional) return cands[0];
-      return await humanPick(cands, text, optional);
+      return await humanPick(cands, text, optional, cls);
     }
     function cpuPick(cands, prefer) {
       const byPow = (a, b) => power(b) - power(a) || (b.base.cost || 0) - (a.base.cost || 0);
@@ -17,18 +17,20 @@
       else arr.sort(byPow); // oppBig / ownBig 既定で強い順
       return arr[0];
     }
-    function humanPick(cands, text, optional) {
+    function humanPick(cands, text, optional, cls) {
       cands = (cands || []).filter(Boolean);
       if (cands.length === 0) return Promise.resolve(null);
       return new Promise(res => {
         const uids = new Set(cands.map(c => c.uid));
         let done = false;
         const finish = (card) => { if (done) return; done = true; G.pendingChoice = null; render(); res(card); };
-        G.pendingChoice = { uids, optional, res: finish };
+        G.pendingChoice = { uids, optional, res: finish, danger: cls === 'danger' };
         render();
-        const opts = cands.map(c => ({ t: cardBtnLabel(c), v: 'pick:' + c.uid }));
+        // 画像付き選択肢に統一（他のダイアログと見た目を揃える）。盤面クリックでも選べる。
+        const opts = cands.map(c => ({ t: c.base.name, v: 'pick:' + c.uid, card: { no: c.base.no, sub: cardBtnSub(c) } }));
         if (optional) opts.push({ t: '選ばない（スキップ）', v: '__skip', ghost: true });
         showPrompt({
+          cls: cls || '',
           title: '対象を選択', text: (text || '対象を選んでください') + '<span class="pp-hint">候補 ' + cands.length + ' ／ 光るカードをクリック、または下のボタンで選択' + (optional ? '（任意）' : '') + '</span>', opts,
           onPick: v => {
             if (typeof v === 'string' && v.indexOf('pick:') === 0) { const u = +v.slice(5); const c = cands.find(x => x.uid === u); finish(c || (optional ? null : cands[0])); }
@@ -41,13 +43,21 @@
       const b = c.base; const isFighter = (b.type === 'CHAR' || b.type === 'LEADER');
       return b.name + (b.cost != null ? '（C' + b.cost + (isFighter ? '/P' + power(c) : '') + '）' : (isFighter ? '（P' + power(c) + '）' : ''));
     }
+    // 画像付き選択肢のサブ表記（コスト/パワー）。名前は opt.t に出るのでここはステータスのみ
+    function cardBtnSub(c) {
+      const b = c.base; const isFighter = (b.type === 'CHAR' || b.type === 'LEADER');
+      const parts = [];
+      if (b.cost != null) parts.push('C' + b.cost);
+      if (isFighter && b.power != null) parts.push('P' + power(c));
+      return parts.join('/');
+    }
     // 複数選択の進捗を文言に付す（「X/N枚目」）。total<=1なら素の文言
     function progText(base, i, total) { return total > 1 ? base + '（' + (i + 1) + '/' + total + '枚目）' : base; }
     /* 手札からの選択（捨てる/デッキ下など） */
-    async function chooseFromHand(side, cands, text, prefer, optional) {
+    async function chooseFromHand(side, cands, text, prefer, optional, cls) {
       cands = cands.filter(Boolean); if (cands.length === 0) return null;
       if (G.players[side].isCPU) { const a = cands.slice().sort((x, y) => (x.base.counter || 0) - (y.base.counter || 0) || (x.base.cost || 0) - (y.base.cost || 0)); return a[0]; }
-      return await humanPick(cands, text, !!optional);
+      return await humanPick(cands, text, !!optional, cls);
     }
 
     /* 任意コスト/効果の発動確認: CPUは常に実行(true)、人間にはY/Nプロンプト。
@@ -304,7 +314,7 @@
           render(); break;
         }
         case 'bottomOwn': { for (let i = 0; i < op.n; i++) { const c = await chooseFromHand(side, P.hand, 'デッキ下に置く手札を選択'); if (!c) break; P.hand.splice(P.hand.indexOf(c), 1); P.deck.push(reset(c)); } flog(side, `手札${op.n}枚をデッキ下`); break; }
-        case 'discardOwn': { for (let i = 0; i < op.n; i++) { const c = await chooseFromHand(side, P.hand, '捨てる手札を選択'); if (!c) break; P.hand.splice(P.hand.indexOf(c), 1); P.trash.push(reset(c)); } flog(side, `手札${op.n}枚を捨てた`); break; }
+        case 'discardOwn': { for (let i = 0; i < op.n; i++) { const c = await chooseFromHand(side, P.hand, '⚠ 捨てる手札を選択', null, false, 'danger'); if (!c) break; P.hand.splice(P.hand.indexOf(c), 1); P.trash.push(reset(c)); } flog(side, `手札${op.n}枚を捨てた`); break; }
         case 'cond': if (checkCond(op.check, side, self)) await runFx(op.then, ctx); break;
         // 手札公開コスト: 手札の filter 一致カードを count 枚公開できる場合のみ then を実行（公開=手札に残す。任意）
         case 'revealCost': {
@@ -331,7 +341,7 @@
           if (!cands.length) break;
           let sac;
           if (P.isCPU) sac = cands.slice().sort((a, b) => scoreChar(a) - scoreChar(b))[0];
-          else sac = await chooseCard(side, cands, 'トラッシュに置くキャラを選択（効果のコスト）', 'ownSmall', true);
+          else sac = await chooseCard(side, cands, '⚠ トラッシュに置くキャラを選択（効果のコスト）', 'ownSmall', true, 'danger');
           if (!sac) break;
           removeCharTo(sac, P.trash); flog(side, `「${sac.base.name}」をトラッシュに置いた`); await checkAllyLeave(side, sac, 'ownEffect');
           await runFx(op.then, ctx);
@@ -347,7 +357,7 @@
           if (P.isCPU) toDiscard = matches.slice().sort((a, b) => ((a.base.cost || 0) - (b.base.cost || 0)) || ((a.base.counter || 0) - (b.base.counter || 0))).slice(0, cnt);
           else {
             toDiscard = [];
-            for (let i = 0; i < cnt; i++) { const pick = await chooseFromHand(side, P.hand.filter(c => matchFilter(c, op.filter) && !toDiscard.includes(c)), `捨てるカードを選択（${i + 1}/${cnt}）`); if (!pick) break; toDiscard.push(pick); }
+            for (let i = 0; i < cnt; i++) { const pick = await chooseFromHand(side, P.hand.filter(c => matchFilter(c, op.filter) && !toDiscard.includes(c)), `⚠ 捨てるカードを選択（${i + 1}/${cnt}）`, null, false, 'danger'); if (!pick) break; toDiscard.push(pick); }
             if (toDiscard.length < cnt) break;
           }
           for (const c of toDiscard) { P.hand.splice(P.hand.indexOf(c), 1); P.trash.push(reset(c)); }

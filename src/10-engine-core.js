@@ -16,6 +16,8 @@
        ★ゲーム結果に効く乱数は必ず rng() を使う（shuffle/先攻決め等）。Math.randomは演出専用。 */
     let _rngState = (Math.random() * 4294967296) >>> 0;
     function seedRng(seed) { _rngState = (seed >>> 0) || 1; }
+    // rng内部状態の取得/復元（MCTSが先読み中に消費したrngを実ゲームに漏らさないため退避・復元する）。
+    function rngState(v) { if (typeof v === 'number') _rngState = v | 0; return _rngState; }
     function rng() {
       _rngState = (_rngState + 0x6D2B79F5) | 0;
       let t = Math.imul(_rngState ^ (_rngState >>> 15), 1 | _rngState);
@@ -59,7 +61,7 @@
       removeEndScreen();
       G.players.me = buildPlayer('me', meDeck, false);
       G.players.cpu = buildPlayer('cpu', cpuDeck, true);
-      G.firstPlayer = rng() < 0.5 ? 'me' : 'cpu';
+      G.firstPlayer = (G.firstPref === 'me' || G.firstPref === 'cpu') ? G.firstPref : (rng() < 0.5 ? 'me' : 'cpu'); // 選択画面の先攻設定を反映（既定=ランダム）
       G.active = G.firstPlayer; G.winner = null; G.turnSeq = 0; G.turnDisp = 0; G.busy = true; G.myActable = false;
       G.attackSel = null; G.pendingChoice = null; G.promptState = null; G.log = []; G._hints = null; G._aiIntent = null;
       for (const s of ['me', 'cpu']) for (let i = 0; i < 5; i++)G.players[s].hand.push(G.players[s].deck.shift());
@@ -68,6 +70,8 @@
       await mulliganPhase();
       for (const s of ['me', 'cpu']) { const P = G.players[s]; const n = P.leader.base.life || 5; for (let i = 0; i < n; i++)if (P.deck.length) P.life.push(P.deck.shift()); }
       render(); await sleep(300);
+      banner((G.firstPlayer === 'me' ? 'あなたが先攻' : 'CPUが先攻'), { cls: G.firstPlayer === 'me' ? 'mine' : 'opp', hold: 1300 });
+      await sleep(200);
       beginTurn(G.firstPlayer);
     }
     async function mulliganPhase() {

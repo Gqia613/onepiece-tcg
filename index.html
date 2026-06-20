@@ -23,6 +23,7 @@
     </div>
     <label class="tg" id="aiToggleWrap" style="display:none">AI思考 <span class="switch on"
         id="aiSwitch"><i></i></span></label>
+    <button class="tbtn" id="soundBtn" title="サウンド">🔊</button>
     <button class="tbtn" id="rulesBtn">ルール</button>
     <button class="tbtn" id="menuBtn" style="display:none">デッキ選択</button>
     <button class="tbtn" id="sideToggle" style="display:none">情報</button>
@@ -45,6 +46,10 @@
   <script src="src/40-ui-render.js"></script>
   <script src="src/50-input-cpu-ai.js"></script>
   <script src="src/60-screens-init.js"></script>
+  <!-- L3: 自己対戦で学習した盤面評価の重み（tools/selfplay-train.js が生成）。70-aiより前に置きwindow.AI_WEIGHTSを定義。 -->
+  <script src="src/ai-weights.js"></script>
+  <!-- 強いCPUのためのAI基盤（前向きモデル/エージェントseam）。UI動作には不要だが先読み系の土台。 -->
+  <script src="src/70-ai.js"></script>
 </body>
 
 </html>

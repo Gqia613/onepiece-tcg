@@ -4,7 +4,11 @@
        ========================================================================= */
     function renderSelect() {
       const scr = document.getElementById('screen');
+      // 再描画でスクロール位置が先頭に戻らないよう、現在のスクロール量を退避（デッキ選択のたびに上へ飛ぶ問題の対策）
+      const prevWrap = scr.querySelector('.select-wrap');
+      const prevY = prevWrap ? prevWrap.scrollTop : 0;
       ensureSel();
+      if (!G.firstPref) G.firstPref = 'random'; // 先攻の希望（random/me/cpu）。既定はランダム
       const tierRank = { 'TIER 1': 1, 'TIER 2': 2, 'TIER 3': 3 };
       const ordered = DECKS.concat(G.customDecks || []).slice().sort((a, b) => (tierRank[a.tier] || 9) - (tierRank[b.tier] || 9));
       const deckCard = (d, which) => {
@@ -26,8 +30,6 @@
       const cpuGrid = ordered.map(d => deckCard(d, 'cpu')).join('');
       scr.innerHTML = '<div class="select-wrap">' +
         '<h1>ONE PIECE CARD BATTLE</h1>' +
-        '<div class="sub">公式ルール準拠・スタンダードレギュレーション。最新メタ(' + META_DATE + '時点)の上位デッキで対戦できる、自分用シミュレーターです。CPUはAIで毎ターン思考し、あなたには「CPUの次の手」のヒントを表示します。</div>' +
-        '<div class="meta-note">⚓ 収録デッキは <b>' + META_DATE + '</b> 時点の環境上位を反映。全カードの効果は公式カードリストで検証済みです（OP-16「決戦の刻」の黒黄ティーチを含む）。<br>※ 一部の複雑な効果（効果無効など）は盤面挙動を可能な範囲で再現しています。新デッキは DECKS 配列に追記すれば拡張できます。</div>' +
         '<div class="builder-row">' +
         '<button class="bd-make" onclick="openBuilder()">＋ 自分でデッキを作る</button>' +
         '<button class="bd-import" onclick="document.getElementById(\'deckImport\').click()">📥 デッキをインポート</button>' +
@@ -38,14 +40,23 @@
         '<div class="deck-grid">' + grid + '</div>' +
         '<div class="sect-label">② 対戦相手 (CPU) のデッキ</div>' +
         '<div class="deck-grid">' + cpuGrid + '</div>' +
-        '<div class="start-row"><div class="pick-info">' + pickInfo() + '</div>' +
+        '<div class="start-row">' +
+        '<div class="first-pick"><span class="fp-label">先攻</span><div class="seg">' +
+        [['random', 'ランダム'], ['me', 'あなた'], ['cpu', 'CPU']].map(([v, t]) =>
+          '<button class="seg-btn' + (G.firstPref === v ? ' on' : '') + '" onclick="setFirstPref(\'' + v + '\')">' + t + '</button>').join('') +
+        '</div></div>' +
+        '<div class="pick-info">' + pickInfo() + '</div>' +
         '<button class="btn-primary" ' + ((G.sel.me && G.sel.cpu) ? '' : 'disabled') + ' onclick="doStart()">BATTLE START</button>' +
-        '<div class="tip">先攻/後攻はランダム。カード画像は公式サイトから読み込み（読めない場合は自動でテキスト表示に切替）。</div>' +
+        (!(G.sel.me && G.sel.cpu) ? '<div class="tip warn">' + (!G.sel.me ? '① あなたのデッキを選んでください' : '② 対戦相手のデッキを選んでください') + '</div>' : '') +
+        '<div class="tip">カード画像は公式サイトから読み込み（読めない場合は自動でテキスト表示に切替）。</div>' +
         '</div></div>';
+      const newWrap = scr.querySelector('.select-wrap');
+      if (newWrap && prevY) newWrap.scrollTop = prevY; // 退避したスクロール位置を復元
     }
     function pickInfo() { const dm = G.sel.me && findDeck(G.sel.me); const dc = G.sel.cpu && findDeck(G.sel.cpu); return 'あなた: <b>' + (dm ? escapeHTML(dm.name) : '未選択') + '</b>　／　CPU: <b>' + (dc ? escapeHTML(dc.name) : '未選択') + '</b>'; }
     function selMy(id) { G.sel.me = id; if (!G.sel.cpu) { const o = DECKS.filter(d => d.id !== id); G.sel.cpu = o[Math.random() * o.length | 0].id; } renderSelect(); }
     function selCpu(id) { G.sel.cpu = id; renderSelect(); }
+    function setFirstPref(v) { G.firstPref = v; renderSelect(); } // 先攻の希望を設定（常時設置のセグメント）
     function doStart() { if (!G.sel.me || !G.sel.cpu) return; startGame(G.sel.me, G.sel.cpu); }
 
     /* =========================================================================
@@ -271,43 +282,97 @@
     /* =========================================================================
        ===============  プレビュー / 初期化  ===================================
        ========================================================================= */
+    // カード詳細のHTML（ホバープレビュー＝デスクトップ／長押しモーダル＝タッチ で共用）
+    function cardDetailHTML(b) {
+      const colorHex = COLOR_HEX[(b.color && b.color[0])] || '#1a2c3c';
+      return '<div style="border-top:4px solid ' + colorHex + ';padding:13px 15px">' +
+        '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:6px">' +
+        '<div style="font-weight:900;font-size:15px;line-height:1.25;color:var(--ink)">' + escapeHTML(b.name) + '</div>' +
+        (b.cost != null ? '<div style="flex:0 0 auto;font-family:\'Bebas Neue\';font-size:17px;color:#1a1205;background:linear-gradient(180deg,var(--gold-soft),var(--gold-dim));border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center">' + b.cost + '</div>' : '') +
+        '</div>' +
+        '<div style="font-size:11px;color:var(--muted);margin-bottom:8px">' + typeJa(b.type) + (b.traits && b.traits.length ? ' ・ ' + b.traits.join(' / ') : '') + (b.color && b.color.length ? ' ・ ' + b.color.join('') + '色' : '') + '</div>' +
+        ((b.power != null || b.counter) ? '<div style="display:flex;gap:16px;margin-bottom:8px;font-family:\'Bebas Neue\'">' +
+          (b.power != null ? '<div style="font-size:19px;color:#fff">パワー <span style="color:var(--gold-soft)">' + b.power + '</span></div>' : '') +
+          (b.counter ? '<div style="font-size:19px;color:#fff">カウンター <span style="color:#ffd27a">' + b.counter + '</span></div>' : '') +
+          '</div>' : '') +
+        '<div style="font-size:12px;line-height:1.65;color:var(--ink);border-top:1px solid var(--line);padding-top:8px">' + escapeHTML(b.text || '（効果なし）') + '</div>' +
+        (b.simp ? '<div style="margin-top:7px;font-size:10.5px;color:#ffd27a">※このカードの効果は簡易実装です</div>' : '') +
+        '</div>';
+    }
     function onHover(e) {
       const pv = document.getElementById('preview'); if (!pv) return;
       if (window.innerWidth < 1000) { pv.style.display = 'none'; return; }
       const el = e.target.closest && e.target.closest('.card[data-no]');
       if (!el) { pv.style.display = 'none'; return; }
       const no = el.getAttribute('data-no'); const b = C[no]; if (!b) { pv.style.display = 'none'; return; }
-      if (pv._no !== no) {
-        pv._no = no;
-        const colorHex = COLOR_HEX[(b.color && b.color[0])] || '#1a2c3c';
-        pv.innerHTML =
-          '<div style="border-top:4px solid ' + colorHex + ';padding:13px 15px">' +
-          '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:6px">' +
-          '<div style="font-weight:900;font-size:15px;line-height:1.25;color:var(--ink)">' + escapeHTML(b.name) + '</div>' +
-          (b.cost != null ? '<div style="flex:0 0 auto;font-family:\'Bebas Neue\';font-size:17px;color:#1a1205;background:linear-gradient(180deg,var(--gold-soft),var(--gold-dim));border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center">' + b.cost + '</div>' : '') +
-          '</div>' +
-          '<div style="font-size:11px;color:var(--muted);margin-bottom:8px">' + typeJa(b.type) + (b.traits && b.traits.length ? ' ・ ' + b.traits.join(' / ') : '') + (b.color && b.color.length ? ' ・ ' + b.color.join('') + '色' : '') + '</div>' +
-          ((b.power != null || b.counter) ? '<div style="display:flex;gap:16px;margin-bottom:8px;font-family:\'Bebas Neue\'">' +
-            (b.power != null ? '<div style="font-size:19px;color:#fff">パワー <span style="color:var(--gold-soft)">' + b.power + '</span></div>' : '') +
-            (b.counter ? '<div style="font-size:19px;color:#fff">カウンター <span style="color:#ffd27a">' + b.counter + '</span></div>' : '') +
-            '</div>' : '') +
-          '<div style="font-size:12px;line-height:1.65;color:var(--ink);border-top:1px solid var(--line);padding-top:8px">' + escapeHTML(b.text || '（効果なし）') + '</div>' +
-          (b.simp ? '<div style="margin-top:7px;font-size:10.5px;color:#ffd27a">※このカードの効果は簡易実装です</div>' : '') +
-          '</div>';
-      }
+      if (pv._no !== no) { pv._no = no; pv.innerHTML = cardDetailHTML(b); }
       let x = e.clientX + 18, y = e.clientY - 30;
       if (x + 280 > window.innerWidth) x = e.clientX - 288;
       if (y < 10) y = 10; if (y + 260 > window.innerHeight) y = Math.max(10, window.innerHeight - 260);
       pv.style.left = x + 'px'; pv.style.top = y + 'px'; pv.style.display = 'block';
+    }
+    // タッチ: カード詳細を中央モーダルで表示（背景タップで閉じる）。長押しで発火。
+    function showCardModal(no) {
+      const b = C[no]; if (!b) return;
+      closeModal();
+      const back = document.createElement('div'); back.className = 'modal-back show cardmodal'; back.id = 'modalBack';
+      back.innerHTML = '<div class="cardmodal-box">' + cardDetailHTML(b) + '<button class="cardmodal-close" onclick="closeModal()">閉じる</button></div>';
+      back.addEventListener('click', e => { if (e.target === back) closeModal(); });
+      document.body.appendChild(back);
+    }
+    /* 長押し検出（タッチ）: カードを ~450ms 押し続けると詳細モーダルを表示。
+       短タップは通常のクリック（選択/プレイ）に委ねる。長押し発火時は直後のクリックを1回だけ無視。 */
+    let _lpTimer = null, _lpFired = false, _lpStart = null;
+    function touchStart(e) {
+      const t = e.touches && e.touches[0]; if (!t) return;
+      const el = e.target.closest && e.target.closest('.card[data-no]'); if (!el) return;
+      const no = el.getAttribute('data-no'); _lpFired = false; _lpStart = { x: t.clientX, y: t.clientY };
+      if (_lpTimer) clearTimeout(_lpTimer);
+      _lpTimer = setTimeout(() => { _lpFired = true; showCardModal(no); if (navigator.vibrate) try { navigator.vibrate(12); } catch (_) { } }, 450);
+    }
+    function touchMove(e) {
+      if (!_lpTimer || !_lpStart) return;
+      const t = e.touches && e.touches[0]; if (!t) return;
+      if (Math.abs(t.clientX - _lpStart.x) > 10 || Math.abs(t.clientY - _lpStart.y) > 10) { clearTimeout(_lpTimer); _lpTimer = null; } // スクロール/ドラッグは長押し扱いしない
+    }
+    function touchEnd() { if (_lpTimer) { clearTimeout(_lpTimer); _lpTimer = null; } }
+    function swallowClickIfLongPress(e) { if (_lpFired) { _lpFired = false; e.stopPropagation(); e.preventDefault(); return true; } return false; }
+    // トラッシュ全表示モーダル（タッチ・クリック両対応。ホバーfanのモバイル代替）
+    function showTrashModal(side) {
+      const P = G.players[side]; if (!P) return;
+      const n = P.trash.length;
+      const title = (side === 'me' ? 'あなた' : 'CPU') + 'のトラッシュ（' + n + '枚・新しい順）';
+      if (n === 0) { openModal(title, '<div style="color:var(--muted);padding:8px 2px">トラッシュは空です</div>'); return; }
+      const grid = P.trash.slice().reverse().map(c =>
+        '<div class="tm-card" title="' + escapeHTML(c.base.name) + '"><img src="' + IMG(c.base.no) + '" referrerpolicy="no-referrer" decoding="async" onerror="this.style.display=\'none\';this.parentNode.classList.add(\'noimg\')"><span class="tm-fb">' + escapeHTML(c.base.name) + '</span></div>').join('');
+      openModal(title, '<div class="trash-modal-grid">' + grid + '</div>');
     }
     function init() {
       document.getElementById('rulesBtn').onclick = showRules;
       document.getElementById('menuBtn').onclick = menuBtnAction;
       document.getElementById('sideToggle').onclick = toggleSide;
       const sw = document.getElementById('aiSwitch'); sw.onclick = () => { G.aiOn = !G.aiOn; sw.classList.toggle('on', G.aiOn); };
-      const hb = document.getElementById('hamBtn'); if (hb) hb.onclick = (e) => { e.stopPropagation(); toggleHam(); };
-      document.addEventListener('click', (e) => { const m = document.getElementById('hamMenu'); if (m && m.style.display === 'block' && e.target.closest && !e.target.closest('#hamMenu') && !e.target.closest('#hamBtn')) closeHam(); });
-      document.getElementById('screen').addEventListener('click', onBoardClick);
+      const sb = document.getElementById('soundBtn');
+      if (sb) sb.onclick = () => { if (typeof SFX === 'undefined') return; SFX.unlock(); const m = SFX.toggle(); sb.textContent = m ? '🔇' : '🔊'; sb.classList.toggle('muted', m); if (!m) sfx('click'); };
+      // 初回ユーザー操作でオーディオをアンロック（自動再生制約対策）
+      const unlockSfx = () => { if (typeof SFX !== 'undefined') SFX.unlock(); document.removeEventListener('pointerdown', unlockSfx); document.removeEventListener('keydown', unlockSfx); };
+      document.addEventListener('pointerdown', unlockSfx); document.addEventListener('keydown', unlockSfx);
+      // ハンバーガー開閉は単一のクリックハンドラに集約（stopPropagationの噛み合わせ不良でモバイルで閉じない問題を解消）
+      document.addEventListener('click', (e) => {
+        const inBtn = e.target.closest && e.target.closest('#hamBtn');
+        const inMenu = e.target.closest && e.target.closest('#hamMenu');
+        if (inBtn) { toggleHam(); return; }              // ハンバーガーボタン＝開閉トグル
+        const m = document.getElementById('hamMenu');
+        if (m && m.style.display === 'block' && !inMenu) closeHam(); // メニュー外タップ＝閉じる
+      });
+      const screen = document.getElementById('screen');
+      // 長押し発火直後のクリックを1回だけ握りつぶす（capture段でonBoardClickより先に判定）
+      screen.addEventListener('click', e => { if (_lpFired) { _lpFired = false; e.stopPropagation(); e.preventDefault(); } }, true);
+      screen.addEventListener('click', onBoardClick);
+      screen.addEventListener('touchstart', touchStart, { passive: true });
+      screen.addEventListener('touchmove', touchMove, { passive: true });
+      screen.addEventListener('touchend', touchEnd);
+      screen.addEventListener('touchcancel', touchEnd);
       document.addEventListener('mousemove', onHover);
       G._tab = 'hints';
       renderSelect();

@@ -5,6 +5,8 @@
    2) デッキ整合（全6デッキ50枚・全カード定義済み）
    3) CPU対CPU 30戦（勝者が出る・同一ターンの二重アタックが無い）
    4) 人間オートパイロット 30戦（フリーズ＝真の停止が無い・選択不能プロンプトが無い）
+   5-8) ユニット / Phase3効果 / カスタムデッキ / デッキビルダー
+   9) AI基盤（RNG再現・clone往復・特徴量/学習重み整合・MCTS完走＝L1/L2/L3回帰）
    依存: Node.js のみ。 */
 const fs=require('fs'), os=require('os'), path=require('path'), cp=require('child_process');
 const { loadApp, runHarness }=require('./_load-app');
@@ -101,6 +103,13 @@ step('デッキビルダー 検証', ()=>{
   process.stdout.write('  '+out.trim()+'\n');
   if(!/fail=0/.test(out)) throw {stdout:'  ✗ デッキビルダー検証 失敗\n'};
   console.log('  ✓ デッキビルダー（構築ルール・JSON往復）pass');
+});
+
+// 9) 強いCPU(AI)基盤: RNG/clone/特徴量/学習重み/MCTS完走（L1/L2/L3の回帰）
+step('AI基盤（RNG/clone/MCTS）', ()=>{
+  const out=runConcat('aicore','ai-core.js',150000); process.stdout.write('  '+out.trim().replace(/\n/g,'\n  ')+'\n');
+  if(!/fail=0/.test(out)) throw {stdout:'  ✗ AI基盤テスト失敗\n'};
+  console.log('  ✓ AI基盤（RNG再現・clone往復・特徴量/重み整合・MCTS完走）pass');
 });
 
 console.log('\n'+(failed?`❌ ${failed} 件のチェックが失敗しました`:'✅ 全チェック通過'));

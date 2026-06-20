@@ -8,7 +8,7 @@
       if (P.chars.length < 5) return true;
       let sac;
       if (P.isCPU) sac = P.chars.slice().sort((a, b) => scoreChar(a) - scoreChar(b))[0];
-      else sac = await chooseCard(side, P.chars, '場が5体です。トラッシュに送るキャラを選択', 'ownSmall', optional);
+      else sac = await chooseCard(side, P.chars, '⚠ トラッシュに送るキャラを選択（場が5体）', 'ownSmall', optional, 'danger');
       if (!sac) return false; // 人間がキャンセル
       removeCharTo(sac, P.trash);
       flog(side, `「${sac.base.name}」をトラッシュに送った`);
@@ -20,7 +20,7 @@
       if (P.chars.length >= 5) { if (!(await trashCharForRoom(side, false))) return; } // 5体なら枠を空ける（効果による登場でも適用）
       card.owner = side; card.rested = false; card.summonedTurn = G.turnSeq; card.attachedDon = 0; card.buffs = []; card.kwGrant = [];
       P.chars.push(card);
-      render(); animClass(card.uid, 'enter'); await sleep(260);
+      render(); animClass(card.uid, 'enter'); sfx('summon'); await sleep(260);
       flog(side, `「${card.base.name}」が登場`);
       // トラッシュから登場した時のリーダー誘発（onReviveFromTrash）— 登場時効果より先に付与
       if (source === 'trash') checkReviveTrigger(side, card);
@@ -105,7 +105,7 @@
     async function koCard(card, source) {
       const ow = G.players[card.owner];
       const idx = ow.chars.indexOf(card); if (idx < 0) return;
-      animClass(card.uid, 'ko'); await sleep(420);
+      animClass(card.uid, 'ko'); sfx('ko'); await sleep(420);
       ow.don.active += card.attachedDon; // 付与ドンはコストエリアへ
       removeChar(card); ow.trash.push(reset(card));
       card._koSource = source || 'effect'; // KO原因（'battle'|'oppEffect'|'effect'）。onKOの条件 koByOpp 用
@@ -137,8 +137,6 @@
        ========================================================================= */
     async function beginTurn(side) {
       if (G.winner) return;
-      // MCTSロールアウトの打ち切り（通常プレイは _simDeadline 未設定で無影響）。次ターン開始前で停止しevalする。
-      if (G._simDeadline != null && G.turnSeq >= G._simDeadline) { G._simHalt = true; G.busy = false; return; }
       G.busy = true; G.active = side; const P = G.players[side]; P.turnsTaken++; G.turnSeq++; G.turnDisp++;
       P.denyBlock = false;
       // リフレッシュ
@@ -156,17 +154,19 @@
       render(); await sleep(300);
       // ドロー
       setPhase('ドロー');
-      if (!(P.turnsTaken === 1 && side === G.firstPlayer)) { if (!draw(side, 1)) { G.busy = false; return; } }
+      if (!(P.turnsTaken === 1 && side === G.firstPlayer)) { if (!draw(side, 1)) { G.busy = false; return; } sfx('draw'); }
       render(); await sleep(220);
       // ドン
       setPhase('ドン');
       let add = (P.turnsTaken === 1 && side === G.firstPlayer) ? 1 : 2;
       add = Math.min(add, P.donMax - donTotal(side));
       P.don.active += add;
+      if (add > 0) sfx('don');
       render(); await sleep(260);
       // メイン
       setPhase('メイン');
       log(side, `${sideName(side)}のターン <b>(ターン${G.turnDisp})</b>`);
+      banner((side === 'me' ? 'あなたのターン' : 'CPUのターン'), { cls: side === 'me' ? 'mine' : 'opp' });
       await checkTurnStart(side); // リーダーの【自分のターン開始時】（OP11-040ルフィ等）
       if (G.winner) return;
       if (P.isCPU) { await cpuTurn(side); await endTurn(side); }
@@ -185,6 +185,7 @@
       expireBuffs('me', 'turnEnd'); expireBuffs('cpu', 'turnEnd'); clearBattleBuffs(); clearTurnGrants(side); clearNegation();
       render(); await sleep(180);
       if (G.winner) { G.busy = false; return; }
+      if (G._noChain) return;          // MCTSロールアウト中はターン連鎖を呼び出し側(playout)が制御（投げっぱなし連鎖の残留タスクを防ぐ）
       beginTurn(opp(side));
     }
     function canAttackThisTurn(side) { return G.players[side].turnsTaken >= 2; } // 公式: 先攻・後攻とも最初の(自分の)1ターン目はアタック不可。2ターン目以降から可能
@@ -228,7 +229,7 @@
       const aSide = attacker.owner, dSide = opp(aSide);
       flog(aSide, `「${attacker.base.name}」が${target.base.type === 'LEADER' ? 'リーダー' : '「' + target.base.name + '」'}にアタック`);
       showAtkAnnounce(aSide, attacker, target);
-      render(); animClass(attacker.uid, 'lunge' + (aSide === 'me' ? '' : ' up')); await sleep(aSide === 'me' ? 280 : 780);
+      render(); animClass(attacker.uid, 'lunge' + (aSide === 'me' ? '' : ' up')); sfx('attack'); await sleep(aSide === 'me' ? 280 : 780);
       // アタック時効果
       if (attacker.base.fx && attacker.base.fx.onAttack && !isNegated(attacker)) {
         const onceGated = attacker.base.fx.onAttack.some(o => o.once === 'turn'); // 【アタック時】/【ブロック時】【ターン1回】は両タイミング共有(_onceAtkBlkTurn)
@@ -259,8 +260,9 @@
       }
       // 防御側の効果でアタッカーが場を離れた/攻撃不能になった場合はアタックを中断
       if ((attacker.base.type === 'CHAR' && !G.players[aSide].chars.includes(attacker)) || cantAttackNeg(attacker)) {
-        clearBattleBuffs(); G.players[dSide]._teachSacUid = null; clearAtkAnnounce(); checkWinByLife(); render();
-        if (G.players[aSide].isCPU) { G.busy = true; } else { G.busy = false; G.myActable = true; } // ★中断時も操作権を返す（人間が固まってアタック不能になるのを防ぐ）
+        clearBattleBuffs(); G.players[dSide]._teachSacUid = null; clearAtkAnnounce(); checkWinByLife();
+        if (G.players[aSide].isCPU) { G.busy = true; } else { G.busy = false; G.myActable = true; } // ★状態確定後に描画（中断時も操作権を返す＝処理中固まり防止）
+        render();
         return;
       }
       // 黒ひげ(ティーチ)リーダー: 手札のトリガーを捨ててアタック対象を変更
@@ -270,7 +272,7 @@
       if (!(target.base.type === 'LEADER' && G.players[aSide].denyBlock) && !isUnblockable(attacker)) {
         const blocker = await chooseBlocker(dSide, attacker, target);
         if (blocker) {
-          blocker.rested = true; blkTarget = blocker; G._atkTo = blocker.uid; flog(dSide, `「${blocker.base.name}」でブロック`); render(); await sleep(200); await luffyReveal(dSide);
+          blocker.rested = true; blkTarget = blocker; G._atkTo = blocker.uid; flog(dSide, `「${blocker.base.name}」でブロック`); floatOn(blocker.uid, '🛡 BLOCK', 'buff'); sfx('block'); showAtkAnnounce(aSide, attacker, blocker); render(); await sleep(200); await luffyReveal(dSide);
           // 【ブロック時】(onBlock): ブロッカー宣言時に誘発（カウンター前）。fx未定義カードは無変化＝純粋に追加
           if (blocker.base.fx && blocker.base.fx.onBlock && !isNegated(blocker)) {
             const onceGated = blocker.base.fx.onBlock.some(o => o.once === 'turn'); // 【アタック時】/【ブロック時】【ターン1回】は両タイミング共有(_onceAtkBlkTurn)
@@ -284,8 +286,9 @@
       }
       // カウンター
       await counterStep(dSide, attacker, blkTarget);
-      // ダメージ判定
+      // ダメージ判定（カウンター後の最終パワーをアナウンスに反映）
       const atkP = power(attacker), defP = power(blkTarget);
+      if (document.getElementById('atkAnnounce')) showAtkAnnounce(aSide, attacker, blkTarget);
       flog(aSide, `パワー ${atkP} vs ${defP}`);
       if (atkP >= defP) {
         if (blkTarget.base.type === 'LEADER') {
@@ -302,21 +305,22 @@
       G.players[dSide]._teachSacUid = null;
       clearAtkAnnounce();
       checkWinByLife();
-      render();
+      // ★状態を確定してから描画（render後にbusyを戻すと「処理中」表示のまま固まる＝アタック後ターン終了不能バグ）
       if (G.players[aSide].isCPU) { G.busy = true; } else { G.busy = false; G.myActable = true; }
+      render();
     }
 
     async function dealLeaderDamage(dSide, attacker, times, banish) {
       const D = G.players[dSide];
       for (let t = 0; t < times; t++) {
         if (G.winner) return; // 勝敗確定後は追加ダメージ解決を打ち切る
-        animClass(D.leader.uid, 'dmg'); floatOn(D.leader.uid, '-1', 'dmg'); await sleep(300);
+        animClass(D.leader.uid, 'dmg'); floatOn(D.leader.uid, '-1', 'dmg'); sfx('hit'); await sleep(300);
         if (D.life.length === 0) { lose(dSide, 'ライフ0で被弾'); return; }
         const card = D.life.shift();
         if (banish) { D.trash.push(reset(card)); flog(dSide, 'ライフ1枚がバニッシュ（トラッシュ）'); }
         else if (card.base.fx && card.base.fx.trigger) {
           const use = await askTrigger(dSide, card);
-          if (use) { await fxNote(dSide, 'トリガー発動', card.base.name); flog(dSide, `【トリガー】「${card.base.name}」発動`); await runFx(card.base.fx.trigger, { self: card, side: dSide }); if (!D.chars.includes(card)) D.trash.push(reset(card)); }
+          if (use) { sfx('trigger'); await fxNote(dSide, 'トリガー発動', card.base.name); flog(dSide, `【トリガー】「${card.base.name}」発動`); await runFx(card.base.fx.trigger, { self: card, side: dSide }); if (!D.chars.includes(card)) D.trash.push(reset(card)); }
           else { D.hand.push(card); flog(dSide, 'ライフ1枚を手札に'); }
         } else { D.hand.push(card); flog(dSide, 'ライフ1枚を手札に'); }
         await checkLeaderHitLife(attacker); // このリーダーのアタックでライフダメージ（ナミ等：自分のデッキを削る）
@@ -338,11 +342,11 @@
         const uids = new Set(blockers.map(c => c.uid));
         G.pendingChoice = { uids, optional: true, res: c => { G.pendingChoice = null; res(c); } };
         render();
-        const opts = blockers.map(b => ({ t: '🛡 ' + b.base.name + '（P' + power(b) + '）でブロック', v: 'blk:' + b.uid, primary: true }));
+        const opts = blockers.map(b => ({ t: b.base.name, v: 'blk:' + b.uid, card: { no: b.base.no, sub: '🛡 P' + power(b) } }));
         opts.push({ t: 'ブロックしない', v: '__skip', ghost: true });
         const tgt = target.base.type === 'LEADER' ? 'リーダー' : '「' + target.base.name + '」';
         showPrompt({
-          title: 'ブロック', text: '「' + attacker.base.name + '」（P' + power(attacker) + '）が' + tgt + 'にアタック',
+          cls: 'defense', title: '🛡 ブロック — あなたの防御', text: '「' + attacker.base.name + '」（P' + power(attacker) + '）が' + tgt + 'にアタック。ブロッカーで肩代わりできます',
           opts, onPick: v => {
             if (!G.pendingChoice) return;
             if (v === '__skip') { G.pendingChoice.res(null); }
@@ -407,8 +411,9 @@
         leaderOpts.forEach(lo => opts.push(lo));
         opts.push({ t: 'カウンター終了', v: '__done', primary: true });
         const v = await new Promise(res => showPrompt({
-          title: 'カウンター',
-          text: `「${attacker.base.name}」${power(attacker)} を ${power(target)} で防御中（あと${Math.max(0, need + 1)}必要）`,
+          cls: 'defense',
+          title: '🛡 カウンター — あなたの防御',
+          text: `「${attacker.base.name}」P${power(attacker)} ⚔ 防御側 P${power(target)}　` + (need < 0 ? '<b style="color:var(--legal-glow)">現在は耐えています</b>' : `<b style="color:var(--danger-glow)">あと +${need + 1} 必要</b>`),
           opts, onPick: res
         }));
         if (v === '__done') return;
@@ -560,7 +565,8 @@
     async function askTrigger(side, card) {
       if (G.players[side].isCPU) return true; // CPUは基本発動
       return await new Promise(res => showPrompt({
-        title: 'トリガー',
+        cls: 'defense',
+        title: '⚡ トリガー',
         text: `ライフから「${card.base.name}」が公開。【トリガー】を発動しますか？（不発なら手札に加わります）`,
         opts: [{ t: '発動する', v: true, primary: true }, { t: '手札に加える', v: false, ghost: true }], onPick: res
       }));
@@ -609,9 +615,9 @@
       // 人間: リダイレクトが合法なら常に選択肢を提示（公式効果に対象の限定はない）。現在の対象自身は除外。
       const dests = [D.leader, ...D.chars.filter(c => (c.base.traits || []).includes('黒ひげ海賊団'))].filter(c => c !== target);
       if (!dests.length) return target;
-      const opts = dests.map(c => ({ t: '→ ' + (c.base.type === 'LEADER' ? 'リーダー' : c.base.name + '(P' + power(c) + ')') + 'に変更', v: 'rd:' + c.uid }));
+      const opts = dests.map(c => ({ t: (c.base.type === 'LEADER' ? 'リーダーに変更' : c.base.name), v: 'rd:' + c.uid, card: { no: c.base.no, sub: 'P' + power(c) } }));
       opts.push({ t: '変更しない', v: '__no', ghost: true });
-      const v = await showPrompt({ title: '【ティーチ】アタック対象を変更', text: '手札の【トリガー】1枚を捨て、このアタックの対象をリーダーか黒ひげ海賊団キャラに変更できます（ターン1回）', opts });
+      const v = await showPrompt({ cls: 'defense', title: '🛡 【ティーチ】アタック対象を変更', text: '手札の【トリガー】1枚を捨て、このアタックの対象をリーダーか黒ひげ海賊団キャラに変更できます（ターン1回）', opts });
       if (!v || v === '__no') return target;
       const dest = dests.find(c => c.uid === +String(v).slice(3)); if (!dest) return target;
       const disc = await chooseFromHand(dSide, triggers, '捨てる【トリガー】カードを選択'); if (!disc) return target;
@@ -636,12 +642,25 @@
         render(); await sleep(180);
         // ② 自分のキャラ1枚にレストのドン!!4枚までを付与
         if (P.chars.length) {
-          const c = await chooseCard(side, P.chars, 'レストのドンを付与するキャラ（最大4枚）', 'ownBig', true);
-          if (c) {
-            const k = Math.min(4, P.don.rested); c.attachedDon += k; P.don.rested -= k;
-            if (k) { floatOn(c.uid, 'ドン+' + k, 'buff'); flog(side, `【エネル】「${c.base.name}」にレストのドン${k}枚を付与`); }
-            else flog(side, '【エネル】付与できるレストのドンがなかった');
+          let c, k;
+          if (P.isCPU) {
+            // ★CPU改良（測定駆動で検証・全6対面で+~6pt有意 p<0.0001）: 旧実装は cpuPick('ownBig')＝最大パワーを
+            //   アタック可否を無視して選び、付与が当ターン死にしていた（アタック不可キャラへの付与）。
+            //   → 当ターンにリーダーへアタックできる攻撃役を最優先し、付与で連結できる役を優先する。付与量は4のまま（連結=カウンター超えの信頼性）。
+            const Lp = power(G.players[opp(side)].leader);
+            const attackers = P.chars.filter(ch => canCardAttack(ch) && canTargetLeader(ch)); // 当ターン、相手リーダーを攻撃できる
+            const pool = attackers.length ? attackers : (P.chars.filter(ch => canCardAttack(ch)).length ? P.chars.filter(ch => canCardAttack(ch)) : P.chars);
+            c = pool.slice().sort((a, b) => {
+              const okA = (Math.max(0, Lp - power(a)) <= P.don.rested) ? 0 : 1;   // 付与で連結できる=0(優先)
+              const okB = (Math.max(0, Lp - power(b)) <= P.don.rested) ? 0 : 1;
+              return okA - okB || power(b) - power(a);                            // 連結可能→高パワー順
+            })[0];
+          } else {
+            c = await chooseCard(side, P.chars, 'レストのドンを付与するキャラ（最大4枚）', 'ownBig', true);
           }
+          if (c) k = Math.min(4, P.don.rested);
+          if (c && k) { c.attachedDon += k; P.don.rested -= k; floatOn(c.uid, 'ドン+' + k, 'buff'); flog(side, `【エネル】「${c.base.name}」にレストのドン${k}枚を付与`); }
+          else if (c) flog(side, '【エネル】付与できるレストのドンがなかった');
         } else if (!addA && !addR) { toast('ドンデッキが空でキャラもいないため効果なし'); }
         render();
       } else if (key === 'lucy') {

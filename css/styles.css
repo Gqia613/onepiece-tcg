@@ -10,8 +10,9 @@
       --gold-soft: #f5d98a;
       --parch: #f3ead2;
       --ink: #eaf1f6;
-      --muted: #90a8ba;
-      --muted-2: #5f7689;
+      --muted: #9fb4c4;
+      /* secondary text: 旧 #5f7689 はコントラスト不足(約2.8:1)だったので可読側へ引き上げ */
+      --muted-2: #88a0b1;
       --danger: #e0533c;
       --danger-glow: #ff6a4d;
       --good: #48c98a;
@@ -19,11 +20,42 @@
       --c-green: #2f9e63;
       --c-blue: #3a7fc9;
       --c-purple: #9a57d4;
-      --c-black: #454b58;
+      /* 黒カードが盤面に埋もれないよう少し持ち上げ */
+      --c-black: #5a6170;
       --c-yellow: #d9bd33;
       --line: rgba(233, 185, 73, .18);
       --shadow: 0 10px 30px rgba(0, 0, 0, .45);
       --r: 10px;
+
+      /* ===== セマンティックトークン（本格リフレッシュの土台。HTMLは不変） ===== */
+      /* サーフェス階層: 0=最下層背景 / 1=ゾーン / 2=カード / 3=オーバーレイ/パネル */
+      --surface-0: #081521;
+      --surface-1: #0d2030;
+      --surface-2: #0c1a25;
+      --surface-3: #112a3c;
+      --surface-edge: rgba(255, 255, 255, .08);
+      /* 自分側=寒色トーン / 相手側=暖色トーン（手番・陣営を色で区別） */
+      --self-tint: rgba(36, 110, 170, .14);
+      --self-line: rgba(90, 170, 235, .30);
+      --self-accent: #5aa9e6;
+      --opp-tint: rgba(190, 70, 70, .12);
+      --opp-line: rgba(225, 110, 95, .28);
+      --opp-accent: #e5836f;
+      /* 状態色: 合法/不可/警告/情報 */
+      --legal: var(--good);
+      --legal-glow: #6fe6ab;
+      --illegal: #3b4a57;
+      --warn: var(--gold);
+      --warn-glow: var(--gold-soft);
+      --info: #5aa9e6;
+      /* テキスト副次（可読保証） */
+      --ink-2: #c4d3de;
+      /* 角丸 / 影 */
+      --r-sm: 6px;
+      --r-card: 7px;
+      --elev-1: 0 2px 8px rgba(0, 0, 0, .35);
+      --elev-2: 0 8px 24px rgba(0, 0, 0, .45);
+      --elev-3: 0 20px 60px rgba(0, 0, 0, .6);
     }
 
     * {
@@ -45,6 +77,16 @@
         linear-gradient(180deg, var(--ocean-900), #040c12);
       background-attachment: fixed;
       overflow: hidden;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    /* タッチ操作の最適化（ダブルタップズーム抑止・カードのドラッグ選択無効） */
+    .card,
+    .doncard,
+    .pile,
+    .trashtop,
+    button {
+      touch-action: manipulation
     }
 
     .display {
@@ -78,8 +120,9 @@
       align-items: center;
       gap: 14px;
       padding: 0 16px;
-      background: linear-gradient(180deg, rgba(10, 28, 41, .95), rgba(10, 28, 41, .78));
+      background: linear-gradient(180deg, var(--surface-3), rgba(10, 28, 41, .82));
       border-bottom: 1px solid var(--line);
+      box-shadow: var(--elev-1);
       position: relative;
       z-index: 40;
     }
@@ -111,10 +154,22 @@
       align-items: center;
       gap: 10px;
       background: #00000035;
-      border: none;
+      border: 1px solid transparent;
       border-radius: 999px;
       padding: 5px 14px;
-      font-size: 13px
+      font-size: 13px;
+      transition: border-color .2s, box-shadow .2s
+    }
+
+    /* 手番で枠を陣営色に（誰のターンかを受動的に提示） */
+    .turnpill.mine {
+      border-color: var(--self-line);
+      box-shadow: 0 0 0 1px var(--self-tint) inset
+    }
+
+    .turnpill.opp {
+      border-color: var(--opp-line);
+      box-shadow: 0 0 0 1px var(--opp-tint) inset
     }
 
     .turnpill b {
@@ -125,8 +180,9 @@
     }
 
     .phase-tag {
-      font-size: 11px;
-      color: var(--muted);
+      font-size: 13px;
+      color: var(--ink);
+      font-weight: 700;
       text-transform: uppercase;
       letter-spacing: .12em
     }
@@ -182,6 +238,10 @@
 
     .tbtn:hover {
       color: var(--gold-soft)
+    }
+
+    .tbtn.muted {
+      opacity: .5
     }
 
     .ham-btn {
@@ -305,6 +365,11 @@
       gap: 12px;
       max-width: 1000px;
       width: 100%
+    }
+
+    .tip.warn {
+      color: var(--danger-glow);
+      font-weight: 700
     }
 
     .deck-card {
@@ -446,6 +511,51 @@
       width: 100%
     }
 
+    /* 先攻設定（常時設置のセグメントコントロール） */
+    .first-pick {
+      display: flex;
+      align-items: center;
+      gap: 10px
+    }
+
+    .first-pick .fp-label {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--gold-soft);
+      letter-spacing: .05em
+    }
+
+    .seg {
+      display: inline-flex;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      overflow: hidden;
+      background: #00000035
+    }
+
+    .seg-btn {
+      background: transparent;
+      border: none;
+      color: var(--muted);
+      font-size: 12.5px;
+      font-weight: 700;
+      padding: 7px 16px;
+      transition: .15s
+    }
+
+    .seg-btn:not(:last-child) {
+      border-right: 1px solid var(--line)
+    }
+
+    .seg-btn:hover {
+      color: var(--ink)
+    }
+
+    .seg-btn.on {
+      background: linear-gradient(180deg, var(--gold-soft), var(--gold-dim));
+      color: #1a1205
+    }
+
     .pick-info {
       font-size: 13px;
       color: var(--muted)
@@ -495,7 +605,9 @@
       display: flex;
       flex-direction: column;
       --cu: clamp(36px, min(calc(8.5vh - 6px), calc((100vw - 16px)/8.5)), 58px);
-      background: radial-gradient(900px 520px at 50% 50%, #15405e30 0%, transparent 70%);
+      background:
+        radial-gradient(900px 520px at 50% 50%, #15405e2e 0%, transparent 70%),
+        linear-gradient(180deg, var(--opp-tint) 0%, transparent 34%, transparent 66%, var(--self-tint) 100%);
     }
 
     .felt::before {
@@ -520,12 +632,14 @@
     }
 
     .side.opp {
-      background: linear-gradient(180deg, #1a0e1230, transparent);
+      background: linear-gradient(180deg, var(--opp-tint), transparent 78%);
+      box-shadow: inset 0 2px 0 -1px var(--opp-line);
       grid-template-areas: "dondeck cost trash" "life leader deck" "lhand chars rhand"
     }
 
     .side.me {
-      background: linear-gradient(0deg, #0e1c2a40, transparent);
+      background: linear-gradient(0deg, var(--self-tint), transparent 78%);
+      box-shadow: inset 0 -2px 0 -1px var(--self-line);
       grid-template-areas: "lhand chars rhand" "life leader deck" "dondeck cost trash"
     }
 
@@ -605,9 +719,10 @@
     }
 
     .zone-side .zlabel {
-      font-size: 9px;
-      letter-spacing: .1em;
-      color: var(--muted-2);
+      font-size: 10px;
+      letter-spacing: .08em;
+      color: var(--muted);
+      font-weight: 600;
       text-transform: uppercase;
       white-space: nowrap
     }
@@ -617,10 +732,11 @@
       --w: var(--cu);
       width: var(--w);
       height: calc(var(--w)*1.4);
-      border-radius: 6px;
+      border-radius: var(--r-card);
       position: relative;
-      background: #0c1a25;
-      border: 1px solid #ffffff14;
+      background: var(--surface-2);
+      border: 1px solid var(--surface-edge);
+      box-shadow: var(--elev-1);
       overflow: hidden;
       flex: 0 0 auto;
       transition: transform .16s, box-shadow .16s, filter .16s;
@@ -636,11 +752,18 @@
     }
 
     .card.rest {
-      transform: rotate(90deg)
+      transform: rotate(90deg);
+      filter: brightness(.82) saturate(.92)
     }
 
     .card.rest.flip {
       transform: rotate(-90deg)
+    }
+
+    /* 選択/アタック対象のレストカードは減光せず明るく保つ（候補を見やすく） */
+    .card.rest.targetable,
+    .card.rest.selectable {
+      filter: none
     }
 
     .card .fallback {
@@ -673,9 +796,10 @@
     }
 
     .card .fallback .ctr {
-      font-size: 8px;
-      color: #ffd;
-      opacity: .85
+      font-size: 10px;
+      font-weight: 700;
+      color: #ffe9a8;
+      opacity: .95
     }
 
     .card .fallback .nm {
@@ -714,12 +838,16 @@
       left: 0;
       bottom: 0;
       font-family: "Bebas Neue";
-      font-size: 14px;
+      font-size: 16px;
       color: #fff;
-      background: linear-gradient(135deg, #000a, transparent);
-      padding: 0 4px;
+      background: linear-gradient(135deg, #000c, transparent);
+      padding: 0 5px;
       border-top-right-radius: 6px;
-      text-shadow: 0 1px 2px #000
+      text-shadow: 0 1px 2px #000, 0 0 3px #000
+    }
+
+    .card.leader .cnr-power {
+      font-size: 18px
     }
 
     .card .donbadge {
@@ -794,31 +922,165 @@
       transform: rotate(90deg) translateX(-6px) scale(1.04)
     }
 
+    /* ===== 合法手の事前アフォーダンス（押せる=光る / 押せない=グレー） ===== */
+    /* 出せる手札・行動できる自分のカード：常時うっすら発光（hoverでさらに強調） */
+    .card.playable,
+    .card.actable {
+      box-shadow: 0 0 0 1.5px var(--legal), 0 0 12px -1px var(--legal-glow);
+      outline: 1px solid transparent
+    }
+
+    .card.playable::after,
+    .card.actable::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      pointer-events: none;
+      box-shadow: inset 0 0 14px -4px var(--legal-glow)
+    }
+
+    /* 出せない手札：彩度・明度を落として「今は不可」を伝える（理由＝ドン不足/効果なし） */
+    .card.unplayable {
+      filter: grayscale(.65) brightness(.6);
+      opacity: .82
+    }
+
+    .card.unplayable:hover {
+      transform: none;
+      box-shadow: none
+    }
+
     .card.targetable {
-      box-shadow: 0 0 0 2px var(--danger), 0 0 16px var(--danger-glow);
+      box-shadow: 0 0 0 2.5px var(--danger), 0 0 18px var(--danger-glow);
       cursor: crosshair;
-      animation: tpulse 1.1s infinite
+      animation: tpulse 1.5s ease-in-out infinite
+    }
+
+    /* アタック対象プレビュー: 勝てる=緑枠 / 届かない=赤枠（ブロック/カウンター前の概算） */
+    .card.targetable.win-target {
+      box-shadow: 0 0 0 2.5px var(--legal), 0 0 18px var(--legal-glow)
+    }
+
+    .card.targetable.win-target::before {
+      content: "✓";
+      position: absolute;
+      z-index: 3;
+      right: 2px;
+      bottom: 2px;
+      font-size: 11px;
+      font-weight: 900;
+      color: #06210f;
+      background: var(--legal-glow);
+      border-radius: 999px;
+      width: 15px;
+      height: 15px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 1px 3px #000a
+    }
+
+    .card.targetable.lose-target::before {
+      content: "✕";
+      position: absolute;
+      z-index: 3;
+      right: 2px;
+      bottom: 2px;
+      font-size: 10px;
+      font-weight: 900;
+      color: #2a0a06;
+      background: var(--danger-glow);
+      border-radius: 999px;
+      width: 15px;
+      height: 15px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 1px 3px #000a
     }
 
     .card.selectable {
-      box-shadow: 0 0 0 2px var(--gold), 0 0 16px var(--gold-soft);
+      box-shadow: 0 0 0 2.5px var(--gold), 0 0 18px var(--gold-soft);
       cursor: pointer;
-      animation: gpulse 1.1s infinite
+      animation: gpulse 1.5s ease-in-out infinite
+    }
+
+    /* 損失系（トラッシュ送り）選択の盤面ハイライトは赤（誤操作防止） */
+    .card.selectable.danger-sel {
+      box-shadow: 0 0 0 2.5px var(--danger), 0 0 18px var(--danger-glow);
+      animation: tpulse 1.5s ease-in-out infinite
+    }
+
+    /* 選択候補が多い時は脈動を止めて視線疲労を抑える（枠だけで示す） */
+    .felt.many-sel .card.selectable {
+      animation: none
+    }
+
+    /* 選択中は「選べるカード」にスポットライト＝それ以外を減光（盤面クリック選択を誘導） */
+    .felt.picking .card:not(.selectable),
+    .felt.selecting .card:not(.targetable):not(.attacker) {
+      opacity: .42;
+      filter: saturate(.7)
     }
 
     .card.attacker {
-      box-shadow: 0 0 0 2px var(--gold-soft), 0 0 20px var(--gold)
+      box-shadow: 0 0 0 2.5px var(--gold-soft), 0 0 22px var(--gold);
+      z-index: 7
     }
 
     @keyframes tpulse {
+
+      0%,
+      100% {
+        box-shadow: 0 0 0 2px var(--danger), 0 0 12px var(--danger-glow)
+      }
+
       50% {
-        box-shadow: 0 0 0 3px var(--danger), 0 0 26px var(--danger-glow)
+        box-shadow: 0 0 0 3.5px var(--danger), 0 0 30px var(--danger-glow)
       }
     }
 
     @keyframes gpulse {
+
+      0%,
+      100% {
+        box-shadow: 0 0 0 2px var(--gold), 0 0 12px var(--gold-soft)
+      }
+
       50% {
-        box-shadow: 0 0 0 3px var(--gold), 0 0 26px var(--gold-soft)
+        box-shadow: 0 0 0 3.5px var(--gold), 0 0 30px var(--gold-soft)
+      }
+    }
+
+    /* モーション軽減設定の尊重（アクセシビリティ） */
+    @media (prefers-reduced-motion: reduce) {
+
+      .card.targetable,
+      .card.selectable {
+        animation: none
+      }
+    }
+
+    /* タッチ端末ではホバーの「浮き上がり」を無効化（sticky hover対策・長押しプレビューに委ねる） */
+    @media (hover: none) {
+
+      .card.clickable:hover,
+      .handzone .card:hover {
+        transform: none
+      }
+
+      .card.rest.clickable:hover {
+        transform: rotate(90deg)
+      }
+
+      .handzone .card:hover {
+        margin: 0 -5px;
+        box-shadow: none
+      }
+
+      .trashfan {
+        display: none !important
       }
     }
 
@@ -953,11 +1215,11 @@
 
     /* hand */
     .handzone {
-      min-height: 128px;
+      min-height: 116px;
       display: flex;
       align-items: flex-end;
       justify-content: center;
-      padding: 4px 10px 10px;
+      padding: 4px 10px 8px;
       gap: 0;
       position: relative
     }
@@ -975,6 +1237,19 @@
     }
 
     /* center prompt */
+    /* プロンプトは #promptHost（body直付け・全画面の非ブロッキング層）に描画。盤面の再描画と切り離す。 */
+    #promptHost {
+      position: fixed;
+      inset: 0;
+      z-index: 55;
+      pointer-events: none
+    }
+
+    #promptHost .prompt {
+      top: 58px;
+      pointer-events: auto
+    }
+
     .prompt {
       position: absolute;
       left: 50%;
@@ -997,6 +1272,26 @@
       animation: cardenter .22s
     }
 
+    /* 防御プロンプト（相手の攻撃に反応する＝あなたの番）を陣営色で明示 */
+    .prompt.defense {
+      border-color: var(--opp-accent);
+      box-shadow: 0 0 0 1px var(--opp-tint), var(--elev-3)
+    }
+
+    .prompt.defense h3 {
+      color: var(--opp-accent)
+    }
+
+    /* 損失系（自分のカードをトラッシュへ送る）プロンプトは赤で警告 */
+    .prompt.danger {
+      border-color: var(--danger);
+      box-shadow: 0 0 0 1px rgba(224, 83, 60, .35), var(--elev-3)
+    }
+
+    .prompt.danger h3 {
+      color: var(--danger-glow)
+    }
+
     .prompt h3 {
       margin: 0 0 8px;
       font-size: 16px;
@@ -1008,6 +1303,15 @@
       font-size: 13px;
       color: var(--ink);
       line-height: 1.6
+    }
+
+    /* プロンプト本文の操作ガイド行（候補数・選択方法） */
+    .prompt .pp-hint {
+      display: block;
+      margin-top: 5px;
+      font-size: 11px;
+      color: var(--muted);
+      font-weight: 400
     }
 
     .prompt .opts {
@@ -1151,6 +1455,59 @@
 
     .banner.flash {
       animation: bnr 1.3s ease
+    }
+
+    /* ターン/節目アナウンス（body直付け・render()で消えない） */
+    .turnbanner {
+      position: fixed;
+      left: 50%;
+      top: 34%;
+      transform: translate(-50%, -50%);
+      z-index: 150;
+      font-family: "Bebas Neue";
+      font-size: clamp(30px, 6vw, 56px);
+      letter-spacing: .06em;
+      color: var(--gold);
+      text-shadow: 0 4px 0 #000, 0 0 34px var(--gold-soft);
+      opacity: 0;
+      pointer-events: none;
+      white-space: nowrap
+    }
+
+    .turnbanner.mine {
+      color: var(--self-accent);
+      text-shadow: 0 4px 0 #000, 0 0 34px var(--self-accent)
+    }
+
+    .turnbanner.opp {
+      color: var(--opp-accent);
+      text-shadow: 0 4px 0 #000, 0 0 34px var(--opp-accent)
+    }
+
+    .turnbanner.flash {
+      animation: tbnr 1.6s ease
+    }
+
+    @keyframes tbnr {
+      0% {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(.7)
+      }
+
+      16% {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1)
+      }
+
+      78% {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1)
+      }
+
+      100% {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(1.12)
+      }
     }
 
     @keyframes bnr {
@@ -1619,7 +1976,109 @@
       align-items: center;
       justify-content: center;
       gap: 10px;
-      padding: 6px
+      padding: 6px;
+      flex-wrap: wrap
+    }
+
+    /* ===== 常時ヒントバー（今できることを受動的に提示） ===== */
+    .hintbar {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      flex-wrap: nowrap;
+      overflow: hidden;
+      justify-content: center;
+      background: linear-gradient(180deg, rgba(13, 36, 52, .7), rgba(8, 22, 33, .55));
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 4px 12px;
+      max-width: min(820px, 94vw)
+    }
+
+    .hintbar .hb-lead,
+    .hintbar .hb-chip {
+      flex: 0 0 auto
+    }
+
+    .hintbar.atk {
+      border-color: var(--opp-line);
+      box-shadow: 0 0 0 1px var(--opp-tint) inset
+    }
+
+    .hintbar .hb-lead {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--gold-soft);
+      letter-spacing: .03em
+    }
+
+    .hintbar.atk .hb-lead {
+      color: var(--opp-accent)
+    }
+
+    .hintbar .hb-chip {
+      font-size: 11.5px;
+      color: var(--ink-2);
+      background: #00000035;
+      border: 1px solid var(--surface-edge);
+      border-radius: 999px;
+      padding: 2px 9px;
+      white-space: nowrap
+    }
+
+    .hintbar .hb-chip b {
+      font-family: "Bebas Neue";
+      font-size: 14px;
+      color: var(--gold-soft);
+      margin-left: 1px;
+      vertical-align: -1px
+    }
+
+    .hintbar .hb-chip.don b {
+      color: var(--self-accent)
+    }
+
+    .hintbar .hb-chip.act b {
+      color: var(--legal-glow)
+    }
+
+    .hintbar .hb-chip.warn {
+      border-color: var(--opp-line)
+    }
+
+    .hintbar .hb-chip.warn b {
+      color: var(--opp-accent)
+    }
+
+    /* 0件のチップは控えめに（押せない＝理由が読み取れる） */
+    .hintbar .hb-chip.zero {
+      opacity: .5
+    }
+
+    .hintbar .hb-chip.zero b {
+      color: var(--muted)
+    }
+
+    .hintbar .hb-tip {
+      font-size: 11px;
+      color: var(--muted);
+      flex: 1 1 auto;
+      min-width: 0;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis
+    }
+
+    /* 狭い画面ではヒントの説明文は省略し、チップ（数値）を優先 */
+    @media(max-width:560px) {
+      .hintbar .hb-tip {
+        display: none
+      }
+    }
+
+    .phasebtn.ghost {
+      background: transparent;
+      color: var(--muted)
     }
 
     .phasebtn {
@@ -1687,6 +2146,7 @@
 
     .tabs {
       display: flex;
+      align-items: stretch;
       border-bottom: 1px solid var(--line)
     }
 
@@ -1701,6 +2161,24 @@
       border-bottom: 2px solid transparent;
       transition: .15s;
       font-weight: 700
+    }
+
+    /* 情報パネルの閉じるボタン（モバイルのオーバーレイ時のみ表示。PCは常設カラムなので不要） */
+    .side-close {
+      display: none;
+      flex: 0 0 auto;
+      width: 46px;
+      background: transparent;
+      border: none;
+      border-left: 1px solid var(--line);
+      color: var(--ink);
+      font-size: 22px;
+      line-height: 1;
+      cursor: pointer
+    }
+
+    .side-close:hover {
+      color: var(--danger-glow)
     }
 
     .tab.active {
@@ -1831,6 +2309,37 @@
       gap: 6px
     }
 
+    /* 直前のCPUターン行動サマリ（観戦性） */
+    .cpu-summary {
+      background: var(--opp-tint);
+      border: 1px solid var(--opp-line);
+      border-radius: 9px;
+      padding: 9px 11px;
+      margin-bottom: 10px
+    }
+
+    .cpu-summary .cs-h {
+      color: var(--opp-accent);
+      font-weight: 700;
+      font-size: 12px;
+      margin-bottom: 5px
+    }
+
+    .cpu-summary .cs-line {
+      font-size: 11.5px;
+      color: var(--ink-2);
+      line-height: 1.5;
+      padding: 1px 0 1px 12px;
+      position: relative
+    }
+
+    .cpu-summary .cs-line::before {
+      content: "•";
+      position: absolute;
+      left: 2px;
+      color: var(--opp-accent)
+    }
+
     .logline {
       font-size: 12px;
       line-height: 1.5;
@@ -1911,6 +2420,13 @@
         transform: none
       }
 
+      /* オーバーレイ時は閉じるボタンを表示（再オープン不要で閉じられる） */
+      .side-close {
+        display: flex;
+        align-items: center;
+        justify-content: center
+      }
+
       #preview {
         display: none !important
       }
@@ -1963,13 +2479,15 @@
       }
 
       .side {
-        gap: 1px 6px;
-        padding: 2px 4px
+        gap: 3px 6px;
+        padding: 2px 5px
       }
 
       .handzone {
         min-height: 94px;
-        padding: 2px 4px 6px
+        padding: 2px 4px 6px;
+        overflow-x: auto;
+        justify-content: safe center
       }
 
       .handzone .card {
@@ -1999,6 +2517,11 @@
         width: 94%;
         max-height: 74vh;
         overflow: auto
+      }
+
+      /* オーバーレイ化したプロンプトはトップバー（44px）を避けて配置 */
+      #promptHost .prompt {
+        top: 48px
       }
 
       .opt {
@@ -2078,6 +2601,72 @@
       font-size: 12px;
       color: var(--muted);
       line-height: 1.55
+    }
+
+    /* ===== カード詳細モーダル（タッチ長押し） ===== */
+    .modal-back.cardmodal {
+      z-index: 160
+    }
+
+    .cardmodal-box {
+      background: linear-gradient(180deg, var(--surface-3), var(--ocean-850));
+      border: 1px solid var(--gold-dim);
+      border-radius: 14px;
+      width: 100%;
+      max-width: 340px;
+      box-shadow: var(--elev-3)
+    }
+
+    .cardmodal-close {
+      display: block;
+      width: 100%;
+      background: var(--ocean-700);
+      border: none;
+      border-top: 1px solid var(--line);
+      color: var(--ink);
+      padding: 12px;
+      font-size: 14px;
+      font-weight: 700;
+      border-radius: 0 0 14px 14px
+    }
+
+    /* ===== トラッシュ全表示モーダル ===== */
+    .trash-modal-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(64px, 1fr));
+      gap: 8px
+    }
+
+    .trash-modal-grid .tm-card {
+      position: relative;
+      aspect-ratio: 1/1.4;
+      border-radius: 6px;
+      overflow: hidden;
+      background: var(--surface-2);
+      border: 1px solid var(--surface-edge)
+    }
+
+    .trash-modal-grid .tm-card img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block
+    }
+
+    .trash-modal-grid .tm-card .tm-fb {
+      position: absolute;
+      inset: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      font-size: 9px;
+      padding: 3px;
+      color: var(--ink)
+    }
+
+    .trash-modal-grid .tm-card.noimg .tm-fb {
+      display: flex
     }
 
     @media(max-width:680px) {
@@ -2194,6 +2783,19 @@
       filter: grayscale(.5) brightness(.74);
       transform: rotate(90deg);
       margin-left: calc(var(--cu)*-0.55)
+    }
+
+    /* 自分のメイン中、使えるアクティブなドンを発光（リソース可用性の可視化） */
+    .doncard.usable {
+      box-shadow: 0 0 0 1.5px var(--gold-soft), 0 0 10px -1px var(--gold);
+      border-color: var(--gold-soft)
+    }
+
+    .doncost .zlabel .dc-use b {
+      font-family: "Bebas Neue";
+      font-size: 14px;
+      color: var(--gold-soft);
+      vertical-align: -1px
     }
 
     .doncard.ghost {
@@ -2416,9 +3018,10 @@
     #atkAnnounce {
       position: fixed;
       left: 50%;
-      top: 46%;
-      transform: translate(-50%, -50%);
-      z-index: 40;
+      bottom: 172px;
+      top: auto;
+      transform: translateX(-50%);
+      z-index: 56;
       pointer-events: none;
       display: flex;
       align-items: center;
@@ -2442,7 +3045,11 @@
     }
 
     #atkAnnounce .aa-from {
-      color: #ffe7aa
+      color: #ffe7aa;
+      display: inline-flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px
     }
 
     #atkAnnounce.opp .aa-from {
@@ -2459,7 +3066,29 @@
     }
 
     #atkAnnounce .aa-to {
-      color: #fff
+      color: #fff;
+      display: inline-flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px
+    }
+
+    /* アタック/防御のパワー値チップ */
+    #atkAnnounce .aa-pw {
+      font-family: "Bebas Neue";
+      font-size: 16px;
+      line-height: 1;
+      letter-spacing: .03em;
+      color: #1a1205;
+      background: linear-gradient(180deg, var(--gold-soft), var(--gold-dim));
+      border-radius: 999px;
+      padding: 1px 9px
+    }
+
+    #atkAnnounce .aa-pw.def {
+      color: #fff;
+      background: rgba(255, 255, 255, .14);
+      border: 1px solid rgba(255, 255, 255, .35)
     }
 
     #atkAnnounce .aa-side {
@@ -2475,12 +3104,12 @@
     @keyframes atkAnn {
       from {
         opacity: 0;
-        transform: translate(-50%, -50%) scale(.82)
+        transform: translateX(-50%) scale(.82)
       }
 
       to {
         opacity: 1;
-        transform: translate(-50%, -50%) scale(1)
+        transform: translateX(-50%) scale(1)
       }
     }
 
@@ -2489,7 +3118,8 @@
         font-size: 12px;
         padding: 7px 12px;
         gap: 7px;
-        max-width: 94vw
+        max-width: 94vw;
+        bottom: 150px
       }
 
       .trashfan {
