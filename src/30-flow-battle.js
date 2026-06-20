@@ -55,17 +55,53 @@
       await fxNote(side, 'キャラ登場時', L.base.name);
       await runFx(cfg.fx, { self: L, side, entered: card });
     }
-    // リーダーの onAllyLeave: 自分の filter一致キャラが場を離れた時に誘発（once/cond対応）
-    async function checkAllyLeave(side, card) {
+    // リーダーの onAllyLeave: 自分の filter一致キャラが場を離れた時に誘発（cause/when/filter/once/cond対応）
+    async function checkAllyLeave(side, card, cause) {
       const L = G.players[side].leader;
       const cfg = !isNegated(L) && L.base.fx && L.base.fx.onAllyLeave;
       if (!cfg) return;
+      if (cfg.cause && cfg.cause !== cause) return;     // 原因限定（'ownEffect'|'oppEffect'|'battle'）。未指定なら全原因
+      if (cfg.when === 'selfTurn' && side !== G.active) return;
+      if (cfg.when === 'oppTurn' && side === G.active) return;
       if (cfg.filter && !matchFilter(card, cfg.filter)) return;
       if (cfg.cond && !checkCond(cfg.cond, side, L)) return;
       if (cfg.once === 'turn') { if (L._allyLeaveTurn === G.turnSeq) return; L._allyLeaveTurn = G.turnSeq; }
       await fxNote(side, 'キャラ離脱時', L.base.name);
+      await runFx(cfg.fx, { self: L, side, left: card });
+    }
+    // リーダーの onTurnStart: 自分のターン開始時（メイン開始前）に誘発（cond/once対応）
+    async function checkTurnStart(side) {
+      const L = G.players[side].leader;
+      const cfg = !isNegated(L) && L.base.fx && L.base.fx.onTurnStart;
+      if (!cfg) return;
+      if (cfg.cond && !checkCond(cfg.cond, side, L)) return;
+      if (cfg.once === 'turn') { if (L._turnStartSeq === G.turnSeq) return; L._turnStartSeq = G.turnSeq; }
+      await fxNote(side, 'ターン開始時', L.base.name);
       await runFx(cfg.fx, { self: L, side });
     }
+    // リーダーの onLifeZero: 自分のライフが0になった時に誘発（エネル等の補充。when/once対応）
+    async function checkLifeZero(side) {
+      const L = G.players[side].leader;
+      const cfg = !isNegated(L) && L.base.fx && L.base.fx.onLifeZero;
+      if (!cfg || G.players[side].life.length !== 0) return;
+      if (cfg.when === 'oppTurn' && side === G.active) return;
+      if (cfg.when === 'selfTurn' && side !== G.active) return;
+      if (cfg.once === 'turn') { if (L._lifeZeroSeq === G.turnSeq) return; L._lifeZeroSeq = G.turnSeq; }
+      await fxNote(side, 'ライフ0', L.base.name);
+      await runFx(cfg.fx, { self: L, side });
+    }
+    // リーダーの onLeaderHitLife: このリーダー自身のアタックで相手ライフにダメージを与えた時に誘発
+    async function checkLeaderHitLife(attacker) {
+      if (!attacker || attacker.base.type !== 'LEADER') return;
+      const side = attacker.owner, L = G.players[side].leader;
+      if (L !== attacker || isNegated(L)) return;
+      const cfg = L.base.fx && L.base.fx.onLeaderHitLife;
+      if (!cfg) return;
+      if (cfg.cond && !checkCond(cfg.cond, side, L)) return;
+      await runFx(cfg.fx, { self: L, side });
+    }
+    // デッキが0枚になった時、敗北の代わりに勝利するリーダー（ナミ等）
+    function hasDeckOutWin(side) { const L = G.players[side].leader; return !!(L && !isNegated(L) && L.base.fx && L.base.fx.static && L.base.fx.static.some(o => o.op === 'deckOutWin')); }
     async function koCard(card, source) {
       const ow = G.players[card.owner];
       const idx = ow.chars.indexOf(card); if (idx < 0) return;
@@ -76,7 +112,7 @@
       (G._koedThisTurn = G._koedThisTurn || {})[card.owner] = G.turnSeq; // このターンKOされた側を記録（oppCharKOedThisTurn条件用）
       flog(card.owner, `「${card.base.name}」がKO`);
       if (card.base.fx && card.base.fx.onKO && !isNegated(card)) { await fxNote(card.owner, 'KO時効果', card.base.name); await runFx(card.base.fx.onKO, { self: card, side: card.owner }); }
-      await checkAllyLeave(card.owner, card); // 自分のキャラが場を離れた時のリーダー誘発
+      await checkAllyLeave(card.owner, card, source === 'battle' ? 'battle' : 'oppEffect'); // 自分のキャラが場を離れた時のリーダー誘発（KOはバトル/相手効果）
       render();
     }
     function bounceCard(card) { removeCharTo(card, G.players[card.owner].hand); }
@@ -87,7 +123,7 @@
     /* ---------- ドロー / 敗北 ---------- */
     // ブルック等「デッキ0でも即敗北せず、0枚になったターン終了時に敗北」
     function hasDeckOutDelay(side) { const L = G.players[side].leader; return !!(L && !isNegated(L) && L.base.fx && L.base.fx.static && L.base.fx.static.some(o => o.op === 'deckOutDelay')); }
-    function draw(side, n) { const P = G.players[side]; for (let i = 0; i < n; i++) { if (P.deck.length === 0) { if (hasDeckOutDelay(side)) return false; lose(side, 'デッキ切れ'); return false; } P.hand.push(P.deck.shift()); } return true; }
+    function draw(side, n) { const P = G.players[side]; for (let i = 0; i < n; i++) { if (P.deck.length === 0) { if (hasDeckOutWin(side)) { lose(opp(side), 'デッキ0で勝利'); return false; } if (hasDeckOutDelay(side)) return false; lose(side, 'デッキ切れ'); return false; } P.hand.push(P.deck.shift()); } return true; }
     function lose(side, reason) {
       if (G.winner) return; G.winner = opp(side);
       const win = G.winner === 'me';
@@ -101,6 +137,8 @@
        ========================================================================= */
     async function beginTurn(side) {
       if (G.winner) return;
+      // MCTSロールアウトの打ち切り（通常プレイは _simDeadline 未設定で無影響）。次ターン開始前で停止しevalする。
+      if (G._simDeadline != null && G.turnSeq >= G._simDeadline) { G._simHalt = true; G.busy = false; return; }
       G.busy = true; G.active = side; const P = G.players[side]; P.turnsTaken++; G.turnSeq++; G.turnDisp++;
       P.denyBlock = false;
       // リフレッシュ
@@ -129,7 +167,9 @@
       // メイン
       setPhase('メイン');
       log(side, `${sideName(side)}のターン <b>(ターン${G.turnDisp})</b>`);
-      if (P.isCPU) { await cpuTurn(); await endTurn(side); }
+      await checkTurnStart(side); // リーダーの【自分のターン開始時】（OP11-040ルフィ等）
+      if (G.winner) return;
+      if (P.isCPU) { await cpuTurn(side); await endTurn(side); }
       else { G.busy = false; G.myActable = true; render(); refreshHints(); }
     }
     async function endTurn(side) {
@@ -198,13 +238,13 @@
         }
       }
       if (!isNegated(G.players[aSide].leader)) await leaderOnAttack(attacker);
-      // 【相手のアタック時】防御側キャラの誘発（onceゲート: fx内のopに once:'turn' があればそのカードはターン1回）
-      for (const c of [...G.players[dSide].chars]) {
+      // 【相手のアタック時】防御側キャラ＋リーダーの誘発（onceゲート: fx内のopに once:'turn' があればそのカードはターン1回）
+      for (const c of [G.players[dSide].leader, ...G.players[dSide].chars]) {
         if (c.base.fx && c.base.fx.onOppAttack && !isNegated(c)) {
           const onceGated = c.base.fx.onOppAttack.some(o => o.once === 'turn');
           if (onceGated && c._oppAtkTurn === G.turnSeq) continue;
           if (onceGated) c._oppAtkTurn = G.turnSeq;
-          await fxNote(dSide, '相手のアタック時', c.base.name); await runFx(c.base.fx.onOppAttack, { self: c, side: dSide, attacker });
+          await fxNote(dSide, '相手のアタック時', c.base.name); await runFx(c.base.fx.onOppAttack, { self: c, side: dSide, attacker, target });
         }
       }
       { // 【相手のアタック時】防御側ステージ（ドレスローザ王国 等）の誘発
@@ -279,6 +319,8 @@
           if (use) { await fxNote(dSide, 'トリガー発動', card.base.name); flog(dSide, `【トリガー】「${card.base.name}」発動`); await runFx(card.base.fx.trigger, { self: card, side: dSide }); if (!D.chars.includes(card)) D.trash.push(reset(card)); }
           else { D.hand.push(card); flog(dSide, 'ライフ1枚を手札に'); }
         } else { D.hand.push(card); flog(dSide, 'ライフ1枚を手札に'); }
+        await checkLeaderHitLife(attacker); // このリーダーのアタックでライフダメージ（ナミ等：自分のデッキを削る）
+        await checkLifeZero(dSide);          // ライフが0になった時（エネル等：デッキからライフ補充）
         await leaderOnDamage(dSide);
         render(); await sleep(120);
       }

@@ -27,9 +27,9 @@
         G.pendingChoice = { uids, optional, res: finish };
         render();
         const opts = cands.map(c => ({ t: cardBtnLabel(c), v: 'pick:' + c.uid }));
-        if (optional) opts.push({ t: 'スキップ', v: '__skip', ghost: true });
+        if (optional) opts.push({ t: '選ばない（スキップ）', v: '__skip', ghost: true });
         showPrompt({
-          title: '対象を選択', text: (text || '対象を選んでください') + '（ボタンか盤面のカードで選択）', opts,
+          title: '対象を選択', text: (text || '対象を選んでください') + '<span class="pp-hint">候補 ' + cands.length + ' ／ 光るカードをクリック、または下のボタンで選択' + (optional ? '（任意）' : '') + '</span>', opts,
           onPick: v => {
             if (typeof v === 'string' && v.indexOf('pick:') === 0) { const u = +v.slice(5); const c = cands.find(x => x.uid === u); finish(c || (optional ? null : cands[0])); }
             else finish(optional ? null : cands[0]); // __skip / 想定外 / undefined でも必ず解決（フリーズ防止）
@@ -41,6 +41,8 @@
       const b = c.base; const isFighter = (b.type === 'CHAR' || b.type === 'LEADER');
       return b.name + (b.cost != null ? '（C' + b.cost + (isFighter ? '/P' + power(c) : '') + '）' : (isFighter ? '（P' + power(c) + '）' : ''));
     }
+    // 複数選択の進捗を文言に付す（「X/N枚目」）。total<=1なら素の文言
+    function progText(base, i, total) { return total > 1 ? base + '（' + (i + 1) + '/' + total + '枚目）' : base; }
     /* 手札からの選択（捨てる/デッキ下など） */
     async function chooseFromHand(side, cands, text, prefer, optional) {
       cands = cands.filter(Boolean); if (cands.length === 0) return null;
@@ -113,7 +115,7 @@
           if (op.all) { for (const t of oppChars(side, opFilter(op)).filter(c => !isKoImmune(c))) { if (!(await protectFromEffect(t, 'ko'))) await koCard(t, 'oppEffect'); } break; } // 条件一致の相手キャラを全てKO
           for (let i = 0; i < (op.count || 1); i++) {
             const cands = oppChars(side, opFilter(op)).filter(c => !isKoImmune(c));
-            const t = await chooseCard(side, cands, `KOする相手キャラを選択`, 'oppBig', op.optional);
+            const t = await chooseCard(side, cands, progText('KOする相手キャラを選択', i, op.count || 1), 'oppBig', op.optional);
             if (!t) break; if (await protectFromEffect(t, 'ko')) continue; await koCard(t, 'oppEffect');
           }
           break;
@@ -124,11 +126,11 @@
           break;
         }
         case 'bounce': {
-          if (op.all) { for (const t of oppChars(side, opFilter(op)).slice()) { if (!(await protectFromEffect(t, 'bounce'))) { bounceCard(t); flog(side, `「${t.base.name}」を手札に戻した`); await checkAllyLeave(t.owner, t); } } break; }
+          if (op.all) { for (const t of oppChars(side, opFilter(op)).slice()) { if (!(await protectFromEffect(t, 'bounce'))) { bounceCard(t); flog(side, `「${t.base.name}」を手札に戻した`); await checkAllyLeave(t.owner, t, 'oppEffect'); } } break; }
           for (let i = 0; i < (op.count || 1); i++) {
             const cands = oppChars(side, opFilter(op));
-            const t = await chooseCard(side, cands, `手札に戻す相手キャラを選択`, 'oppBig', op.optional);
-            if (!t) break; if (await protectFromEffect(t, 'bounce')) continue; bounceCard(t); flog(side, `「${t.base.name}」を手札に戻した`); await checkAllyLeave(t.owner, t);
+            const t = await chooseCard(side, cands, progText('手札に戻す相手キャラを選択', i, op.count || 1), 'oppBig', op.optional);
+            if (!t) break; if (await protectFromEffect(t, 'bounce')) continue; bounceCard(t); flog(side, `「${t.base.name}」を手札に戻した`); await checkAllyLeave(t.owner, t, 'oppEffect');
           }
           break;
         }
@@ -136,7 +138,7 @@
           if (op.condLeader && !checkCond(op.condLeader, side, self)) break;
           const cands = oppChars(side, opFilter(op));
           const t = await chooseCard(side, cands, `デッキ下に送る相手キャラを選択`, 'oppBig', op.optional);
-          if (t && !(await protectFromEffect(t, 'deckBottom'))) { removeCharTo(t, G.players[t.owner].deck); flog(side, `「${t.base.name}」をデッキ下へ`); await checkAllyLeave(t.owner, t); }
+          if (t && !(await protectFromEffect(t, 'deckBottom'))) { removeCharTo(t, G.players[t.owner].deck); flog(side, `「${t.base.name}」をデッキ下へ`); await checkAllyLeave(t.owner, t, 'oppEffect'); }
           break;
         }
         case 'restChar': {
@@ -144,7 +146,7 @@
           if (op.all) { for (const t of restPool()) { t.rested = true; flog(side, `「${t.base.name === undefined ? '相手リーダー' : t.base.name}」をレスト`); } break; } // 条件一致を全てレスト
           for (let i = 0; i < (op.count || 1); i++) {
             const cands = restPool();
-            const t = await chooseCard(side, cands, `レストにする相手キャラを選択`, 'oppBig', op.optional);
+            const t = await chooseCard(side, cands, progText('レストにする相手キャラを選択', i, op.count || 1), 'oppBig', op.optional);
             if (!t) break; t.rested = true; flog(side, `「${t.base.name}」をレスト`);
           }
           break;
@@ -153,7 +155,7 @@
           const lockPool = () => { let arr = oppChars(side, opFilter(op)).filter(c => (op.restedOnly ? c.rested : true) && !isRestImmune(c) && !c.frozen); if (op.includeLeader && G.players[o].leader.rested && !G.players[o].leader.frozen) arr = [G.players[o].leader, ...arr]; if (op.includeStage && G.players[o].stage && G.players[o].stage.rested && !G.players[o].stage.frozen) arr = [...arr, G.players[o].stage]; return arr; };
           for (let i = 0; i < (op.count || 1); i++) {
             const cands = lockPool();
-            const t = P.isCPU ? cands[0] : await chooseCard(side, cands, '次のリフレッシュでアクティブにしない相手のカード', 'oppBig', op.optional);
+            const t = P.isCPU ? cands[0] : await chooseCard(side, cands, progText('次のリフレッシュでアクティブにしない相手のカード', i, op.count || 1), 'oppBig', op.optional);
             if (!t) break;
             t.rested = true; t.frozen = true; flog(side, `「${t.base.type === 'LEADER' ? '相手リーダー' : t.base.name}」を次のリフレッシュでアクティブにしない`);
             if (op.restSource && self && i === 0) { self.rested = true; flog(side, `「${self.base.name}」をレストにした`); }
@@ -331,7 +333,7 @@
           if (P.isCPU) sac = cands.slice().sort((a, b) => scoreChar(a) - scoreChar(b))[0];
           else sac = await chooseCard(side, cands, 'トラッシュに置くキャラを選択（効果のコスト）', 'ownSmall', true);
           if (!sac) break;
-          removeCharTo(sac, P.trash); flog(side, `「${sac.base.name}」をトラッシュに置いた`);
+          removeCharTo(sac, P.trash); flog(side, `「${sac.base.name}」をトラッシュに置いた`); await checkAllyLeave(side, sac, 'ownEffect');
           await runFx(op.then, ctx);
           break;
         }
@@ -375,6 +377,28 @@
         }
         // レストのドン!!を n枚 アクティブに戻す（リソース加速）
         case 'donActivate': { const k = Math.min(op.n || 1, P.don.rested); P.don.rested -= k; P.don.active += k; if (k) flog(side, `ドン${k}枚をアクティブにした`); render(); break; }
+        // 自分のアクティブのドンを任意の枚数レスト→1枚ごとに「リーダー or filter一致キャラ」1枚までを このバトル中 +amount（OP13-001ルフィ等の【相手のアタック時】）
+        case 'restDonForBuff': {
+          const amount = op.amount || 2000; const maxN = op.maxN || 99;
+          const pool = () => [P.leader, ...P.chars].filter(c => c === P.leader || matchFilter(c, op.filter || {}));
+          if (P.isCPU) {
+            // 攻撃対象(リーダー/filter一致)がいれば耐えるのに必要なだけレストしてpump。無ければリーダーを優先。
+            const tgt = (ctx.target && pool().includes(ctx.target)) ? ctx.target : P.leader;
+            const atkP = ctx.attacker ? power(ctx.attacker) : 0;
+            const need = Math.max(0, atkP - power(tgt) + 1);
+            const restN = Math.min(P.don.active, Math.ceil(need / amount) || 0, maxN);
+            if (restN > 0) { P.don.active -= restN; P.don.rested += restN; addBuff(tgt, restN * amount, 'battle'); floatOn(tgt.uid, `+${restN * amount}`, 'buff'); flog(side, `ドン${restN}枚をレスト→「${tgt.base.type === 'LEADER' ? 'リーダー' : tgt.base.name}」に+${restN * amount}`); }
+          } else {
+            let n = 0;
+            while (n < maxN && P.don.active > 0) {
+              if (!(await confirmUse(side, 'ドンをレストしてパワー+', `ドン1枚をレストして対象を+${amount}しますか？（アクティブ${P.don.active}枚）`, `レストして+${amount}`, 'やめる'))) break;
+              const t = await chooseCard(side, pool(), `+${amount}する対象（リーダー/キャラ）`, 'ownBig', false);
+              if (!t) break;
+              P.don.active--; P.don.rested++; addBuff(t, amount, 'battle'); floatOn(t.uid, `+${amount}`, 'buff'); n++;
+            }
+          }
+          render(); break;
+        }
         // self自身（ステージ/キャラ）をトラッシュに置くコスト。任意。払えた時 then を実行
         case 'trashSelfCost': {
           const inChars = P.chars.includes(self), isStage = P.stage === self;
@@ -383,6 +407,7 @@
           P.don.active += self.attachedDon || 0;
           if (inChars) removeChar(self); if (isStage) P.stage = null;
           P.trash.push(reset(self)); flog(side, `「${self.base.name}」をトラッシュに置いた`);
+          if (inChars) await checkAllyLeave(side, self, 'ownEffect'); // 自身（キャラ）が自分の効果で場を離れた
           await runFx(op.then, ctx);
           break;
         }
@@ -444,7 +469,7 @@
           if (!cands.length) break;
           if (!(await confirmUse(side, '自キャラをデッキ下', '自分のキャラ1枚をデッキの下に置いて効果を使いますか？', '置いて使う'))) break;
           const t = P.isCPU ? cands.slice().sort((a, b) => scoreChar(a) - scoreChar(b))[0] : await chooseCard(side, cands, 'デッキ下に置くキャラを選択（コスト）', 'ownSmall', true);
-          if (!t) break; removeCharTo(t, P.deck); flog(side, `「${t.base.name}」をデッキの下に置いた`);
+          if (!t) break; removeCharTo(t, P.deck); flog(side, `「${t.base.name}」をデッキの下に置いた`); await checkAllyLeave(side, t, 'ownEffect');
           await runFx(op.then, ctx); break;
         }
         // 自分のデッキの上 n枚をトラッシュに置くコスト（任意ミル）。払えた時 then 実行
@@ -554,7 +579,7 @@
           if (!cands.length) break;
           if (!(await confirmUse(side, '自キャラを手札へ', '自分のキャラ1枚を手札に戻して効果を使いますか？', '戻して使う'))) break;
           const t = P.isCPU ? cands.slice().sort((a, b) => scoreChar(a) - scoreChar(b))[0] : await chooseCard(side, cands, '手札に戻すキャラを選択（コスト）', 'ownSmall', true);
-          if (!t) break; bounceCard(t); flog(side, `「${t.base.name}」を手札に戻した`); await checkAllyLeave(t.owner, t);
+          if (!t) break; bounceCard(t); flog(side, `「${t.base.name}」を手札に戻した`); await checkAllyLeave(t.owner, t, 'ownEffect');
           await runFx(op.then, ctx); break;
         }
         // 自分のリーダー/ステージ/キャラ（filter一致）1枚をレストにするコスト。任意。払えた時 then を実行

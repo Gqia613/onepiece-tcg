@@ -582,6 +582,56 @@ humanPick=function(c){return Promise.resolve((c||[])[0]||null);};
       await runFx(me.leader.base.fx.act.fx,{self:me.leader,side:'me'});
       ok(wb.kwGrant.some(g=>g.kw==='rush'), 'OP16-001 act: 白ひげ特徴キャラにも速攻(orフィルタ:特徴一致)');
       delete C['__luf8k__']; delete C['__wb8k__']; }
+
+    // === 新フックを要する複合リーダー5枚 ===
+    // OP11-040 ルフィ: onTurnStart ドン8以上でデッキ上5枚から《麦わら》1枚を手札へ
+    G.players={me:mkP('OP11-040',false),cpu:mkP('OP11-041',true)}; G.active='me'; G.turnSeq=5; G.winner=null;
+    { const me=G.players.me; me.don.active=8; me.hand=[];
+      C['__mugi__']={no:'__mugi__',name:'麦わらの誰か',type:'CHAR',color:[],cost:3,power:4000,counter:0,traits:['麦わらの一味']};
+      me.deck=[mkSyn('__mugi__',C['__mugi__']),I('ST01-006','me'),I('ST01-006','me'),I('ST01-006','me'),I('ST01-006','me')];
+      await checkTurnStart('me');
+      ok(me.hand.some(c=>c.no==='__mugi__'), 'OP11-040 onTurnStart: ドン8以上で《麦わら》をサーチ');
+      me.don.active=7; me.hand=[]; me.deck=[mkSyn('__mugi__',C['__mugi__'])];
+      await checkTurnStart('me');
+      ok(me.hand.length===0, 'OP11-040 onTurnStart: ドン7以下では発動しない(cond)');
+      delete C['__mugi__']; }
+    // OP13-001 ルフィ: onOppAttack ドン×1＆アクティブ5以下→ドンレストで対象+2000(CPU=耐える分)
+    G.players={me:mkP('OP13-001',true),cpu:mkP('OP11-041',false)}; G.active='cpu';
+    { const me=G.players.me; me.leader.attachedDon=1; me.don.active=3; me.don.rested=0;
+      C['__atk6k__']={no:'__atk6k__',name:'攻撃6000',type:'CHAR',color:[],cost:5,power:6000,counter:0,traits:[]};
+      const atk=mkSyn('__atk6k__',C['__atk6k__']); atk.owner='cpu';
+      const p0=power(me.leader);
+      await runFx(me.leader.base.fx.onOppAttack,{self:me.leader,side:'me',attacker:atk,target:me.leader});
+      ok(power(me.leader)===p0+2000 && me.don.active===2 && me.don.rested===1, 'OP13-001 onOppAttack: ドン1レストでリーダー+2000(耐える分)');
+      delete C['__atk6k__']; }
+    // OP07-038 ハンコック: onAllyLeave 自分のターン・自分の効果でキャラ離脱・手札5以下で1ドロー
+    G.players={me:mkP('OP07-038',false),cpu:mkP('OP11-041',true)}; G.active='me';
+    { const me=G.players.me; me.deck=[I('ST01-006','me'),I('ST01-006','me')]; me.hand=[I('OP15-067','me')];
+      const ch=I('OP15-067','me');
+      await checkAllyLeave('me', ch, 'ownEffect');
+      ok(me.hand.length===2 && me.leader._allyLeaveTurn===G.turnSeq, 'OP07-038 onAllyLeave: 自分の効果で離脱→1ドロー(ターン1回)');
+      me.hand=[I('OP15-067','me')]; await checkAllyLeave('me', ch, 'ownEffect'); // 2回目は不発(once)
+      ok(me.hand.length===1, 'OP07-038 onAllyLeave: ターン1回');
+      G.players={me:mkP('OP07-038',false),cpu:mkP('OP11-041',true)}; G.active='me';
+      G.players.me.deck=[I('ST01-006','me')]; G.players.me.hand=[];
+      await checkAllyLeave('me', ch, 'oppEffect'); // 相手効果では発動しない(cause)
+      ok(G.players.me.hand.length===0, 'OP07-038 onAllyLeave: 相手の効果での離脱では発動しない(cause)'); }
+    // OP05-098 エネル: onLifeZero 相手ターン・ライフ0でデッキ→ライフ補充＆手札1捨て
+    G.players={me:mkP('OP05-098',false),cpu:mkP('OP11-041',true)}; G.active='cpu';
+    { const me=G.players.me; me.life=[]; me.deck=[I('ST01-006','me')]; me.hand=[I('OP15-067','me'),I('OP15-067','me')];
+      await checkLifeZero('me');
+      ok(me.life.length===1 && me.hand.length===1 && me.leader._lifeZeroSeq===G.turnSeq, 'OP05-098 onLifeZero: ライフ0でデッキ→ライフ補充＆手札1捨て');
+      me.life=[]; await checkLifeZero('me'); // 2回目は不発(once)
+      ok(me.life.length===0, 'OP05-098 onLifeZero: ターン1回'); }
+    // OP03-040 ナミ: デッキ0で勝利 ＋ onLeaderHitLife(ドン×1で自分のデッキを1ミル)
+    G.players={me:mkP('OP03-040',false),cpu:mkP('OP11-041',true)}; G.active='me'; G.winner=null;
+    { const me=G.players.me; me.deck=[];
+      draw('me',1); // デッキ0でドロー→ナミは勝利
+      ok(G.winner==='me', 'OP03-040 deckOutWin: デッキ0でドロー時に勝利');
+      G.players={me:mkP('OP03-040',false),cpu:mkP('OP11-041',true)}; G.active='me'; G.winner=null;
+      const me2=G.players.me; me2.leader.attachedDon=1; me2.deck=[I('ST01-006','me'),I('ST01-006','me')]; const dk0=me2.deck.length,tr0=me2.trash.length;
+      await checkLeaderHitLife(me2.leader);
+      ok(me2.deck.length===dk0-1 && me2.trash.length===tr0+1, 'OP03-040 onLeaderHitLife: ドン×1で自分のデッキを1ミル'); }
   }catch(e){ console.log('EXCEPTION:', e.message); fail++; }
   console.log('Phase3 fxテスト: pass='+pass+' fail='+fail);
   process.exit(fail?1:0);

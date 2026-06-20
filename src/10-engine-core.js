@@ -4,10 +4,24 @@
        ===============  ゲームエンジン  =========================================
        公式ルール準拠: フェイズ / ドン / ライフ=手札 / バトル / トリガー / キーワード
        ========================================================================= */
-    const sleep = ms => new Promise(r => setTimeout(r, ms));
+    // G._sim 中（MCTSの先読みロールアウト）は演出待ちを全て省略して高速化（通常プレイは従来通り）。
+    const sleep = ms => (G._sim ? Promise.resolve() : new Promise(r => setTimeout(r, ms)));
     let UID = 0;
     const opp = s => s === 'me' ? 'cpu' : 'me';
     const sideName = s => s === 'me' ? 'あなた' : 'CPU';
+
+    /* ---------- シード可能RNG（再現可能なシミュレーション用） ----------
+       通常プレイは未シード＝Math.random相当でランダム。
+       seedRng(n) を呼ぶとmulberry32で決定論的になり、同seed→同一展開。
+       ★ゲーム結果に効く乱数は必ず rng() を使う（shuffle/先攻決め等）。Math.randomは演出専用。 */
+    let _rngState = (Math.random() * 4294967296) >>> 0;
+    function seedRng(seed) { _rngState = (seed >>> 0) || 1; }
+    function rng() {
+      _rngState = (_rngState + 0x6D2B79F5) | 0;
+      let t = Math.imul(_rngState ^ (_rngState >>> 15), 1 | _rngState);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    }
 
     const G = {
       players: {}, active: 'me', firstPlayer: 'me', phase: 'setup',
@@ -25,7 +39,7 @@
         attachedDon: 0, rested: false, summonedTurn: 0, buffs: [], kwGrant: [], frozen: false
       };
     }
-    function shuffle(a) { for (let i = a.length - 1; i > 0; i--) { const j = Math.random() * (i + 1) | 0;[a[i], a[j]] = [a[j], a[i]]; } return a; }
+    function shuffle(a) { for (let i = a.length - 1; i > 0; i--) { const j = rng() * (i + 1) | 0;[a[i], a[j]] = [a[j], a[i]]; } return a; }
 
     function findDeck(deckId) { return DECKS.find(x => x.id === deckId) || (G.customDecks || []).find(x => x.id === deckId); }
     function buildPlayer(id, deckId, isCPU) {
@@ -45,7 +59,7 @@
       removeEndScreen();
       G.players.me = buildPlayer('me', meDeck, false);
       G.players.cpu = buildPlayer('cpu', cpuDeck, true);
-      G.firstPlayer = Math.random() < 0.5 ? 'me' : 'cpu';
+      G.firstPlayer = rng() < 0.5 ? 'me' : 'cpu';
       G.active = G.firstPlayer; G.winner = null; G.turnSeq = 0; G.turnDisp = 0; G.busy = true; G.myActable = false;
       G.attackSel = null; G.pendingChoice = null; G.promptState = null; G.log = []; G._hints = null; G._aiIntent = null;
       for (const s of ['me', 'cpu']) for (let i = 0; i < 5; i++)G.players[s].hand.push(G.players[s].deck.shift());
@@ -154,6 +168,8 @@
       if (c.allSelfCharOther != null) { const others = P.chars.filter(ch => ch !== card); if (!others.length || !others.every(ch => matchFilter(ch, c.allSelfCharOther))) return false; }
       if (c.selfHand != null) { const min = c.selfHand.min || 1; if (P.hand.filter(h => matchFilter(h, c.selfHand)).length < min) return false; }
       if (c.donAtLeast != null && donTotal(side) < c.donAtLeast) return false;
+      if (c.activeDonAtMost != null && (P.don.active || 0) > c.activeDonAtMost) return false; // アクティブのドンN枚以下
+      if (c.activeDonAtLeast != null && (P.don.active || 0) < c.activeDonAtLeast) return false;
       if (c.oppHandAtLeast != null && O.hand.length < c.oppHandAtLeast) return false;
       if (c.selfHandAtMost != null && P.hand.length > c.selfHandAtMost) return false;
       if (c.trashAtLeast != null && P.trash.length < c.trashAtLeast) return false;
