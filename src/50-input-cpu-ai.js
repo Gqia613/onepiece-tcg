@@ -263,8 +263,8 @@
       for (let i = 0; i < best.donNeed && P.don.active > 0; i++) { best.attacker.attachedDon++; P.don.active--; }
       return { attacker: best.attacker, target: best.target };
     }
-    async function cpuTurn() {
-      const side = 'cpu', P = G.players[side];
+    async function heuristicTurn(side) {
+      side = side || 'cpu'; const P = G.players[side];
       let plan = localPlan(side); // aiOff でも一貫方針を持つ
       if (G.aiOn) { render(); const aip = await aiThink(side).catch(() => null); if (aip) { plan = Object.assign({}, plan, aip); if (aip.intent) showAIIntent(aip.intent); } }
       await sleep(350);
@@ -299,7 +299,7 @@
       // 3) 起動効果（エネル等）。エネルのリーダー効果は第2ターン以降ほぼ常に得（ドンランプ＋付与）なので毎ターン使う
       if (P.leader.base.leader === 'enel' && P.turnsTaken >= 2 && P._enelUsedTurn !== G.turnSeq) await leaderActivate(side);
       // 起動メインはキャラだけでなくステージ（ハチノス/マリンフォード等）も対象にする
-      for (const c of [...P.chars, ...(P.stage ? [P.stage] : [])]) { if (c.base.fx && c.base.fx.act && c._actTurn !== G.turnSeq && !isNegated(c)) { const cost = c.base.fx.act.cost || {}; if ((!cost.don || P.don.active >= cost.don) && (!cost.restSelf || !c.rested)) { if (cost.don) payDon(side, cost.don); if (cost.restSelf) c.rested = true; c._actTurn = G.turnSeq; await fxNote(side, '起動メイン', c.base.name); await runFx(c.base.fx.act.fx, { self: c, side }); await sleep(160); } } }
+      for (const c of [P.leader, ...P.chars, ...(P.stage ? [P.stage] : [])]) { if (c.base.fx && c.base.fx.act && c._actTurn !== G.turnSeq && !isNegated(c)) { const cost = c.base.fx.act.cost || {}; if ((!cost.don || P.don.active >= cost.don) && (!cost.restSelf || !c.rested)) { if (cost.don) payDon(side, cost.don); if (cost.restSelf) c.rested = true; c._actTurn = G.turnSeq; await fxNote(side, '起動メイン', c.base.name); await runFx(c.base.fx.act.fx, { self: c, side }); await sleep(160); } } }
       // 4) アタック（リーサルが見えたらリーダー集中、そうでなければ盤面と圧を使い分け）
       if (canAttackThisTurn(side)) {
         if (cpuCanLethal(side)) { plan.lethal = true; plan.donReserve = 0; }
@@ -319,6 +319,56 @@
         }
       }
       await sleep(200);
+    }
+
+    /* =========================================================================
+       ===============  エージェントseam（意思決定の差し替え点）  ================
+       各プレイヤーの「能動ターン」をエージェントで差し替え可能にする最小の仕組み。
+       既定は heuristic（従来CPU）。arena/将来のMCTSは P.agent を変えるだけで差し込める。
+       反応（ブロック/カウンター/効果対象）は isCPU 経路で自動解決されるため、
+       L1ではまず能動ターンのみ差し替え対象にする（block/pick の差し替えは将来追加）。
+       ========================================================================= */
+    function agentName(side) { const P = G.players[side]; return (P && P.agent) || 'heuristic'; }
+    // ランダム合法手プレイヤー（測定系の健全性確認・弱いベースライン）。
+    async function randomTurn(side) {
+      side = side || 'cpu'; const P = G.players[side];
+      let steps = 0;
+      while (steps++ < 40 && !G.winner) {
+        const acts = [];
+        for (const c of P.hand) {
+          const b = c.base;
+          if (b.type === 'CHAR' && effCost(side, c) <= P.don.active && P.chars.length < 5) acts.push({ k: 'char', c });
+          else if (b.type === 'STAGE' && (b.cost || 0) <= P.don.active) acts.push({ k: 'stage', c });
+          else if (b.type === 'EVENT' && b.fx && b.fx.main && effCost(side, c) <= P.don.active) acts.push({ k: 'event', c });
+        }
+        for (const c of [P.leader, ...P.chars, ...(P.stage ? [P.stage] : [])]) { // リーダーの fx.act（番号キーの起動メインリーダー）も対象
+          if (c.base.fx && c.base.fx.act && c._actTurn !== G.turnSeq && !isNegated(c)) {
+            const cost = c.base.fx.act.cost || {};
+            if ((!cost.don || P.don.active >= cost.don) && (!cost.restSelf || !c.rested)) acts.push({ k: 'act', c });
+          }
+        }
+        if (canAttackThisTurn(side)) for (const a of [P.leader, ...P.chars].filter(canCardAttack))
+          for (const t of legalTargets(side, a)) acts.push({ k: 'atk', c: a, t });
+        if (!acts.length) break;
+        acts.push({ k: 'stop' });                       // いつでも終了できる（合法手＝何もしない）
+        const p = acts[rng() * acts.length | 0];
+        if (p.k === 'stop') break;
+        if (p.k === 'char') { payDon(side, effCost(side, p.c)); P.hand.splice(P.hand.indexOf(p.c), 1); await summon(side, p.c, false); }
+        else if (p.k === 'stage') { payDon(side, p.c.base.cost || 0); P.hand.splice(P.hand.indexOf(p.c), 1); if (P.stage) P.trash.push(reset(P.stage)); P.stage = p.c; p.c.owner = side; p.c.rested = false; if (p.c.base.fx && p.c.base.fx.onPlay) await runFx(p.c.base.fx.onPlay, { self: p.c, side }); }
+        else if (p.k === 'event') { payDon(side, effCost(side, p.c)); P.hand.splice(P.hand.indexOf(p.c), 1); await runFx(p.c.base.fx.main.fx, { self: p.c, side }); P.trash.push(reset(p.c)); }
+        else if (p.k === 'act') { const cost = p.c.base.fx.act.cost || {}; if (cost.don) payDon(side, cost.don); if (cost.restSelf) p.c.rested = true; p.c._actTurn = G.turnSeq; await runFx(p.c.base.fx.act.fx, { self: p.c, side }); }
+        else if (p.k === 'atk') { await declareAttack(p.c, p.t); }
+      }
+    }
+    const AGENTS = {
+      heuristic: { takeTurn: heuristicTurn },
+      random: { takeTurn: randomTurn }
+    };
+    // 能動ターンのエントリ。beginTurn から side を受けて、そのサイドのエージェントに委譲。
+    async function cpuTurn(side) {
+      side = side || 'cpu';
+      const a = AGENTS[agentName(side)] || AGENTS.heuristic;
+      return a.takeTurn(side);
     }
 
     /* =========================================================================

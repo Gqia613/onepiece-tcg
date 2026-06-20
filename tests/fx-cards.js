@@ -538,6 +538,50 @@ humanPick=function(c){return Promise.resolve((c||[])[0]||null);};
       const cro2=I('ST03-003','me'); cro2.attachedDon=0; const v2=I('OP15-067','cpu'); G.players.cpu.chars=[v2];
       await runFx(cro2.base.fx.onBlock,{self:cro2,side:'me',attacker:I('OP15-067','cpu')});
       ok(G.players.cpu.chars.includes(v2), 'ST03-003 onBlock: ドン×1未満なら不発'); }
+
+    // === 同名・別Noリーダー（番号キーfx・curatedとは独立） ===
+    const mkSyn=(no,base)=>({uid:Math.floor(Math.random()*1e6),no,owner:'me',base,attachedDon:0,rested:false,buffs:[],kwGrant:[],frozen:false,negSeq:null,noAtkSeq:null});
+    // OP15-098 ルフィ(空島): 元々P6000以上の《空島》キャラを相手効果からライフ→手札で身代わり
+    G.players={me:mkP('OP15-098',false),cpu:mkP('OP11-041',true)}; G.active='cpu'; G.turnSeq=5; G.winner=null;
+    { const me=G.players.me; me.life=[I('ST01-006','me')];
+      C['__sky6k__']={no:'__sky6k__',name:'空島6000',type:'CHAR',color:[],cost:5,power:6000,counter:0,traits:['空島']};
+      const ch=mkSyn('__sky6k__',C['__sky6k__']); me.chars=[ch];
+      const prot=await protectFromEffect(ch,'ko');
+      ok(prot===true && me.life.length===0 && me.hand.length===1, 'OP15-098: 元々P6000+の空島キャラをライフ→手札で身代わり保護');
+      delete C['__sky6k__']; }
+    // ST29-001 ルフィ: 【アタック時】ライフ2以下で1ドロー＆1捨て（リーダーのonAttackが誘発）
+    G.players={me:mkP('ST29-001',false),cpu:mkP('OP11-041',true)}; G.active='me';
+    { const me=G.players.me; me.life=[I('ST01-006','me'),I('ST01-006','me')]; me.deck=[I('OP15-067','me'),I('OP15-067','me')]; me.hand=[I('OP15-067','me')];
+      const d0=me.deck.length,t0=me.trash.length; await runFx(me.leader.base.fx.onAttack,{self:me.leader,side:'me'});
+      ok(me.deck.length===d0-1 && me.trash.length===t0+1, 'ST29-001 onAttack: ライフ2以下で1ドロー＆1捨て');
+      me.life=[I('ST01-006','me'),I('ST01-006','me'),I('ST01-006','me')]; const d1=me.deck.length;
+      await runFx(me.leader.base.fx.onAttack,{self:me.leader,side:'me'});
+      ok(me.deck.length===d1, 'ST29-001 onAttack: ライフ3以上では不発'); }
+    // OP16-022 ルフィ: 【起動メイン】自キャラがインペルダウンのみでドン2アクティブ
+    G.players={me:mkP('OP16-022',false),cpu:mkP('OP11-041',true)}; G.active='me';
+    { const me=G.players.me; me.don.rested=2; me.don.active=0; me.donMax=10;
+      C['__imp__']={no:'__imp__',name:'囚人',type:'CHAR',color:[],cost:2,power:2000,counter:0,traits:['インペルダウン']};
+      me.chars=[mkSyn('__imp__',C['__imp__']),mkSyn('__imp__',C['__imp__'])];
+      await runFx(me.leader.base.fx.act.fx,{self:me.leader,side:'me'});
+      ok(me.don.active===2 && me.don.rested===0, 'OP16-022 act: インペルダウンのみでドン2アクティブ');
+      me.don.rested=2; me.don.active=0;
+      C['__oth__']={no:'__oth__',name:'他',type:'CHAR',color:[],cost:2,power:2000,counter:0,traits:['他']};
+      me.chars=[mkSyn('__imp__',C['__imp__']),mkSyn('__oth__',C['__oth__'])];
+      await runFx(me.leader.base.fx.act.fx,{self:me.leader,side:'me'});
+      ok(me.don.active===0, 'OP16-022 act: 非インペルダウン混在なら不発(allSelfChar)');
+      delete C['__imp__']; delete C['__oth__']; }
+    // OP16-001 エース: 【起動メイン】P8000+のルフィ/白ひげキャラに速攻（or フィルタ）
+    G.players={me:mkP('OP16-001',false),cpu:mkP('OP11-041',true)}; G.active='me';
+    { const me=G.players.me;
+      C['__luf8k__']={no:'__luf8k__',name:'モンキー・Ｄ・ルフィ',type:'CHAR',color:[],cost:5,power:8000,counter:0,traits:['麦わらの一味']};
+      const luf=mkSyn('__luf8k__',C['__luf8k__']); me.chars=[luf];
+      await runFx(me.leader.base.fx.act.fx,{self:me.leader,side:'me'});
+      ok(luf.kwGrant.some(g=>g.kw==='rush'), 'OP16-001 act: P8000のルフィに速攻付与(orフィルタ:名前一致)');
+      C['__wb8k__']={no:'__wb8k__',name:'白ひげの誰か',type:'CHAR',color:[],cost:5,power:9000,counter:0,traits:['白ひげ海賊団']};
+      const wb=mkSyn('__wb8k__',C['__wb8k__']); me.chars=[wb];
+      await runFx(me.leader.base.fx.act.fx,{self:me.leader,side:'me'});
+      ok(wb.kwGrant.some(g=>g.kw==='rush'), 'OP16-001 act: 白ひげ特徴キャラにも速攻(orフィルタ:特徴一致)');
+      delete C['__luf8k__']; delete C['__wb8k__']; }
   }catch(e){ console.log('EXCEPTION:', e.message); fail++; }
   console.log('Phase3 fxテスト: pass='+pass+' fail='+fail);
   process.exit(fail?1:0);
