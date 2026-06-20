@@ -43,6 +43,32 @@ window.CARD_FX = {
   "OP02-093": {"act":{"label":"相手コスト-1→0なら自分+1000","cost":{},"fx":[{"op":"cond","check":"donX1Self","then":[{"op":"addCostBuff","side":"opp","amount":-1,"count":1,"optional":true},{"op":"cond","check":{"oppChar":{"maxCost":0}},"then":[{"op":"leaderBuff","amount":1000}]}]}]}},
   // OP03-022 アーロン: 【ドン!!×2】【アタック時】①：手札からコスト4以下の【トリガー】持ちキャラ1枚までを登場
   "OP03-022": {"onAttack":[{"op":"cond","check":"donX2","then":[{"op":"restDonCost","n":1,"then":[{"op":"playCharFromHand","maxCost":4,"needsTrigger":true,"count":1,"optional":true}]}]}]},
+  /* ----- 軽量リーダー バッチ1（既存フック/op/condのみ・src非干渉） ----- */
+  // OP04-019 ペローナ: 【自分のターン終了時】ドン!!2枚までアクティブ
+  "OP04-019": {"onTurnEnd":[{"op":"donActivate","n":2}]},
+  // OP09-001 ゾロ十郎: 【ターン1回】相手がアタックした時、相手のリーダーかキャラ1枚までを このターン中 パワー-1000
+  "OP09-001": {"onOppAttack":[{"op":"powerMod","side":"opp","amount":-1000,"count":1,"includeLeader":true,"optional":true,"once":"turn"}]},
+  // EB01-040 ニコ・ロビン: 【起動メイン】【ターン1回】自ライフ上1枚を表向きにできる：相手のコスト0キャラ1枚までKO
+  "EB01-040": {"act":{"label":"ライフ表→相手コスト0をKO","cost":{},"fx":[{"op":"lifeCost","action":"faceUp","then":[{"op":"ko","side":"opp","maxCost":0,"count":1,"optional":true}]}]}},
+  // ST01-001 ルフィ(ST): 【起動メイン】【ターン1回】リーダーか自キャラ1枚にレストのドン!!1枚まで付与
+  "ST01-001": {"act":{"label":"レストのドン1付与","cost":{},"fx":[{"op":"donAttach","target":"chooseOwn","n":1}]}},
+  // ST03-001 クロコダイル(L): 【起動メイン】【ターン1回】ドン!!-4：コスト5以下キャラ1枚を持ち主の手札に戻す
+  "ST03-001": {"act":{"label":"ドン-4:コスト5以下を手札へ","cost":{},"fx":[{"op":"donMinus","n":4},{"op":"bounce","side":"opp","maxCost":5,"count":1,"optional":true}]}},
+  // ST05-001 / _r1 シャンクス(FILM): 【起動メイン】【ターン1回】ドン!!-3：自《FILM》全てを このターン中 パワー+2000
+  "ST05-001": {"act":{"label":"ドン-3:FILM全+2000","cost":{},"fx":[{"op":"donMinus","n":3},{"op":"powerMod","side":"self","all":true,"amount":2000,"filter":{"traitIncludes":"FILM"}}]}},
+  "ST05-001_r1": {"act":{"label":"ドン-3:FILM全+2000","cost":{},"fx":[{"op":"donMinus","n":3},{"op":"powerMod","side":"self","all":true,"amount":2000,"filter":{"traitIncludes":"FILM"}}]}},
+  // P-047 ボルサリーノ: 【ドン!!×1】【アタック時】自分の手札が3枚以下なら1ドロー
+  "P-047": {"onAttack":[{"op":"cond","check":"donX1Self","then":[{"op":"draw","n":1,"cond":{"selfHandAtMost":3}}]}]},
+  // P-076 つる: 【起動メイン】【ターン1回】手札の《海軍》1枚を捨てられる：相手キャラ1枚までを このターン中 コスト-1
+  "P-076": {"act":{"label":"海軍捨て:相手コスト-1","cost":{},"fx":[{"op":"discardCost","filter":{"traitIncludes":"海軍"},"count":1,"then":[{"op":"addCostBuff","side":"opp","amount":-1,"count":1,"optional":true}]}]}},
+  // ST09-001 おでん(L): 【ドン!!×1】【相手のターン中】自ライフ2枚以下ならこのリーダー パワー+1000（常在）
+  "ST09-001": {"static":[{"op":"condBuff","cond":{"and":["donX1Self","oppTurn","life<=2"]},"power":1000}]},
+  // OP08-021 ネコマムシ: 【起動メイン】【ターン1回】自《ミンク族》がいる場合、相手のコスト5以下キャラ1枚までレスト
+  "OP08-021": {"act":{"label":"ミンク族で相手コスト5以下レスト","cost":{},"fx":[{"op":"cond","check":{"selfChar":{"traitIncludes":"ミンク族"}},"then":[{"op":"restChar","side":"opp","maxCost":5,"count":1,"optional":true}]}]}},
+  // OP05-041 サボ: 【起動メイン】【ターン1回】手札1枚捨て：1ドロー ／【アタック時】相手キャラ1枚まで このターン中 コスト-1
+  "OP05-041": {"act":{"label":"手札1捨て1ドロー","cost":{},"fx":[{"op":"discardCost","count":1,"then":[{"op":"draw","n":1}]}]},"onAttack":[{"op":"addCostBuff","side":"opp","amount":-1,"count":1,"optional":true}]},
+  // ST07-001 ハンコック(L): 【ドン!!×2】【アタック時】ライフ上下1枚を手札に加えられる：ライフ2以下なら手札1枚をライフ上へ
+  "ST07-001": {"onAttack":[{"op":"cond","check":"donX2","then":[{"op":"lifeCost","action":"toHand","pos":"choose","then":[{"op":"cond","check":"life<=2","then":[{"op":"handToLife"}]}]}]}]},
   /* ===== index.html def() から移行した効果（一元化） ===== */
   // OP05-077 ガンマナイフ(イベント/紫/コスト2/ハートの海賊団): 公式 tcg-portal/cardrush で照合
   // 【メイン】ドン!!-1：相手のキャラ1枚までを、このターン中、パワー-5000。 【トリガー】ドン!!デッキからドン!!1枚までを、アクティブで追加する。

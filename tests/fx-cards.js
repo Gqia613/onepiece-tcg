@@ -674,6 +674,52 @@ humanPick=function(c){return Promise.resolve((c||[])[0]||null);};
       await runFx(me.leader.base.fx.onAttack,{self:me.leader,side:'me'});
       ok(me.chars.includes(tc) && me.don.rested===1, 'OP03-022 onAttack: ドン×2＆①で手札のトリガー持ちを登場');
       delete C['__trchar__']; }
+
+    // === 軽量リーダー バッチ1 ===
+    const LP=(ln)=>{ G.players={me:mkP(ln,false),cpu:mkP('OP11-041',true)}; G.active='me'; G.turnSeq=5; G.winner=null; return G.players.me; };
+    { const me=LP('OP04-019'); me.don.rested=2; me.don.active=0; await runFx(me.leader.base.fx.onTurnEnd,{self:me.leader,side:'me'});
+      ok(me.don.active===2 && me.don.rested===0, 'OP04-019 onTurnEnd: ドン2アクティブ'); }
+    { const me=LP('OP09-001'); G.players.cpu.chars=[I('OP15-067','cpu')]; const lp=power(G.players.cpu.leader); // 相手リーダー優先選択
+      await runFx(me.leader.base.fx.onOppAttack,{self:me.leader,side:'me',attacker:I('OP15-067','cpu')});
+      ok(power(G.players.cpu.leader)===lp-1000, 'OP09-001 onOppAttack: 相手リーダー/キャラを-1000'); }
+    { const me=LP('EB01-040'); me.life=[I('ST01-006','me')];
+      C['__c0__']={no:'__c0__',name:'コスト0',type:'CHAR',color:[],cost:0,power:1000,counter:0,traits:[]};
+      const v=mkSyn('__c0__',C['__c0__']); v.owner='cpu'; G.players.cpu.chars=[v];
+      await runFx(me.leader.base.fx.act.fx,{self:me.leader,side:'me'});
+      ok(!G.players.cpu.chars.includes(v) && me.life[0]._faceUp===true, 'EB01-040 act: ライフ表向き＋相手コスト0をKO'); delete C['__c0__']; }
+    { const me=LP('ST01-001'); me.don.rested=1; me.don.active=0; me.chars=[I('OP15-067','me')]; // リーダー優先選択
+      await runFx(me.leader.base.fx.act.fx,{self:me.leader,side:'me'});
+      ok(me.leader.attachedDon===1 && me.don.rested===0, 'ST01-001 act: リーダー/自キャラにレストのドン1付与'); }
+    { const me=LP('ST03-001'); me.don.active=4; const v=I('OP15-046','cpu'); G.players.cpu.chars=[v]; // OP15-046=コスト7…要コスト5以下
+      const v2=I('OP15-067','cpu'); G.players.cpu.chars=[v2]; // コスト1
+      await runFx(me.leader.base.fx.act.fx,{self:me.leader,side:'me'});
+      ok(!G.players.cpu.chars.includes(v2) && G.players.cpu.hand.includes(v2) && donTotal('me')===0, 'ST03-001 act: ドン-4で相手を手札に戻す'); }
+    { const me=LP('ST05-001'); me.don.active=3;
+      C['__film__']={no:'__film__',name:'FILMの誰か',type:'CHAR',color:[],cost:3,power:4000,counter:0,traits:['FILM']};
+      const f=mkSyn('__film__',C['__film__']); me.chars=[f]; const p0=power(f);
+      await runFx(me.leader.base.fx.act.fx,{self:me.leader,side:'me'});
+      ok(power(f)===p0+2000 && donTotal('me')===0, 'ST05-001 act: ドン-3でFILM全+2000'); delete C['__film__']; }
+    { const me=LP('P-047'); me.leader.attachedDon=1; me.deck=[I('OP15-067','me')]; me.hand=[I('OP15-067','me')];
+      await runFx(me.leader.base.fx.onAttack,{self:me.leader,side:'me'});
+      ok(me.hand.length===2, 'P-047 onAttack: ドン×1＆手札3以下で1ドロー'); }
+    { const me=LP('P-076');
+      C['__navy__']={no:'__navy__',name:'海軍の誰か',type:'CHAR',color:[],cost:3,power:4000,counter:1000,traits:['海軍']};
+      me.hand=[mkSyn('__navy__',C['__navy__'])]; const v=I('OP15-067','cpu'); G.players.cpu.chars=[v];
+      await runFx(me.leader.base.fx.act.fx,{self:me.leader,side:'me'});
+      ok(v.buffs.some(b=>b.costAmt===-1) && me.hand.length===0, 'P-076 act: 海軍捨てで相手コスト-1'); delete C['__navy__']; }
+    { const me=LP('ST09-001'); me.leader.attachedDon=1; G.active='cpu'; me.life=[I('ST01-006','me'),I('ST01-006','me')];
+      ok(power(me.leader)===(C['ST09-001'].power||5000)+1000, 'ST09-001 static: ドン×1＆相手ターン＆ライフ2以下でリーダー+1000'); }
+    { const me=LP('OP08-021');
+      C['__mink__']={no:'__mink__',name:'ミンク族の誰か',type:'CHAR',color:[],cost:3,power:4000,counter:1000,traits:['ミンク族']};
+      me.chars=[mkSyn('__mink__',C['__mink__'])]; const v=I('OP15-067','cpu'); v.rested=false; G.players.cpu.chars=[v];
+      await runFx(me.leader.base.fx.act.fx,{self:me.leader,side:'me'});
+      ok(v.rested===true, 'OP08-021 act: ミンク族で相手コスト5以下レスト'); delete C['__mink__']; }
+    { const me=LP('OP05-041'); me.deck=[I('OP15-067','me'),I('OP15-067','me')]; me.hand=[I('OP15-067','me')];
+      await runFx(me.leader.base.fx.act.fx,{self:me.leader,side:'me'});
+      ok(me.hand.length===1 && me.trash.length===1, 'OP05-041 act: 手札1捨て→1ドロー'); }
+    { const me=LP('ST07-001'); me.leader.attachedDon=2; me.life=[I('ST01-006','me'),I('ST01-006','me')]; me.hand=[I('OP15-067','me')];
+      await runFx(me.leader.base.fx.onAttack,{self:me.leader,side:'me'});
+      ok(me.hand.length===1 && me.life.length===2, 'ST07-001 onAttack: ライフ1枚手札→ライフ2以下で手札1枚ライフ上(枚数保存)'); }
   }catch(e){ console.log('EXCEPTION:', e.message); fail++; }
   console.log('Phase3 fxテスト: pass='+pass+' fail='+fail);
   process.exit(fail?1:0);
