@@ -1,0 +1,463 @@
+#!/usr/bin/env node
+/* tests/fx-cards.js — Phase3で実装したカード効果(cards-fx.js)が実機で発動するか検証。
+   使い方: node tests/fx-cards.js
+   stubs + cards.js + cards-fx.js + index.html を結合して実行し、代表カードの効果を assert する。
+   Phase3で新カードを実装したら、ここに1〜2ケース足すこと。 */
+const { runHarness } = require('./_load-app');  // stubs+CARD_DB+CARD_FX+本体JS(src/00..60) の連結・実行を集約
+
+const harness = String.raw`
+showPrompt=function(cfg){const o=(cfg.opts||[]).filter(x=>!x.disabled);const p=o.find(x=>String(x.v).indexOf('pick:')===0)||o[0];if(cfg.onPick)cfg.onPick(p&&p.v);return Promise.resolve(p&&p.v);};
+humanPick=function(c){return Promise.resolve((c||[])[0]||null);};
+(async()=>{
+  let pass=0,fail=0; const ok=(c,m)=>{if(c)pass++;else{fail++;console.log('  NG:',m);}};
+  const mkP=(ln,cpu)=>({isCPU:cpu,leader:inst(ln,cpu?'cpu':'me'),chars:[],hand:[],life:[],deck:[],trash:[],stage:null,don:{active:0,rested:0},donMax:10,turnsTaken:3,denyBlock:false});
+  const I=(no,o)=>inst(no,o);
+  try{
+    // 統合: cards-fx.js が C にfxを付与している
+    ok(C['OP16-090'] && C['OP16-090'].fx && !C['OP16-090'].dataOnly, '統合: OP16群にfx付与・dataOnly解除');
+    ok(Object.keys(C).length>3000, '全カードデータ統合(C='+Object.keys(C).length+')');
+
+    // OP16-027: 【ドン!!×1】このキャラのパワー+2000 (static)
+    G.active='me';G.turnSeq=5;G.winner=null; G.players={me:mkP('OP13-002',false),cpu:mkP('OP11-041',true)};
+    const s=I('OP16-027','me'); s.attachedDon=1; G.players.me.chars=[s];
+    ok(power(s)===(C['OP16-027'].power+1000+2000), 'OP16-027: 付与ドン1で+2000(静的)');
+
+    // OP16-072: 【登場時】デッキ上5枚から《インペルダウン》1枚を手札へ (search)
+    G.players={cpu:mkP('OP11-041',true),me:mkP('OP13-002',false)}; G.active='cpu';
+    const imp=Object.keys(C).find(no=>!C[no].leader&&(C[no].traits||[]).includes('インペルダウン'));
+    G.players.cpu.deck=[I(imp,'cpu'),I('OP15-067','cpu'),I('OP15-067','cpu')];
+    let card=I('OP16-072','cpu'); await runFx(card.base.fx.onPlay,{self:card,side:'cpu'});
+    ok(G.players.cpu.hand.some(c=>c.no===imp), 'OP16-072: サーチで《インペルダウン》を手札に');
+
+    // OP16-013: 【KO時】相手の元々パワー8000以下のキャラ1枚をKO (onKO/ko)
+    G.players={cpu:mkP('OP11-041',true),me:mkP('OP13-002',false)}; G.active='cpu';
+    const victim=I('OP15-067','me'); G.players.me.chars=[victim];
+    card=I('OP16-013','cpu'); await runFx(card.base.fx.onKO,{self:card,side:'cpu'});
+    ok(!G.players.me.chars.includes(victim), 'OP16-013: KO時に相手キャラ(P2000)をKO');
+
+    // OP16-090: 【登場時】2ドロー・2捨て・コスト1以下KO (onPlay 複合)
+    G.players={cpu:mkP('OP11-041',true),me:mkP('OP13-002',false)}; G.active='cpu';
+    const cp=G.players.cpu; cp.deck=Array.from({length:5},()=>I('OP15-067','cpu')); cp.hand=[I('OP15-067','cpu'),I('OP15-067','cpu')];
+    G.players.me.chars=[I('OP15-067','me')];
+    const dB=cp.deck.length, tB=cp.trash.length;
+    card=I('OP16-090','cpu'); await runFx(card.base.fx.onPlay,{self:card,side:'cpu'});
+    ok(cp.deck.length===dB-2 && cp.trash.length>=tB+2, 'OP16-090: 2ドロー&2捨て');
+
+    // 対象フィルタ: 名前の全角Ｄ↔半角D 正規化
+    ok(normName('モンキー・Ｄ・ルフィ')===normName('モンキー・D・ルフィ'), 'normName: 全角Ｄ↔半角D');
+    // OP16-001: 起動で「パワー8000以上の白ひげ/ルフィ」だけに速攻付与(giveKeyword + 対象フィルタ minPower/or)
+    G.players={cpu:mkP('OP16-001',true),me:mkP('OP13-002',false)}; G.active='cpu'; G.turnSeq=5;
+    const big=I('OP16-007','cpu'), sml=I('OP15-067','cpu'); G.players.cpu.chars=[big,sml];
+    await runFx(C['OP16-001'].fx.act.fx,{self:G.players.cpu.leader,side:'cpu'});
+    ok(big.kwGrant.some(g=>g.kw==='rush') && !sml.kwGrant.some(g=>g.kw==='rush'), 'OP16-001: 対象フィルタで該当キャラのみ速攻');
+    // OP16-096: KO時にトラッシュの「ヤマト」(c6以下)のみ登場(reviveFromTrash + 名前フィルタ)
+    G.players={cpu:mkP('OP11-041',true),me:mkP('OP13-002',false)}; G.active='cpu';
+    const yam=I('OP02-042','cpu'), oth=I('OP15-067','cpu'); G.players.cpu.trash=[yam,oth];
+    await runFx(C['OP16-096'].fx.onKO,{self:I('OP16-096','cpu'),side:'cpu'});
+    ok(G.players.cpu.chars.includes(yam) && !G.players.cpu.chars.includes(oth), 'OP16-096: 名前フィルタでヤマトのみ蘇生');
+
+    // コスト系op: 手札公開/ドンレスト/自キャラトラッシュ
+    const P8=Object.keys(C).find(no=>!C[no].leader&&C[no].type==='CHAR'&&C[no].power===8000);
+    const P10=Object.keys(C).find(no=>!C[no].leader&&C[no].type==='CHAR'&&C[no].power===10000);
+    // OP16-002: 手札からP8000キャラを公開(コスト・札は消費しない)→1ドロー
+    G.players={cpu:mkP('OP11-041',true),me:mkP('OP13-002',false)}; G.active='cpu';
+    G.players.cpu.hand=[I(P8,'cpu')]; G.players.cpu.deck=[I('OP15-067','cpu'),I('OP15-067','cpu')];
+    const h0=G.players.cpu.hand.length, d0=G.players.cpu.deck.length;
+    await runFx(C['OP16-002'].fx.onPlay,{self:I('OP16-002','cpu'),side:'cpu'});
+    ok(G.players.cpu.hand.length===h0+1 && G.players.cpu.deck.length===d0-1, 'OP16-002: revealCostで公開→1ドロー(公開札は手札に残る)');
+    // OP16-006: ドン2レスト(コスト)→相手P4000以下KO / ドン不足なら不発
+    G.players={cpu:mkP('OP11-041',true),me:mkP('OP13-002',false)}; G.active='cpu'; G.players.cpu.don={active:2,rested:0};
+    const v6=I('OP15-067','me'); G.players.me.chars=[v6];
+    await runFx(C['OP16-006'].fx.onPlay,{self:I('OP16-006','cpu'),side:'cpu'});
+    ok(!G.players.me.chars.includes(v6) && G.players.cpu.don.active===0 && G.players.cpu.don.rested===2, 'OP16-006: restDonCost(2)→相手KO');
+    G.players={cpu:mkP('OP11-041',true),me:mkP('OP13-002',false)}; G.active='cpu'; G.players.cpu.don={active:1,rested:0};
+    const v6b=I('OP15-067','me'); G.players.me.chars=[v6b];
+    await runFx(C['OP16-006'].fx.onPlay,{self:I('OP16-006','cpu'),side:'cpu'});
+    ok(G.players.me.chars.includes(v6b) && G.players.cpu.don.active===1, 'OP16-006: ドン不足(1<2)で不発');
+    // OP16-008: 自分の元々P10000キャラをトラッシュ(コスト)→相手P8000以下KO
+    G.players={cpu:mkP('OP11-041',true),me:mkP('OP13-002',false)}; G.active='cpu';
+    const sac=I(P10,'cpu'); G.players.cpu.chars=[sac]; const t8=I('OP15-067','me'); G.players.me.chars=[t8];
+    await runFx(C['OP16-008'].fx.onPlay,{self:I('OP16-008','cpu'),side:'cpu'});
+    ok(!G.players.cpu.chars.includes(sac) && G.players.cpu.trash.includes(sac) && !G.players.me.chars.includes(t8), 'OP16-008: trashOwnCharCost(P10000)→相手KO');
+    // OP16-011: 【ドン!!×1】onAttack KO は付与ドンでゲート
+    G.players={cpu:mkP('OP11-041',true),me:mkP('OP13-002',false)}; G.active='cpu';
+    const atk=I('OP16-011','cpu'); atk.attachedDon=0; const t11=I('OP15-067','me'); G.players.me.chars=[t11];
+    await runFx(C['OP16-011'].fx.onAttack,{self:atk,side:'cpu'});
+    ok(G.players.me.chars.includes(t11), 'OP16-011: 付与ドン0で【ドン!!×1】効果は不発');
+    atk.attachedDon=1; await runFx(C['OP16-011'].fx.onAttack,{self:atk,side:'cpu'});
+    ok(!G.players.me.chars.includes(t11), 'OP16-011: 付与ドン1で相手P2000をKO(condゲート)');
+
+    // 第2弾の機構: static系/discardCost/setPower/leaveProtect/costMod/onOppAttack/オブジェクト条件
+    // OP16-003: キャラ→リーダーへ常在【ダブルアタック】+2000（自分ターン限定）
+    G.players={cpu:mkP('OP11-041',true),me:mkP('OP13-002',false)}; G.active='cpu'; G.turnSeq=5;
+    const c3=I('OP16-003','cpu'); G.players.cpu.chars=[c3]; const lead=G.players.cpu.leader;
+    ok(hasKw(lead,'doubleAttack') && power(lead)===(lead.base.power||0)+2000, 'OP16-003: 自ターンにリーダーへDA+2000');
+    G.active='me'; ok(!hasKw(lead,'doubleAttack'), 'OP16-003: 相手ターンは無効(selfTurn)'); G.active='cpu';
+    // OP16-005: costMod(白ひげP8000居でコスト-3) + staticKeyword blocker
+    const WB=Object.keys(C).find(no=>!C[no].leader&&C[no].type==='CHAR'&&(C[no].power||0)>=8000&&(C[no].traits||[]).some(t=>t.includes('白ひげ海賊団')));
+    G.players={cpu:mkP('OP11-041',true),me:mkP('OP13-002',false)}; G.active='cpu';
+    const c5=I('OP16-005','cpu'); const base5=effCost('cpu',c5);
+    if(WB){ G.players.cpu.chars=[I(WB,'cpu')]; ok(effCost('cpu',c5)===Math.max(0,base5-3), 'OP16-005: 白ひげP8000居でコスト-3'); }
+    ok(hasKw(c5,'blocker'), 'OP16-005: staticKeyword blocker');
+    // OP16-009: discardCost(P8000を捨てる)→自身に速攻(untilNextEnd)+パワー+2000
+    G.players={cpu:mkP('OP11-041',true),me:mkP('OP13-002',false)}; G.active='cpu';
+    const c9=I('OP16-009','cpu'); G.players.cpu.chars=[c9]; G.players.cpu.hand=[I(P8,'cpu')]; const hb9=G.players.cpu.hand.length;
+    await runFx(C['OP16-009'].fx.onPlay,{self:c9,side:'cpu'});
+    ok(G.players.cpu.hand.length===hb9-1 && hasKw(c9,'rush') && power(c9)===(c9.base.power||0)+2000, 'OP16-009: 手札捨て→速攻+2000');
+    // OP16-014: leaveProtect koSelf（守護者が身代わりKO）
+    G.players={cpu:mkP('OP11-041',true),me:mkP('OP13-002',false)}; G.active='cpu';
+    const guard=I('OP16-014','cpu'), pr=I('OP15-067','cpu'); G.players.cpu.chars=[guard,pr];
+    const saved=await protectFromEffect(pr);
+    ok(saved===true && !G.players.cpu.chars.includes(guard) && G.players.cpu.chars.includes(pr), 'OP16-014: leaveProtect koSelfで身代わり');
+    // OP16-015: onOppAttack discardCost→setPower selfAndLeaderを7000に
+    G.players={cpu:mkP('OP11-041',true),me:mkP('OP13-002',false)}; G.active='me';
+    const c15=I('OP16-015','cpu'); G.players.cpu.chars=[c15]; G.players.cpu.hand=[I(P8,'cpu')];
+    const atk15=I('OP15-067','me'); G.players.me.chars=[atk15];
+    await runFx(C['OP16-015'].fx.onOppAttack,{self:c15,side:'cpu',attacker:atk15});
+    ok(power(c15)===7000 && power(G.players.cpu.leader)===7000, 'OP16-015: 元々パワーを7000に(setPower)');
+    // OP16-035: restChar + discardCost→リーダーにレストのドン3付与
+    G.players={cpu:mkP('OP11-041',true),me:mkP('OP13-002',false)}; G.active='cpu';
+    G.players.cpu.don={active:0,rested:3}; G.players.cpu.hand=[I('OP15-067','cpu')];
+    G.players.me.chars=[I('OP15-067','me')];
+    await runFx(C['OP16-035'].fx.onPlay,{self:I('OP16-035','cpu'),side:'cpu'});
+    ok(G.players.cpu.leader.attachedDon===3 && G.players.cpu.don.rested===0, 'OP16-035: レストのドン3をリーダーへ付与');
+
+    // 第4弾: 否定/「〜のみ」/KO原因/distinct/restOwnCards/動的パワー/color
+    // OP16-024: onKO restChar は koByOpp(相手効果KO)のみ
+    G.players={cpu:mkP('OP11-041',true),me:mkP('OP13-002',false)}; G.active='cpu';
+    const v24=I('OP15-067','me'); G.players.me.chars=[v24]; v24.rested=false;
+    const c24=I('OP16-024','cpu'); c24._koSource='battle'; await runFx(C['OP16-024'].fx.onKO,{self:c24,side:'cpu'});
+    ok(!v24.rested, 'OP16-024: バトルKOでは不発(koByOpp)');
+    c24._koSource='oppEffect'; await runFx(C['OP16-024'].fx.onKO,{self:c24,side:'cpu'});
+    ok(v24.rested, 'OP16-024: 相手効果KOで相手をレスト');
+    // OP16-055: setPower は cond donX1 ゲート + valueFrom 相手リーダー
+    G.players={cpu:mkP('OP11-041',true),me:mkP('OP13-002',false)}; G.active='cpu';
+    const a55=I('OP16-055','cpu'); G.players.cpu.chars=[a55];
+    a55.attachedDon=0; await runFx(C['OP16-055'].fx.onAttack,{self:a55,side:'cpu'});
+    ok(power(a55)===(a55.base.power||0), 'OP16-055: 付与ドン0でsetPower不発(汎用condゲート)');
+    a55.attachedDon=1; await runFx(C['OP16-055'].fx.onAttack,{self:a55,side:'cpu'});
+    ok(power(a55)===power(G.players.me.leader)+1000, 'OP16-055: ドン1で相手リーダーと同パワー');
+    // OP16-033: leaveProtect restOwnCards + onlyKO
+    G.players={cpu:mkP('OP11-041',true),me:mkP('OP13-002',false)}; G.active='cpu';
+    const g33=I('OP16-033','cpu'), o33=I('OP15-067','cpu'); G.players.cpu.chars=[g33,o33];
+    ok(await protectFromEffect(g33,'ko') && G.players.cpu.chars.includes(g33) && o33.rested && G.players.cpu.leader.rested, 'OP16-033: restOwnCardsで2枚レスト身代わり');
+    G.players={cpu:mkP('OP11-041',true),me:mkP('OP13-002',false)};
+    const g33b=I('OP16-033','cpu'); G.players.cpu.chars=[g33b,I('OP15-067','cpu')];
+    ok(await protectFromEffect(g33b,'bounce')===false, 'OP16-033: onlyKOでbounceは身代わりせず');
+    // OP16-098: trashSelfCost→reviveFromTrash color黒+cost8 ヤマト
+    G.players={cpu:mkP('OP11-041',true),me:mkP('OP13-002',false)}; G.active='cpu';
+    const s98=I('OP16-098','cpu'); G.players.cpu.chars=[s98]; G.players.cpu.trash=[I('OP16-096','cpu'),I('OP02-042','cpu')];
+    await runFx(C['OP16-098'].fx.act.fx,{self:s98,side:'cpu'});
+    ok(G.players.cpu.chars.some(x=>x.no==='OP16-096')&&!G.players.cpu.chars.some(x=>x.no==='OP02-042'), 'OP16-098: 色フィルタで黒コスト8ヤマトのみ蘇生');
+    // OP16-022: leader act allSelfChar（インペルのみ）→donActivate2
+    { const imp=Object.keys(C).find(no=>!C[no].leader&&C[no].type==='CHAR'&&(C[no].traits||[]).includes('インペルダウン'));
+      if(imp){ G.players={cpu:mkP('OP11-041',true),me:mkP('OP13-002',false)}; G.active='cpu';
+        G.players.cpu.chars=[I(imp,'cpu')]; G.players.cpu.don={active:0,rested:3};
+        await runFx(C['OP16-022'].fx.act.fx,{self:G.players.cpu.leader,side:'cpu'});
+        ok(G.players.cpu.don.active===2, 'OP16-022: インペルのみでドン2アクティブ');
+        G.players.cpu.chars=[I(imp,'cpu'),I('OP15-067','cpu')]; G.players.cpu.don={active:0,rested:3};
+        await runFx(C['OP16-022'].fx.act.fx,{self:G.players.cpu.leader,side:'cpu'});
+        ok(G.players.cpu.don.active===0, 'OP16-022: 非インペル混在で不発(allSelfChar)');
+      } else ok(true,'OP16-022: インペル未検出スキップ'); }
+
+    // 第5弾: onTurnEnd/lock/donFromDeck/setAttackBan/oppHandToBottom/donMinus fromActive/incLeader
+    // OP16-030: onTurnEndでコスト5以下の緑キャラをアクティブ + onPlay lock
+    { const g=Object.keys(C).find(no=>!C[no].leader&&C[no].type==='CHAR'&&(C[no].cost||0)<=5&&(C[no].color||[]).includes('緑'));
+      if(g){ G.players={cpu:mkP('OP11-041',true),me:mkP('OP13-002',false)}; G.active='cpu';
+        const ch=I(g,'cpu'); ch.rested=true; G.players.cpu.chars=[ch];
+        await runFx(C['OP16-030'].fx.onTurnEnd,{self:I('OP16-030','cpu'),side:'cpu'});
+        ok(!ch.rested,'OP16-030: onTurnEndで緑コスト5以下をアクティブ');
+      } else ok(true,'OP16-030: 緑コスト5以下未検出'); }
+    // OP16-047: 相手手札8以上で2枚デッキ下(oppHandToBottom + oppHandAtLeast)
+    G.players={cpu:mkP('OP11-041',true),me:mkP('OP13-002',false)}; G.active='cpu';
+    const s47=I('OP16-047','cpu'); G.players.cpu.chars=[s47]; G.players.me.hand=Array.from({length:8},()=>I('OP15-067','me')); const d47=G.players.me.deck.length;
+    await runFx(C['OP16-047'].fx.act.fx,{self:s47,side:'cpu'});
+    ok(G.players.me.hand.length===6 && G.players.me.deck.length===d47+2,'OP16-047: 相手手札2枚をデッキ下');
+    // OP16-056: trashSelfCost→2ドロー+setAttackBan
+    G.players={cpu:mkP('OP11-041',true),me:mkP('OP13-002',false)}; G.active='cpu';
+    const s56=I('OP16-056','cpu'); G.players.cpu.chars=[s56]; G.players.cpu.deck=[I('OP15-067','cpu'),I('OP15-067','cpu')];
+    const v56=I('OP15-067','me'); G.players.me.chars=[v56];
+    await runFx(C['OP16-056'].fx.act.fx,{self:s56,side:'cpu'});
+    ok(v56.noAtkSeq!=null && !G.players.cpu.chars.includes(s56),'OP16-056: 自身トラッシュ→相手アタック不可');
+    // OP16-060: donMinus fromActive(8) → 大将3体 distinct登場
+    { const generals=Object.keys(C).filter(no=>!C[no].leader&&C[no].type==='CHAR'&&(C[no].traits||[]).includes('大将'));
+      const names=[...new Set(generals.map(no=>C[no].name))].slice(0,3);
+      if(names.length){ G.players={cpu:mkP('OP11-041',true),me:mkP('OP13-002',false)}; G.active='cpu'; G.players.cpu.don={active:8,rested:2};
+        G.players.cpu.hand=names.map(nm=>I(generals.find(no=>C[no].name===nm),'cpu'));
+        const a60=G.players.cpu.don.active; // donMinus fromActive(8)で一旦0。ただし召喚した大将の登場時donFromDeckで増え得る
+        await runFx(C['OP16-060'].fx.act.fx,{self:G.players.cpu.leader,side:'cpu'});
+        ok(G.players.cpu.chars.length===Math.min(3,names.length),'OP16-060: アクティブドン8戻し→大将3体登場(fromActive+distinctName)');
+      } else ok(true,'OP16-060: 大将未検出'); }
+
+    // 第6弾: oppDonMinus/trashToHand/oppCharKOedThisTurn/trashAtLeast/donFromDeck/oppDiscard/setPower chooseOwnL
+    // OP16-074: onKO oppDonMinus 4
+    G.players={cpu:mkP('OP11-041',true),me:mkP('OP13-002',false)}; G.active='cpu';
+    G.players.me.don={active:3,rested:2}; const t74=5;
+    await runFx(C['OP16-074'].fx.onKO,{self:I('OP16-074','cpu'),side:'cpu'});
+    ok((G.players.me.don.active+G.players.me.don.rested)===t74-4,'OP16-074: onKOで相手ドン-4');
+    // OP16-101: trashAtLeast 10 で相手コスト2以下KO / 不足ならKOしない
+    G.players={cpu:mkP('OP11-041',true),me:mkP('OP13-002',false)}; G.active='cpu';
+    G.players.cpu.trash=Array.from({length:10},()=>I('OP02-042','cpu')); const v101=I('OP15-067','me'); G.players.me.chars=[v101];
+    await runFx(C['OP16-101'].fx.main.fx,{self:I('OP16-101','cpu'),side:'cpu'});
+    ok(!G.players.me.chars.includes(v101),'OP16-101: トラッシュ10以上でKO');
+    G.players={cpu:mkP('OP11-041',true),me:mkP('OP13-002',false)}; G.active='cpu';
+    G.players.cpu.trash=[I('OP02-042','cpu')]; const v101b=I('OP15-067','me'); G.players.me.chars=[v101b];
+    await runFx(C['OP16-101'].fx.main.fx,{self:I('OP16-101','cpu'),side:'cpu'});
+    ok(G.players.me.chars.includes(v101b),'OP16-101: トラッシュ不足でKOせず');
+    // OP16-073: donFromDeckでドン総数+2、ターン終了時に自身アクティブ+ブロッカー
+    G.players={cpu:mkP('OP11-041',true),me:mkP('OP13-002',false)}; G.active='cpu'; G.players.cpu.don={active:1,rested:0};
+    const t73=donTotal('cpu');
+    await runFx(C['OP16-073'].fx.onPlay,{self:I('OP16-073','cpu'),side:'cpu'});
+    ok(donTotal('cpu')===t73+2,'OP16-073: ドンデッキからアクティブ1+レスト1');
+    const s73=I('OP16-073','cpu'); s73.rested=true; G.players.cpu.chars=[s73]; G.players.cpu.don={active:0,rested:3};
+    await runFx(C['OP16-073'].fx.onTurnEnd,{self:s73,side:'cpu'});
+    ok(!s73.rested && s73.kwGrant.some(g=>g.kw==='blocker'),'OP16-073: ターン終了時 自身アクティブ+ブロッカー');
+    // OP16-094: onKOで相手手札2枚を捨てさせる(oppDiscard)
+    G.players={cpu:mkP('OP11-041',true),me:mkP('OP13-002',false)}; G.active='cpu';
+    G.players.me.hand=Array.from({length:4},()=>I('OP15-067','me'));
+    await runFx(C['OP16-094'].fx.onKO,{self:I('OP16-094','cpu'),side:'cpu'});
+    ok(G.players.me.hand.length===2 && G.players.me.trash.length===2,'OP16-094: 相手手札2枚を捨てさせる');
+
+    // 第7弾(侵襲機構): onAllyLeave/onReviveFromTrash/rushChar/handCounterBuff/addCostBuff
+    const fchar=(pred)=>Object.keys(C).find(no=>!C[no].leader&&C[no].type==='CHAR'&&pred(C[no]));
+    // OP16-041: インペルが場を離れた時(KO)に囚人登場(donX1,ターン1回)
+    { const imp=fchar(c=>(c.traits||[]).includes('インペルダウン')&&!c.name.includes('インペルダウンの囚人'));
+      const pri=fchar(c=>c.name.includes('インペルダウンの囚人'));
+      if(imp&&pri){ G.players={cpu:mkP('OP16-041',true),me:mkP('OP13-002',false)}; G.active='cpu';
+        G.players.cpu.leader.attachedDon=1; const ich=I(imp,'cpu'); G.players.cpu.chars=[ich]; G.players.cpu.hand=[I(pri,'cpu')];
+        await koCard(ich,'oppEffect');
+        ok(G.players.cpu.chars.some(c=>c.no===pri),'OP16-041: インペル離脱時に囚人登場(onAllyLeave)');
+        G.players.cpu.leader.attachedDon=0; const ich2=I(imp,'cpu'); G.players.cpu.chars.push(ich2); G.players.cpu.hand=[I(pri,'cpu')];
+        await koCard(ich2,'oppEffect');
+        ok(G.players.cpu.hand.length===1,'OP16-041: ターン1回+donX1で2回目/ドン0は不発');
+      } else ok(true,'OP16-041: 未検出スキップ'); }
+    // OP16-079: トラッシュからワノ国登場で速攻付与
+    { const wano=fchar(c=>(c.traits||[]).includes('ワノ国')&&(c.cost||0)<=6);
+      if(wano){ G.players={cpu:mkP('OP16-079',true),me:mkP('OP13-002',false)}; G.active='cpu'; G.players.cpu.trash=[I(wano,'cpu')];
+        await runFx([{op:'reviveFromTrash',maxCost:6,filter:{trait:'ワノ国'}}],{self:I('OP16-079','cpu'),side:'cpu'});
+        const s=G.players.cpu.chars.find(c=>c.no===wano);
+        ok(s&&s.kwGrant.some(g=>g.kw==='rush'),'OP16-079: トラッシュからワノ国登場で速攻');
+      } else ok(true,'OP16-079: ワノ国未検出'); }
+    // OP16-089: rushChar(登場ターンにアタック可・リーダー不可)
+    G.players={cpu:mkP('OP11-041',true),me:mkP('OP13-002',false)}; G.active='cpu'; G.players.cpu.turnsTaken=3;
+    const mh=I('OP16-089','cpu'); mh.summonedTurn=G.turnSeq; mh.rested=false; G.players.cpu.chars=[mh];
+    ok(C['OP16-089'].rushChar===true && canCardAttack(mh) && !canTargetLeader(mh),'OP16-089: 速攻：キャラ(登場ターンにキャラのみアタック)');
+    // OP16-118: handCounterBuff(手札P8000のカウンター+2000)
+    { const p8=Object.keys(C).find(no=>!C[no].leader&&C[no].type==='CHAR'&&C[no].power===8000);
+      G.players={cpu:mkP('OP11-041',true),me:mkP('OP13-002',false)};
+      G.players.cpu.chars=[I('OP16-118','cpu')]; const hc=I(p8,'cpu'); G.players.cpu.hand=[hc];
+      ok(counterVal(hc,'cpu')===(C[p8].counter||0)+2000,'OP16-118: 手札P8000のカウンター+2000');
+      G.players.cpu.chars=[];
+      ok(counterVal(hc,'cpu')===(C[p8].counter||0),'OP16-118: バッファ不在で元に戻る'); }
+
+    // 第8弾(公式調査): restImmune / selfCostAtLeast
+    // OP16-032: 相手キャラをレストにできない状態に(アタック/ブロック/レスト効果不可)
+    G.players={cpu:mkP('OP11-041',true),me:mkP('OP13-002',false)}; G.active='cpu'; G.turnSeq=5;
+    const ri=I('OP15-067','me'); G.players.me.chars=[ri];
+    await runFx(C['OP16-032'].fx.onPlay,{self:I('OP16-032','cpu'),side:'cpu'});
+    ok(isRestImmune(ri),'OP16-032: 相手キャラがレストにできない状態');
+    G.active='me'; ri.rested=false; ok(!canCardAttack(ri),'OP16-032: restImmuneはアタック不可');
+    G.active='cpu'; await runFx([{op:'restChar',side:'opp',count:1}],{self:I('OP16-032','cpu'),side:'cpu'});
+    ok(!ri.rested,'OP16-032: restImmuneはrestChar対象外');
+    G.turnSeq=7; ok(!isRestImmune(ri),'OP16-032: 自分の次ターンで失効');
+    // OP16-084: コスト20以上(しのぶ+20)→トラッシュ→コスト9モモの助(OP16-085)登場 / 20未満は不発
+    G.players={cpu:mkP('OP11-041',true),me:mkP('OP13-002',false)}; G.active='cpu'; G.turnSeq=5;
+    const mo=I('OP16-084','cpu'); mo.buffs.push({costAmt:20,until:'turnEnd'}); G.players.cpu.chars=[mo];
+    G.players.cpu.don={active:9,rested:0}; G.players.cpu.trash=[I('OP16-085','cpu'),I('OP15-067','cpu')];
+    await runFx(C['OP16-084'].fx.act.fx,{self:mo,side:'cpu'});
+    ok(!G.players.cpu.chars.includes(mo)&&G.players.cpu.chars.some(c=>c.no==='OP16-085'),'OP16-084: コスト20以上で自身トラッシュ→コスト9モモの助登場');
+    G.players={cpu:mkP('OP11-041',true),me:mkP('OP13-002',false)}; G.active='cpu';
+    const mo2=I('OP16-084','cpu'); G.players.cpu.chars=[mo2]; G.players.cpu.don={active:9,rested:0}; G.players.cpu.trash=[I('OP16-085','cpu')];
+    await runFx(C['OP16-084'].fx.act.fx,{self:mo2,side:'cpu'});
+    ok(G.players.cpu.chars.includes(mo2),'OP16-084: コスト20未満なら発動せず(selfCostAtLeast)');
+    // 空振り防止: 条件(ドン9/トラッシュにOP16-085)が揃わなければ自身をトラッシュしない
+    G.players={cpu:mkP('OP11-041',true),me:mkP('OP13-002',false)}; G.active='cpu';
+    const mo3=I('OP16-084','cpu'); mo3.buffs.push({costAmt:20,until:'turnEnd'}); G.players.cpu.chars=[mo3];
+    G.players.cpu.don={active:8,rested:0}; G.players.cpu.trash=[I('OP16-085','cpu')]; // ドン8不足
+    await runFx(C['OP16-084'].fx.act.fx,{self:mo3,side:'cpu'});
+    ok(G.players.cpu.chars.includes(mo3),'OP16-084: ドン9未満なら自身をトラッシュしない(空振り防止)');
+    const mo4=I('OP16-084','cpu'); mo4.buffs.push({costAmt:20,until:'turnEnd'}); G.players.cpu.chars=[mo4];
+    G.players.cpu.don={active:9,rested:0}; G.players.cpu.trash=[]; // トラッシュにOP16-085なし
+    await runFx(C['OP16-084'].fx.act.fx,{self:mo4,side:'cpu'});
+    ok(G.players.cpu.chars.includes(mo4),'OP16-084: 蘇生対象が無ければ自身をトラッシュしない(trashHas)');
+    // OP16-082: 「このキャラのコスト+3」は盤面コストのみ(プレイコストは据え置き=除去耐性)
+    G.players={cpu:mkP('OP11-041',true),me:mkP('OP13-002',false)}; G.active='cpu';
+    const b82=C['OP16-082'].cost;
+    ok(effCost('cpu',I('OP16-082','cpu'))===b82,'OP16-082: プレイ(登場)コストは+3されない');
+    const ob82=I('OP16-082','me'); G.players.me.chars=[ob82];
+    ok(!matchFilter(ob82,{maxCost:b82+2}) && matchFilter(ob82,{maxCost:b82+3}),'OP16-082: 盤面の実効コストが+3(コストN以下除去から保護)');
+    // 回帰: ステージ/イベントはアタックできない（canCardAttackはLEADER/CHARのみtrue）
+    G.players={me:mkP('OP13-002',false),cpu:mkP('OP11-041',true)}; G.active='me'; G.turnSeq=5;
+    const stageNo=(window.CARD_DB.find(c=>c.type==='STAGE'&&C[c.no])||{}).no;
+    if(stageNo){ const sc=I(stageNo,'me'); sc.rested=false; sc.summonedTurn=3; G.players.me.stage=sc;
+      ok(canCardAttack(sc)===false,'ステージカードはアタックできない'); } else ok(true,'ステージカード未検出');
+    const evNo=(window.CARD_DB.find(c=>c.type==='EVENT'&&C[c.no])||{}).no;
+    if(evNo){ const ec=I(evNo,'me'); ec.rested=false; ec.summonedTurn=3;
+      ok(canCardAttack(ec)===false,'イベントカードはアタックできない'); } else ok(true,'イベントカード未検出');
+    const chk=I('ST01-006','me'); chk.rested=false; chk.summonedTurn=3; G.players.me.chars=[chk];
+    ok(canCardAttack(chk)===true,'通常キャラ(登場済)はアタックできる(回帰の取りこぼし防止)');
+
+    // 回帰: 「ドン‼-N」コストは payDon(レスト)ではなく donMinus(ドンデッキへ戻す)＝donTotalが減る
+    const donMinusCheck=async(no,kind,exp)=>{
+      G.players={cpu:mkP('OP15-058',true),me:mkP('OP13-002',false)}; G.active='cpu'; G.turnSeq=5;
+      const P=G.players.cpu; P.don={active:6,rested:0}; P.deck=[I('ST01-006','cpu'),I('ST01-006','cpu')];
+      P.hand=[I('ST01-006','cpu'),I('ST01-006','cpu')]; G.players.me.chars=[I('ST01-006','me')];
+      const self=I(no,'cpu'); if(kind==='act'||kind==='onPlay') P.chars=[self]; if(kind==='stageAct'){P.stage=self;self.rested=false;}
+      const before=donTotal('cpu');
+      const ops = kind==='main' ? C[no].fx.main.fx : kind==='onPlay' ? C[no].fx.onPlay : C[no].fx.act.fx;
+      if((kind==='act'||kind==='stageAct') && C[no].fx.act.cost && C[no].fx.act.cost.restSelf) self.rested=true;
+      await runFx(ops,{self,side:'cpu'});
+      ok(donTotal('cpu')===before-exp, no+': 「ドン‼-'+exp+'」でdonTotalが'+exp+'減る('+before+'→'+donTotal('cpu')+')');
+    };
+    await donMinusCheck('OP15-060','act',1);     // エネル起動メイン ドン-1
+    await donMinusCheck('OP15-118','onPlay',1);   // エネル登場時 ドン-1
+    await donMinusCheck('OP15-076','main',1);     // 雷獣 メイン ドン-1
+    await donMinusCheck('OP15-078','main',2);     // 万雷 メイン ドン-2
+    await donMinusCheck('OP16-078','stageAct',1); // マリンフォード起動メイン ドン-1
+
+    // OP-15(緑系/リーダーパワー): oppDonAttach/hasAttachedDon/leaderPowerAtMost/leaveProtect leaderPowerMinus/restImmune
+    // OP15-004: リーダーパワー0以下で相手-3000
+    G.players={cpu:mkP('OP11-041',true),me:mkP('OP13-002',false)}; G.active='cpu';
+    G.players.cpu.leader.buffs.push({setBase:0,until:'turn'}); const v4=I('OP15-067','me'); G.players.me.chars=[v4]; const p4=power(v4);
+    await runFx(C['OP15-004'].fx.onPlay,{self:I('OP15-004','cpu'),side:'cpu'});
+    ok(power(v4)===p4-3000,'OP15-004: leaderPowerAtMost0で相手-3000');
+    // OP15-015: 相手にレストドン付与→hasAttachedDonに-1000
+    G.players={cpu:mkP('OP11-041',true),me:mkP('OP13-002',false)}; G.active='cpu'; G.players.me.don={active:0,rested:2};
+    const v15=I('OP15-067','me'); G.players.me.chars=[v15]; const q15=power(v15);
+    await runFx(C['OP15-015'].fx.onPlay,{self:I('OP15-015','cpu'),side:'cpu'});
+    ok(v15.attachedDon===1 && power(v15)===q15-1000,'OP15-015: oppDonAttach→hasAttachedDonに-1000');
+    // OP15-009: leaveProtectでリーダー-2000身代わり
+    G.players={cpu:mkP('OP11-041',true),me:mkP('OP13-002',false)}; G.active='cpu';
+    const g9=I('OP15-009','cpu'), pr9=I('OP15-067','cpu'); G.players.cpu.chars=[g9,pr9]; const lp9=power(G.players.cpu.leader);
+    ok(await protectFromEffect(pr9,'ko') && G.players.cpu.chars.includes(pr9) && power(G.players.cpu.leader)===lp9-2000,'OP15-009: leaderPowerMinusで身代わり');
+    // OP15-029: 相手キャラをレストにできない状態に(restImmune)
+    G.players={cpu:mkP('OP11-041',true),me:mkP('OP13-002',false)}; G.active='cpu';
+    const v29=I('OP15-067','me'); G.players.me.chars=[v29];
+    await runFx(C['OP15-029'].fx.onPlay,{self:I('OP15-029','cpu'),side:'cpu'});
+    ok(isRestImmune(v29),'OP15-029: 相手コスト5以下をレストにできない状態に');
+    // OP15-003: leaveProtect includeBattle（バトルKOも身代わり）/ bounceでは発動せず(onlyKO)
+    { const p6=Object.keys(C).find(no=>!C[no].leader&&C[no].type==='CHAR'&&(C[no].power||0)<=6000);
+      G.players={cpu:mkP('OP11-041',true),me:mkP('OP13-002',false)}; G.active='cpu';
+      const g3=I('OP15-003','cpu'); G.players.cpu.chars=[g3]; G.players.cpu.hand=[I(p6,'cpu')];
+      ok(await protectFromEffect(g3,'battle') && G.players.cpu.chars.includes(g3),'OP15-003: バトルKOを身代わり(includeBattle)');
+      G.players.cpu.chars=[g3]; G.players.cpu.hand=[I(p6,'cpu')];
+      ok((await protectFromEffect(g3,'bounce'))===false,'OP15-003: bounceでは発動せず(onlyKO)'); }
+
+    // OP-15 残8枚（エンジン改変分）: deckOutDelay/scheduleTurnEnd/restSelfCost/grantKeywordNames/staticSetBase/minEffPower
+    // OP15-022: deckOutDelay（空デッキdrawで即敗北しない）
+    G.players={cpu:mkP('OP15-022',true),me:mkP('OP13-002',false)}; G.active='cpu'; G.winner=null; G.players.cpu.deck=[];
+    ok(draw('cpu',1)===false && !G.winner,'OP15-022: deckOutDelayで空デッキでも即敗北しない');
+    G.players.cpu.leader=I('OP11-041','cpu'); G.players.cpu.deck=[]; G.winner=null; draw('cpu',1);
+    ok(G.winner==='me','OP15-022: 通常リーダーは空デッキで敗北'); G.winner=null;
+    // OP15-031: コスト=付与ドンでKO / 不一致でKOされず
+    G.players={cpu:mkP('OP11-041',true),me:mkP('OP13-002',false)}; G.active='cpu';
+    { const lowC=Object.keys(C).find(no=>!C[no].leader&&C[no].type==='CHAR'&&(C[no].cost||0)===2);
+      const m=I(lowC,'me'); m.rested=true; m.attachedDon=2; G.players.me.chars=[m];
+      await runFx(C['OP15-031'].fx.onPlay,{self:I('OP15-031','cpu'),side:'cpu'});
+      ok(!G.players.me.chars.includes(m),'OP15-031: コスト=付与ドンでKO');
+      const m2=I(lowC,'me'); m2.rested=true; m2.attachedDon=1; G.players.me.chars=[m2];
+      await runFx(C['OP15-031'].fx.onPlay,{self:I('OP15-031','cpu'),side:'cpu'});
+      ok(G.players.me.chars.includes(m2),'OP15-031: 不一致ならKOされず'); }
+    // OP15-080: trashToDeckCostは自身を移動しない→reviveSelf成功
+    G.players={cpu:mkP('OP11-041',true),me:mkP('OP13-002',false)}; G.active='cpu';
+    { const self=I('OP15-080','cpu'); G.players.cpu.trash=[reset(self),I('OP15-067','cpu'),I('OP15-067','cpu'),I('OP15-067','cpu')];
+      await runFx(C['OP15-080'].fx.onKO,{self,side:'cpu'});
+      ok(G.players.cpu.chars.includes(self),'OP15-080: トラッシュ3デッキ下(自身除く)→自身を蘇生'); }
+    // OP15-092: staticSetBase(トラッシュ10で元々9000)+条件付きstaticCost(盤面+10)
+    G.players={cpu:mkP('OP11-041',true),me:mkP('OP13-002',false)}; G.active='cpu';
+    { const s=I('OP15-092','cpu'); G.players.cpu.chars=[s]; G.players.cpu.trash=Array.from({length:10},()=>I('OP15-067','cpu'));
+      ok(power(s)===9000 && matchFilter(s,{minCost:s.base.cost+10}),'OP15-092: トラッシュ10で元々9000&盤面コスト+10'); }
+
+    // ===== OP-16 公式照合修正（2026-06 公式カードリストと1枚ずつ照合して修正）の回帰 =====
+    // OP16-006: 「パワー4000以下」=現在パワー基準(maxEffPower)。base4000をバフ6000は対象外、base5000をデバフ3000は対象
+    G.players={me:mkP('OP16-080',false),cpu:mkP('OP11-041',true)}; G.active='me'; G.turnSeq=5;
+    { const me=G.players.me,cpu=G.players.cpu;
+      const big=I('OP16-005','cpu'); big.base=Object.assign({},big.base,{power:4000}); big.buffs=[{amt:2000}];
+      const sm=I('OP16-005','cpu'); sm.base=Object.assign({},sm.base,{power:5000}); sm.buffs=[{amt:-2000}];
+      cpu.chars=[big,sm]; const s=I('OP16-006','me'); me.chars=[s]; me.don={active:8,rested:0};
+      await runFx(C['OP16-006'].fx.onPlay,{self:s,side:'me'});
+      ok(cpu.chars.includes(big)&&!cpu.chars.includes(sm),'OP16-006: 「パワー4000以下」は現在パワー基準(maxEffPower)'); }
+    // OP16-031: 「インペルダウンの囚人」は特徴でなくカード名(OP16-042)。手札から登場できる
+    G.players={me:mkP('OP16-080',false),cpu:mkP('OP11-041',true)}; G.active='me';
+    { const me=G.players.me; me.hand=[I('OP16-042','me')]; const s=I('OP16-031','me'); me.chars=[s];
+      await runFx(C['OP16-031'].fx.onKO,{self:s,side:'me'});
+      ok(me.chars.some(c=>c.no==='OP16-042'),'OP16-031: 「インペルダウンの囚人」(名前)を手札から登場'); }
+    // OP16-045: 公式に無い「インペルダウン登場」が起きず、コスト2以上を戻すだけ
+    G.players={me:mkP('OP16-080',false),cpu:mkP('OP11-041',true)}; G.active='me';
+    { const me=G.players.me; const v=I('ST01-006','me'); v.base=Object.assign({},v.base,{cost:3}); me.chars=[v]; me.hand=[I('OP16-042','me')];
+      const s=I('OP16-045','me'); me.chars.push(s);
+      await runFx(C['OP16-045'].fx.onPlay,{self:s,side:'me'});
+      ok(me.hand.some(c=>c.no==='ST01-006')&&!me.chars.some(c=>c.no==='OP16-042'),'OP16-045: 戻すだけ(公式に無い登場をしない)'); }
+    // OP16-108: 【登場時】手札1枚捨てコスト→トラッシュ黒ひげをライフ上に「表向きで」加える
+    G.players={me:mkP('OP16-080',false),cpu:mkP('OP11-041',true)}; G.active='me';
+    { const me=G.players.me; me.hand=[I('ST01-006','me')]; const bh=I('OP09-093','me'); bh.base=Object.assign({},bh.base,{cost:4,traits:['黒ひげ海賊団']}); me.trash=[bh];
+      const s=I('OP16-108','me'); me.chars=[s];
+      await runFx(C['OP16-108'].fx.onPlay,{self:s,side:'me'});
+      ok(me.life[0]&&me.life[0].no==='OP09-093'&&me.life[0]._faceUp===true,'OP16-108: トラッシュ黒ひげをライフ上に表向きで加える(faceUp)'); }
+    // トリガー追加(OP16-057/101/102)とトリガー削除(OP16-104/109/110)の構造回帰
+    ok(!!(C['OP16-057'].fx.trigger&&C['OP16-101'].fx.trigger&&C['OP16-102'].fx.trigger),'OP16-057/101/102: 【トリガー】が実装されている');
+    ok(!C['OP16-104'].fx.trigger&&!C['OP16-109'].fx.trigger&&!C['OP16-110'].fx.trigger,'OP16-104/109/110: 公式に無い【トリガー】を削除');
+    // OP16-095: 自身の常在【ブロック不可】
+    ok((C['OP16-095'].fx.static||[]).some(o=>o.op==='unblockableAttack'),'OP16-095: 自身の常在【ブロック不可】');
+    // OP16-005: costMod条件は「白ひげ海賊団を含む特徴」=traitIncludes
+    ok(C['OP16-005'].costMod&&C['OP16-005'].costMod.cond.selfChar.traitIncludes==='白ひげ海賊団','OP16-005: コスト-3条件はtraitIncludes(を含む特徴)');
+
+    // ===== OP-15 公式照合修正の回帰 =====
+    // OP15-021: イベントのcostMod(トラッシュにイベント4枚以上でコスト-3)。イベントもeffCostを通る
+    G.players={me:mkP('OP15-002',false),cpu:mkP('OP11-041',true)}; G.active='me'; G.turnSeq=5;
+    { const me=G.players.me; me.trash=[I('OP15-019','me'),I('OP15-019','me'),I('OP15-019','me'),I('OP15-019','me')];
+      ok(effCost('me',I('OP15-021','me'))===(C['OP15-021'].cost-3),'OP15-021: イベントcostMod(イベ4枚で-3)がeffCostに反映'); }
+    // OP15-018: 「(元々の無し)パワー3000以下」かつドン付与済→maxEffPowerをfilter内で評価。実効3000はKO/実効4000は対象外
+    G.players={me:mkP('OP15-002',false),cpu:mkP('OP11-041',true)}; G.active='me';
+    { const me=G.players.me,cpu=G.players.cpu;
+      const a=I('ST01-006','cpu'); a.base=Object.assign({},a.base,{power:2000}); a.attachedDon=1;
+      const b=I('ST01-006','cpu'); b.base=Object.assign({},b.base,{power:3000}); b.attachedDon=1; cpu.chars=[a,b];
+      const s=I('OP15-018','me'); me.chars=[s]; await runFx(C['OP15-018'].fx.onAttack,{self:s,side:'me'});
+      ok(!cpu.chars.includes(a)&&cpu.chars.includes(b),'OP15-018: ドン付与パワーを実効(maxEffPower)で判定しfilter内で有効'); }
+    // OP15-023/028: donAttach/oppDonAttach の fromAny(コストエリア=アクティブからも付与)
+    G.players={me:mkP('OP15-002',false),cpu:mkP('OP11-041',true)}; G.active='me';
+    { const me=G.players.me; me.don={active:5,rested:0}; const ch=I('ST01-006','me'); me.chars=[ch];
+      await runFx([{op:'donAttach',target:'chooseOwn',n:1,fromAny:true}],{self:ch,side:'me'});
+      ok(me.don.active===4&&(ch.attachedDon===1||me.leader.attachedDon===1),'OP15-023: donAttach fromAnyでアクティブから付与'); }
+    // OP15-032: maxBaseCost(元々のコスト8以下)＝base.costで判定
+    G.players={me:mkP('OP15-002',false),cpu:mkP('OP11-041',true)}; G.active='me';
+    { const c8=I('ST01-006','me'); c8.base=Object.assign({},c8.base,{cost:8}); c8.rested=true; c8.attachedDon=3; G.players.me.chars=[c8];
+      ok(matchFilter(c8,{maxBaseCost:8})&&!matchFilter(c8,{maxBaseCost:7}),'OP15-032: maxBaseCostは基本コストで判定(付与ドンを見ない)'); }
+    // OP15-057: ステージの【相手のアタック時】が実装され、restSelfCost→手札捨て→リーダー+2000
+    G.players={me:mkP('OP15-002',false),cpu:mkP('OP11-041',true)}; G.active='me';
+    { const me=G.players.me; const stg=I('OP15-057','me'); stg.rested=false; me.stage=stg; me.hand=[I('OP15-019','me')];
+      const lp0=power(me.leader); await runFx(C['OP15-057'].fx.onOppAttack,{self:stg,side:'me',attacker:G.players.cpu.leader});
+      ok(stg.rested&&power(me.leader)===lp0+2000,'OP15-057: ステージの相手アタック時(restSelfCost→捨て→+2000)'); }
+    // OP15-002: ルーシーのカウンターは任意枚数(イベ/ステ1枚ごと+1000)
+    G.players={me:mkP('OP15-002',false),cpu:mkP('OP11-041',true)}; G.active='cpu';
+    { const me=G.players.me; me.hand=[I('OP15-019','me'),I('OP15-021','me'),I('ST01-006','me')]; const lp0=power(me.leader);
+      await lucyCounter('me',me.leader); ok(power(me.leader)===lp0+2000&&me.hand.length===1,'OP15-002: ルーシーcounterは任意枚数(イベ2枚で+2000)'); }
+    // 構造回帰: 【トリガー】追加 / maxEffPower化 / donAttach target統一
+    ok(!!(C['OP15-019'].fx.trigger&&C['OP15-037'].fx.trigger&&C['OP15-097'].fx.trigger&&C['OP15-104'].fx.trigger&&C['OP15-115'].fx.trigger&&C['OP15-117'].fx.trigger),'OP15-019/037/097/104/115/117: 【トリガー】実装');
+    ok(C['OP15-054'].fx.main.fx[0].then[0].op==='chooseOption','OP15-054: 二択(chooseOption)で実装');
+    // 回帰: 先攻・後攻とも1ターン目(turnsTaken=1)はアタック不可、2ターン目(turnsTaken>=2)から可能
+    G.players={me:mkP('OP15-001',false),cpu:mkP('OP11-041',true)}; G.winner=null; G.active='me';
+    G.players.me.turnsTaken=1; G.players.me.leader.rested=false;
+    ok(canCardAttack(G.players.me.leader)===false,'1ターン目(turnsTaken=1)はアタック不可');
+    G.players.me.turnsTaken=2; G.players.me.leader.rested=false;
+    ok(canCardAttack(G.players.me.leader)===true,'2ターン目(turnsTaken>=2)はアタック可能');
+    // 回帰: 人間のアタックが防御側の【相手のアタック時】等でアタッカー除去/アタック不可になり中断された時、
+    //       操作権(G.busy/myActable)が必ず戻る（固まってアタックボタンが出なくなるのを防ぐ）
+    G.players={me:mkP('OP13-002',false),cpu:mkP('OP11-041',true)}; G.active='me'; G.turnSeq=5; G.winner=null;
+    G.busy=false; G.myActable=true; G.firstPlayer='me';
+    G.players.me.life=[I('ST01-006','me')]; G.players.cpu.life=[I('ST01-006','cpu')]; G.players.cpu.deck=[I('ST01-006','cpu')];
+    { const atk=I('ST01-006','me'); atk.summonedTurn=1; atk.rested=false; G.players.me.chars=[atk];
+      // 防御側に【相手のアタック時】でアタッカーを手札に戻す一時カードを置き、中断を誘発
+      C['__INTR__']={no:'__INTR__',name:'防御テスト',type:'CHAR',color:[],cost:1,power:1000,traits:[],fx:{onOppAttack:[{op:'bounce',side:'opp',count:1}]}};
+      const d={uid:99999,no:'__INTR__',owner:'cpu',base:C['__INTR__'],attachedDon:0,rested:false,summonedTurn:1,buffs:[],kwGrant:[],frozen:false};
+      G.players.cpu.chars=[d];
+      await declareAttack(atk, G.players.cpu.leader);
+      ok(G.busy===false && G.myActable===true,'アタック中断後も操作権が戻る(G.busy=false/myActable=true)');
+      delete C['__INTR__']; }
+  }catch(e){ console.log('EXCEPTION:', e.message); fail++; }
+  console.log('Phase3 fxテスト: pass='+pass+' fail='+fail);
+  process.exit(fail?1:0);
+})();
+`;
+try { process.stdout.write(runHarness('fx', harness)); }
+catch (e) { process.stdout.write((e.stdout || '') + (e.stderr || '')); process.exit(1); }

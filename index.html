@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ONE PIECE カードゲーム 対戦シミュレーター</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Noto+Sans+JP:wght@400;500;700;900&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+
+<body>
+  <div id="topbar">
+    <div class="logo">ONE PIECE<small>BATTLE SIM</small></div>
+    <div class="spacer"></div>
+    <div class="turnpill" id="turnpill" style="display:none">
+      <span class="phase-tag" id="phaseTag">SETUP</span>
+      <span>ターン <b id="turnNum">1</b></span>
+      <span id="whoTurn" style="font-size:12px;color:var(--muted)"></span>
+    </div>
+    <label class="tg" id="aiToggleWrap" style="display:none">AI思考 <span class="switch on"
+        id="aiSwitch"><i></i></span></label>
+    <button class="tbtn" id="rulesBtn">ルール</button>
+    <button class="tbtn" id="menuBtn" style="display:none">デッキ選択</button>
+    <button class="tbtn" id="sideToggle" style="display:none">情報</button>
+    <button class="tbtn ham-btn" id="hamBtn" style="display:none" aria-label="メニュー">☰</button>
+    <div id="hamMenu" class="ham-menu"></div>
+  </div>
+
+  <div id="screen"><!-- screens injected here --></div>
+
+  <div id="preview"></div>
+
+  <!-- 全カードデータ（公式カードリストより生成）。デッキビルダーで全カードを選択可能にする。 -->
+  <script src="cards.js"></script>
+  <!-- Phase3で実装したカード効果(fx)。番号→fx の対応表。 -->
+  <script src="cards-fx.js"></script>
+  <script src="src/00-data.js"></script>
+  <script src="src/10-engine-core.js"></script>
+  <script src="src/20-targeting-fx.js"></script>
+  <script src="src/30-flow-battle.js"></script>
+  <script src="src/40-ui-render.js"></script>
+  <script src="src/50-input-cpu-ai.js"></script>
+  <script src="src/60-screens-init.js"></script>
+</body>
+
+</html>

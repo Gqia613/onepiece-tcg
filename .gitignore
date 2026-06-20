@@ -1,0 +1,14 @@
+# OS
+.DS_Store
+
+# logs / temp
+*.log
+tmp/
+/tmp/
+
+# node (このプロジェクトはビルド不要だが念のため)
+node_modules/
+
+# editor
+.vscode/
+.idea/
