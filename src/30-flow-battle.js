@@ -41,7 +41,7 @@
       if (!cfg) return;
       if (cfg.filter && !matchFilter(card, cfg.filter)) return;
       const kw = cfg.kw || 'rush';
-      card.kwGrant.push({ kw, dur: cfg.duration === 'untilNextEnd' ? 'oppNextEnd' : 'turn' });
+      card.kwGrant.push({ kw, dur: durTag(cfg.duration, 'turn') });
       flog(side, `【${L.base.name}】トラッシュから登場した「${card.base.name}」に【${kwJa(kw)}】`);
     }
     // リーダーの onAllyLeave: 自分の filter一致キャラが場を離れた時に誘発（once/cond対応）

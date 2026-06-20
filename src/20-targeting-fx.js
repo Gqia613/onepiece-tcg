@@ -54,6 +54,15 @@
       if (G.players[side].isCPU) return true;
       return (await showPrompt({ title, text, opts: [{ t: yes, v: 'y', primary: true }, { t: no || '使わない', v: 'n', ghost: true }] })) === 'y';
     }
+    // duration文字列 → 内部buffタグ（パワー/コスト/キーワード付与の失効管理）。def=未指定時の既定タグ('turnEnd'|'turn'等)
+    function durTag(d, def) {
+      if (d === 'battle') return 'battle';
+      if (d === 'untilNextStart') return 'ownerNextStart';
+      if (d === 'untilNextEnd') return 'oppNextEnd';
+      return def;
+    }
+    // duration文字列 → 失効シーケンス（negSeq/noAtkSeq/restImmuneUntil 用）。untilNextEnd=次の相手ターン終了(turnSeq+1)
+    function durSeq(d) { return d === 'untilNextEnd' ? G.turnSeq + 1 : G.turnSeq; }
 
     /* =========================================================================
        効果解決
@@ -166,12 +175,12 @@
           const pool = op.charsOnly || op.filter || op.maxCost != null ? D.chars : [D.leader, ...D.chars]; // フィルタ/maxCost/charsOnly指定時はキャラのみ
           const cands = pool.filter(c => matchFilter(c, opFilter(op)));
           const t = await chooseCard(side, cands, '効果を無効にする相手のキャラ1枚', 'oppBig', op.optional !== false);
-          if (t) { t.negSeq = op.duration === 'untilNextEnd' ? G.turnSeq + 1 : G.turnSeq; flog(side, `「${t.base.type === 'LEADER' ? '相手リーダー' : t.base.name}」を効果無効`); floatOn(t.uid, '無効', 'dmg'); }
+          if (t) { t.negSeq = durSeq(op.duration); flog(side, `「${t.base.type === 'LEADER' ? '相手リーダー' : t.base.name}」を効果無効`); floatOn(t.uid, '無効', 'dmg'); }
           render();
           break;
         }
         case 'powerMod': {
-          const dur = op.battle ? 'battle' : (op.duration === 'untilNextStart' ? 'ownerNextStart' : (op.duration === 'untilNextEnd' ? 'oppNextEnd' : 'turnEnd'));
+          const dur = op.battle ? 'battle' : durTag(op.duration, 'turnEnd');
           const targetSide = op.side === 'self' ? side : o;
           if (op.all) { // 条件一致の対象（自分側 or 相手側）全てにパワー±
             let cands = op.side === 'self' ? (op.leader ? [P.leader, ...P.chars] : P.chars).filter(c => matchFilter(c, opFilter(op))) : oppChars(side, opFilter(op));
@@ -201,7 +210,7 @@
           }
           break;
         }
-        case 'leaderBuff': addBuff(P.leader, op.amount, op.duration === 'untilNextStart' ? 'ownerNextStart' : 'turnEnd'); floatOn(P.leader.uid, `+${op.amount}`, 'buff'); break;
+        case 'leaderBuff': addBuff(P.leader, op.amount, durTag(op.duration, 'turnEnd')); floatOn(P.leader.uid, `+${op.amount}`, 'buff'); break;
         case 'leaderDoubleAttack': P.leader.kwGrant.push({ kw: 'doubleAttack', dur: 'turn' }); if (op.amount) addBuff(P.leader, op.amount, 'turnEnd'); flog(side, 'リーダーに【ダブルアタック】'); break;
         case 'counterBuff': if (ctx.target) { addBuff(ctx.target, op.amount, 'battle'); floatOn(ctx.target.uid, `+${op.amount}`, 'buff'); } break;
         case 'donMinus': { const ok = await returnDonChoose(side, op.n, op.fromActive); if (!ok) return false; break; }
@@ -224,7 +233,7 @@
         case 'selfToHand': { const z = P.trash; const i = z.indexOf(self); if (i >= 0) { z.splice(i, 1); P.hand.push(self); flog(side, `「${self.base.name}」をトラッシュから手札に加えた`); } break; }
         case 'giveKeyword': {
           if (op.target === 'allOwn' || op.target === 'allOwnL') { // 条件一致の自分のキャラ（Lはリーダー含む）全てに付与
-            const dur = op.duration === 'untilNextEnd' ? 'oppNextEnd' : 'turn';
+            const dur = durTag(op.duration, 'turn');
             const pool = (op.target === 'allOwnL' ? [P.leader, ...P.chars] : P.chars).filter(c => matchFilter(c, opFilter(op)));
             for (const t of pool) t.kwGrant.push({ kw: op.kw, dur });
             if (pool.length) flog(side, `自分のキャラ全てに【${kwJa(op.kw)}】`);
@@ -234,7 +243,7 @@
           if (op.target === 'self') t = self;
           else if (op.target === 'chooseOwn') t = await chooseCard(side, P.chars.filter(c => matchFilter(c, opFilter(op))), `【${kwJa(op.kw)}】を与える対象`, 'ownBig', true);
           else if (op.target === 'chooseOwnL') t = await chooseCard(side, [P.leader, ...P.chars].filter(c => matchFilter(c, opFilter(op))), `【${kwJa(op.kw)}】を与える対象（リーダーかキャラ）`, 'ownBig', true);
-          if (t) { t.kwGrant.push({ kw: op.kw, dur: op.duration === 'untilNextEnd' ? 'oppNextEnd' : 'turn' }); flog(side, `「${t.base.name}」に【${kwJa(op.kw)}】`); }
+          if (t) { t.kwGrant.push({ kw: op.kw, dur: durTag(op.duration, 'turn') }); flog(side, `「${t.base.name}」に【${kwJa(op.kw)}】`); }
           break;
         }
         case 'playSelf': { if (self) { await summon(side, self, false); flog(side, `「${self.base.name}」を登場させた`); } break; }
@@ -342,7 +351,7 @@
         }
         // 「元々のパワーをNにする」一時上書き（target: self/leader/selfAndLeader/chooseOwn, duration: turn/battle/untilNextEnd）
         case 'setPower': {
-          const dur = op.duration === 'untilNextEnd' ? 'oppNextEnd' : (op.duration === 'battle' ? 'battle' : 'turnEnd');
+          const dur = durTag(op.duration, 'turnEnd');
           const setVal = op.valueFrom === 'oppLeaderPower' ? power(G.players[o].leader) // 「相手リーダーと同じパワーに」等は都度スナップショット
             : op.valueFrom === 'selfLeaderPower' ? power(P.leader) : op.value;
           const targets = [];
@@ -387,7 +396,7 @@
         }
         // 盤面のキャラに一時的なコスト増減を付与（side:'opp'|'self', amount:±N, duration, filter）
         case 'addCostBuff': {
-          const dur = op.duration === 'untilNextEnd' ? 'oppNextEnd' : (op.duration === 'battle' ? 'battle' : 'turnEnd');
+          const dur = durTag(op.duration, 'turnEnd');
           const isOpp = op.side !== 'self';
           for (let i = 0; i < (op.count || 1); i++) {
             const cands = isOpp ? oppChars(side, opFilter(op)) : ownChars(side, opFilter(op));
@@ -517,7 +526,7 @@
         }
         // 相手キャラ count枚を「レストにできない」状態にする（アタック/ブロック不可・レスト効果対象外）
         case 'restImmune': {
-          const until = op.duration === 'untilNextEnd' ? G.turnSeq + 1 : G.turnSeq;
+          const until = durSeq(op.duration);
           for (let i = 0; i < (op.count || 1); i++) {
             const cands = oppChars(side, opFilter(op)).filter(c => !isRestImmune(c));
             const t = P.isCPU ? cands[0] : await chooseCard(side, cands, 'レストにできない状態にする相手キャラ', 'oppBig', op.optional);
@@ -527,7 +536,7 @@
         }
         // 相手キャラ count枚をアタック不可にする（duration:'untilNextEnd'で次の相手ターン終了まで）
         case 'setAttackBan': {
-          for (let i = 0; i < (op.count || 1); i++) { const cands = oppChars(side, opFilter(op)).filter(c => c.noAtkSeq == null); const t = P.isCPU ? cands[0] : await chooseCard(side, cands, 'アタック不可にする相手キャラ', 'oppBig', op.optional); if (!t) break; t.noAtkSeq = op.duration === 'untilNextEnd' ? G.turnSeq + 1 : G.turnSeq; flog(side, `「${t.base.name}」はアタック不可`); }
+          for (let i = 0; i < (op.count || 1); i++) { const cands = oppChars(side, opFilter(op)).filter(c => c.noAtkSeq == null); const t = P.isCPU ? cands[0] : await chooseCard(side, cands, 'アタック不可にする相手キャラ', 'oppBig', op.optional); if (!t) break; t.noAtkSeq = durSeq(op.duration); flog(side, `「${t.base.name}」はアタック不可`); }
           render(); break;
         }
         // 自分のキャラ1枚（filter一致）を手札に戻すコスト。任意。払えた時 then を実行
@@ -631,7 +640,7 @@
           let cands = P.trash.filter(c => c.base.type === 'CHAR' && (c.base.cost || 0) <= (op.maxCost != null ? op.maxCost : 99)); // maxCost未指定はコスト上限なし（filterで絞る）
           if (op.filter) cands = cands.filter(c => matchFilter(c, op.filter));
           const c = await chooseCard(side, cands, 'トラッシュから登場させるキャラ', 'ownBig', true);
-          if (c) { P.trash.splice(P.trash.indexOf(c), 1); await summon(side, c, false, 'trash'); if (op.grantKw && P.chars.includes(c)) c.kwGrant.push({ kw: op.grantKw, dur: op.grantDuration === 'untilNextEnd' ? 'oppNextEnd' : 'turn' }); }
+          if (c) { P.trash.splice(P.trash.indexOf(c), 1); await summon(side, c, false, 'trash'); if (op.grantKw && P.chars.includes(c)) c.kwGrant.push({ kw: op.grantKw, dur: durTag(op.grantDuration, 'turn') }); }
           break;
         }
         case 'denyBlockerVsLeader': P.denyBlock = true; flog(side, '相手はリーダーへのアタックをブロック不可'); break;
