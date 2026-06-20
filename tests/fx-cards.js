@@ -843,6 +843,31 @@ humanPick=function(c){return Promise.resolve((c||[])[0]||null);};
       for(const k in C){ const c=C[k]; if(!c||c.dataOnly)continue; const off=DB.find(x=>x&&x.no===c.no); if(!off)continue;
         for(const f of ['cost','power','counter','life']){ if(c[f]!=null&&off[f]!=null&&c[f]!==off[f]) bad++; } }
       ok(bad===0, 'def札のcost/power/counter/lifeが公式CARD_DBと一致(数値ずれ0)'); }
+
+    // === OP14 バッチ1 ===
+    ok(['OP14-005','OP14-015','OP14-019','OP14-022','OP14-023','OP14-043','OP14-050','OP14-057','OP14-059','OP14-064','OP14-071','OP14-075','OP14-081','OP14-083'].every(no=>C[no]&&C[no].fx), 'OP14バッチ1: 14枚にfx統合');
+    { const me=LP('OP13-002'); const v=I('OP15-067','cpu'); G.players.cpu.chars=[v]; const p0=power(v);
+      const c=I('OP14-015','me'); await runFx(c.base.fx.onAttack,{self:c,side:'me'});
+      ok(power(v)===p0-1000, 'OP14-015 onAttack: 相手キャラ-1000'); }
+    { const me=LP('OP13-002'); me.donMax=12; me.don.rested=0;
+      C['__p0__']={no:'__p0__',name:'P0',type:'CHAR',color:[],cost:2,power:0,counter:0,traits:[]};
+      const v=mkSyn('__p0__',C['__p0__']); v.owner='cpu'; G.players.cpu.chars=[v];
+      const c=I('OP14-064','me'); await runFx(c.base.fx.onKO,{self:c,side:'me'});
+      ok(!G.players.cpu.chars.includes(v) && me.don.rested===1, 'OP14-064 onKO: ドンレスト追加＋元々P0をKO'); delete C['__p0__']; }
+    { const me=LP('OP13-002'); const cc=I('OP14-083','me'); me.chars=[cc];
+      const v=I('OP15-067','cpu'); G.players.cpu.chars=[v]; const p0=power(v); // OP15-067=コスト1…要コスト0
+      C['__c0c__']={no:'__c0c__',name:'コスト0',type:'CHAR',color:[],cost:0,power:3000,counter:0,traits:[]};
+      const v0=mkSyn('__c0c__',C['__c0c__']); v0.owner='cpu'; G.players.cpu.chars=[v0]; const q0=power(v0);
+      await runFx(cc.base.fx.act.fx,{self:cc,side:'me'});
+      ok(!me.chars.includes(cc) && power(v0)===q0-3000, 'OP14-083 act: 自身トラッシュ→相手コスト0を-3000'); delete C['__c0c__']; }
+    { const me=LP('OP13-002');
+      C['__fm__']={no:'__fm__',name:'魚人',type:'CHAR',color:[],cost:3,power:4000,counter:1000,traits:['魚人族']};
+      const f=mkSyn('__fm__',C['__fm__']); me.chars=[f]; const p0=power(f);
+      const ev=I('OP14-057','me'); await runFx(ev.base.fx.main.fx,{self:ev,side:'me'});
+      ok(power(f)===p0+1000, 'OP14-057 main: 魚人/人魚 全体+1000'); delete C['__fm__']; }
+    { const me=LP('OP13-002'); me.don.rested=1; me.don.active=0; me.chars=[I('OP15-067','me')];
+      const c=I('OP14-005','me'); await runFx(c.base.fx.act.fx,{self:c,side:'me'});
+      ok((me.leader.attachedDon+me.chars.reduce((s,x)=>s+x.attachedDon,0))===1, 'OP14-005 act: リーダー/キャラにレストのドン1付与'); }
   }catch(e){ console.log('EXCEPTION:', e.message); fail++; }
   console.log('Phase3 fxテスト: pass='+pass+' fail='+fail);
   process.exit(fail?1:0);
