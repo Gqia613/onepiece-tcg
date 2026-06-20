@@ -92,6 +92,21 @@ window.CARD_FX = {
   "OP07-019": {"onOppAttack":[{"op":"restDonCost","n":1,"once":"turn","then":[{"op":"restChar","side":"opp","count":1,"includeLeader":true,"optional":true}]}]},
   // OP14-040 ジンベエ(L): 【起動メイン】手札1枚捨て：《魚人族》か《人魚族》のリーダーかキャラ1枚にレストのドン2付与
   "OP14-040": {"act":{"label":"捨て:魚人/人魚にレストのドン2付与","cost":{},"fx":[{"op":"discardCost","count":1,"then":[{"op":"donAttach","target":"chooseOwn","n":2,"filter":{"or":[{"traitIncludes":"魚人族"},{"traitIncludes":"人魚族"}]}}]}]}},
+  /* ----- 軽量リーダー バッチ3（既存opチェーン・src非干渉） ----- */
+  // OP03-077 シャーロット・リンリン: 【ドン!!×2】【アタック時】②＋手札1捨て：自ライフ1以下ならデッキ上1枚をライフに加える
+  "OP03-077": {"onAttack":[{"op":"cond","check":"donX2","then":[{"op":"restDonCost","n":2,"then":[{"op":"discardCost","count":1,"then":[{"op":"cond","check":"life<=1","then":[{"op":"lifeAddFromDeck","n":1}]}]}]}]}]},
+  // OP06-080 ペローナ(SB): 【ドン!!×1】【アタック時】②＋手札1捨て：デッキ上2枚トラッシュ→トラッシュのコスト4以下《スリラーバーク海賊団》1枚登場
+  "OP06-080": {"onAttack":[{"op":"cond","check":"donX1Self","then":[{"op":"restDonCost","n":2,"then":[{"op":"discardCost","count":1,"then":[{"op":"deckToTrash","n":2},{"op":"reviveFromTrash","maxCost":4,"filter":{"traitIncludes":"スリラーバーク海賊団"}}]}]}]}]},
+  // OP08-002 ベガパンク: 【ドン!!×1】【起動メイン】【ターン1回】1ドロー＋手札1枚をデッキ下へ、その後相手キャラ1枚まで このターン中 パワー-2000
+  "OP08-002": {"act":{"label":"1ドロー＋手札デッキ下→相手-2000","cost":{},"fx":[{"op":"cond","check":"donX1Self","then":[{"op":"draw","n":1},{"op":"handToBottom","n":1},{"op":"powerMod","side":"opp","amount":-2000,"count":1,"optional":true}]}]}},
+  // OP08-057 ステューシー: 【起動メイン】【ターン1回】ドン!!-2：以下から1つ（手札5以下で1ドロー／相手キャラ1枚 コスト-2）
+  "OP08-057": {"act":{"label":"ドン-2:ドロー or コスト-2","cost":{},"fx":[{"op":"donMinus","n":2},{"op":"chooseOption","options":[{"label":"手札5以下で1ドロー","fx":[{"op":"draw","n":1,"cond":{"selfHandAtMost":5}}]},{"label":"相手キャラをコスト-2","fx":[{"op":"addCostBuff","side":"opp","amount":-2,"count":1,"optional":true}]}]}]}},
+  // OP06-001 シャンクス(FILM): 【アタック時】手札の《FILM》1枚を捨てられる：相手キャラ1枚まで このターン中 パワー-2000、その後ドンデッキからレスト追加
+  "OP06-001": {"onAttack":[{"op":"discardCost","filter":{"traitIncludes":"FILM"},"count":1,"then":[{"op":"powerMod","side":"opp","amount":-2000,"count":1,"optional":true},{"op":"donFromDeck","n":1,"mode":"rest"}]}]},
+  // P-086 ロー(P): 【起動メイン】【ターン1回】ドン!!-3＋自パワー3000以上1枚をデッキ下：手札のコスト4以下《ハートの海賊団》1枚登場
+  "P-086": {"act":{"label":"ドン-3＋自デッキ下:ハート登場","cost":{},"fx":[{"op":"donMinus","n":3},{"op":"deckBottomOwnCharCost","filter":{"minEffPower":3000},"then":[{"op":"playCharFromHand","maxCost":4,"filter":{"traitIncludes":"ハートの海賊団"},"count":1,"optional":true}]}]}},
+  // OP10-002 ロー(PH): 【ドン!!×2】【アタック時】自コスト2以上《パンクハザード》1枚を手札に戻せる：相手パワー4000以下1枚KO
+  "OP10-002": {"onAttack":[{"op":"cond","check":"donX2","then":[{"op":"bounceOwnCharCost","filter":{"minCost":2,"traitIncludes":"パンクハザード"},"then":[{"op":"ko","side":"opp","filter":{"maxEffPower":4000},"count":1,"optional":true}]}]}]},
   /* ===== index.html def() から移行した効果（一元化） ===== */
   // OP05-077 ガンマナイフ(イベント/紫/コスト2/ハートの海賊団): 公式 tcg-portal/cardrush で照合
   // 【メイン】ドン!!-1：相手のキャラ1枚までを、このターン中、パワー-5000。 【トリガー】ドン!!デッキからドン!!1枚までを、アクティブで追加する。

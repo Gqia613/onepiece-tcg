@@ -771,6 +771,39 @@ humanPick=function(c){return Promise.resolve((c||[])[0]||null);};
       const fch=mkSyn('__fish__',C['__fish__']); me.chars=[fch];
       await runFx(me.leader.base.fx.act.fx,{self:me.leader,side:'me'});
       ok((me.leader.attachedDon+fch.attachedDon)===2 && me.hand.length===0, 'OP14-040 act: 捨て→魚人/人魚にレストのドン2付与'); delete C['__fish__']; }
+
+    // === 軽量リーダー バッチ3 ===
+    { const me=LP('OP03-077'); me.leader.attachedDon=2; me.don.active=2; me.hand=[I('OP15-067','me')]; me.life=[I('ST01-006','me')]; me.deck=[I('OP15-067','me')];
+      await runFx(me.leader.base.fx.onAttack,{self:me.leader,side:'me'});
+      ok(me.life.length===2, 'OP03-077 onAttack: ②＋捨て→ライフ1以下でライフ+1'); }
+    { const me=LP('OP06-080'); me.leader.attachedDon=1; me.don.active=2; me.hand=[I('OP15-067','me')]; me.deck=[I('OP15-067','me'),I('OP15-067','me')];
+      C['__sb__']={no:'__sb__',name:'スリラーバークの誰か',type:'CHAR',color:[],cost:4,power:5000,counter:1000,traits:['スリラーバーク海賊団']};
+      const sb=mkSyn('__sb__',C['__sb__']); me.trash=[sb];
+      await runFx(me.leader.base.fx.onAttack,{self:me.leader,side:'me'});
+      ok(me.chars.some(c=>c.no==='__sb__'), 'OP06-080 onAttack: デッキ2トラッシュ→トラッシュからSB登場'); delete C['__sb__']; }
+    { const me=LP('OP08-002'); me.leader.attachedDon=1; me.deck=[I('OP15-067','me')]; me.hand=[I('OP15-067','me')]; const v=I('OP15-067','cpu'); G.players.cpu.chars=[v]; const p0=power(v);
+      await runFx(me.leader.base.fx.act.fx,{self:me.leader,side:'me'});
+      ok(power(v)===p0-2000, 'OP08-002 act: ドロー＋手札デッキ下→相手-2000'); }
+    { const me=LP('OP08-057'); me.don.active=2; me.don.rested=0; me.hand=[]; me.deck=[I('OP15-067','me')];
+      await runFx(me.leader.base.fx.act.fx,{self:me.leader,side:'me'});
+      ok(me.hand.length===1 && donTotal('me')===0, 'OP08-057 act: ドン-2→二択先頭(手札5以下で1ドロー)'); }
+    { const me=LP('OP06-001'); me.donMax=12; me.don.rested=0;
+      C['__film2__']={no:'__film2__',name:'FILMの誰か',type:'CHAR',color:[],cost:3,power:4000,counter:1000,traits:['FILM']};
+      me.hand=[mkSyn('__film2__',C['__film2__'])]; const v=I('OP15-067','cpu'); G.players.cpu.chars=[v]; const p0=power(v);
+      await runFx(me.leader.base.fx.onAttack,{self:me.leader,side:'me'});
+      ok(power(v)===p0-2000 && me.don.rested===1, 'OP06-001 onAttack: FILM捨て→相手-2000＋ドンレスト追加'); delete C['__film2__']; }
+    { const me=LP('P-086'); me.don.active=3;
+      C['__p3k__']={no:'__p3k__',name:'パワー3000',type:'CHAR',color:[],cost:4,power:3000,counter:1000,traits:[]};
+      const big=mkSyn('__p3k__',C['__p3k__']); me.chars=[big];
+      C['__heart__']={no:'__heart__',name:'ハートの誰か',type:'CHAR',color:[],cost:4,power:5000,counter:1000,traits:['ハートの海賊団']};
+      const hc=mkSyn('__heart__',C['__heart__']); me.hand=[hc];
+      await runFx(me.leader.base.fx.act.fx,{self:me.leader,side:'me'});
+      ok(me.chars.some(c=>c.no==='__heart__') && !me.chars.includes(big) && donTotal('me')===0, 'P-086 act: ドン-3＋自デッキ下→ハート登場'); delete C['__p3k__']; delete C['__heart__']; }
+    { const me=LP('OP10-002'); me.leader.attachedDon=2;
+      C['__ph__']={no:'__ph__',name:'パンクハザード',type:'CHAR',color:[],cost:3,power:4000,counter:1000,traits:['パンクハザード']};
+      me.chars=[mkSyn('__ph__',C['__ph__'])]; const v=I('OP15-067','cpu'); G.players.cpu.chars=[v]; // P2000≤4000
+      await runFx(me.leader.base.fx.onAttack,{self:me.leader,side:'me'});
+      ok(!G.players.cpu.chars.includes(v), 'OP10-002 onAttack: PH戻して→相手パワー4000以下KO'); delete C['__ph__']; }
   }catch(e){ console.log('EXCEPTION:', e.message); fail++; }
   console.log('Phase3 fxテスト: pass='+pass+' fail='+fail);
   process.exit(fail?1:0);
