@@ -512,6 +512,32 @@ humanPick=function(c){return Promise.resolve((c||[])[0]||null);};
     { const me=G.players.me; me.don.active=2; const bm=I('OP01-111','me'); me.chars=[bm]; const p0=power(bm);
       await runFx(bm.base.fx.onBlock,{self:bm,side:'me',attacker:I('OP15-067','cpu')});
       ok(power(bm)===p0+1000 && donTotal('me')===1, 'OP01-111 onBlock: ドン-1で自身に+1000(powerMod target:self)'); }
+    // OP06-009 シュライヤ: setPower self/oppLeaderPower＋【ターン1回】(onAttack/onBlock共有のonceゲート)
+    G.players={me:mkP('OP13-002',false),cpu:mkP('OP11-041',true)}; G.active='me'; G.turnSeq=5; G.winner=null;
+    G.busy=false; G.myActable=true; G.firstPlayer='me';
+    { const shu=I('OP06-009','me'); shu.summonedTurn=1; G.players.me.chars=[shu]; G.players.me.hand=[];
+      G.players.cpu.life=[I('ST01-006','cpu'),I('ST01-006','cpu'),I('ST01-006','cpu')]; G.players.me.life=[I('ST01-006','me')];
+      const cpuL=G.players.cpu.leader; const lp1=power(cpuL);
+      await declareAttack(shu, cpuL);
+      ok(power(shu)===lp1 && shu._onceAtkBlkTurn===G.turnSeq, 'OP06-009: アタック時に相手リーダーと同じパワーになる＋ターン1回フラグ');
+      addBuff(cpuL, 2000, 'turnEnd'); shu.rested=false;            // 相手L+2000・再アクティブ
+      await declareAttack(shu, cpuL);
+      ok(power(shu)===lp1, 'OP06-009: 同一ターン2回目は再発動しない(onceゲート・power据え置き)'); }
+    // ST09-007 しのぶ: ライフ上か下1枚を手札に加える(lifeCost pos:choose)→自身このバトル中+4000
+    G.players={me:mkP('OP13-002',false),cpu:mkP('OP11-041',true)}; G.active='me';
+    { const me=G.players.me; me.life=[I('ST01-006','me'),I('ST01-006','me')]; me.hand=[];
+      const shi=I('ST09-007','me'); me.chars=[shi]; const p0=power(shi);
+      await runFx(shi.base.fx.onBlock,{self:shi,side:'me',attacker:I('OP15-067','cpu')});
+      ok(power(shi)===p0+4000 && me.hand.length===1 && me.life.length===1, 'ST09-007 onBlock: ライフ1枚を手札に加えて自身+4000'); }
+    // ST03-003 クロコダイル: ドン×1で相手コスト2以下キャラをデッキ下 / ドン無しは不発
+    G.players={me:mkP('OP13-002',false),cpu:mkP('OP11-041',true)}; G.active='me';
+    { const cro=I('ST03-003','me'); cro.attachedDon=1;
+      const v=I('OP15-067','cpu'); G.players.cpu.chars=[v]; const dk0=G.players.cpu.deck.length;
+      await runFx(cro.base.fx.onBlock,{self:cro,side:'me',attacker:I('OP15-067','cpu')});
+      ok(!G.players.cpu.chars.includes(v) && G.players.cpu.deck.length===dk0+1, 'ST03-003 onBlock: ドン×1で相手コスト2以下キャラをデッキ下');
+      const cro2=I('ST03-003','me'); cro2.attachedDon=0; const v2=I('OP15-067','cpu'); G.players.cpu.chars=[v2];
+      await runFx(cro2.base.fx.onBlock,{self:cro2,side:'me',attacker:I('OP15-067','cpu')});
+      ok(G.players.cpu.chars.includes(v2), 'ST03-003 onBlock: ドン×1未満なら不発'); }
   }catch(e){ console.log('EXCEPTION:', e.message); fail++; }
   console.log('Phase3 fxテスト: pass='+pass+' fail='+fail);
   process.exit(fail?1:0);

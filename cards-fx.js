@@ -37,6 +37,12 @@ window.CARD_FX = {
   "OP01-111": {"onBlock":[{"op":"donMinus","n":1},{"op":"powerMod","target":"self","amount":1000}]},
   // OP05-047 バジル・ホーキンス:【ブロック時】自分の手札が3枚以下なら1ドロー。その後このキャラはこのバトル中パワー+1000。
   "OP05-047": {"onBlock":[{"op":"cond","check":{"selfHandAtMost":3},"then":[{"op":"draw","n":1},{"op":"powerMod","target":"self","amount":1000,"battle":true}]}]},
+  // OP06-009 シュライヤ:【アタック時】/【ブロック時】【ターン1回】このキャラは次の自分のターン開始時まで相手リーダーと同じパワーになる（once:'turn'は両タイミング共有）。
+  "OP06-009": {"onAttack":[{"op":"setPower","target":"self","valueFrom":"oppLeaderPower","duration":"untilNextStart","once":"turn"}],"onBlock":[{"op":"setPower","target":"self","valueFrom":"oppLeaderPower","duration":"untilNextStart","once":"turn"}]},
+  // ST09-007 しのぶ:【ブロック時】自分のライフの上か下から1枚を手札に加えられる：このキャラはこのバトル中パワー+4000。
+  "ST09-007": {"onBlock":[{"op":"lifeCost","action":"toHand","pos":"choose","then":[{"op":"powerMod","target":"self","amount":4000,"battle":true}]}]},
+  // ST03-003 クロコダイル:【ドン‼×1】【ブロック時】コスト2以下のキャラ1枚までを、持ち主のデッキの下に置く（公式は相手除去用途。deckBottom=相手対象）。
+  "ST03-003": {"onBlock":[{"op":"cond","check":"donX1Self","then":[{"op":"deckBottom","maxCost":2,"optional":true}]}]},
 "OP15-067": {"onPlay":[{"op":"donMinus","n":1},{"op":"draw","n":1}]},
   "OP15-061": {"onPlay":[{"op":"donMinus","n":1},{"op":"draw","n":1}],"onAttack":[{"op":"powerMod","side":"opp","amount":-1000,"count":1,"cond":"don<=6"}]},
   "OP15-066": {"onPlay":[{"op":"donMinus","n":1},{"op":"draw","n":1}],"onAttack":[{"op":"scry","n":2,"cond":"don<=6"}]},

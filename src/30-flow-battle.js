@@ -179,7 +179,13 @@
       showAtkAnnounce(aSide, attacker, target);
       render(); animClass(attacker.uid, 'lunge' + (aSide === 'me' ? '' : ' up')); await sleep(aSide === 'me' ? 280 : 780);
       // アタック時効果
-      if (attacker.base.fx && attacker.base.fx.onAttack && !isNegated(attacker)) { await fxNote(aSide, 'アタック時効果', attacker.base.name); await runFx(attacker.base.fx.onAttack, { self: attacker, side: aSide }); }
+      if (attacker.base.fx && attacker.base.fx.onAttack && !isNegated(attacker)) {
+        const onceGated = attacker.base.fx.onAttack.some(o => o.once === 'turn'); // 【アタック時】/【ブロック時】【ターン1回】は両タイミング共有(_onceAtkBlkTurn)
+        if (!(onceGated && attacker._onceAtkBlkTurn === G.turnSeq)) {
+          if (onceGated) attacker._onceAtkBlkTurn = G.turnSeq;
+          await fxNote(aSide, 'アタック時効果', attacker.base.name); await runFx(attacker.base.fx.onAttack, { self: attacker, side: aSide });
+        }
+      }
       if (!isNegated(G.players[aSide].leader)) await leaderOnAttack(attacker);
       // 【相手のアタック時】防御側キャラの誘発（onceゲート: fx内のopに once:'turn' があればそのカードはターン1回）
       for (const c of [...G.players[dSide].chars]) {
@@ -216,8 +222,12 @@
           blocker.rested = true; blkTarget = blocker; G._atkTo = blocker.uid; flog(dSide, `「${blocker.base.name}」でブロック`); render(); await sleep(200); await luffyReveal(dSide);
           // 【ブロック時】(onBlock): ブロッカー宣言時に誘発（カウンター前）。fx未定義カードは無変化＝純粋に追加
           if (blocker.base.fx && blocker.base.fx.onBlock && !isNegated(blocker)) {
-            await fxNote(dSide, 'ブロック時効果', blocker.base.name); flog(dSide, `【ブロック時】「${blocker.base.name}」`);
-            await runFx(blocker.base.fx.onBlock, { self: blocker, side: dSide, attacker });
+            const onceGated = blocker.base.fx.onBlock.some(o => o.once === 'turn'); // 【アタック時】/【ブロック時】【ターン1回】は両タイミング共有(_onceAtkBlkTurn)
+            if (!(onceGated && blocker._onceAtkBlkTurn === G.turnSeq)) {
+              if (onceGated) blocker._onceAtkBlkTurn = G.turnSeq;
+              await fxNote(dSide, 'ブロック時効果', blocker.base.name); flog(dSide, `【ブロック時】「${blocker.base.name}」`);
+              await runFx(blocker.base.fx.onBlock, { self: blocker, side: dSide, attacker });
+            }
           }
         }
       }
