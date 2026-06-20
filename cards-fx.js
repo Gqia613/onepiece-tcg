@@ -9,6 +9,17 @@ window.CARD_FX = {
   // OP05-077 ガンマナイフ(イベント/紫/コスト2/ハートの海賊団): 公式 tcg-portal/cardrush で照合
   // 【メイン】ドン!!-1：相手のキャラ1枚までを、このターン中、パワー-5000。 【トリガー】ドン!!デッキからドン!!1枚までを、アクティブで追加する。
   "OP05-077": {"main":{"fx":[{"op":"donMinus","n":1},{"op":"powerMod","side":"opp","amount":-5000,"count":1,"optional":true}]},"trigger":[{"op":"donFromDeck","n":1,"mode":"active"}]},
+  /* ===== 【ブロック時】(onBlock) — onBlockフック整備に伴い公式テキストで実装（blockerは text由来でmergeCardDBが付与） ===== */
+  // OP05-036 モネ:【ブロック時】相手のコスト4以下のキャラ1枚までを、レストにする。
+  "OP05-036": {"onBlock":[{"op":"restChar","side":"opp","maxCost":4,"count":1,"optional":true}]},
+  // OP12-033 ヘルメッポ:【ブロック時】相手のコスト5以下のキャラ1枚までを、レストにする。
+  "OP12-033": {"onBlock":[{"op":"restChar","side":"opp","maxCost":5,"count":1,"optional":true}]},
+  // OP02-110 ヒナ:【ブロック時】相手のコスト6以下のキャラ1枚までを選ぶ。選んだキャラは、このターン中、アタックできない。
+  "OP02-110": {"onBlock":[{"op":"setAttackBan","side":"opp","maxCost":6,"count":1,"optional":true}]},
+  // EB04-053 戦桃丸:【ブロック時】自分のライフが2枚以下の場合、カード1枚を引く。
+  "EB04-053": {"onBlock":[{"op":"draw","n":1,"cond":"life<=2"}]},
+  // OP10-077 ベラミー:【ブロック時】自分のドン‼2枚をレストにできる：ドン!!デッキからドン!!1枚までを、アクティブで追加する。
+  "OP10-077": {"onBlock":[{"op":"restDonCost","n":2,"then":[{"op":"donFromDeck","n":1,"mode":"active"}]}]},
 "OP15-067": {"onPlay":[{"op":"donMinus","n":1},{"op":"draw","n":1}]},
   "OP15-061": {"onPlay":[{"op":"donMinus","n":1},{"op":"draw","n":1}],"onAttack":[{"op":"powerMod","side":"opp","amount":-1000,"count":1,"cond":"don<=6"}]},
   "OP15-066": {"onPlay":[{"op":"donMinus","n":1},{"op":"draw","n":1}],"onAttack":[{"op":"scry","n":2,"cond":"don<=6"}]},

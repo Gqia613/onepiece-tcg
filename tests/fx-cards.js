@@ -466,6 +466,31 @@ humanPick=function(c){return Promise.resolve((c||[])[0]||null);};
     { const me=G.players.me; me.don.active=0; me.don.rested=0; me.donMax=10; // donTotal=0→ドンデッキに余裕
       const ev=I('OP05-077','me'); await runFx(ev.base.fx.trigger,{self:ev,side:'me'});
       ok(me.don.active===1, 'OP05-077 trigger: ドンデッキからドンを1枚アクティブで追加'); }
+
+    // === 【ブロック時】(onBlock) フック ===
+    // 統合: モネ(OP05-036)が実際にブロックすると onBlock が誘発し、相手のコスト4以下キャラがレストする
+    G.players={me:mkP('OP13-002',false),cpu:mkP('OP11-041',true)}; G.active='cpu'; G.turnSeq=5; G.winner=null;
+    G.busy=false; G.myActable=true; G.firstPlayer='cpu';
+    { const atkr=I('OP15-067','cpu'); atkr.summonedTurn=1; atkr.rested=false;                 // 攻撃キャラ(cost1)
+      const bystander=I('OP15-067','cpu'); bystander.rested=false;                             // 攻撃側のコスト4以下キャラ(レスト対象)
+      G.players.cpu.chars=[atkr,bystander];
+      const mone=I('OP05-036','me'); mone.rested=false; G.players.me.chars=[mone];             // 防御側ブロッカー(モネ)
+      ok(C['OP05-036'].blocker===true && !!(C['OP05-036'].fx&&C['OP05-036'].fx.onBlock), 'onBlock: モネにblocker付与＋onBlock fx統合');
+      G.players.me.life=[I('ST01-006','me'),I('ST01-006','me')]; G.players.cpu.life=[I('ST01-006','cpu')]; G.players.me.hand=[];
+      await declareAttack(atkr, G.players.me.leader);                                          // cpuがリーダーへアタック→人間(me)はモネでブロック
+      ok(bystander.rested===true, 'onBlock: モネのブロック時に相手のコスト4以下キャラがレストした(フック誘発)'); }
+    // 直接fx: 戦桃丸(EB04-053) ライフ2以下で1ドロー / ベラミー(OP10-077) ドン2レスト→ドンデッキからアクティブ+1
+    G.players={me:mkP('OP13-002',false),cpu:mkP('OP11-041',true)}; G.active='me';
+    { const me=G.players.me; me.life=[I('ST01-006','me'),I('ST01-006','me')]; me.deck=[I('OP15-067','me'),I('OP15-067','me')]; me.hand=[];
+      const sen=I('EB04-053','me'); await runFx(sen.base.fx.onBlock,{self:sen,side:'me',attacker:I('OP15-067','cpu')});
+      ok(me.hand.length===1, 'EB04-053 onBlock: 自ライフ2以下で1ドロー');
+      me.life=[I('ST01-006','me'),I('ST01-006','me'),I('ST01-006','me')]; me.hand=[];           // ライフ3→引かない
+      await runFx(sen.base.fx.onBlock,{self:sen,side:'me',attacker:I('OP15-067','cpu')});
+      ok(me.hand.length===0, 'EB04-053 onBlock: ライフ3以上では引かない(cond)'); }
+    G.players={me:mkP('OP13-002',false),cpu:mkP('OP11-041',true)}; G.active='me';
+    { const me=G.players.me; me.don.active=2; me.don.rested=0; me.donMax=10;                    // donTotal2→デッキ余裕
+      const bel=I('OP10-077','me'); await runFx(bel.base.fx.onBlock,{self:bel,side:'me',attacker:I('OP15-067','cpu')});
+      ok(me.don.rested===2 && me.don.active===1 && donTotal('me')===3, 'OP10-077 onBlock: ドン2レスト→ドンデッキからアクティブ+1'); }
   }catch(e){ console.log('EXCEPTION:', e.message); fail++; }
   console.log('Phase3 fxテスト: pass='+pass+' fail='+fail);
   process.exit(fail?1:0);

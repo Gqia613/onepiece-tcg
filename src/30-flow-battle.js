@@ -212,7 +212,14 @@
       let blkTarget = target;
       if (!(target.base.type === 'LEADER' && G.players[aSide].denyBlock) && !isUnblockable(attacker)) {
         const blocker = await chooseBlocker(dSide, attacker, target);
-        if (blocker) { blocker.rested = true; blkTarget = blocker; G._atkTo = blocker.uid; flog(dSide, `「${blocker.base.name}」でブロック`); render(); await sleep(200); await luffyReveal(dSide); }
+        if (blocker) {
+          blocker.rested = true; blkTarget = blocker; G._atkTo = blocker.uid; flog(dSide, `「${blocker.base.name}」でブロック`); render(); await sleep(200); await luffyReveal(dSide);
+          // 【ブロック時】(onBlock): ブロッカー宣言時に誘発（カウンター前）。fx未定義カードは無変化＝純粋に追加
+          if (blocker.base.fx && blocker.base.fx.onBlock && !isNegated(blocker)) {
+            await fxNote(dSide, 'ブロック時効果', blocker.base.name); flog(dSide, `【ブロック時】「${blocker.base.name}」`);
+            await runFx(blocker.base.fx.onBlock, { self: blocker, side: dSide, attacker });
+          }
+        }
       }
       // カウンター
       await counterStep(dSide, attacker, blkTarget);

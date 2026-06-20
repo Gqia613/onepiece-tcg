@@ -189,7 +189,7 @@ node -e 'const fs=require("fs");fs.writeFileSync("/tmp/app.js",fs.readFileSync("
 ## 8. 既知のギャップ / ロードマップ（設計図 §10 と対応）
 
 - ✅(部分): コストの統一 → `revealCost`/`discardCost`/`restDonCost`/`trashOwnCharCost`/`trashSelfCost`/`bounceOwnCharCost`/`restOwnAsCost` の `{op,..,then}` 形で統一済。完全な単一`payCost()`化は将来課題。
-- ✅(部分): タイミングフック → `onOppAttack`/`onTurnEnd`/`onAllyLeave`/`onReviveFromTrash` を追加済。**【ブロック時】(onBlock) のみ未整備**。
+- ✅: タイミングフック → `onOppAttack`/`onTurnEnd`/`onAllyLeave`/`onReviveFromTrash`/**`onBlock`（【ブロック時】）** を追加済。onBlockは`declareAttack`のブロック宣言後・カウンター前に誘発（`{self:blocker,side:dSide,attacker}`）。代表5枚実装済（モネOP05-036/ヘルメッポOP12-033/ヒナOP02-110/戦桃丸EB04-053/ベラミーOP10-077）。残りの【ブロック時】カード（キラー/クロコダイル等13枚）は同フックにfx追加で対応可（一部は`自分のキャラN枚以上`/`手札N枚以下`の新condが必要）。
 - 中: 期限(`duration`)の一元管理。パワー/無効/凍結の失効漏れ防止（`turnEnd`/`battle`/`ownerNextStart`/`oppNextEnd`タグで運用中）。
 - ✅: `donFromDeck` / `donActivate` op 追加済（海軍ランプ・エネル系）。
 - 低: カードデータを設計図 §9 の統一スキーマへ段階移行（新カードがデータ追加だけで済む状態を目指す）。

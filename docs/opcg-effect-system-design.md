@@ -101,7 +101,7 @@
 | 【登場時】 | キャラ/ステージが場に出た時に1回 | `summon()` 内で `fx.onPlay` を解決 | ✅ `onPlay`（49枚） |
 | 【起動メイン】 | 自分のメインフェイズに能動発動。コスト付随あり。アタック後も可 | プレイヤー操作 `activateAbility()` / `fx.act` | ✅ `act`（8枚）。リーダーは `leaderActivate()` |
 | 【アタック時】 | アタック宣言時に発動 | `declareAttack()` 内で `fx.onAttack` | ✅ `onAttack`（7枚） |
-| 【ブロック時】 | このキャラがブロックした時 | `chooseBlocker()` 解決後フック | ⚠️ フック未整備（該当カード少。要追加） |
+| 【ブロック時】 | このキャラがブロックした時 | `declareAttack()`のブロック宣言後・カウンター前に `fx.onBlock` を誘発 | ✅ 整備済（代表5枚実装。ctx=`{self:blocker,side:dSide,attacker}`） |
 | 【KO時】 | このキャラがKOされた時 | `koCard()` 内で `fx.onKO` | ✅ `onKO`（16枚） |
 | 【自分のターン中】 | 自分のターンの間ずっと適用（永続） | `fx.static`＋`power()`/判定で都度評価 | ✅ `static`（16枚） |
 | 【相手のターン中】 | 相手のターンの間ずっと適用（永続） | 同上（条件 `oppTurn`） | ✅ `static`＋cond |
@@ -296,7 +296,7 @@
 |---|---|---|
 | ★高 | ドン状態の厳密化（active/rested/attached）と **付与は必ず `from` を明示** | 今回の2バグ類を根絶（修正済） |
 | 〜 | ~~`payCost()` 共通化~~ | **部分対応済**：`revealCost`/`discardCost`/`restDonCost`/`trashOwnCharCost`/`trashSelfCost`/`bounceOwnCharCost`/`restOwnAsCost` の `{op,..,then}` 形コストopで統一（§12-2）。完全な単一`payCost()`化は将来課題 |
-| 中 | タイミング別フックの明示 | **onTurnEnd 追加済**（自分のターン終了時）。**onOppAttack/onAllyLeave/onReviveFromTrash も追加**（§12-1）。**onBlock のみ未整備** |
+| 中 | タイミング別フックの明示 | **onTurnEnd 追加済**（自分のターン終了時）。**onOppAttack/onAllyLeave/onReviveFromTrash/onBlock も追加**（§12-1）。全タイミングフック整備完了 |
 | 中 | 期限(`duration`)の一元管理（このバトル中/このターン中/次の相手エンドまで） | `turnEnd`/`battle`/`ownerNextStart`/`oppNextEnd` タグで失効管理。パワー/キーワード/コスト/凍結に適用済 |
 | 〜 | ~~`donFromDeck`/`donActivate` op追加~~ | **実装済**（§12-5）。海軍ランプ・エネル系を正確化 |
 | 低 | カードデータを統一スキーマ(§9)へ段階移行 | 新カード追加がデータのみで完結 |
