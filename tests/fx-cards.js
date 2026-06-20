@@ -394,9 +394,9 @@ humanPick=function(c){return Promise.resolve((c||[])[0]||null);};
       const s=I('OP16-108','me'); me.chars=[s];
       await runFx(C['OP16-108'].fx.onPlay,{self:s,side:'me'});
       ok(me.life[0]&&me.life[0].no==='OP09-093'&&me.life[0]._faceUp===true,'OP16-108: トラッシュ黒ひげをライフ上に表向きで加える(faceUp)'); }
-    // トリガー追加(OP16-057/101/102)とトリガー削除(OP16-104/109/110)の構造回帰
+    // 【トリガー】実装の構造回帰（OP16-057/101/102 ＋ 黒ひげのOP16-104/108/109/110＝公式照合で有りと確認・旧監査の誤削除を修正）
     ok(!!(C['OP16-057'].fx.trigger&&C['OP16-101'].fx.trigger&&C['OP16-102'].fx.trigger),'OP16-057/101/102: 【トリガー】が実装されている');
-    ok(!C['OP16-104'].fx.trigger&&!C['OP16-109'].fx.trigger&&!C['OP16-110'].fx.trigger,'OP16-104/109/110: 公式に無い【トリガー】を削除');
+    ok(!!(C['OP16-104'].fx.trigger&&C['OP16-109'].fx.trigger&&C['OP16-110'].fx.trigger),'OP16-104/109/110: 公式の【トリガー】を実装(teach等のコストに使える)');
     // OP16-095: 自身の常在【ブロック不可】
     ok((C['OP16-095'].fx.static||[]).some(o=>o.op==='unblockableAttack'),'OP16-095: 自身の常在【ブロック不可】');
     // OP16-005: costMod条件は「白ひげ海賊団を含む特徴」=traitIncludes
@@ -828,6 +828,13 @@ humanPick=function(c){return Promise.resolve((c||[])[0]||null);};
       G.players.cpu.don.active=1;
       await doOp({op:'ko'},{side:'me',self:G.players.me.leader});
       ok(!G.players.cpu.chars.includes(inu), 'OP02-027: active>0なら場を離れない解除→KO可'); }
+    // バグ修正: OP16-104/108/109/110 の【トリガー】を実装（公式有り＝teach redirectのコストに使える／OP-16監査が誤って削除していた）
+    ok(['OP16-104','OP16-108','OP16-109','OP16-110'].every(no=>C[no]&&C[no].fx&&C[no].fx.trigger), 'OP16黒ひげ4枚: 【トリガー】を実装(穴埋め)');
+    // 黒黄ティーチ(OP16-080): トリガー持ちバスコを手札に、キャラへのアタックをリーダーへリダイレクトできる
+    G.players={me:mkP('OP16-080',false),cpu:mkP('OP11-041',true)}; G.active='cpu'; G.turnSeq=5; G.winner=null;
+    { const me=G.players.me; const tgt=I('OP15-067','me'); tgt.rested=true; me.chars=[tgt]; me.hand=[I('OP16-110','me')];
+      const res=await teachRedirect('me', I('OP15-067','cpu'), tgt);
+      ok(res!==tgt && res.base.type==='LEADER' && me.hand.length===0, 'OP16-080ティーチ: トリガー持ち(バスコ)を捨てキャラ攻撃をリーダーへリダイレクト'); }
   }catch(e){ console.log('EXCEPTION:', e.message); fail++; }
   console.log('Phase3 fxテスト: pass='+pass+' fail='+fail);
   process.exit(fail?1:0);
