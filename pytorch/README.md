@@ -50,11 +50,18 @@ OPCG_AGENT=npolicy node tools/measure-matchup.js     # 強さ測定（同一seed
 - 測定（同一seedペア N=120）: **teach +7.5pt(p=0.15) / enel -3.3pt(p=0.61)** ＝ **≈heuristic（中立）だが崩壊しない・teachは弱い正**。
 - 使い方: `OPCG_AGENT=puct node tools/measure-matchup.js`。対人UIは `G.players.cpu.agent='puct'`（既定はheuristic）。
 
-### ⏭ Phase 2 part2（次・heuristic超えの鍵）
-1. **探索を深く強く**: puctの sims/width/look を上げ、**多手先の木**へ（現状は1手再探索）。teach +7.5pt が有意に届くかを `measure-matchup` で測る。
-2. **方策ターゲット = puct の訪問数分布**（heuristicの選択ではなく「探索が改善した手」）。`az-export.js` を puct 版に。
-3. **value=自己対戦の最終結果＋policy/value 2ヘッド深層ネット**（`train.py` 多層化）。JS推論を `layers:[{W,b,act}]` 対応に拡張。
-4. **反復**: self-play(puct) → 学習(MPS) → 重み更新 → 強い方策で再self-play。各世代 `measure-matchup` で検証。
+### ✅ Phase 2 part2（puct 自己対戦反復ループ・完了）— ★出荷可能な有意の改善
+`tools/selfplay-puct.js`: puct自己対戦 → policy再学習(MPS) → JS反映 → 測定 → 反復。
+- **強い教師**: Stage C が退行した真因(=弱い1-ply価値教師)を、**puct自身の探索が選んだ手**に置換（`puctTurn` の `G._puctRecSink` で記録）。
+- **安定化**: replay buffer（世代横断蓄積）＋ **per-leader gating**（リーダー別に改善時のみ採用）。単一マッチアップgatingは過適合(enel -12.5pt)→per-leaderで回避。
+- **結果（N=80・決定的測定）**: 合成方策で puct **teach +16.3pt(16/3 p=0.004★有意) / enel ±0.0pt(退行なし)**。
+  = **プロジェクト初の出荷可能な統計的有意の heuristic 超え**。`src/ai-policy.js` を合成方策で出荷（puctのprior。既定CPU=heuristicは不変）。
+- 使い方: `OPCG_GENS=3 OPCG_GAMES=80 node tools/selfplay-puct.js`（遅い・1世代数分）。
+
+### ⏭ part3 候補
+1. **value も自己対戦学習**（現在手作り据え置き）＝2ヘッド深層化。JS推論を `layers:[{W,b,act}]` 対応に拡張。
+2. **多手先の木＋方策ターゲット=訪問数分布**（現状1手再探索・argmax）。
+3. **gating を全6リーダー**へ・self-play 局数↑（数万局規模の小型AlphaZero）。
 
 ### 想定と限界（正直に）
 - 16GB/8コア/MPS の単機では **AlphaZero の「数百万局」には届かない**。狙うのは数万局規模の小型AlphaZero。

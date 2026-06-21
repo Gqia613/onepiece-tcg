@@ -452,6 +452,17 @@
         const r = await puctSearch(side, opt);
         if (r.stop || !r.scored.length) break;
         const best = r.scored[0];
+        // Phase2 self-play: アタック判断(attack/stop)を「探索が選んだ手」=方策ターゲットとして記録（G._puctRecSink設定時のみ）。
+        // 候補=その時点の全attack＋stop、ci=puctの選択（playを選んだ手はアタック判断でないのでスキップ）。
+        if (G._puctRecSink && (best.a.k === 'attack' || best.a.k === 'stop')) {
+          const atts = candidateActions(side).filter(a => a.k === 'attack');
+          if (atts.length) {
+            const cands = [...atts, { k: 'stop' }];
+            let ci = cands.length - 1;
+            if (best.a.k === 'attack') { const j = atts.findIndex(x => x.auid === best.a.auid && x.tuid === best.a.tuid); if (j >= 0) ci = j; }
+            G._puctRecSink.push({ cands: cands.map(c => polFeatures(side, c)), ci: ci, lk: leaderKeyOf(side) });
+          }
+        }
         if (best.a.k === 'stop') break;                               // どの手も「今終える」を上回らない
         await applyAction(side, best.a);                              // 最良の第1手を本番実行
         if (G.winner) return;

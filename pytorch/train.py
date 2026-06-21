@@ -28,6 +28,7 @@ VH = int(os.environ.get('AZ_VH', 32))       # value 隠れユニット
 PH = int(os.environ.get('AZ_PH', 24))       # policy 隠れユニット
 EPOCHS = int(os.environ.get('AZ_EPOCHS', 400))
 INSTALL = os.environ.get('AZ_INSTALL', '') == '1'
+POLICY_ONLY = os.environ.get('AZ_POLICY_ONLY', '') == '1'   # 1=valueは学習/反映せず policy だけ（priorの改善を切り分け。valueは手作りのまま）
 
 meta = json.load(open(DATA / 'meta.json'))
 EVALF, POLF, LK = meta['evalFeatures'], meta['polFeat'], meta['leaderKeys']
@@ -135,24 +136,28 @@ def js_file(varname, obj, header):
     return f'/* {header} */\nwindow.{varname} = {json.dumps(obj, separators=(",", ":"))};\n'
 
 
-# ---- value ----
-vby, vdef, vrep, vacc = build(VAL, 'lk', train_value)
-weights = {'features': EVALF, 'leaderKeys': LK, 'byLeader': vby, 'default': vdef,
-           'meta': {'samples': len(VAL), 'perLeader': vrep, 'defaultAcc': vacc, 'hidden': VH, 'src': 'pytorch/train.py(MPS)'}}
-print('VALUE  per-leader:', ' '.join(vrep), '| default acc=', vacc)
+# ---- value（POLICY_ONLY または VAL 空ならスキップ＝手作りevalのまま） ----
+if not POLICY_ONLY and len(VAL) >= 300:
+    vby, vdef, vrep, vacc = build(VAL, 'lk', train_value)
+    weights = {'features': EVALF, 'leaderKeys': LK, 'byLeader': vby, 'default': vdef,
+               'meta': {'samples': len(VAL), 'perLeader': vrep, 'defaultAcc': vacc, 'hidden': VH, 'src': 'pytorch/train.py(MPS)'}}
+    print('VALUE  per-leader:', ' '.join(vrep), '| default acc=', vacc)
+    vjs = js_file('AI_WEIGHTS', weights, f'pytorch/train.py(MPS) 生成: 盤面評価(value)NN。{len(VAL)}サンプル/H={VH}/defaultAcc={vacc}。手で編集しない。')
+    (OUT / 'ai-weights.js').write_text(vjs)
+else:
+    vjs = None
+    print('VALUE  skip（POLICY_ONLY or VAL<300）= 手作りeval(ai-weights=null)のまま')
 
 # ---- policy ----
 pby, pdef, prep, ptop = build(POL, 'lk', train_policy)
 policy = {'feat': POLF, 'leaderKeys': LK, 'byLeader': pby, 'default': pdef,
           'meta': {'samples': len(POL), 'perLeader': prep, 'defaultTop1': ptop, 'hidden': PH, 'src': 'pytorch/train.py(MPS)'}}
 print('POLICY per-leader:', ' '.join(prep), '| default top1=', ptop)
-
-vjs = js_file('AI_WEIGHTS', weights, f'pytorch/train.py(MPS) 生成: 盤面評価(value)NN。{len(VAL)}サンプル/H={VH}/defaultAcc={vacc}。手で編集しない。')
 pjs = js_file('AI_POLICY', policy, f'pytorch/train.py(MPS) 生成: アタック方策(policy)NN。{len(POL)}サンプル/H={PH}/defaultTop1={ptop}。手で編集しない。')
-(OUT / 'ai-weights.js').write_text(vjs)
 (OUT / 'ai-policy.js').write_text(pjs)
-print('wrote', OUT / 'ai-weights.js', 'and', OUT / 'ai-policy.js')
+print('wrote', OUT / 'ai-policy.js', ('+ ai-weights.js' if vjs else '(policy only)'))
 if INSTALL:
-    (ROOT / 'src' / 'ai-weights.js').write_text(vjs)
+    if vjs:
+        (ROOT / 'src' / 'ai-weights.js').write_text(vjs)
     (ROOT / 'src' / 'ai-policy.js').write_text(pjs)
-    print('INSTALL=1 → src/ai-weights.js, src/ai-policy.js も更新')
+    print('INSTALL=1 → src/ai-policy.js' + (' + src/ai-weights.js' if vjs else '（policyのみ・valueは手作りeval維持）') + ' を更新')
