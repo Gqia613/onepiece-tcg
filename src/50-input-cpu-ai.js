@@ -171,17 +171,29 @@
     //   →展開では温存し、捨てる手段では最優先で捨てる（CPUが大型を素出しして弱い問題の対策）。
     function isYamatoLeader(side) { const L = G.players[side] && G.players[side].leader; return !!(L && L.base && L.base.no === 'OP16-079'); }
     function yamatoReviveTarget(no) { return no === 'OP16-096' || no === 'OP16-097' || no === 'OP16-085'; }
-    // ★起動メインを「今使う価値があるか」判定（無駄撃ち防止）。CPUが条件未達/対象不在でも起動する問題の対策。
+    // ★起動メインを「今使う価値があるか」判定（無駄撃ち防止）。CPU(heuristic/puct両方)が条件未達/対象不在/無意味でも起動する問題の対策。
     //   ① 先頭が cond の起動は、条件を満たさない時は使わない（お玉「コスト8以上がいる場合」・6ヤマト「8ヤマトがトラッシュにある場合」等）。
-    //   ② 相手キャラを対象にする効果(パワー減/KO/レスト/バウンス)なのに相手キャラが0なら使わない（無駄）。
+    //   ② 相手キャラを対象にする効果(パワー減/KO/レスト/バウンス)なのに相手キャラが0なら使わない。
+    //   ③ ★相手キャラへのパワー減(お玉の-2000等)は「弱体化が役立つ」時だけ使う＝相手ブロッカーがいる or
+    //      自分のアタック力(最大アタッカー+付与見込みドン)で「-N後にKO可能になる相手」がいる時のみ。無意味な-2000を撃たない。
     function actWorthUsing(side, c) {
       const fx = c.base.fx && c.base.fx.act && c.base.fx.act.fx;
       if (!fx || !fx.length) return false;
       const first = fx[0];
       if (first.op === 'cond' && first.check && !checkCond(first.check, side, c)) return false;
       const ops = (first.op === 'cond' && Array.isArray(first.then)) ? first.then : fx;
+      const P = G.players[side], D = G.players[opp(side)];
       const needOpp = ops.some(o => (o.op === 'powerMod' && o.side === 'opp') || ['ko', 'koZero', 'restChar', 'bounce', 'deckBottom', 'handToBottom'].includes(o.op));
-      if (needOpp && G.players[opp(side)].chars.length === 0) return false;
+      if (needOpp && D.chars.length === 0) return false;
+      const pm = ops.find(o => o.op === 'powerMod' && o.side === 'opp' && (o.amount || 0) < 0);
+      if (pm) {
+        const dec = -(pm.amount || 0);
+        let myAtk = power(P.leader);
+        for (const ch of P.chars) if (canCardAttack(ch)) myAtk = Math.max(myAtk, power(ch));
+        myAtk += Math.min(4, P.don.active || 0) * 1000;   // アタック時に付与できるドンの概算
+        const useful = D.chars.some(t => hasKw(t, 'blocker') || (power(t) > myAtk && power(t) - dec <= myAtk));
+        if (!useful) return false;                          // -N してもKOに繋がらない/ブロッカーもいない＝無駄
+      }
       return true;
     }
     // 除去/パワー操作を撃つ価値のある相手キャラがいるか（雑魚への浪費を避ける）

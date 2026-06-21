@@ -261,7 +261,10 @@
           if (tg === D.leader) { acts.push(a); continue; }                 // リーダー攻撃は常に候補
           const threat = hasKw(tg, 'blocker') || power(tg) >= 5000 || (tg.base.fx && (tg.base.fx.onKO || tg.base.fx.act));
           if (threat) acts.push(a);                                        // 脅威キャラのKOのみ
-        } else acts.push(a);                                               // 非アタック（プレイ/起動/leader/stop）は全部
+        } else if (a.k === 'act') {                                        // ★起動メインは「今使う価値がある」時だけ候補化（heuristicのactWorthUsingをpuctにも適用）
+          const c = findCard(a.uid);                                       //   条件未達/対象不在/-Nが無意味な起動(お玉の-2000等)を探索が無駄撃ちしない
+          if (c && (typeof actWorthUsing !== 'function' || actWorthUsing(side, c))) acts.push(a);
+        } else acts.push(a);                                               // 非アタック（プレイ/leader/stop）は全部
       }
       // ★黒ヤマト: 8ヤマト/9モモの「素出し(char)」は候補から外す（他に出せるcharがあるなら）。捨ててトラッシュから踏み倒す方が強い＝
       //   heuristicのプレイ抑制(src/50)とAI探索(puct)を揃える。探索が短期の8000ボディに釣られて素出しするのを防ぐ。
