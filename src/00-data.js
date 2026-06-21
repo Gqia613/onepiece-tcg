@@ -472,6 +472,7 @@
           if (fxe.condRush && base.condRush == null) base.condRush = fxe.condRush; // 条件付き【速攻】
           if (fxe.condBlocker && base.condBlocker == null) { base.condBlocker = fxe.condBlocker; base.blocker = false; } // 条件付き【ブロッカー】（テキスト由来の無条件blockerを打ち消す）
           if (fxe.condRush) base.rush = false;  // 条件付き【速攻】も同様にテキスト由来の無条件rushを打ち消す
+          if (fxe.static) for (const o of fxe.static) { if (o.op === 'staticKeyword' && o.cond && base[o.kw]) base[o.kw] = false; } // 条件付きキーワード(staticKeyword cond)はテキスト由来の無条件キーワードを打ち消す（hasKwがcond評価。OP13-009ダダン等）
           const timed = {}; for (const k in fxe) if (k !== 'costMod' && k !== 'condRush' && k !== 'condBlocker') timed[k] = fxe[k];
           if (Object.keys(timed).length) base.fx = timed;
           delete base.dataOnly;

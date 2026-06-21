@@ -1187,6 +1187,68 @@ humanPick=function(c){return Promise.resolve((c||[])[0]||null);};
       const sw=mkSyn('__sw__',C['__sw__']); sw.owner='me'; me.chars=[lf,sw]; me.leader.rested=false; lf.rested=false;
       await protectFromEffect(sw,'ko',null);
       ok(!me.leader.rested, 'OP14-034: 肩代わりレストでリーダーは選ばれない(excludeLeader)'); delete C['__sw__']; }
+
+    // === OP13 バッチ1（赤・既存opのみ） ===
+    ok(['OP13-005','OP13-006','OP13-007','OP13-008','OP13-009','OP13-012','OP13-013','OP13-015','OP13-019','OP13-020','OP13-021','OP13-022'].every(no=>C[no]&&C[no].fx), 'OP13バッチ1: 12枚にfx統合');
+    { const me=LP('OP13-002'); me.don={active:0,rested:3}; const c=I('OP13-005','me');
+      await runFx(c.base.fx.onPlay,{self:c,side:'me'});
+      ok(me.leader.attachedDon>=1 && me.don.rested===2, 'OP13-005: リーダーにレストのドン1付与'); }
+    { const me=LP('OP13-002'); me.don={active:0,rested:3};
+      C['__lf__']={no:'__lf__',name:'モンキー・Ｄ・ルフィ',type:'CHAR',color:[],cost:5,power:6000,counter:1000,traits:[]};
+      const lf=mkSyn('__lf__',C['__lf__']); lf.owner='me'; me.chars=[lf];
+      const c=I('OP13-006','me'); await runFx(c.base.fx.onPlay,{self:c,side:'me'});
+      ok(lf.attachedDon>=2, 'OP13-006: ルフィにレストのドン2付与'); delete C['__lf__']; }
+    { const me=LP('OP13-002'); me.don={active:1,rested:0}; const es=I('OP13-007','me'); es.owner='me'; me.chars=[es];
+      C['__v5__']={no:'__v5__',name:'V5000',type:'CHAR',color:[],cost:4,power:5000,counter:1000,traits:[]};
+      const v=mkSyn('__v5__',C['__v5__']); v.owner='cpu'; G.players.cpu.chars=[v];
+      await runFx(es.base.fx.act.fx,{self:es,side:'me'});
+      ok(!me.chars.includes(es) && power(v)===2000, 'OP13-007: 自身トラッシュ→相手-3000'); delete C['__v5__']; }
+    { const me=LP('OP13-002'); const iw=I('OP13-008','me'); iw.owner='me';
+      C['__rev__']={no:'__rev__',name:'革命A',type:'CHAR',color:[],cost:3,power:4000,counter:1000,traits:['革命軍']};
+      const rev=mkSyn('__rev__',C['__rev__']); rev.owner='me'; me.chars=[iw,rev];
+      ok(await protectFromEffect(rev,'ko',null)===true && !me.chars.includes(iw), 'OP13-008: 革命軍のKOをイワンコフ自身トラッシュで肩代わり'); delete C['__rev__']; }
+    { const me=LP('OP13-002'); const dd=I('OP13-009','me'); dd.owner='me';
+      C['__bd__']={no:'__bd__',name:'山賊B',type:'CHAR',color:[],cost:2,power:3000,counter:1000,traits:['山賊']};
+      const bd=mkSyn('__bd__',C['__bd__']); bd.owner='me'; me.chars=[dd,bd];
+      ok(hasKw(dd,'doubleAttack'), 'OP13-009: 他の山賊がいればダブルアタック');
+      me.chars=[dd]; ok(!hasKw(dd,'doubleAttack'), 'OP13-009: 単独では無し'); delete C['__bd__']; }
+    { const me=LP('OP13-002');
+      C['__al__']={no:'__al__',name:'アラ',type:'CHAR',color:[],cost:3,power:4000,counter:1000,traits:['アラバスタ王国']};
+      me.deck=[mkSyn('__al__',C['__al__']),I('OP15-067','me'),I('OP15-067','me'),I('OP15-067','me')];
+      const c=I('OP13-012','me'); const h0=me.hand.length; await runFx(c.base.fx.onPlay,{self:c,side:'me'});
+      ok(me.hand.length===h0+1 && me.hand.some(x=>x.no==='__al__'), 'OP13-012: コスト2以上アラバスタを手札へ'); delete C['__al__']; }
+    { const me=LP('OP13-002');
+      C['__p0__']={no:'__p0__',name:'P0',type:'CHAR',color:[],cost:1,power:0,counter:1000,traits:[]};
+      const p0=mkSyn('__p0__',C['__p0__']); p0.owner='cpu'; G.players.cpu.chars=[p0];
+      const c=I('OP13-013','me'); await runFx(c.base.fx.onPlay,{self:c,side:'me'});
+      ok(!G.players.cpu.chars.includes(p0), 'OP13-013: パワー0以下をKO(maxEffPower:0)'); delete C['__p0__']; }
+    { const me=LP('OP13-002'); const mk=I('OP13-015','me'); mk.owner='me';
+      C['__lf2__']={no:'__lf2__',name:'モンキー・Ｄ・ルフィ',type:'CHAR',color:[],cost:5,power:6000,counter:1000,traits:[]};
+      const lf=mkSyn('__lf2__',C['__lf2__']); lf.owner='me'; me.chars=[mk,lf];
+      await runFx(mk.base.fx.act.fx,{self:mk,side:'me'});
+      ok(power(lf)===8000, 'OP13-015 act: ルフィ+2000'); delete C['__lf2__']; }
+    { const me=LP('OP13-002'); me.don={active:4,rested:0};
+      C['__v5b__']={no:'__v5b__',name:'V5',type:'CHAR',color:[],cost:4,power:5000,counter:1000,traits:[]};
+      const v=mkSyn('__v5b__',C['__v5b__']); v.owner='cpu'; G.players.cpu.chars=[v];
+      const ev=I('OP13-019','me'); await runFx(ev.base.fx.main.fx,{self:ev,side:'me'});
+      ok(!G.players.cpu.chars.includes(v), 'OP13-019: -3000後パワー3000以下をKO'); delete C['__v5b__']; }
+    { const me=LP('OP13-002');
+      C['__v7__']={no:'__v7__',name:'V7',type:'CHAR',color:[],cost:5,power:7000,counter:1000,traits:[]};
+      const v=mkSyn('__v7__',C['__v7__']); v.owner='cpu'; G.players.cpu.chars=[v];
+      const ev=I('OP13-020','me'); await runFx(ev.base.fx.main.fx,{self:ev,side:'me'});
+      ok(power(v)===2000, 'OP13-020: 相手-5000'); delete C['__v7__']; }
+    { const me=LP('OP13-002'); me.don={active:0,rested:2};
+      C['__lf3__']={no:'__lf3__',name:'モンキー・Ｄ・ルフィ',type:'CHAR',color:[],cost:5,power:5000,counter:1000,traits:[]};
+      const lf=mkSyn('__lf3__',C['__lf3__']); lf.owner='me'; me.chars=[lf];
+      C['__v4__']={no:'__v4__',name:'V4',type:'CHAR',color:[],cost:3,power:4000,counter:1000,traits:[]};
+      const v=mkSyn('__v4__',C['__v4__']); v.owner='cpu'; G.players.cpu.chars=[v];
+      const ev=I('OP13-021','me'); await runFx(ev.base.fx.main.fx,{self:ev,side:'me'});
+      ok(lf.attachedDon>=1 && power(v)===2000, 'OP13-021: ルフィ付与+相手-2000'); delete C['__lf3__']; delete C['__v4__']; }
+    { const me=LP('OP13-002'); const fv=I('OP13-022','me'); fv.owner='me';
+      C['__sm__']={no:'__sm__',name:'Small',type:'CHAR',color:[],cost:2,power:2000,counter:1000,traits:[]};
+      const s=mkSyn('__sm__',C['__sm__']); s.owner='me'; me.chars=[s];
+      await runFx(fv.base.fx.act.fx,{self:fv,side:'me'});
+      ok(power(s)===3000, 'OP13-022 act: 元々パワー2000以下を+1000'); delete C['__sm__']; }
   }catch(e){ console.log('EXCEPTION:', e.message); fail++; }
   console.log('Phase3 fxテスト: pass='+pass+' fail='+fail);
   process.exit(fail?1:0);

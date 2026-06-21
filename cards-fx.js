@@ -612,5 +612,30 @@ window.CARD_FX = {
   "OP16-114": {"onKO":[{"op":"ko","side":"opp","count":1,"maxCost":4,"optional":true}]},
   "OP16-115": {"main":{"fx":[{"op":"cond","check":{"leaderTrait":"黒ひげ海賊団"},"then":[{"op":"trashToHand","count":1,"filter":{"hasTrigger":true,"nameExcludes":"闇水"},"optional":true}]}]}},
   "OP16-117": {"main":{"fx":[{"op":"discardCost","count":1,"filter":{"hasTrigger":true},"then":[{"op":"negateChoose","charsOnly":true,"maxCost":8,"optional":true}]}]}},
-  "OP16-118": {"static":[{"op":"handCounterBuff","filter":{"type":"CHAR","power":8000},"amount":2000}],"onPlay":[{"op":"search","look":5,"count":1,"filter":{"or":[{"name":"モンキー・Ｄ・ルフィ"},{"traitIncludes":"白ひげ海賊団"}]},"optional":true}],"onKO":[{"op":"search","look":5,"count":1,"filter":{"or":[{"name":"モンキー・Ｄ・ルフィ"},{"traitIncludes":"白ひげ海賊団"}]},"optional":true}]}
+  "OP16-118": {"static":[{"op":"handCounterBuff","filter":{"type":"CHAR","power":8000},"amount":2000}],"onPlay":[{"op":"search","look":5,"count":1,"filter":{"or":[{"name":"モンキー・Ｄ・ルフィ"},{"traitIncludes":"白ひげ海賊団"}]},"optional":true}],"onKO":[{"op":"search","look":5,"count":1,"filter":{"or":[{"name":"モンキー・Ｄ・ルフィ"},{"traitIncludes":"白ひげ海賊団"}]},"optional":true}]},
+  /* ===== OP13 バッチ1（赤・既存opのみ。リーダー002/003/004 と新pay要の017は後続） ===== */
+  // OP13-005 イナズマ: 【登場時】自分のリーダーにレストのドン1付与
+  "OP13-005": {"onPlay":[{"op":"donAttach","target":"leader","n":1}]},
+  // OP13-006 ウープ・スラップ: 【登場時】「モンキー・Ｄ・ルフィ」1枚にレストのドン2付与
+  "OP13-006": {"onPlay":[{"op":"donAttach","target":"chooseOwn","n":2,"filter":{"name":"モンキー・Ｄ・ルフィ"}}]},
+  // OP13-007 エース＆サボ＆ルフィ: 【起動メイン】リーダーかキャラにアクティブのドン1付与＋自身トラッシュ：相手1枚-3000
+  "OP13-007": {"act":{"label":"ドン1付与+自身トラッシュ:相手1枚-3000","cost":{},"fx":[{"op":"donAttach","target":"chooseOwn","n":1,"fromAny":true},{"op":"trashSelfCost","then":[{"op":"powerMod","side":"opp","amount":-3000,"count":1,"optional":true,"duration":"turn"}]}]}},
+  // OP13-008 イワンコフ: 自分の革命軍が相手効果でKOされる場合、代わりに自身をトラッシュ
+  "OP13-008": {"static":[{"op":"leaveProtect","targetFilter":{"traitIncludes":"革命軍"},"onlyKO":true,"pay":"koSelf"}]},
+  // OP13-009 カーリー・ダダン: このカード以外の《山賊》がいる場合【ダブルアタック】
+  "OP13-009": {"static":[{"op":"staticKeyword","kw":"doubleAttack","cond":{"selfCharCount":{"filter":{"trait":"山賊"},"min":2}}}]},
+  // OP13-012 ネフェルタリ・ビビ: 【登場時】デッキ上4枚からコスト2以上の《アラバスタ王国》か《麦わらの一味》1枚を手札へ、残りデッキ下
+  "OP13-012": {"onPlay":[{"op":"search","look":4,"count":1,"filter":{"minCost":2,"or":[{"traitIncludes":"アラバスタ王国"},{"traitIncludes":"麦わらの一味"}]},"optional":true}]},
+  // OP13-013 ヒグマ: 【登場時】相手のパワー0以下のキャラ1枚までをKO
+  "OP13-013": {"onPlay":[{"op":"ko","side":"opp","filter":{"maxEffPower":0},"count":1,"optional":true}]},
+  // OP13-015 マキノ: 【起動メイン】このキャラをレスト：「モンキー・Ｄ・ルフィ」1枚を+2000
+  "OP13-015": {"act":{"label":"レスト:ルフィ1枚+2000","cost":{"restSelf":true},"fx":[{"op":"powerMod","side":"self","amount":2000,"count":1,"optional":true,"duration":"turn","filter":{"name":"モンキー・Ｄ・ルフィ"}}]}},
+  // OP13-019 “火炎”が許さねェってよ!!: 【メイン】ドン4レスト→相手1枚-3000→相手パワー3000以下KO ／【カウンター】リーダー+3000
+  "OP13-019": {"main":{"fx":[{"op":"restDonCost","n":4,"then":[{"op":"powerMod","side":"opp","amount":-3000,"count":1,"optional":true,"duration":"turn"},{"op":"ko","side":"opp","filter":{"maxEffPower":3000},"count":1,"optional":true}]}]},"counter":{"cost":0,"fx":[{"op":"leaderBuff","amount":3000,"duration":"battle"}]}},
+  // OP13-020 拳・骨・隕石: 【メイン】相手1枚を-5000
+  "OP13-020": {"main":{"fx":[{"op":"powerMod","side":"opp","amount":-5000,"count":1,"optional":true,"duration":"turn"}]}},
+  // OP13-021 ゴムゴムの銃乱打: 【メイン】「モンキー・Ｄ・ルフィ」1枚にレストのドン1付与→相手1枚-2000
+  "OP13-021": {"main":{"fx":[{"op":"donAttach","target":"chooseOwn","n":1,"filter":{"name":"モンキー・Ｄ・ルフィ"}},{"op":"powerMod","side":"opp","amount":-2000,"count":1,"optional":true,"duration":"turn"}]}},
+  // OP13-022 フーシャ村 STAGE: 【起動メイン】このステージをレスト：元々パワー2000以下のキャラ1枚を+1000
+  "OP13-022": {"act":{"label":"レスト:元々P2000以下を+1000","cost":{"restSelf":true},"fx":[{"op":"powerMod","side":"self","amount":1000,"count":1,"optional":true,"duration":"turn","filter":{"maxPower":2000}}]}}
 };
