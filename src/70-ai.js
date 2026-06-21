@@ -444,33 +444,37 @@
       scored.sort((x, y) => y.q - x.q);
       return { scored, stop: false };
     }
-    // ★puctが苦手なリーダー＝heuristicにフォールバック（測定駆動）。enel(ドン循環エンジン)はミラー実測で
-    //   puctが対heuristic -29pt(p=0.039)＝探索がランプ機構を壊す。他5リーダーは+16〜+46ptで強い。docs/ai-design.md §9.7。
-    var PUCT_SKIP = { enel: 1 };
+    // puctが苦手なリーダーを heuristic にフォールバックさせる枠（測定駆動）。現在は空＝全リーダーで探索する。
+    //   ※enel はミラー実測で puct が -29pt(探索がランプ機構を壊す)だが、ユーザー指定で条件を撤去（常に探索）。
+    //   再びフォールバックさせたいリーダーがあれば { enel:1 } のように追加。`G._puctNoSkip` で一時的に無効化も可。
+    var PUCT_SKIP = {};
     async function puctTurn(side) {
       if (G._sim) return heuristicTurn(side);                          // 入れ子探索＝指数爆発を防ぐ
       if (PUCT_SKIP[leaderKeyOf(side)] && !G._puctNoSkip) return heuristicTurn(side);  // 苦手リーダーは素のheuristic
       const opt = { det: G._puctDet || 3, look: G._puctLook != null ? G._puctLook : 1, width: G._puctWidth || 5 };
-      let guard = 0;
-      while (guard++ < 14 && !G.winner) {
-        const r = await puctSearch(side, opt);
-        if (r.stop || !r.scored.length) break;
-        const best = r.scored[0];
-        // Phase2 self-play: アタック判断(attack/stop)を「探索が選んだ手」=方策ターゲットとして記録（G._puctRecSink設定時のみ）。
-        // 候補=その時点の全attack＋stop、ci=puctの選択（playを選んだ手はアタック判断でないのでスキップ）。
-        if (G._puctRecSink && (best.a.k === 'attack' || best.a.k === 'stop')) {
-          const atts = candidateActions(side).filter(a => a.k === 'attack');
-          if (atts.length) {
-            const cands = [...atts, { k: 'stop' }];
-            let ci = cands.length - 1;
-            if (best.a.k === 'attack') { const j = atts.findIndex(x => x.auid === best.a.auid && x.tuid === best.a.tuid); if (j >= 0) ci = j; }
-            G._puctRecSink.push({ cands: cands.map(c => polFeatures(side, c)), ci: ci, lk: leaderKeyOf(side) });
+      if (typeof showThinking === 'function') showThinking(true);     // ★探索中は「AI思考中」バッジのみ表示（内部試行はrender抑止で非表示）
+      try {
+        let guard = 0;
+        while (guard++ < 14 && !G.winner) {
+          const r = await puctSearch(side, opt);
+          if (r.stop || !r.scored.length) break;
+          const best = r.scored[0];
+          // Phase2 self-play: アタック判断(attack/stop)を「探索が選んだ手」=方策ターゲットとして記録（G._puctRecSink設定時のみ）。
+          // 候補=その時点の全attack＋stop、ci=puctの選択（playを選んだ手はアタック判断でないのでスキップ）。
+          if (G._puctRecSink && (best.a.k === 'attack' || best.a.k === 'stop')) {
+            const atts = candidateActions(side).filter(a => a.k === 'attack');
+            if (atts.length) {
+              const cands = [...atts, { k: 'stop' }];
+              let ci = cands.length - 1;
+              if (best.a.k === 'attack') { const j = atts.findIndex(x => x.auid === best.a.auid && x.tuid === best.a.tuid); if (j >= 0) ci = j; }
+              G._puctRecSink.push({ cands: cands.map(c => polFeatures(side, c)), ci: ci, lk: leaderKeyOf(side) });
+            }
           }
+          if (best.a.k === 'stop') break;                             // どの手も「今終える」を上回らない
+          await applyAction(side, best.a);                            // 最良の第1手を本番実行
+          if (G.winner) return;
         }
-        if (best.a.k === 'stop') break;                               // どの手も「今終える」を上回らない
-        await applyAction(side, best.a);                              // 最良の第1手を本番実行
-        if (G.winner) return;
-      }
+      } finally { if (typeof showThinking === 'function') showThinking(false); render(); }   // 思考終了→バッジ消去＋実盤面を再描画
     }
     AGENTS.puct = { takeTurn: puctTurn };   // P.agent='puct'（policy-guided 決定化ロールアウト探索）
 

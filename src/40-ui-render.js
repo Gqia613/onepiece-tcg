@@ -24,6 +24,7 @@
     }
 
     function log(cls, html) {
+      if (G._sim) return;   // 探索中のログ抑止
       G.log.push({ cls, html });
       const box = document.getElementById('logbox');
       if (box) { const d = document.createElement('div'); d.className = 'logline ' + cls; d.innerHTML = '<span class="t"></span>' + html; box.appendChild(d); box.scrollTop = box.scrollHeight; }
@@ -33,6 +34,7 @@
     // ターン/節目アナウンス。body直付けにして render() のフル再描画でも消えないようにする（自動フェード）。
     let _bannerTO = null;
     function banner(text, opt) {
+      if (G._sim) return;
       opt = opt || {};
       let b = document.getElementById('turnbanner');
       if (!b) { b = document.createElement('div'); b.id = 'turnbanner'; document.body.appendChild(b); }
@@ -43,6 +45,18 @@
       _bannerTO = setTimeout(() => { const e = document.getElementById('turnbanner'); if (e) e.remove(); _bannerTO = null; }, opt.hold || 1600);
     }
     function clearBanner() { if (_bannerTO) { clearTimeout(_bannerTO); _bannerTO = null; } const e = document.getElementById('turnbanner'); if (e) e.remove(); }
+    // ★AI探索(puct)中の表示。内部シミュレーションは描画抑止し、代わりにこのバッジだけ出す（body直付け＝render()で消えない）。
+    function showThinking(on) {
+      let b = document.getElementById('aiThinking');
+      if (on) {
+        if (!b) {
+          b = document.createElement('div'); b.id = 'aiThinking';
+          b.style.cssText = 'position:fixed;top:16px;left:50%;transform:translateX(-50%);z-index:9000;background:rgba(12,18,30,.86);color:#cfe3ff;font:600 14px/1.3 "Noto Sans JP",sans-serif;padding:9px 18px;border-radius:999px;border:1px solid rgba(120,170,255,.4);box-shadow:0 4px 18px rgba(0,0,0,.4);letter-spacing:.04em;pointer-events:none;';
+          b.textContent = '🤖 AI思考中…';
+          document.body.appendChild(b);
+        }
+      } else if (b) { b.remove(); }
+    }
 
     /* ===== サウンド（WebAudioで合成＝外部音源ゼロ・file://で確実に鳴る） =====
        自動再生制約のため初回ユーザー操作で unlock。設定はセッション内のみ（localStorage不可）。 */
@@ -76,13 +90,15 @@
         toggle() { muted = !muted; return muted; }, isMuted() { return muted; }
       };
     })();
-    function sfx(name) { try { SFX.play(name); } catch (e) { } }
+    function sfx(name) { if (G._sim) return; try { SFX.play(name); } catch (e) { } }
 
     function toast(t) {
+      if (G._sim) return;
       const felt = document.querySelector('.felt'); if (!felt) return;
       const d = document.createElement('div'); d.className = 'float buff'; d.style.left = '50%'; d.style.top = '44%'; d.style.transform = 'translateX(-50%)'; d.style.fontFamily = "'Noto Sans JP'"; d.style.fontSize = '13.5px'; d.style.whiteSpace = 'nowrap'; d.textContent = t; felt.appendChild(d); setTimeout(() => d.remove(), 1000);
     }
     function floatOn(uid, text, kind) {
+      if (G._sim) return;
       const felt = document.querySelector('.felt'); const el = document.querySelector('[data-uid="' + uid + '"]'); if (!felt || !el) return;
       const fr = felt.getBoundingClientRect(), r = el.getBoundingClientRect();
       const f = document.createElement('div'); f.className = 'float ' + (kind || ''); f.textContent = text;
@@ -90,12 +106,14 @@
       felt.appendChild(f); setTimeout(() => f.remove(), 1000);
     }
     function animClass(uid, cls) {
+      if (G._sim) return;
       const el = document.querySelector('[data-uid="' + uid + '"]'); if (!el) return;
       const parts = cls.split(' '); parts.forEach(c => el.classList.add(c)); setTimeout(() => parts.forEach(c => el.classList.remove(c)), 680);
     }
     // 効果・トリガーの発生通知（画面上部のピル）。相手(CPU)の行動は読めるよう小休止を入れる。
     let _fxNoteEl = null;
     function showFxNote(side, label, name) {
+      if (G._sim) return;
       const felt = document.querySelector('.felt'); if (!felt) return;
       if (_fxNoteEl) { const old = _fxNoteEl; _fxNoteEl = null; old.remove(); }
       const d = document.createElement('div');
@@ -112,6 +130,7 @@
     function removeAtkEl() { const e = document.getElementById('atkAnnounce'); if (e) e.remove(); }
     function clearAtkAnnounce() { G._atkFrom = null; G._atkTo = null; removeAtkEl(); }
     function showAtkAnnounce(aSide, attacker, target) {
+      if (G._sim) return;   // 探索中の攻撃アナウンス抑止
       G._atkFrom = attacker.uid; G._atkTo = target.uid; removeAtkEl();
       const opp = (aSide !== 'me');
       const toN = target.base.type === 'LEADER' ? (opp ? 'あなたのリーダー' : '相手のリーダー') : target.base.name;
@@ -202,7 +221,7 @@
         const c = P.life[i];
         if (c && c._faceUp) {
           cards += '<div class="lifecard up" data-no="' + c.base.no + '" title="' + escapeHTML(c.base.name) + '（表向き）">' +
-            '<img src="' + IMG(c.base.no) + '" referrerpolicy="no-referrer" decoding="async" onerror="this.style.display=\'none\'">' +
+            '<img src="' + IMG_ROT(c.base.no) + '" referrerpolicy="no-referrer" decoding="async" onerror="this.style.display=\'none\'">' +
             '<span class="lf-fb">' + escapeHTML(c.base.name) + '</span></div>';
         } else cards += '<div class="lifecard"></div>';
       }
@@ -285,7 +304,7 @@
       if (target) Object.assign(lopt, atkPreview(L));
       const leaderCard = cardHTML(L, lopt);
       let stage = '';
-      if (P.stage) stage = '<div class="zone-side" style="margin-left:8px"><span class="zlabel">STAGE</span>' + cardHTML(P.stage, { clickable: myAct, actable: isMe && ownActable(P.stage) }) + '</div>';
+      if (P.stage) stage = '<div class="zone-side" style="margin-left:8px">' + cardHTML(P.stage, { clickable: myAct, actable: isMe && ownActable(P.stage) }) + '</div>';
       return '<div class="ga-leader">' + leaderCard + stage + '</div>';
     }
     function sideHTML(side, isMe) {
@@ -397,6 +416,7 @@
 
     /* ---------- メイン描画 ---------- */
     function render() {
+      if (G._sim) return;   // ★AI探索(puct)の内部シミュレーション中は描画しない（盤面のチラつき防止＝代わりに「AI思考中」バッジ）
       if (!G.inGame) return;
       const scr = document.getElementById('screen');
       const pc = G.pendingChoice;

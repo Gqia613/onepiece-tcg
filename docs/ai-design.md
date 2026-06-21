@@ -322,3 +322,8 @@ puct-enel が弱い原因を **行動集計で診断**（enelミラー me=enel v
 - **効いたもの**: ①本物のper-action探索(puct・境界価値) ②探索計算の深さ(scale) ③自己対戦で探索が選んだ手をpolicyに蒸留 ④per-leader gating＋replay buffer。
 - **効かなかったもの（正直に）**: 価値関数の学習(手作りeval優位)・enelの探索(コントロール機構に不適)。
 - **実務的に「ここが天井」**: さらに伸ばすには **多手先PUCT木／enel専用eval／大データ深ネット2ヘッド** など研究規模の投資が要り、効果は逓減。現状で **実プレイで使える強いAI** は完成。
+
+### 9.10 出荷時の運用変更（ユーザー指定）
+- **enelフォールバックを撤去**: `PUCT_SKIP = {}`（空）に変更＝**puctは全6リーダーで探索する**（enelも）。
+  ※enelはミラー実測で puct -29pt（§9.8の通り探索がコントロール機構に不適）なので **enelをpuctで打つと弱くなる**ことは承知の上での仕様。再フォールバックは `PUCT_SKIP={enel:1}` に戻すだけ。`G._puctNoSkip` でも一時切替可。
+- **AI思考の表示**: puct探索の内部シミュレーションは画面に出さない（`render`/`log`/`toast`/`floatOn`/`animClass`/`showFxNote`/`showAtkAnnounce`/`banner`/`sfx` を `G._sim` 中は抑止）＋探索中は body直付けの **「🤖 AI思考中…」バッジ**（`showThinking`・`src/40-ui-render.js`）だけ表示。実際に確定した手は通常通りアニメ表示。
