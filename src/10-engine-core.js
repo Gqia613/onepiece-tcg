@@ -185,6 +185,7 @@
       if (c.donX3 && !(card && (card.attachedDon || 0) >= 3)) return false; // 【ドン‼×3】（OP12-020ゾロL）
       if (c.selfActive && card && card.rested) return false; // このカードがアクティブ（OP12-024牛鬼丸）
       if (c.leaderActive && P.leader.rested) return false; // 自分のリーダーがアクティブ（OP06-088サイ）
+      if (c.selfStage != null && !(P.stage && matchFilter(P.stage, c.selfStage))) return false; // 自分の場にfilter一致のステージがある（EB02-033クラバウターマン）
       if (c.leaderBattledChar && P._leaderBattledTurn !== G.turnSeq) return false; // このターン、リーダーが相手キャラとバトルした（OP12-020ゾロL）
       if (c.restedCardsAtLeast != null && ([P.leader, ...P.chars, P.stage].filter(x => x && x.rested).length + (P.don.rested || 0)) < c.restedCardsAtLeast) return false; // 自分のレストのカード(キャラ/リーダー/ステージ＋レストドン)がN枚以上（OP12-118ボニー）
       if (c.oppRestedCardsAtLeast != null && ([O.leader, ...O.chars, O.stage].filter(x => x && x.rested).length + (O.don.rested || 0)) < c.oppRestedCardsAtLeast) return false; // 相手のレストのカードがN枚以上（OP11-023アーロン）

@@ -22,7 +22,7 @@ const { runHarness } = require('./_load-app');  // stubs+CARD_DB+CARD_FX+本体J
     require(path.join(__dirname, '..', 'cards.js'));
     require(path.join(__dirname, '..', 'cards-fx.js'));
     const DB = global.window.CARD_DB, FX = global.window.CARD_FX;
-    for (const [tag, file] of [['OP14', 'official-op14.js'], ['OP13', 'official-op13.js'], ['OP12', 'official-op12.js'], ['OP11', 'official-op11.js'], ['OP10', 'official-op10.js'], ['OP09', 'official-op09.js'], ['OP08', 'official-op08.js'], ['OP07', 'official-op07.js'], ['OP06', 'official-op06.js'], ['OP05', 'official-op05.js'], ['OP04', 'official-op04.js'], ['OP03', 'official-op03.js'], ['OP02', 'official-op02.js'], ['OP01', 'official-op01.js'], ['EB01', 'official-eb01.js']]) {
+    for (const [tag, file] of [['OP14', 'official-op14.js'], ['OP13', 'official-op13.js'], ['OP12', 'official-op12.js'], ['OP11', 'official-op11.js'], ['OP10', 'official-op10.js'], ['OP09', 'official-op09.js'], ['OP08', 'official-op08.js'], ['OP07', 'official-op07.js'], ['OP06', 'official-op06.js'], ['OP05', 'official-op05.js'], ['OP04', 'official-op04.js'], ['OP03', 'official-op03.js'], ['OP02', 'official-op02.js'], ['OP01', 'official-op01.js'], ['EB01', 'official-eb01.js'], ['EB02', 'official-eb02.js']]) {
       const off = require(path.join(__dirname, '..', 'tools', file));
       const mismatch = [], missing = [];
       for (const no in off) {
