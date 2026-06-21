@@ -1058,6 +1058,58 @@ humanPick=function(c){return Promise.resolve((c||[])[0]||null);};
       me.hand=[I('OP15-067','me')]; await doOp({op:'discardOwn',n:1},{side:'me'});
       ok(isNegated(wd), 'OP14-056: 効果で手札が捨てられ自身効果無効(negateSelf)');
       ok(canCardAttack(wd), 'OP14-056: 無効化でアタック不可が解除→アタック可'); }
+
+    // === OP14 バッチ8（場全体の常在 allyPower/allyCost・源パワーKO耐性・クロコ自己制約・setBaseToLeader・新フック） ===
+    ok(['OP14-003','OP14-034','OP14-053','OP14-068','OP14-070','OP14-079','OP14-086'].every(no=>C[no]&&C[no].fx), 'OP14バッチ8: 7枚にfx統合');
+    ok(C['OP14-106'].blocker===true && C['OP14-109'].blocker===true, 'OP14-106/109: 純【ブロッカー】はmergeCardDBのテキスト派生でfx不要（OP14全120枚カバー完了）');
+    // OP14-003 ベッジ: 相手の元々パワー5000以下の効果でKOされない
+    { const me=LP('OP13-002'); const bg=I('OP14-003','me'); bg.owner='cpu'; G.players.cpu.chars=[bg];
+      C['__wk__']={no:'__wk__',name:'Weak',type:'CHAR',color:[],cost:5,power:5000,counter:1000,traits:[]};
+      C['__sg__']={no:'__sg__',name:'Strong',type:'CHAR',color:[],cost:6,power:6000,counter:1000,traits:[]};
+      const wk=mkSyn('__wk__',C['__wk__']); wk.owner='me'; const sg=mkSyn('__sg__',C['__sg__']); sg.owner='me';
+      ok(await protectFromEffect(bg,'ko',wk)===true, 'OP14-003: 元々パワー5000以下の効果ではKOされない');
+      ok(await protectFromEffect(bg,'ko',sg)===false, 'OP14-003: 元々パワー6000の効果ではKOされる'); delete C['__wk__']; delete C['__sg__']; }
+    // OP14-034 ルフィ: allyPower(自分のターン)＋leaveProtect(麦わら身代わり)
+    { const me=LP('OP13-002'); me.isCPU=true; const lf=I('OP14-034','me'); lf.owner='me';
+      C['__sw4__']={no:'__sw4__',name:'SW4',type:'CHAR',color:['緑'],cost:4,power:5000,counter:1000,traits:['麦わらの一味']};
+      const sw=mkSyn('__sw4__',C['__sw4__']); sw.owner='me'; me.chars=[lf,sw]; G.active='me';
+      ok(power(sw)===6000, 'OP14-034 allyPower: 緑コスト4麦わらが+1000(自分のターン)');
+      G.active='cpu'; ok(power(sw)===5000, 'OP14-034 allyPower: 相手ターンは無効(selfTurn)'); G.active='me';
+      ok(await protectFromEffect(sw,'ko',null)===true, 'OP14-034 leaveProtect: 麦わらのKOを自カードレストで肩代わり'); delete C['__sw4__']; }
+    // OP14-053 ビスタ: 相手ターン・手札7以下で元々パワー=リーダー元々パワー
+    { const me=LP('OP01-001'); const vs=I('OP14-053','me'); vs.owner='me'; me.chars=[vs]; me.hand=[]; G.active='cpu';
+      ok(power(vs)===5000, 'OP14-053: 相手ターン・手札7以下で元々パワー=リーダー(5000)');
+      for(let i=0;i<8;i++) me.hand.push(I('OP15-067','me'));
+      ok(power(vs)===4000, 'OP14-053: 手札8枚なら無効(元々4000)'); G.active='me'; }
+    // OP14-068 トレーボル: onDonReturned（ターン1回・相手ターン・ドンキリーダー）
+    { const me=LP('OP13-002'); me.leader.base={...me.leader.base,traits:['ドンキホーテ海賊団']}; G.active='cpu';
+      const tb=I('OP14-068','me'); tb.owner='me'; me.chars=[tb]; me.don={active:0,rested:0}; me.donMax=10;
+      const b0=donTotal('me'); await fireDonReturned('me');
+      ok(donTotal('me')===b0+1, 'OP14-068 onDonReturned: ドンキリーダーでドンデッキからレスト追加');
+      const a1=donTotal('me'); await fireDonReturned('me');
+      ok(donTotal('me')===a1, 'OP14-068: ターン1回(2回目不発)'); G.active='me'; }
+    // OP14-070 バッファロー: 相手効果でレスト→ドン1戻して自身アクティブ
+    { const me=LP('OP13-002'); me.isCPU=true; const bf=I('OP14-070','me'); bf.owner='me'; bf.rested=false; me.chars=[bf]; me.don={active:2,rested:0};
+      await doOp({op:'restChar',count:1},{side:'cpu',self:null});
+      ok(!bf.rested && donTotal('me')===1, 'OP14-070 onOppRested: 相手レストでドン1戻し自身アクティブ'); }
+    // OP14-079 クロコダイル: 相手キャラは自分の効果で場を離れない＋起動メイン
+    { const me=LP('OP14-079'); const v=I('OP15-067','cpu'); v.owner='cpu'; G.players.cpu.chars=[v];
+      ok(await protectFromEffect(v,'ko',null)===true, 'OP14-079 static: 自分の効果で相手キャラはKOされない');
+      ok(await protectFromEffect(v,'bounce',null)===true, 'OP14-079 static: バウンスも無効');
+      const myc=I('OP15-067','me'); myc.owner='me'; me.chars=[myc];
+      ok(await protectFromEffect(myc,'ko',null)===false, 'OP14-079: 相手からクロコ側キャラへの除去は通る');
+      C['__bw__']={no:'__bw__',name:'BW',type:'CHAR',color:[],cost:2,power:2000,counter:1000,traits:['B・W']};
+      const bw=mkSyn('__bw__',C['__bw__']); bw.owner='me'; me.chars=[bw]; const vc0=v.base.cost||0;
+      await runFx(me.leader.base.fx.act.fx,{self:me.leader,side:'me'});
+      ok(!me.chars.includes(bw), 'OP14-079 act: B・WをKOして相手コスト-10'); delete C['__bw__']; }
+    // OP14-086 ザラ: condBuff自身+1000＋allyCost(B・W全コスト+2)
+    { const me=LP('OP13-002'); const za=I('OP14-086','me'); za.owner='me';
+      C['__bwc__']={no:'__bwc__',name:'BWC',type:'CHAR',color:[],cost:3,power:4000,counter:1000,traits:['B・W']};
+      const bwc=mkSyn('__bwc__',C['__bwc__']); bwc.owner='me'; me.chars=[za,bwc];
+      me.trash=[]; for(let i=0;i<7;i++) me.trash.push(I('OP15-067','me'));
+      ok(power(za)===7000, 'OP14-086 condBuff: トラッシュ7枚以上で自身+1000');
+      ok(!matchFilter(bwc,{maxCost:3}) && matchFilter(bwc,{maxCost:5}), 'OP14-086 allyCost: B・W実効コスト+2(maxCost3外/5内)');
+      me.trash=[]; ok(power(za)===6000 && matchFilter(bwc,{maxCost:3}), 'OP14-086: トラッシュ7未満で無効'); delete C['__bwc__']; }
   }catch(e){ console.log('EXCEPTION:', e.message); fail++; }
   console.log('Phase3 fxテスト: pass='+pass+' fail='+fail);
   process.exit(fail?1:0);

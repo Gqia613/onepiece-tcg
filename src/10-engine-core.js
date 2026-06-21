@@ -241,7 +241,10 @@
       try {
       let base = card.base.power || 0;
       const _st0 = !isNegated(card) && card.base.fx && card.base.fx.static;
-      if (_st0) for (const o of _st0) { if (o.op === 'staticSetBase' && (!o.cond || checkCond(o.cond, card.owner, card))) base = o.value; } // 常在「元々のパワーをNにする」
+      if (_st0) for (const o of _st0) {
+        if (o.op === 'staticSetBase' && (!o.cond || checkCond(o.cond, card.owner, card))) base = o.value; // 常在「元々のパワーをNにする」
+        if (o.op === 'staticSetBaseToLeader' && (!o.cond || checkCond(o.cond, card.owner, card))) base = (G.players[card.owner].leader.base.power || 0); // 「元々のパワーが自分のリーダーの元々パワーと同じになる」(OP14-053ビスタ)
+      }
       for (const b of card.buffs) if (b.setBase != null) base = b.setBase; // 「元々のパワーをNにする」一時上書き(turn/oppNextEnd等)
       let p = base;
       if (card.owner === G.active) p += card.attachedDon * 1000; // 付与ドンは自分のターン中のみ+1000計上（相手ターンでは表示・計算とも元に戻る）
@@ -266,6 +269,13 @@
           if (!src || isNegated(src)) continue;
           const ss = src.base.fx && src.base.fx.static; if (!ss) continue;
           for (const o of ss) { if (o.op === 'oppStaticPowerMod' && checkCond(o.cond, src.owner, src)) p += o.power || 0; }
+        }
+        // 自分の他のキャラ/リーダーの static が「自分のフィルタ一致キャラにパワー±（allyPower）」を課す場合（OP14-034ルフィ：緑コスト4以上の麦わら全+1000）。
+        // lightMatch を使い再帰（minEffPower等→power()）を避ける。
+        for (const src of [G.players[card.owner].leader, ...G.players[card.owner].chars]) {
+          if (!src || src === card || isNegated(src)) continue;
+          const ss = src.base.fx && src.base.fx.static; if (!ss) continue;
+          for (const o of ss) { if (o.op === 'allyPower' && (!o.cond || checkCond(o.cond, src.owner, src)) && lightMatch(card, o.filter)) p += o.power || 0; }
         }
       }
       // 相手ターン中に「元々のパワーをNにする」静的付与（フザ→シュラ/自身 等）
@@ -363,6 +373,20 @@
     /* ---------- 対象マッチ ---------- */
     // 名前比較の正規化（公式データに全角Ｄと半角Dが混在するため、英数字を半角化して比較）
     function normName(s) { return (s || '').replace(/[Ａ-Ｚａ-ｚ０-９]/g, c => String.fromCharCode(c.charCodeAt(0) - 0xFEE0)); }
+    // 軽量フィルタ（base のみ参照。effコスト/power を呼ばない＝再帰しない）。allyPower/allyCost の対象判定用。
+    function lightMatch(card, f) {
+      if (!f) return true; const b = card.base;
+      if (f.type && b.type !== f.type) return false;
+      if (f.trait && !(b.traits || []).includes(f.trait)) return false;
+      if (f.traitIncludes && !(b.traits || []).some(t => t.includes(f.traitIncludes))) return false;
+      if (f.traits && !(b.traits || []).some(t => f.traits.includes(t))) return false;
+      if (f.color && !(b.color || []).includes(f.color)) return false;
+      if (f.name && normName(b.name) !== normName(f.name)) return false;
+      if (f.minBaseCost != null && (b.cost || 0) < f.minBaseCost) return false;
+      if (f.maxBaseCost != null && (b.cost || 0) > f.maxBaseCost) return false;
+      if (f.basePower != null && (b.power || 0) !== f.basePower) return false;
+      return true;
+    }
     function matchFilter(card, f) {
       if (!f) return true; const b = card.base;
       if (f.type && b.type !== f.type) return false;
@@ -377,6 +401,7 @@
       let _ec = b.cost || 0;
       { const o = card.owner; if (o && G.players[o]) { const L = G.players[o].leader; if (L && L.base.leader === 'teach' && !isNegated(L) && G.active !== o && G.players[o].chars.includes(card)) _ec += 1; } }
       if (!isNegated(card) && b.fx && b.fx.static) for (const o of b.fx.static) { if (o.op === 'staticCost' && (!o.cond || checkCond(o.cond, card.owner, card))) _ec += o.amount || 0; } // 常在「このキャラのコスト+N」（盤面の実効コストのみ。プレイコストには影響しない。cond対応）
+      { const ow2 = card.owner; if (ow2 && G.players[ow2]) for (const src of G.players[ow2].chars) { if (src === card || isNegated(src)) continue; const ss = src.base.fx && src.base.fx.static; if (!ss) continue; for (const o of ss) { if (o.op === 'allyCost' && (!o.cond || checkCond(o.cond, ow2, src)) && lightMatch(card, o.filter)) _ec += o.amount || 0; } } } // 自分の他キャラのstaticが「自分のフィルタ一致キャラのコスト±（allyCost）」（OP14-086ザラ：B・W全コスト+2）。lightMatchで再帰回避
       if (card.buffs) _ec += card.buffs.reduce((s, bf) => s + (bf.costAmt || 0), 0); // 盤面の一時コスト増減（addCostBuff）
       _ec = Math.max(0, _ec);
       if (f.minCost != null && _ec < f.minCost) return false;

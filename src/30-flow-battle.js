@@ -43,6 +43,17 @@
         }
       }
     }
+    // 「自分の場のドン‼がドン‼デッキに戻された時」誘発（OP14-068トレーボル）。ターン1回ガード付き。
+    async function fireDonReturned(side) {
+      const P = G.players[side];
+      for (const c of P.chars.slice()) {
+        if (c.base.fx && c.base.fx.onDonReturned && P.chars.includes(c) && !isNegated(c)) {
+          if (c.base.fx.onDonReturned.some(o => o.once === 'turn') && c._donRetTurn === G.turnSeq) continue;
+          c._donRetTurn = G.turnSeq;
+          await runFx(c.base.fx.onDonReturned, { self: c, side });
+        }
+      }
+    }
     // リーダーの onReviveFromTrash: トラッシュから filter一致のキャラが登場した時、そのキャラにキーワード付与
     function checkReviveTrigger(side, card) {
       const L = G.players[side].leader;

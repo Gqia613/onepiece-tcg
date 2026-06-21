@@ -122,17 +122,17 @@
         }
         case 'ko': {
           // KO効果は「相手の効果ではKOされない」(isKoImmune)を候補から除外（無駄打ち/同一カード再選択ループ防止。protectFromEffectでも二重に防ぐ）
-          if (op.all) { for (const t of oppChars(side, opFilter(op)).filter(c => !isKoImmune(c))) { if (!(await protectFromEffect(t, 'ko'))) await koCard(t, 'oppEffect'); } break; } // 条件一致の相手キャラを全てKO
+          if (op.all) { for (const t of oppChars(side, opFilter(op)).filter(c => !isKoImmune(c))) { if (!(await protectFromEffect(t, 'ko', self))) await koCard(t, 'oppEffect'); } break; } // 条件一致の相手キャラを全てKO
           for (let i = 0; i < (op.count || 1); i++) {
             const cands = oppChars(side, opFilter(op)).filter(c => !isKoImmune(c));
             const t = await chooseCard(side, cands, progText('KOする相手キャラを選択', i, op.count || 1), 'oppBig', op.optional);
-            if (!t) break; if (await protectFromEffect(t, 'ko')) continue; await koCard(t, 'oppEffect');
+            if (!t) break; if (await protectFromEffect(t, 'ko', self)) continue; await koCard(t, 'oppEffect');
           }
           break;
         }
         case 'koZero': {
           const dead = G.players[o].chars.filter(c => power(c) <= 0 && !isImmune(c) && !isKoImmune(c));
-          for (const c of dead.slice()) { if (!G.players[o].chars.includes(c)) continue; if (await protectFromEffect(c, 'ko')) continue; await koCard(c, 'oppEffect'); }
+          for (const c of dead.slice()) { if (!G.players[o].chars.includes(c)) continue; if (await protectFromEffect(c, 'ko', self)) continue; await koCard(c, 'oppEffect'); }
           break;
         }
         case 'bounce': {
@@ -159,7 +159,16 @@
             const cands = restPool();
             const t = await chooseCard(side, cands, progText('レストにする相手キャラを選択', i, op.count || 1), 'oppBig', op.optional);
             if (!t) break; t.rested = true; flog(side, `「${t.base.name}」をレスト`);
+            if (t.base.fx && t.base.fx.onOppRested && !isNegated(t) && t.owner !== side) { await runFx(t.base.fx.onOppRested, { self: t, side: t.owner }); } // 「相手のキャラの効果でレストになった時」(OP14-070バッファロー)
           }
+          break;
+        }
+        // 自分の場のドン‼1枚をドンデッキに戻してもよい→そうしたらこのキャラをアクティブ（OP14-070バッファロー）
+        case 'donMinusActivateSelf': {
+          if (donTotal(side) < 1) break;
+          if (!(await confirmUse(side, 'ドン‼-1', 'ドン‼1枚をドンデッキに戻してこのキャラをアクティブにしますか？', '戻す（アクティブ化）', 'しない'))) break;
+          const okk = await returnDonChoose(side, 1, false);
+          if (okk && self) { self.rested = false; floatOn(self.uid, 'アクティブ', 'buff'); flog(side, `「${self.base.name}」をアクティブにした`); render(); }
           break;
         }
         case 'lock': {
@@ -230,7 +239,7 @@
         case 'leaderBuff': addBuff(P.leader, op.amount, durTag(op.duration, 'turnEnd')); floatOn(P.leader.uid, `+${op.amount}`, 'buff'); break;
         case 'leaderDoubleAttack': P.leader.kwGrant.push({ kw: 'doubleAttack', dur: 'turn' }); if (op.amount) addBuff(P.leader, op.amount, 'turnEnd'); flog(side, 'リーダーに【ダブルアタック】'); break;
         case 'counterBuff': if (ctx.target) { addBuff(ctx.target, op.amount, 'battle'); floatOn(ctx.target.uid, `+${op.amount}`, 'buff'); } break;
-        case 'donMinus': { const ok = await returnDonChoose(side, op.n, op.fromActive); if (!ok) return false; break; }
+        case 'donMinus': { const ok = await returnDonChoose(side, op.n, op.fromActive); if (!ok) return false; await fireDonReturned(side); break; }
         case 'donAttach': {
           let targets = [];
           if (op.target === 'leader') targets = [P.leader];
@@ -578,7 +587,7 @@
           const cands = oppChars(side, opFilter(op)).filter(c => !isKoImmune(c));
           const t = P.isCPU ? (cands.find(c => (c.base.cost || 0) === (c.attachedDon || 0)) || cands[0]) : await chooseCard(side, cands, '対象の相手キャラを選択', 'oppBig', op.optional !== false);
           if (!t) break;
-          if ((t.base.cost || 0) === (t.attachedDon || 0)) { if (!(await protectFromEffect(t, 'ko'))) await koCard(t, 'oppEffect'); }
+          if ((t.base.cost || 0) === (t.attachedDon || 0)) { if (!(await protectFromEffect(t, 'ko', self))) await koCard(t, 'oppEffect'); }
           else flog(side, `「${t.base.name}」はコストと付与ドン数が一致せずKOされない`);
           break;
         }
@@ -734,10 +743,20 @@
     function faceDown(c) { if (c) c._faceUp = false; return c; } // 手札→ライフへ戻す時は裏向きに（表向きフラグ残留を防ぐ）
 
     /* ノラ/レオ系: 自分の元々パワー7000以下のキャラが相手効果で場を離れる時、代わりのコストで防ぐ（自動） */
-    async function protectFromEffect(target, cause) {
+    async function protectFromEffect(target, cause, source) {
       if (!target) return false;
       // 「相手の効果ではKOされない」自身の常在: 効果KOのみ無効化（選択・パワー減少等は通すのでバックストップ）
       if (cause === 'ko' && isKoImmune(target)) { flog(target.owner, `「${target.base.name}」は相手の効果ではKOされない`); return true; }
+      // 「相手の元々パワーN以下のキャラの効果でKOされない」(OP14-003ベッジ。source=KO元のキャラ)
+      if (cause === 'ko' && source && source.base && !isNegated(target)) {
+        const st = target.base.fx && target.base.fx.static;
+        if (st && st.some(o => o.op === 'koImmuneFromWeakSource' && (source.base.power || 0) <= (o.maxBasePower || 0))) { flog(target.owner, `「${target.base.name}」は元々パワーの低いキャラの効果ではKOされない`); return true; }
+      }
+      // 「相手のキャラすべては、自分の効果で場を離れない」(OP14-079クロコダイル)。除去しようとする側(=opp(target.owner))の盤面に oppLeaveImmuneFromSelf があれば効果除去を無効化＝自分の効果で相手を場から離せない自己制約。
+      if (cause === 'ko' || cause === 'bounce' || cause === 'deckBottom') {
+        const remover = G.players[opp(target.owner)];
+        if (remover && [remover.leader, ...remover.chars].some(p => p && !isNegated(p) && p.base.fx && p.base.fx.static && p.base.fx.static.some(o => o.op === 'oppLeaveImmuneFromSelf'))) { flog(target.owner, `「${target.base.name}」は相手の効果で場を離れない`); return true; }
+      }
       // 「相手の効果で場を離れない」自身の常在(condBuff immune): バウンス/デッキ送りも無効化（選択・無効化・パワー減少は通す）
       if ((cause === 'bounce' || cause === 'deckBottom') && isLeaveImmune(target)) { flog(target.owner, `「${target.base.name}」は相手の効果で場を離れない`); return true; }
       const ow = G.players[target.owner];

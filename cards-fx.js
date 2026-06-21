@@ -412,6 +412,21 @@ window.CARD_FX = {
   "OP14-049": {"onSelfHandDiscarded":[{"op":"giveKeyword","target":"self","kw":"rush"}],"onPlay":[{"op":"restDonCost","n":2,"then":[{"op":"draw","n":2},{"op":"bounce","side":"any","maxCost":7,"count":1,"optional":true}]}]},
   // OP14-056 ワダツミ: このキャラはアタックできない(cantAttack＝無効化で解除可) ／効果で自分の手札が捨てられた時このターン効果無効
   "OP14-056": {"static":[{"op":"cantAttack"}],"onSelfHandDiscarded":[{"op":"negateSelf"}]},
+  /* ===== OP14 バッチ8（場全体の常在＝allyPower/allyCost・ベッジ源パワーKO耐性・クロコダイル自己制約・ビスタ setBaseToLeader・トレーボル/バッファロー新フック） ===== */
+  // OP14-003 カポネ・ベッジ: 相手の元々パワー5000以下のキャラの効果でKOされない(koImmuneFromWeakSource)
+  "OP14-003": {"static":[{"op":"koImmuneFromWeakSource","maxBasePower":5000}]},
+  // OP14-034 ルフィ: 【自分のターン中】自分の元々コスト4以上の緑《麦わらの一味》全+1000(allyPower) ／【ターン1回】麦わらが相手効果でKO→代わりに自分カード1枚レスト(leaveProtect)
+  "OP14-034": {"static":[{"op":"allyPower","power":1000,"cond":{"selfTurn":true},"filter":{"minBaseCost":4,"color":"緑","traitIncludes":"麦わらの一味"}},{"op":"leaveProtect","targetFilter":{"traitIncludes":"麦わらの一味"},"onlyKO":true,"once":"turn","pay":"restOwnCards","n":1}]},
+  // OP14-053 ビスタ: 【ブロッカー】 ／【相手のターン中】手札7枚以下なら元々のパワーが自分のリーダーの元々パワーと同じになる(staticSetBaseToLeader)
+  "OP14-053": {"static":[{"op":"staticKeyword","kw":"blocker"},{"op":"staticSetBaseToLeader","cond":{"and":[{"oppTurn":true},{"selfHandAtMost":7}]}}]},
+  // OP14-068 トレーボル: 【相手のターン中】【ターン1回】自分の場のドンがドンデッキに戻された時、ドンキホーテリーダーならドンデッキからドン1レスト追加(onDonReturned)
+  "OP14-068": {"onDonReturned":[{"op":"cond","once":"turn","check":{"and":[{"oppTurn":true},{"leaderTraitIncludes":"ドンキホーテ海賊団"}]},"then":[{"op":"donFromDeck","n":1,"mode":"rested"}]}]},
+  // OP14-070 バッファロー: 【ブロッカー】 ／相手のキャラ効果でレストになった時、ドン1をドンデッキに戻して自身アクティブ(onOppRested→donMinusActivateSelf)
+  "OP14-070": {"static":[{"op":"staticKeyword","kw":"blocker"}],"onOppRested":[{"op":"donMinusActivateSelf"}]},
+  // OP14-079 クロコダイル LEADER: 相手キャラすべては自分の効果で場を離れない(oppLeaveImmuneFromSelf) ／【起動メイン】B・WをKO：相手キャラ1枚コスト-10→デッキ上2枚トラッシュ
+  "OP14-079": {"static":[{"op":"oppLeaveImmuneFromSelf"}],"act":{"label":"B・WをKO:相手キャラ1枚コスト-10","cost":{},"fx":[{"op":"trashOwnCharCost","filter":{"traitIncludes":"B・W"},"then":[{"op":"addCostBuff","side":"opp","count":1,"amount":-10,"duration":"turn","optional":true},{"op":"deckToTrash","n":2}]}]}},
+  // OP14-086 ザラ: 自分のトラッシュ7枚以上なら自身+1000(condBuff)＋自分の『B・W』含む特徴のキャラ全コスト+2(allyCost)
+  "OP14-086": {"static":[{"op":"condBuff","cond":{"trashAtLeast":7},"power":1000},{"op":"allyCost","cond":{"trashAtLeast":7},"amount":2,"filter":{"traitIncludes":"B・W"}}]},
   "OP09-093": {"onPlay":[{"op":"cond","check":"leaderBH","then":[{"op":"negateEffect"}]}]},
   "OP16-104": {"onAttack":[{"op":"powerCopy"}],"trigger":[{"op":"draw","n":1},{"op":"reviveFromTrash","filter":{"cost":1,"traitIncludes":"黒ひげ海賊団"}}]},
   "OP16-109": {"onKO":[{"op":"cond","check":"leaderBH","then":[{"op":"draw","n":1},{"op":"ko","side":"opp","maxCost":1,"count":2,"optional":true}]}],"trigger":[{"op":"cond","check":"leaderBH","then":[{"op":"draw","n":1},{"op":"ko","side":"opp","maxCost":1,"count":2,"optional":true}]}]},
