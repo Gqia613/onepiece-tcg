@@ -425,6 +425,7 @@
         case 'donReturnToMatchOpp': { const want = donTotal(o); let excess = Math.max(0, donTotal(side) - want); while (excess > 0) { if (P.don.rested > 0) P.don.rested--; else if (P.don.active > 0) P.don.active--; else break; excess--; } if (donTotal(side) <= want) flog(side, '自分のドンを相手と同じ枚数に戻した'); render(); break; }
         // 自分のライフをすべて裏向きにする（OP08-075キャンディメイデン）
         case 'flipAllLifeDown': { for (const l of P.life) l._faceUp = false; flog(side, '自分のライフをすべて裏向きにした'); render(); break; }
+        case 'lifeTrashToSize': { const tgt = op.n || 1; let k = 0; while (P.life.length > tgt) { const c = P.life.shift(); if (!c) break; P.trash.push(c); k++; } if (k) flog(side, `自分のライフ${k}枚をトラッシュ（ライフ${tgt}枚に）`); render(); break; } // 自分のライフがN枚になるよう上からトラッシュ（EB01-059/060空島）
         // デッキ上1枚をトラッシュに置き、そのコストが minCost 以上なら then 実行（OP08-096人の夢は終わらねェ）
         case 'millBuff': { if (!P.deck.length) break; const top = P.deck.shift(); P.trash.push(reset(top)); flog(side, `デッキの上「${top.base.name}」をトラッシュに置いた`); if ((top.base.cost || 0) >= (op.minCost || 0)) await runFx(op.then, ctx); render(); break; }
         // このキャラを持ち主の手札に戻すコスト（OP08-041アフェランドラ）。払えたら then。
