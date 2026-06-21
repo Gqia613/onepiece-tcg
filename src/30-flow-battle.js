@@ -79,17 +79,20 @@
     }
     // リーダーの onAllyLeave: 自分の filter一致キャラが場を離れた時に誘発（cause/when/filter/once/cond対応）
     async function checkAllyLeave(side, card, cause) {
-      const L = G.players[side].leader;
-      const cfg = !isNegated(L) && L.base.fx && L.base.fx.onAllyLeave;
-      if (!cfg) return;
-      if (cfg.cause && cfg.cause !== cause) return;     // 原因限定（'ownEffect'|'oppEffect'|'battle'）。未指定なら全原因
-      if (cfg.when === 'selfTurn' && side !== G.active) return;
-      if (cfg.when === 'oppTurn' && side === G.active) return;
-      if (cfg.filter && !matchFilter(card, cfg.filter)) return;
-      if (cfg.cond && !checkCond(cfg.cond, side, L)) return;
-      if (cfg.once === 'turn') { if (L._allyLeaveTurn === G.turnSeq) return; L._allyLeaveTurn = G.turnSeq; }
-      await fxNote(side, 'キャラ離脱時', L.base.name);
-      await runFx(cfg.fx, { self: L, side, left: card });
+      const P = G.players[side];
+      // onAllyLeave はリーダー/キャラ/ステージのいずれも持てる（OP07-038ハンコック=リーダー, OP13-078オーロ・ジャクソン号=ステージ）
+      for (const src of [P.leader, ...P.chars, P.stage]) {
+        if (!src || src === card || isNegated(src)) continue;
+        const cfg = src.base.fx && src.base.fx.onAllyLeave; if (!cfg) continue;
+        if (cfg.cause && cfg.cause !== cause) continue;     // 原因限定（'ownEffect'|'oppEffect'|'battle'）。未指定なら全原因
+        if (cfg.when === 'selfTurn' && side !== G.active) continue;
+        if (cfg.when === 'oppTurn' && side === G.active) continue;
+        if (cfg.filter && !matchFilter(card, cfg.filter)) continue;
+        if (cfg.cond && !checkCond(cfg.cond, side, src)) continue;
+        if (cfg.once === 'turn') { if (src._allyLeaveTurn === G.turnSeq) continue; src._allyLeaveTurn = G.turnSeq; }
+        await fxNote(side, 'キャラ離脱時', src.base.name);
+        await runFx(cfg.fx, { self: src, side, left: card });
+      }
     }
     // リーダーの onTurnStart: 自分のターン開始時（メイン開始前）に誘発（cond/once対応）
     async function checkTurnStart(side) {

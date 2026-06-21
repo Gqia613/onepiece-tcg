@@ -1343,6 +1343,45 @@ humanPick=function(c){return Promise.resolve((c||[])[0]||null);};
       const v=mkSyn('__p3__',C['__p3__']); v.owner='cpu'; G.players.cpu.chars=[v];
       const ev=I('OP13-058','me'); await runFx(ev.base.fx.main.fx,{self:ev,side:'me'});
       ok(!G.players.cpu.chars.includes(v) && G.players.cpu.deck.includes(v), 'OP13-058 main: 相手パワー3000以下をデッキ下'); delete C['__p3__']; }
+
+    // === OP13 バッチ4（紫・ロジャー/付与ドン） ===
+    ok(['OP13-060','OP13-061','OP13-062','OP13-065','OP13-066','OP13-069','OP13-071','OP13-072','OP13-077','OP13-078'].every(no=>C[no]&&C[no].fx), 'OP13バッチ4: 紫16枚にfx統合');
+    // OP13-061 イヌアラシ: 付与ドンあり→ドン追加＋コスト1以下KO ／ 付与ドンなしは不発
+    { const me=LP('OP13-002'); me.donMax=10; me.don={active:0,rested:0};
+      const ally=I('OP15-067','me'); ally.owner='me'; ally.attachedDon=1; me.chars=[ally];
+      C['__c1__']={no:'__c1__',name:'C1',type:'CHAR',color:[],cost:1,power:2000,counter:1000,traits:[]};
+      const v=mkSyn('__c1__',C['__c1__']); v.owner='cpu'; G.players.cpu.chars=[v];
+      const c=I('OP13-061','me'); await runFx(c.base.fx.onPlay,{self:c,side:'me'});
+      ok(donTotal('me')>=1 && !G.players.cpu.chars.includes(v), 'OP13-061: 付与ドンありでドン追加＋コスト1以下KO(selfAttachedDon)'); delete C['__c1__']; }
+    { const me=LP('OP13-002'); me.donMax=10; me.don={active:0,rested:0}; me.chars=[]; const before=donTotal('me');
+      const c=I('OP13-061','me'); await runFx(c.base.fx.onPlay,{self:c,side:'me'});
+      ok(donTotal('me')===before, 'OP13-061: 付与ドンなしでは不発'); }
+    // OP13-066 レイリー: 付与ドンあり→相手レスト＋ターン終了時ドン追加を予約(scheduleTurnEnd)
+    { const me=LP('OP13-002'); me.donMax=10; me.don={active:0,rested:0}; G._pendingTurnEnd=[];
+      const ally=I('OP15-067','me'); ally.owner='me'; ally.attachedDon=1;
+      C['__o5r__']={no:'__o5r__',name:'O5',type:'CHAR',color:[],cost:5,power:6000,counter:1000,traits:[]};
+      const v=mkSyn('__o5r__',C['__o5r__']); v.owner='cpu'; v.rested=false; G.players.cpu.chars=[v]; me.chars=[ally];
+      const c=I('OP13-066','me'); await runFx(c.base.fx.onPlay,{self:c,side:'me'});
+      ok(v.rested && G._pendingTurnEnd.length>0, 'OP13-066: 相手レスト＋ターン終了時ドン追加を予約'); delete C['__o5r__']; }
+    // OP13-069 ドフラミンゴ: ドン-3→ドンキでコスト8以下KO(chooseOption idx0)
+    { const me=LP('OP13-002'); me.isCPU=true; me.don={active:3,rested:0}; me.leader.base={...me.leader.base,traits:['ドンキホーテ海賊団']};
+      C['__c8__']={no:'__c8__',name:'C8',type:'CHAR',color:[],cost:8,power:9000,counter:1000,traits:[]};
+      const v=mkSyn('__c8__',C['__c8__']); v.owner='cpu'; G.players.cpu.chars=[v];
+      const c=I('OP13-069','me'); await runFx(c.base.fx.onPlay,{self:c,side:'me'});
+      ok(donTotal('me')===0 && !G.players.cpu.chars.includes(v), 'OP13-069: ドン‼-3→ドンキでコスト8以下KO'); delete C['__c8__']; }
+    // OP13-071 ネコマムシ: 場のドン8以上で元々パワー3000以下KO
+    { const me=LP('OP13-002'); me.don={active:8,rested:0}; me.donMax=10;
+      C['__p3n__']={no:'__p3n__',name:'P3',type:'CHAR',color:[],cost:2,power:3000,counter:1000,traits:[]};
+      const v=mkSyn('__p3n__',C['__p3n__']); v.owner='cpu'; G.players.cpu.chars=[v];
+      const c=I('OP13-071','me'); await runFx(c.base.fx.onPlay,{self:c,side:'me'});
+      ok(!G.players.cpu.chars.includes(v), 'OP13-071: ドン8以上で元々パワー3000以下KO(donAtLeast)'); delete C['__p3n__']; }
+    // OP13-078 オーロ・ジャクソン号 STAGE: ロジャー海賊団が相手効果で離脱→ドン1追加(ステージonAllyLeave)
+    { const me=LP('OP13-002'); me.donMax=10; me.don={active:0,rested:0};
+      const st=I('OP13-078','me'); st.owner='me'; me.stage=st; G.active='cpu';
+      C['__rj__']={no:'__rj__',name:'RJ',type:'CHAR',color:[],cost:3,power:4000,counter:1000,traits:['ロジャー海賊団']};
+      const rj=mkSyn('__rj__',C['__rj__']); rj.owner='me'; const before=donTotal('me');
+      await checkAllyLeave('me', rj, 'oppEffect');
+      ok(donTotal('me')===before+1, 'OP13-078: ロジャーが相手効果で離脱→ドン1追加(ステージonAllyLeave)'); G.active='me'; delete C['__rj__']; }
   }catch(e){ console.log('EXCEPTION:', e.message); fail++; }
   console.log('Phase3 fxテスト: pass='+pass+' fail='+fail);
   process.exit(fail?1:0);

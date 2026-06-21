@@ -175,6 +175,7 @@
       if (c.allSelfCharOther != null) { const others = P.chars.filter(ch => ch !== card); if (!others.length || !others.every(ch => matchFilter(ch, c.allSelfCharOther))) return false; }
       if (c.selfHand != null) { const min = c.selfHand.min || 1; if (P.hand.filter(h => matchFilter(h, c.selfHand)).length < min) return false; }
       if (c.donAtLeast != null && donTotal(side) < c.donAtLeast) return false;
+      if (c.selfAttachedDon && !([P.leader, ...P.chars].some(x => x && (x.attachedDon || 0) > 0))) return false; // 自分の付与されているドンがある（OP13紫の付与シナジー）
       if (c.activeDonAtMost != null && (P.don.active || 0) > c.activeDonAtMost) return false; // アクティブのドンN枚以下
       if (c.activeDonAtLeast != null && (P.don.active || 0) < c.activeDonAtLeast) return false;
       if (c.oppHandAtLeast != null && O.hand.length < c.oppHandAtLeast) return false;

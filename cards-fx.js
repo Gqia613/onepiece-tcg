@@ -697,5 +697,38 @@ window.CARD_FX = {
   // OP13-058 鳳梨礫: 【メイン】ドン1レスト→相手パワー3000以下1枚をデッキ下 ／【カウンター】リーダー+3000
   "OP13-058": {"main":{"fx":[{"op":"restDonCost","n":1,"then":[{"op":"deckBottom","side":"opp","filter":{"maxEffPower":3000},"count":1,"optional":true}]}]},"counter":{"cost":0,"fx":[{"op":"leaderBuff","amount":3000,"duration":"battle"}]}},
   // OP13-059 ブリリアント・パンク: 【メイン】自キャラ1枚を手札に戻す：コスト6以下のキャラ1枚を手札に戻す
-  "OP13-059": {"main":{"fx":[{"op":"bounceOwnCharCost","then":[{"op":"bounce","side":"any","maxCost":6,"count":1,"optional":true}]}]}}
+  "OP13-059": {"main":{"fx":[{"op":"bounceOwnCharCost","then":[{"op":"bounce","side":"any","maxCost":6,"count":1,"optional":true}]}]}},
+  /* ===== OP13 バッチ4（紫・ロジャー/付与ドンシナジー。新cond selfAttachedDon・checkAllyLeave一般化。064は黒082等と同バッチへ） ===== */
+  // OP13-060 天月トキ: 自分のロジャー海賊団が相手効果でKOされる場合、代わりに自身をトラッシュ
+  "OP13-060": {"static":[{"op":"leaveProtect","targetFilter":{"traitIncludes":"ロジャー海賊団"},"onlyKO":true,"pay":"koSelf"}]},
+  // OP13-061 イヌアラシ: 【登場時】付与ドンあれば、ドンデッキからドン1レスト追加→相手コスト1以下1枚をKO
+  "OP13-061": {"onPlay":[{"op":"cond","check":{"selfAttachedDon":true},"then":[{"op":"donFromDeck","n":1,"mode":"rested"},{"op":"ko","side":"opp","filter":{"maxCost":1},"count":1,"optional":true}]}]},
+  // OP13-062 クロッカス: 【登場時】付与ドンあればドン1アクティブ追加 ／【アタック時】相手の元々パワー3000以下1枚を手札に戻す
+  "OP13-062": {"onPlay":[{"op":"cond","check":{"selfAttachedDon":true},"then":[{"op":"donFromDeck","n":1,"mode":"active"}]}],"onAttack":[{"op":"bounce","side":"opp","filter":{"maxPower":3000},"count":1,"optional":true}]},
+  // OP13-063 光月おでん: 【ブロッカー】 ／【登場時】付与ドンあればドン1レスト追加
+  "OP13-063": {"onPlay":[{"op":"cond","check":{"selfAttachedDon":true},"then":[{"op":"donFromDeck","n":1,"mode":"rested"}]}]},
+  // OP13-065 シャンクス: 【登場時】デッキ上5枚から「シャンクス」以外のロジャー海賊団1枚を手札へ(残りデッキ下)
+  "OP13-065": {"onPlay":[{"op":"search","look":5,"count":1,"filter":{"traitIncludes":"ロジャー海賊団","nameExcludes":"シャンクス"},"optional":true}]},
+  // OP13-066 シルバーズ・レイリー: 【速攻】 ／【登場時】付与ドンあれば相手コスト5以下1枚レスト→このターン終了時ドン1アクティブ追加
+  "OP13-066": {"onPlay":[{"op":"cond","check":{"selfAttachedDon":true},"then":[{"op":"restChar","side":"opp","filter":{"maxCost":5},"count":1,"optional":true},{"op":"scheduleTurnEnd","fx":[{"op":"donFromDeck","n":1,"mode":"active"}]}]}]},
+  // OP13-067 スコッパー・ギャバン: 【登場時】リーダーがロジャー海賊団なら2ドロー1捨て→ドン1レスト追加
+  "OP13-067": {"onPlay":[{"op":"cond","check":{"leaderTraitIncludes":"ロジャー海賊団"},"then":[{"op":"draw","n":2},{"op":"discardOwn","n":1},{"op":"donFromDeck","n":1,"mode":"rested"}]}]},
+  // OP13-068 ダグラス・バレット: 場のドン8以上で+2000 ／【登場時】リーダーがロジャー海賊団ならドン1レスト追加
+  "OP13-068": {"static":[{"op":"condBuff","cond":{"donAtLeast":8},"power":2000}],"onPlay":[{"op":"cond","check":{"leaderTraitIncludes":"ロジャー海賊団"},"then":[{"op":"donFromDeck","n":1,"mode":"rested"}]}]},
+  // OP13-069 ドンキホーテ・ドフラミンゴ: 【登場時】ドン‼-3：以下から1つ（ドンキならコスト8以下KO ／ コスト7以下3枚を次相手エンドまでレスト不可）
+  "OP13-069": {"onPlay":[{"op":"donMinus","n":3},{"op":"chooseOption","options":[{"label":"ドンキならコスト8以下1枚KO","fx":[{"op":"cond","check":{"leaderTraitIncludes":"ドンキホーテ海賊団"},"then":[{"op":"ko","side":"opp","filter":{"maxCost":8},"count":1,"optional":true}]}]},{"label":"相手コスト7以下3枚をレスト不可","fx":[{"op":"restImmune","side":"opp","maxCost":7,"count":3,"duration":"untilNextEnd","optional":true}]}]}]},
+  // OP13-071 ネコマムシ: 【登場時】場のドン8以上なら相手の元々パワー3000以下1枚をKO
+  "OP13-071": {"onPlay":[{"op":"cond","check":{"donAtLeast":8},"then":[{"op":"ko","side":"opp","filter":{"maxPower":3000},"count":1,"optional":true}]}]},
+  // OP13-072 バギー: 【登場時】リーダーがロジャー海賊団で付与ドンあればドン1レスト追加
+  "OP13-072": {"onPlay":[{"op":"cond","check":{"and":[{"leaderTraitIncludes":"ロジャー海賊団"},{"selfAttachedDon":true}]},"then":[{"op":"donFromDeck","n":1,"mode":"rested"}]}]},
+  // OP13-074 ヘラ: 【登場時】手札からパワー3000以下の《ホーミーズ》1枚を登場
+  "OP13-074": {"onPlay":[{"op":"playCharFromHand","filter":{"traitIncludes":"ホーミーズ","maxPower":3000},"count":1,"optional":true}]},
+  // OP13-075 いっちょやるか…: 【メイン】ドン1レスト→リーダー「ゴール・Ｄ・ロジャー」で付与ドンあればドン1レスト追加 ／【カウンター】リーダー+3000
+  "OP13-075": {"main":{"fx":[{"op":"restDonCost","n":1,"then":[{"op":"cond","check":{"and":[{"leaderNameIncludes":"ゴール・Ｄ・ロジャー"},{"selfAttachedDon":true}]},"then":[{"op":"donFromDeck","n":1,"mode":"rested"}]}]}]},"counter":{"cost":0,"fx":[{"op":"leaderBuff","amount":3000,"duration":"battle"}]}},
+  // OP13-076 神避: 【メイン】ドン5レスト→付与ドンあれば相手1枚-8000 ／【カウンター】手札1捨て：リーダーかキャラ+3000
+  "OP13-076": {"main":{"fx":[{"op":"restDonCost","n":5,"then":[{"op":"cond","check":{"selfAttachedDon":true},"then":[{"op":"powerMod","side":"opp","amount":-8000,"count":1,"optional":true,"duration":"turn"}]}]}]},"counter":{"cost":0,"fx":[{"op":"discardCost","count":1,"then":[{"op":"powerMod","side":"self","leader":true,"amount":3000,"battle":true,"count":1,"optional":true}]}]}},
+  // OP13-077 頂点まで行って来い!!!: 【メイン】ドン3レスト→付与ドンあれば相手の元々パワー4000以下1枚と3000以下1枚をKO ／【カウンター】リーダー+3000
+  "OP13-077": {"main":{"fx":[{"op":"restDonCost","n":3,"then":[{"op":"cond","check":{"selfAttachedDon":true},"then":[{"op":"ko","side":"opp","filter":{"maxPower":4000},"count":1,"optional":true},{"op":"ko","side":"opp","filter":{"maxPower":3000},"count":1,"optional":true}]}]}]},"counter":{"cost":0,"fx":[{"op":"leaderBuff","amount":3000,"duration":"battle"}]}},
+  // OP13-078 オーロ・ジャクソン号 STAGE: 【ターン1回】ロジャー海賊団が相手効果で場を離れた時、ドンデッキからドン1レスト追加
+  "OP13-078": {"onAllyLeave":{"cause":"oppEffect","filter":{"traitIncludes":"ロジャー海賊団"},"once":"turn","fx":[{"op":"donFromDeck","n":1,"mode":"rested"}]}}
 };
