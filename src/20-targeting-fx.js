@@ -665,7 +665,8 @@
         }
         // 自分のキャラ1枚（filter一致）を手札に戻すコスト。任意。払えた時 then を実行
         case 'bounceOwnCharCost': {
-          const cands = ownChars(side, opFilter(op));
+          let cands = ownChars(side, opFilter(op));
+          if (op.excludeSelf) cands = cands.filter(c => c !== self); // 「このキャラ以外」
           if (!cands.length) break;
           if (!(await confirmUse(side, '自キャラを手札へ', '自分のキャラ1枚を手札に戻して効果を使いますか？', '戻して使う'))) break;
           const t = P.isCPU ? cands.slice().sort((a, b) => scoreChar(a) - scoreChar(b))[0] : await chooseCard(side, cands, '手札に戻すキャラを選択（コスト）', 'ownSmall', true);

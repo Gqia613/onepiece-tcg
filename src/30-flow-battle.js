@@ -154,7 +154,7 @@
       const ow = G.players[card.owner];
       const idx = ow.chars.indexOf(card); if (idx < 0) return;
       animClass(card.uid, 'ko'); sfx('ko'); await sleep(420);
-      ow.don.active += card.attachedDon; // 付与ドンはコストエリアへ
+      ow.don.rested += card.attachedDon; // 付与ドンはコストエリアへ「レスト」で戻る（公式ルール。次のリフレッシュでアクティブ化）
       removeChar(card); ow.trash.push(reset(card));
       card._koSource = source || 'effect'; // KO原因（'battle'|'oppEffect'|'effect'）。onKOの条件 koByOpp 用
       (G._koedThisTurn = G._koedThisTurn || {})[card.owner] = G.turnSeq; // このターンKOされた側を記録（oppCharKOedThisTurn条件用）
@@ -167,8 +167,8 @@
     }
     function bounceCard(card) { removeCharTo(card, G.players[card.owner].hand); }
     function removeChar(card) { const ow = G.players[card.owner]; const i = ow.chars.indexOf(card); if (i >= 0) ow.chars.splice(i, 1); if (ow.stage === card) ow.stage = null; }
-    // キャラを場から取り除き、付与ドンを持ち主のアクティブに戻して destPile に裏向き(reset)で置く（除去/コスト/バウンス共通）
-    function removeCharTo(card, destPile) { G.players[card.owner].don.active += card.attachedDon || 0; removeChar(card); destPile.push(reset(card)); }
+    // キャラを場から取り除き、付与ドンを持ち主のコストエリアに「レスト」で戻して destPile に裏向き(reset)で置く（除去/コスト/バウンス共通。公式: 離脱時の付与ドンはレスト）
+    function removeCharTo(card, destPile) { G.players[card.owner].don.rested += card.attachedDon || 0; removeChar(card); destPile.push(reset(card)); }
 
     /* ---------- ドロー / 敗北 ---------- */
     // ブルック等「デッキ0でも即敗北せず、0枚になったターン終了時に敗北」

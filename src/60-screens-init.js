@@ -31,8 +31,8 @@
       scr.innerHTML = '<div class="select-wrap">' +
         '<h1>ONE PIECE CARD BATTLE</h1>' +
         '<div class="builder-row">' +
-        '<button class="bd-make" onclick="openBuilder()">＋ 自分でデッキを作る</button>' +
-        '<button class="bd-import" onclick="document.getElementById(\'deckImport\').click()">📥 デッキをインポート</button>' +
+        '<button class="bd-make" onclick="openBuilder()">＋ デッキを作る</button>' +
+        '<button class="bd-import" onclick="document.getElementById(\'deckImport\').click()">📥 インポート</button>' +
         '<input type="file" id="deckImport" accept=".json,application/json" style="display:none" onchange="importDeckFile(this)">' +
         ((G.customDecks && G.customDecks.length) ? '<span class="bd-count">自作デッキ ' + G.customDecks.length + ' 件（下のグリッドに表示）</span>' : '') +
         '</div>' +

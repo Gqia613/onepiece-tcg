@@ -175,7 +175,7 @@ window.CARD_FX = {
   "OP13-043": {"onPlay":[{"op":"cond","check":"life<=3","then":[{"op":"draw","n":2},{"op":"discardOwn","n":1},{"op":"donAttach","target":"leader","n":1}]}]},
   "OP13-054": {"onPlay":[{"op":"bounce","side":"opp","maxCost":5,"count":1},{"op":"donAttach","target":"leader","n":1}],"static":[{"op":"condBuff","cond":"donX1Self","power":1000}]},
   "ST23-001": {"onPlay":[{"op":"deckBottom","side":"opp","maxCost":6,"count":1,"condLeader":"leaderRB"}]},
-  "OP08-047": {"onPlay":[{"op":"bounce","side":"opp","maxCost":4,"count":1}]},
+  "OP08-047": {"onPlay":[{"op":"bounceOwnCharCost","excludeSelf":true,"then":[{"op":"bounce","side":"any","maxCost":6,"count":1,"optional":true}]}]},
   "OP13-042": {"onPlay":[{"op":"draw","n":2},{"op":"discardOwn","n":1},{"op":"donAttach","target":"leaderAndChar","n":2}]},
   "OP08-043": {"onPlay":[{"op":"leaderBuff","amount":2000,"duration":"untilNextStart"}],"onAttack":[{"op":"ko","side":"opp","maxPower":3000,"count":1,"cond":"donX2"}]},
   "OP09-118": {"static":[{"op":"unblockableAttack"}],"onPlay":[{"op":"lifeToHand","n":1}]},

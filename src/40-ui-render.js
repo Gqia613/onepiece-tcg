@@ -220,7 +220,8 @@
       let cards = '';
       for (let i = 0; i < P.life.length; i++) {
         const c = P.life[i];
-        const z = P.life.length - i; // 上(次に取られる=index0)を前面、下に行くほど背面（下から上に積み上がる見え方）
+        // 自分=下から上(上の札=次に取られる=index0が前面)。CPU=点対称で上から下に重ねる(z反転)
+        const z = (P === G.players.cpu) ? (i + 1) : (P.life.length - i);
         if (c && c._faceUp) {
           cards += '<div class="lifecard up" style="z-index:' + z + '" data-no="' + c.base.no + '" title="' + escapeHTML(c.base.name) + '（表向き）">' +
             '<img src="' + IMG_ROT(c.base.no) + '" referrerpolicy="no-referrer" decoding="async" onerror="this.style.display=\'none\'">' +

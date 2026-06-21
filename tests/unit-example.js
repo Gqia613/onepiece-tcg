@@ -47,11 +47,11 @@ function setupG(leaderNo){G.active='me';G.turnSeq=5;G.winner=null;const mkP=(ln,
     const prot2=await protectFromEffect(P.chars[1]);
     ok(prot2===false, 'H2: 戻せるドンが無ければ保護不成立(無償保護なし)');
 
-    // 例6(H3): deckBottom はキャラの付与ドンを所有者のコストエリアへ戻す（ドン総数保存）
-    setupG('OP15-058'); P=G.players.me; const victim=mkc('OP15-067'); victim.attachedDon=2; P.chars=[victim]; P.don.active=0;
+    // 例6(H3): deckBottom はキャラの付与ドンを所有者のコストエリアへ「レスト」で戻す（公式ルール。ドン総数保存）
+    setupG('OP15-058'); P=G.players.me; const victim=mkc('OP15-067'); victim.attachedDon=2; P.chars=[victim]; P.don.active=0; P.don.rested=0;
     const beforeTotal=donTotal('me');
     await doOp({op:'deckBottom',maxCost:10},{side:'cpu',self:G.players.cpu.leader});
-    ok(!P.chars.includes(victim) && P.don.active===2 && donTotal('me')===beforeTotal, 'H3: deckBottomで付与ドンが消えずコストエリアへ戻る');
+    ok(!P.chars.includes(victim) && P.don.rested===2 && P.don.active===0 && donTotal('me')===beforeTotal, 'H3: deckBottomで付与ドンがレストでコストエリアへ戻る');
 
     // 例7(H4/M2): 相手キャラへ付けた「このターン中」デバフは自分のターン終了で失効する
     setupG('OP13-002'); // G.active='me'

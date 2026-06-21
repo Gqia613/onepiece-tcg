@@ -106,6 +106,22 @@ humanPick=function(c){return Promise.resolve((c||[])[0]||null);};
     await runFx(C['PRB02-015'].fx.onKO,{self:shiryu,side:'cpu'});
     ok(!G.players.me.chars.includes(shiV1) && G.players.me.chars.includes(shiV7), 'PRB02-015: KO時 元々コスト4以下のみKO(cost7は残る)');
 
+    // OP08-047 ジョズ(6c/7000): 【登場時】自キャラ1枚(このキャラ以外)を戻す:コスト6以下のキャラ1枚までを戻す
+    ok(C['OP08-047'].fx.onPlay[0].op==='bounceOwnCharCost' && C['OP08-047'].fx.onPlay[0].excludeSelf===true && C['OP08-047'].fx.onPlay[0].then[0].op==='bounce' && C['OP08-047'].fx.onPlay[0].then[0].maxCost===6 && C['OP08-047'].fx.onPlay[0].then[0].side==='any', 'OP08-047: コスト=自キャラ戻し(自身除外)→コスト6以下を戻す(side any)');
+    G.players={me:mkP('OP13-002',false),cpu:mkP('OP11-041',true)}; G.active='me'; G.winner=null;
+    const jz=I('OP08-047','me'), jzCost=I('OP15-067','me'); G.players.me.chars=[jzCost]; // 自キャラ(コスト用)。jzは場に出さずselfで渡す
+    const jzT5=I('ST30-005','cpu'), jzT7=I('OP15-046','cpu'); G.players.cpu.chars=[jzT5,jzT7]; // cost5(素のジョズ) / サボcost7
+    await runFx(C['OP08-047'].fx.onPlay,{self:jz,side:'me'});
+    ok(G.players.me.hand.some(c=>c.no==='OP15-067'), 'OP08-047: コストで自キャラ(シュラ)を手札に戻した');
+    ok(!G.players.cpu.chars.includes(jzT5) && G.players.cpu.chars.includes(jzT7), 'OP08-047: 効果でコスト6以下(cost5)を戻す・コスト7(サボ)は対象外');
+
+    // KO/離脱時の付与ドンは「レスト」でコストエリアへ戻る（公式ルール。旧バグ=アクティブ）
+    G.players={me:mkP('OP13-002',false),cpu:mkP('OP11-041',true)}; G.active='cpu'; G.winner=null; G.turnSeq=7;
+    const donChar=I('OP15-067','me'); donChar.attachedDon=2; G.players.me.chars=[donChar];
+    const aBefore=G.players.me.don.active, rBefore=G.players.me.don.rested;
+    await koCard(donChar,'oppEffect');
+    ok(G.players.me.don.rested===rBefore+2 && G.players.me.don.active===aBefore, 'KO時: 付与ドンはレストで返る(activeは不変)');
+
     // コスト系op: 手札公開/ドンレスト/自キャラトラッシュ
     const P8=Object.keys(C).find(no=>!C[no].leader&&C[no].type==='CHAR'&&C[no].power===8000);
     const P10=Object.keys(C).find(no=>!C[no].leader&&C[no].type==='CHAR'&&C[no].power===10000);
