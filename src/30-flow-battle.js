@@ -299,6 +299,7 @@
     // 速攻：キャラ は登場ターンにリーダーへアタック不可（通常の速攻/2ターン目以降は可）
     function canTargetLeader(attacker) {
       if (attacker.base.type === 'CHAR' && attacker.summonedTurn === G.turnSeq && hasKw(attacker, 'rushChar') && !hasKw(attacker, 'rush')) return false;
+      if (G.players[attacker.owner] && G.players[attacker.owner]._cantAttackLeaderTurn === G.turnSeq) return false; // このターンはリーダーにアタックできない（OP06-026コウシロウ）
       return true;
     }
     function legalTargets(side, attacker) { // side=attacker側。attacker指定時は対象制限を反映

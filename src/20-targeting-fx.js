@@ -81,7 +81,7 @@
       return def;
     }
     // duration文字列 → 失効シーケンス（negSeq/noAtkSeq/restImmuneUntil 用）。untilNextEnd=次の相手ターン終了(turnSeq+1)
-    function durSeq(d) { return d === 'untilNextEnd' ? G.turnSeq + 1 : G.turnSeq; }
+    function durSeq(d) { return (d === 'untilNextEnd' || d === 'untilNextStart') ? G.turnSeq + 1 : G.turnSeq; }
 
     /* =========================================================================
        効果解決
@@ -99,6 +99,11 @@
       switch (op.op) {
         case 'draw': draw(side, op.n); flog(side, `${op.n}ドロー`); break;
         case 'oppDraw': { draw(o, op.n || 1); flog(side, `相手が${op.n || 1}ドロー`); break; } // 相手にN枚引かせる（OP07-090モルガンズ）
+        case 'oppHandToDeckDraw': { const O5 = G.players[o]; const hn = O5.hand.length; O5.deck.push(...O5.hand.splice(0)); shuffle(O5.deck); draw(o, op.n || hn); flog(side, `相手は手札を山に戻しシャッフル→${op.n || hn}ドロー`); render(); break; } // 相手の手札を山に戻しシャッフル→N枚引く（OP06-047プリン）
+        case 'grantAllBattleImmune': { P._battleImmuneGrant = { until: durSeq(op.duration || 'turn'), filter: op.filter || {} }; flog(side, 'filter一致の自キャラはバトルでKOされない'); render(); break; } // 自分のfilter一致キャラ全てを一時バトルKO耐性（OP06-096）
+        case 'setNoLifeToHand': { P._noLifeToHandTurn = G.turnSeq; flog(side, 'このターン、自分の効果でライフを手札に加えられない'); break; } // OP06-020ホーディL
+        case 'setCantAttackLeader': { P._cantAttackLeaderTurn = G.turnSeq; flog(side, 'このターン、リーダーにアタックできない'); break; } // OP06-026コウシロウ
+        case 'grantBattleImmune': { for (let i = 0; i < (op.count || 1); i++) { const cands = op.target === 'self' ? [self] : P.chars.filter(c => matchFilter(c, opFilter(op))); const t = op.target === 'self' ? self : (P.isCPU ? cands[0] : await chooseCard(side, cands, 'バトルKO耐性を与える対象', 'ownBig', op.optional)); if (!t) break; t._battleImmuneUntil = durSeq(op.duration || 'untilNextStart'); if (op.amount) addBuff(t, op.amount, durTag(op.duration === 'untilNextStart' ? 'untilNextStart' : 'turn', 'turn')); floatOn(t.uid, '無敵', 'buff'); if (op.target === 'self') break; } render(); break; } // 一時的にバトルでKOされない（OP06-030ドスン）
         case 'drawDiscarded': { const k = ctx.discarded || 1; if (draw(side, k)) flog(side, `${k}ドロー`); break; } // 捨てた枚数分ドロー（OP12-040クザン）
         case 'condAttacker': { if (ctx.attacker && (ctx.attacker.base.attribute || '').includes(op.attr)) await runFx(op.then, ctx); break; } // アタッカーが属性Xを持つ場合（OP11-088シュウ）
         case 'peekOppDeck': { if (G.players[o].deck.length) flog(side, `相手のデッキの上を確認: 「${G.players[o].deck[0].base.name}」`); break; } // 相手デッキトップを見る（OP11-062/070カタクリ等）
@@ -234,6 +239,7 @@
             t.negSeq = durSeq(op.duration); flog(side, `「${t.base.type === 'LEADER' ? '相手リーダー' : t.base.name}」を効果無効`); floatOn(t.uid, '無効', 'dmg');
             if (op.amount) { addBuff(t, op.amount, op.battle ? 'battle' : durTag(op.duration, 'turn')); floatOn(t.uid, `${op.amount}`, 'dmg'); } // 無効＋パワー減（OP09-097闇水）
             if (op.koIfMaxCost != null && t.base.type !== 'LEADER' && (t.base.cost || 0) <= op.koIfMaxCost) { if (!(await protectFromEffect(t, 'ko', self))) await koCard(t, 'oppEffect'); } // 無効＋コスト条件KO（OP09-098闇穴道）
+            if (op.koIfMaxEffPower != null && t.base.type !== 'LEADER' && power(t) <= op.koIfMaxEffPower) { if (!(await protectFromEffect(t, 'ko', self))) await koCard(t, 'oppEffect'); } // 無効＋パワー条件KO（OP06-074ゼファー）
           }
           render();
           break;
@@ -327,9 +333,9 @@
           break;
         }
         case 'playSelf': { if (self) { await summon(side, self, false); flog(side, `「${self.base.name}」を登場させた`); } break; }
-        case 'lifeToHand': { const ln = op.n || 1; let moved = 0; for (let i = 0; i < ln; i++) { const c = P.life.shift(); if (!c) break; P.hand.push(c); moved++; } if (moved) { flog(side, `自ライフ${moved}枚を手札に`); render(); if (op.then) await runFx(op.then, ctx); } break; }
+        case 'lifeToHand': { if (P._noLifeToHandTurn === G.turnSeq) { flog(side, 'このターンは効果でライフを手札に加えられない'); break; } const ln = op.n || 1; let moved = 0; for (let i = 0; i < ln; i++) { const c = P.life.shift(); if (!c) break; P.hand.push(c); moved++; } if (moved) { flog(side, `自ライフ${moved}枚を手札に`); render(); if (op.then) await runFx(op.then, ctx); } break; }
         // 場のキャラ1枚を持ち主のライフ上に裏向きで加える（OP12-117破壊弦。side:'any'=自分/相手両方が対象）
-        case 'charToLife': { const cands = op.side === 'any' ? [...oppChars(side, opFilter(op)), ...P.chars.filter(c => matchFilter(c, opFilter(op)))] : oppChars(side, opFilter(op)); const t = await chooseCard(side, cands, 'ライフに加えるキャラを選択', 'oppBig', op.optional); if (t) { const ow2 = G.players[t.owner]; removeChar(t); const card2 = reset(t); if (op.faceUp) card2._faceUp = true; const bottom = op.pos === 'bottom'; if (bottom) ow2.life.push(card2); else ow2.life.unshift(card2); flog(side, `「${t.base.name}」を${t.owner === side ? '自分' : '相手'}のライフ${bottom ? '下' : '上'}に${op.faceUp ? '表向きで' : ''}加えた`); render(); } break; } // faceUp=表向き / pos:'bottom'（OP11-116人魚柔術）
+        case 'charToLife': { const cands = op.side === 'self' ? P.chars.filter(c => matchFilter(c, opFilter(op))) : op.side === 'any' ? [...oppChars(side, opFilter(op)), ...P.chars.filter(c => matchFilter(c, opFilter(op)))] : oppChars(side, opFilter(op)); const t = await chooseCard(side, cands, 'ライフに加えるキャラを選択', op.side === 'self' ? 'ownBig' : 'oppBig', op.optional); if (t) { const ow2 = G.players[t.owner]; removeChar(t); const card2 = reset(t); if (op.faceUp) card2._faceUp = true; const bottom = op.pos === 'bottom'; if (bottom) ow2.life.push(card2); else ow2.life.unshift(card2); flog(side, `「${t.base.name}」を${t.owner === side ? '自分' : '相手'}のライフ${bottom ? '下' : '上'}に${op.faceUp ? '表向きで' : ''}加えた`); render(); } break; } // faceUp=表向き / pos:'bottom'（OP11-116人魚柔術）
         case 'handToLife': { if (P.hand.length) { const c = P.hand.slice().sort((a, b) => (a.base.counter || 0) - (b.base.counter || 0))[0]; P.hand.splice(P.hand.indexOf(c), 1); P.life.unshift(faceDown(c)); flog(side, '手札1枚をライフの上に置いた'); } break; }
         // 手札からfilter一致のキャラ1枚を選び、自分のライフの上に加える（faceUp=表向き）。OP10-103/107/119
         case 'handCharToLife': {
@@ -673,6 +679,7 @@
         // ライフ操作コスト: 自分のライフ上1枚を action して then を実行（action: 'toHand'|'trash'|'faceUp'|'faceDown'。任意）
         case 'lifeCost': {
           const act = op.action || 'toHand';
+          if (act === 'toHand' && P._noLifeToHandTurn === G.turnSeq) { flog(side, 'このターンは効果でライフを手札に加えられない'); break; }
           if (!P.life.length) break; // ライフが無ければ払えない＝不発
           const pick2 = op.pos === 'choose' && act === 'toHand'; // 「ライフの上か下から1枚」＝上下を選べる
           { const lbl = act === 'toHand' ? '手札に加え' : act === 'trash' ? 'トラッシュに置き' : act === 'faceUp' ? '表向きにし' : '裏向きにし'; const where = pick2 ? '上か下から1枚' : '上から1枚'; if (!(await confirmUse(side, 'ライフをコストに', `ライフの${where}を${lbl}て効果を使いますか？`, '使う'))) break; }
@@ -796,6 +803,7 @@
         }
         // 相手キャラ count枚をアタック不可にする（duration:'untilNextEnd'で次の相手ターン終了まで）
         case 'setAttackBan': {
+          if (op.leaderOnly) { const L = G.players[o].leader; if (L && (!op.restedOnly || L.rested) && L.noAtkSeq == null) { L.noAtkSeq = durSeq(op.duration); flog(side, '相手リーダーはアタック不可'); } render(); break; } // 相手リーダーのアタック禁止（OP06-023アーロン＝レストのリーダー）
           for (let i = 0; i < (op.count || 1); i++) { const cands = oppChars(side, opFilter(op)).filter(c => c.noAtkSeq == null); const t = P.isCPU ? cands[0] : await chooseCard(side, cands, 'アタック不可にする相手キャラ', 'oppBig', op.optional); if (!t) break; t.noAtkSeq = durSeq(op.duration); flog(side, `「${t.base.name}」はアタック不可`); }
           render(); break;
         }
@@ -933,6 +941,12 @@
           break;
         }
         // 自分のキャラすべてをトラッシュ→トラッシュから filter一致(カード名の異なる)キャラを最大count体登場（OP13-082五老星）
+        // トラッシュから（盤面を消さず）異名のキャラを最大N体登場（OP06-062ジャッジ）。restedで全てレスト登場。
+        case 'multiReviveFromTrash': {
+          const n = op.count || 4, used = [];
+          for (let i = 0; i < n; i++) { const cands = P.trash.filter(c => c.base.type === 'CHAR' && matchFilter(c, op.filter || {}) && !used.includes(normName(c.base.name))); const c = P.isCPU ? cands.slice().sort((a, b) => (b.base.power || 0) - (a.base.power || 0))[0] : await chooseCard(side, cands, `トラッシュから登場（${i + 1}/${n}・任意）`, 'ownBig', true); if (!c) break; used.push(normName(c.base.name)); P.trash.splice(P.trash.indexOf(c), 1); await summon(side, c, false, 'trash'); if (op.rested && P.chars.includes(c)) c.rested = true; }
+          render(); break;
+        }
         case 'massReviveFromTrash': {
           for (const c of P.chars.slice()) removeCharTo(c, P.trash);
           const n = op.count || 5, used = [];
@@ -962,6 +976,8 @@
       if (cause === 'ko') { const ow = G.players[target.owner]; for (const src of ow.chars) { if (src === target || isNegated(src)) continue; const st = src.base.fx && src.base.fx.static; if (!st) continue; for (const ob of st) { if (ob.op === 'allyKoImmune' && (!ob.whenActive || !src.rested) && (!ob.cond || checkCond(ob.cond, target.owner, src)) && lightMatch(target, ob.filter)) { flog(target.owner, `「${target.base.name}」は効果でKOされない`); return true; } } } }
       // 「このキャラはバトルでKOされない」常在（condBuff battleImmune・cond対応。OP10-104カリブー）
       if (cause === 'battle' && !isNegated(target)) { const st = target.base.fx && target.base.fx.static; if (st) for (const o of st) { if (o.op === 'condBuff' && o.battleImmune && (!o.cond || checkCond(o.cond, target.owner, target))) { flog(target.owner, `「${target.base.name}」はバトルではKOされない`); return true; } } }
+      if (cause === 'battle' && target._battleImmuneUntil != null && G.turnSeq <= target._battleImmuneUntil) { flog(target.owner, `「${target.base.name}」はバトルではKOされない`); return true; } // 一時的なバトルKO耐性（OP06-030ドスン）
+      if (cause === 'battle') { const bg = G.players[target.owner] && G.players[target.owner]._battleImmuneGrant; if (bg && G.turnSeq <= bg.until && matchFilter(target, bg.filter)) { flog(target.owner, `「${target.base.name}」はバトルではKOされない`); return true; } } // プレイヤー付与の一時バトルKO耐性（OP06-096）
       // 「相手の元々パワーN以下のキャラの効果でKOされない」(OP14-003ベッジ。source=KO元のキャラ)
       if (cause === 'ko' && source && source.base && !isNegated(target)) {
         const st = target.base.fx && target.base.fx.static;

@@ -184,12 +184,14 @@
       if (c.donX2 && !(card && (card.attachedDon || 0) >= 2)) return false;
       if (c.donX3 && !(card && (card.attachedDon || 0) >= 3)) return false; // 【ドン‼×3】（OP12-020ゾロL）
       if (c.selfActive && card && card.rested) return false; // このカードがアクティブ（OP12-024牛鬼丸）
+      if (c.leaderActive && P.leader.rested) return false; // 自分のリーダーがアクティブ（OP06-088サイ）
       if (c.leaderBattledChar && P._leaderBattledTurn !== G.turnSeq) return false; // このターン、リーダーが相手キャラとバトルした（OP12-020ゾロL）
       if (c.restedCardsAtLeast != null && ([P.leader, ...P.chars, P.stage].filter(x => x && x.rested).length + (P.don.rested || 0)) < c.restedCardsAtLeast) return false; // 自分のレストのカード(キャラ/リーダー/ステージ＋レストドン)がN枚以上（OP12-118ボニー）
       if (c.oppRestedCardsAtLeast != null && ([O.leader, ...O.chars, O.stage].filter(x => x && x.rested).length + (O.don.rested || 0)) < c.oppRestedCardsAtLeast) return false; // 相手のレストのカードがN枚以上（OP11-023アーロン）
       if (c.selfAttachedDon && !([P.leader, ...P.chars].some(x => x && (x.attachedDon || 0) > 0))) return false; // 自分の付与されているドンがある（OP13紫の付与シナジー）
       if (c.selfLifeLEOpp && P.life.length > O.life.length) return false; // 自分のライフ枚数が相手以下（OP13-102エジソン）
       if (c.selfLifeLessThanOpp && P.life.length >= O.life.length) return false; // 自分のライフ枚数が相手より少ない（OP10-113ゾロ）
+      if (c.selfPowerAtLeast != null && card && power(card) < c.selfPowerAtLeast) return false; // このキャラの現在パワーN以上（OP06-002イナズマ＝7000以上で【バニッシュ】）
       if (c.leaderEffPowerAtMost != null && power(P.leader) > c.leaderEffPowerAtMost) return false; // 自分のリーダーの現在パワーN以下（OP09-007ヒート）
       if (c.leaderEffPowerAtLeast != null && power(P.leader) < c.leaderEffPowerAtLeast) return false; // 自分のリーダーの現在パワーN以上（OP09-017ワイヤー）
       if (c.selfAttachedDonAtLeast != null && [P.leader, ...P.chars].reduce((s, x) => s + (x ? (x.attachedDon || 0) : 0), 0) < c.selfAttachedDonAtLeast) return false; // 自分の付与ドン合計N以上（OP12-015/024等）
@@ -381,7 +383,9 @@
     // 「相手の効果ではKOされない」= 効果KOを無効（effectImmune＝KO限定／「場を離れない」＝KO含む）。選択・パワー減少・レスト等は通す。バトルKOも通す
     function isKoImmune(card) {
       if (!card || isNegated(card)) return false; const st = card.base.fx && card.base.fx.static;
-      return (!!(st && st.some(o => o.op === 'effectImmune'))) || isLeaveImmune(card);
+      if (st && st.some(o => o.op === 'effectImmune')) return true;
+      if (st && st.some(o => o.op === 'condBuff' && o.koImmune && (!o.cond || checkCond(o.cond, card.owner, card)))) return true; // 条件付き「効果でKOされない」（OP06-109傳ジロー）
+      return isLeaveImmune(card);
     }
     function hasKw(card, kw) {
       if (!card) return false; const b = card.base;
