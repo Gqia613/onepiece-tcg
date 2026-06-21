@@ -223,6 +223,8 @@
       // エース(OP13-002): 【ドン‼×1】自分の元々パワー6000以上のキャラがKOされた時ターン1回ドロー（被ダメドローと _aceDrawTurn を共有＝合計ターン1回）
       { const oL = ow.leader; if (card.base.type === 'CHAR' && (card.base.power || 0) >= 6000 && oL.base.leader === 'ace' && !isNegated(oL) && oL.attachedDon >= 1 && ow._aceDrawTurn !== G.turnSeq) { ow._aceDrawTurn = G.turnSeq; if (draw(card.owner, 1)) { floatOn(oL.uid, 'DRAW', 'heal'); flog(card.owner, '【エース】元々パワー6000以上のKOで1ドロー'); } } }
       await checkAllyLeave(card.owner, card, source === 'battle' ? 'battle' : 'oppEffect'); // 自分のキャラが場を離れた時のリーダー誘発（KOはバトル/相手効果）
+      // 「相手のキャラがKOされた時」誘発（OP01-061カイドウL）。KOされた側の相手＝koSide のキャラ/リーダーが反応。
+      { const koSide = opp(card.owner); const K = G.players[koSide]; for (const c of [K.leader, ...K.chars]) { const cfg = c && c.base.fx && c.base.fx.onOppKO; if (!cfg || isNegated(c)) continue; if (cfg.when === 'selfTurn' && koSide !== G.active) continue; if (cfg.cond && !checkCond(cfg.cond, koSide, c)) continue; if (cfg.once === 'turn') { if (c._oppKOTurn === G.turnSeq) continue; c._oppKOTurn = G.turnSeq; } await runFx(cfg.fx, { self: c, side: koSide }); } }
       render();
     }
     function bounceCard(card) { removeCharTo(card, G.players[card.owner].hand); }

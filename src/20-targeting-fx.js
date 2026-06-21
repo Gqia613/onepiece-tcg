@@ -419,6 +419,8 @@
         // 相手のアクティブのドンをN枚レストにする（OP08-030ペドロ）
         case 'restOppDon': { const O4 = G.players[o]; const n = Math.min(op.n || 1, O4.don.active); O4.don.active -= n; O4.don.rested += n; if (n) flog(side, `相手のドン${n}枚をレストにした`); render(); break; }
         case 'oppDonToDeck': { const O7 = G.players[o]; let n = op.n || 1; while (n > 0) { if (O7.don.active > 0) O7.don.active--; else if (O7.don.rested > 0) O7.don.rested--; else break; n--; } flog(side, `相手のドンをドンデッキに戻した`); render(); break; } // 相手のドンをドンデッキへ（OP02-085マゼラン）
+        case 'peekOppHand': { const O8 = G.players[o]; const n = Math.min(op.n || 1, O8.hand.length); if (n) flog(side, `相手の手札を確認: ${O8.hand.slice(0, n).map(c => c.base.name).join('、')}`); if (op.then && n) await runFx(op.then, ctx); break; } // 相手の手札を見る（OP01-063アーロン/105バオファン）
+        case 'searchDeck': { const cands = P.deck.filter(c => matchFilter(c, op.filter || {})); const t = P.isCPU ? cands[0] : await chooseCard(side, cands, 'デッキから手札に加えるカード', 'ownBig', op.optional !== false); if (t) { P.deck.splice(P.deck.indexOf(t), 1); P.hand.push(t); flog(side, `デッキから「${t.base.name}」を手札に`); } shuffle(P.deck); render(); break; } // デッキ全体から1枚サーチ＋シャッフル（OP01-098オロチ）
         // 自分の場のドンを「相手の場のドン枚数」と同じになるまでドンデッキへ戻す（OP08-074ブラックマリア・ターン終了時）
         case 'donReturnToMatchOpp': { const want = donTotal(o); let excess = Math.max(0, donTotal(side) - want); while (excess > 0) { if (P.don.rested > 0) P.don.rested--; else if (P.don.active > 0) P.don.active--; else break; excess--; } if (donTotal(side) <= want) flog(side, '自分のドンを相手と同じ枚数に戻した'); render(); break; }
         // 自分のライフをすべて裏向きにする（OP08-075キャンディメイデン）
