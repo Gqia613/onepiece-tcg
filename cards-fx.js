@@ -1862,5 +1862,77 @@ window.CARD_FX = {
   // OP07-040 クロコダイル(c4): 【登場時】ドン1レスト：コスト2以下1枚を手札に戻す
   "OP07-040": {"onPlay":[{"op":"restDonCost","n":1,"then":[{"op":"bounce","side":"opp","maxCost":2,"count":1,"optional":true}]}]},
   // OP07-041 グロリオーサ(ニョン婆): 【登場時】デッキ上5枚から「自身」以外のアマゾン・リリーか九蛇1枚を手札に
-  "OP07-041": {"onPlay":[{"op":"search","look":5,"count":1,"filter":{"or":[{"traitIncludes":"アマゾン・リリー"},{"traitIncludes":"九蛇海賊団"}]},"exclude":"グロリオーサ(ニョン婆)","optional":true}]}
+  "OP07-041": {"onPlay":[{"op":"search","look":5,"count":1,"filter":{"or":[{"traitIncludes":"アマゾン・リリー"},{"traitIncludes":"九蛇海賊団"}]},"exclude":"グロリオーサ(ニョン婆)","optional":true}]},
+  /* ===== OP07 バッチ3（青・042-061＝王下七武海/九蛇/フォクシー） ===== */
+  // OP07-042 ゲッコー・モリア: 【ターン1回】王下七武海リーダーで相手効果で離れる場合、代わりに「モリア以外」のキャラ1枚をデッキ下
+  "OP07-042": {"static":[{"op":"leaveProtect","targetSelf":true,"once":"turn","pay":"deckBottomOther","cond":{"leaderTraitIncludes":"王下七武海"},"filter":{"nameExcludes":"ゲッコー・モリア"}}]},
+  // OP07-043 サロメ: 【自分のターン中】【登場時】自分の「ボア・ハンコック」1枚を+2000
+  "OP07-043": {"onPlay":[{"op":"powerMod","side":"self","amount":2000,"duration":"turn","count":1,"optional":true,"filter":{"nameIncludes":"ボア・ハンコック"}}]},
+  // OP07-045 ジンベエ(c4): 【登場時】手札から「ジンベエ」以外のコスト4以下の王下七武海1枚を登場
+  "OP07-045": {"onPlay":[{"op":"playCharFromHand","filter":{"traitIncludes":"王下七武海","maxCost":4,"nameExcludes":"ジンベエ"},"count":1,"optional":true}]},
+  // OP07-046 センゴク(c1): 【登場時】デッキ上5枚から王下七武海1枚を手札に
+  "OP07-046": {"onPlay":[{"op":"search","look":5,"count":1,"filter":{"traitIncludes":"王下七武海"},"optional":true}]},
+  // OP07-047 トラファルガー・ロー(c4): 【起動メイン】このキャラを手札に戻す：相手手札6枚以上なら相手は手札1枚をデッキ下
+  "OP07-047": {"act":{"label":"自身を手札へ:相手手札6以上で1枚デッキ下","cost":{},"fx":[{"op":"bounceSelfCost","then":[{"op":"cond","check":{"oppHandAtLeast":6},"then":[{"op":"oppHandToBottom","n":1}]}]}]}},
+  // OP07-048 ドンキホーテ・ドフラミンゴ(c3): 【起動メイン】【ターン1回】ドン2レスト：デッキ上1枚を公開、コスト4以下の王下七武海ならレストで登場
+  "OP07-048": {"act":{"label":"ドン2レスト:デッキ上から王下七武海をレスト登場","cost":{},"fx":[{"op":"restDonCost","n":2,"then":[{"op":"playFromDeck","look":1,"rested":true,"filter":{"traitIncludes":"王下七武海","maxCost":4}}]}]}},
+  // OP07-049 バッキン(c2): 【登場時】手札からコスト4以下「エドワード・ウィーブル」1枚をレストで登場
+  "OP07-049": {"onPlay":[{"op":"playSpecificFromHand","nameIncludes":"エドワード・ウィーブル","filter":{"maxCost":4},"rested":true,"optional":true}]},
+  // OP07-050 ボア・サンダーソニア: 【登場時】アマゾン/九蛇が2枚以上なら相手コスト3以下1枚を手札に戻す
+  "OP07-050": {"onPlay":[{"op":"cond","check":{"selfCharCount":{"filter":{"or":[{"traitIncludes":"アマゾン・リリー"},{"traitIncludes":"九蛇海賊団"}]},"min":2}},"then":[{"op":"bounce","side":"opp","maxCost":3,"count":1,"optional":true}]}]},
+  // OP07-051 ボア・ハンコック(c6): 【登場時】「ルフィ」以外の相手1枚は次相手ターン終了までアタック不可→コスト1以下1枚をデッキ下
+  "OP07-051": {"onPlay":[{"op":"setAttackBan","filter":{"nameExcludes":"モンキー・D・ルフィ"},"count":1,"duration":"untilNextEnd","optional":true},{"op":"deckBottom","side":"any","filter":{"maxCost":1},"count":1,"optional":true}]},
+  // OP07-052 ボア・マリーゴールド: 【登場時】アマゾン/九蛇が2枚以上ならコスト2以下1枚をデッキ下
+  "OP07-052": {"onPlay":[{"op":"cond","check":{"selfCharCount":{"filter":{"or":[{"traitIncludes":"アマゾン・リリー"},{"traitIncludes":"九蛇海賊団"}]},"min":2}},"then":[{"op":"deckBottom","side":"any","filter":{"maxCost":2},"count":1,"optional":true}]}]},
+  // OP07-053 ポートガス・D・エース(c5): 【ブロッカー】 ／【登場時】2ドロー→手札2枚をデッキの上か下へ
+  "OP07-053": {"onPlay":[{"op":"draw","n":2},{"op":"handToBottom","n":2}]},
+  // OP07-055 蛇ダンス: 【カウンター】リーダーかキャラ+4000→自分のキャラ1枚を手札に戻す
+  "OP07-055": {"counter":{"cost":0,"fx":[{"op":"powerMod","side":"self","leader":true,"amount":4000,"battle":true,"count":1,"optional":true},{"op":"bounceOwnCharCost"}]}},
+  // OP07-056 虜の矢: 【カウンター】コスト2以上の自キャラ1枚を手札に戻す：リーダーかキャラ+4000
+  "OP07-056": {"counter":{"cost":0,"fx":[{"op":"bounceOwnCharCost","filter":{"minCost":2},"then":[{"op":"powerMod","side":"self","leader":true,"amount":4000,"battle":true,"count":1,"optional":true}]}]}},
+  // OP07-058 女ヶ島(STAGE): 【起動メイン】手札1枚捨て＋レスト：九蛇リーダーなら自分のアマゾン/九蛇キャラ1枚を手札に戻す
+  "OP07-058": {"act":{"label":"手札1捨て+レスト:アマゾン/九蛇を手札に","cost":{"restSelf":true},"fx":[{"op":"discardCost","count":1,"then":[{"op":"cond","check":{"leaderTraitIncludes":"九蛇海賊団"},"then":[{"op":"bounceOwnCharCost","filter":{"or":[{"traitIncludes":"アマゾン・リリー"},{"traitIncludes":"九蛇海賊団"}]}}]}]}]}},
+  // OP07-059 フォクシー LEADER: 【アタック時】ドン-3：フォクシーが3枚以上なら相手のレストのリーダーとキャラ1枚を次リフレッシュロック
+  "OP07-059": {"onAttack":[{"op":"donMinus","n":3},{"op":"cond","check":{"selfCharCount":{"filter":{"traitIncludes":"フォクシー海賊団"},"min":3}},"then":[{"op":"lockRefresh","count":1,"includeLeader":true,"optional":true}]}]},
+  // OP07-060 イトミミズ: 【起動メイン】【ターン1回】フォクシーリーダーで他に「イトミミズ」がいなければドンデッキからドン1レスト追加
+  "OP07-060": {"act":{"label":"フォクシー:ドン1レスト追加","cost":{},"fx":[{"op":"cond","check":{"and":[{"leaderTraitIncludes":"フォクシー海賊団"},{"not":{"selfCharOther":{"filter":{"nameIncludes":"イトミミズ"}}}}]},"then":[{"op":"donFromDeck","n":1,"mode":"rested"}]}]}},
+  // OP07-061 ヴィンスモーク・サンジ(c1): 【登場時】ドン-1：ヴィンスモーク家リーダーなら1ドロー
+  "OP07-061": {"onPlay":[{"op":"donMinus","n":1},{"op":"cond","check":{"leaderTraitIncludes":"ヴィンスモーク家"},"then":[{"op":"draw","n":1}]}]},
+  /* ===== OP07 バッチ4（紫・062-081＝フォクシー海賊団 ドン劣勢シナジー） ===== */
+  // OP07-062 ヴィンスモーク・レイジュ(c1): 【登場時】ドンが相手以下なら自分のコスト1のヴィンスモーク家1枚を手札に戻す
+  "OP07-062": {"onPlay":[{"op":"cond","check":{"donLEOpp":true},"then":[{"op":"bounceOwnCharCost","filter":{"cost":1,"traitIncludes":"ヴィンスモーク家"},"excludeSelf":true}]}]},
+  // OP07-063 カポーティ: 【登場時】ドン-1：フォクシーリーダーなら相手コスト6以下1枚は次相手ターン終了までアタック不可
+  "OP07-063": {"onPlay":[{"op":"donMinus","n":1},{"op":"cond","check":{"leaderTraitIncludes":"フォクシー海賊団"},"then":[{"op":"setAttackBan","filter":{"maxCost":6},"count":1,"duration":"untilNextEnd","optional":true}]}]},
+  // OP07-064 サンジ(c6): ドンが相手より2枚以上少ないとコスト-3 ／【ブロッカー】
+  "OP07-064": {"costMod":{"cond":{"selfDonFewerBy":2},"amount":-3},"static":[{"op":"staticKeyword","kw":"blocker"}]},
+  // OP07-065 ジーナ: 【登場時】フォクシーリーダー＋ドンが相手以下ならドン1アクティブ追加
+  "OP07-065": {"onPlay":[{"op":"cond","check":{"and":[{"leaderTraitIncludes":"フォクシー海賊団"},{"donLEOpp":true}]},"then":[{"op":"donFromDeck","n":1,"mode":"active"}]}]},
+  // OP07-066 トニートニー・チョッパー(c2): 【ブロッカー】 ／【登場時】ドンが相手以下ならドン1レスト追加
+  "OP07-066": {"onPlay":[{"op":"cond","check":{"donLEOpp":true},"then":[{"op":"donFromDeck","n":1,"mode":"rested"}]}]},
+  // OP07-068 ハンバーグ: 【ドン×1】【アタック時】ドンが相手以下ならドン1レスト追加
+  "OP07-068": {"onAttack":[{"op":"cond","check":{"and":[{"donX1":true},{"donLEOpp":true}]},"then":[{"op":"donFromDeck","n":1,"mode":"rested"}]}]},
+  // OP07-069 ピクルス: ドンが相手以下なら「ピクルス」以外のフォクシーは相手効果でKOされない
+  "OP07-069": {"static":[{"op":"allyKoImmune","cond":{"donLEOpp":true},"filter":{"traitIncludes":"フォクシー海賊団","nameExcludes":"ピクルス"}}]},
+  // OP07-070 ビッグパン: 【登場時】ドンが相手以下なら手札からコスト4以下のフォクシー1枚を登場
+  "OP07-070": {"onPlay":[{"op":"cond","check":{"donLEOpp":true},"then":[{"op":"playCharFromHand","filter":{"traitIncludes":"フォクシー海賊団","maxCost":4},"count":1,"optional":true}]}]},
+  // OP07-071 フォクシー(c7): 【相手のターン中】フォクシーリーダーなら相手キャラ全-1000 ／【起動メイン】【ターン1回】ドン1レスト追加
+  "OP07-071": {"static":[{"op":"oppStaticPowerMod","power":-1000,"cond":{"and":[{"oppTurn":true},{"leaderTraitIncludes":"フォクシー海賊団"}]}}],"act":{"label":"ドン1レスト追加","cost":{},"fx":[{"op":"donFromDeck","n":1,"mode":"rested"}]}},
+  // OP07-072 ポルチェ: 【登場時】ドン-1：デッキ上5枚からフォクシー1枚を手札に→手札からパワー4000以下の紫キャラ1枚を登場
+  "OP07-072": {"onPlay":[{"op":"donMinus","n":1},{"op":"search","look":5,"count":1,"filter":{"traitIncludes":"フォクシー海賊団"},"optional":true},{"op":"playCharFromHand","filter":{"color":"紫","maxPower":4000},"count":1,"optional":true}]},
+  // OP07-073 モンキー・D・ルフィ(c6): 【起動メイン】【ターン1回】ドン-3：相手キャラ3枚以上ならこのキャラをアクティブ
+  "OP07-073": {"act":{"label":"ドン-3:相手3枚以上で自身アクティブ","cost":{},"fx":[{"op":"donMinus","n":3},{"op":"cond","check":{"oppChar":{"min":3}},"then":[{"op":"activateSelf"}]}]}},
+  // OP07-074 モンダ: 【起動メイン】自身トラッシュ：フォクシーリーダーならドン1レスト追加
+  "OP07-074": {"act":{"label":"自身トラッシュ:フォクシーでドン1レスト追加","cost":{},"fx":[{"op":"trashSelfCost","then":[{"op":"cond","check":{"leaderTraitIncludes":"フォクシー海賊団"},"then":[{"op":"donFromDeck","n":1,"mode":"rested"}]}]}]}},
+  // OP07-075 ノロノロビ～～～～ム: 【カウンター】ドン-1：相手のリーダーかキャラ1枚を-2000
+  "OP07-075": {"counter":{"cost":0,"fx":[{"op":"donMinus","n":1},{"op":"powerMod","side":"opp","leader":true,"amount":-2000,"duration":"turn","count":1,"optional":true}]}},
+  // OP07-076 ノロノロビームソード: 【カウンター】ドン-1：リーダーかキャラ+2000→相手キャラ1枚をレスト
+  "OP07-076": {"counter":{"cost":0,"fx":[{"op":"donMinus","n":1},{"op":"powerMod","side":"self","leader":true,"amount":2000,"battle":true,"count":1,"optional":true},{"op":"restChar","side":"opp","count":1,"optional":true}]}},
+  // OP07-077 “ひとつなぎの大秘宝”を獲りに行くぞ!!!: 【メイン】百獣かビッグマムリーダーなら デッキ上5枚から百獣/ビッグマム1枚を手札に
+  "OP07-077": {"main":{"fx":[{"op":"cond","check":{"or":[{"leaderTraitIncludes":"百獣海賊団"},{"leaderTraitIncludes":"ビッグ・マム海賊団"}]},"then":[{"op":"search","look":5,"count":1,"filter":{"or":[{"traitIncludes":"百獣海賊団"},{"traitIncludes":"ビッグ・マム海賊団"}]},"optional":true}]}]}},
+  // OP07-078 メガトン九尾ラッシュ: 【メイン】ドンが相手以下なら自分の「フォクシー」1枚をアクティブ
+  "OP07-078": {"main":{"fx":[{"op":"cond","check":{"donLEOpp":true},"then":[{"op":"activateOwnChar","count":1,"filter":{"restedOnly":true,"nameIncludes":"フォクシー"}}]}]}},
+  // OP07-080 カク: 【登場時】トラッシュから『CP』2枚をデッキ下：相手キャラ1枚をコスト-3
+  "OP07-080": {"onPlay":[{"op":"trashToBottomCost","n":2,"filter":{"traitIncludes":"CP"},"then":[{"op":"addCostBuff","side":"opp","count":1,"amount":-3,"duration":"turn","optional":true}]}]},
+  // OP07-081 カリファ: 【ドン×1】【自分のターン中】相手のキャラ全コスト-1
+  "OP07-081": {"static":[{"op":"oppCostMod","amount":-1,"cond":{"and":[{"donX1":true},{"selfTurn":true}]}}]}
 };

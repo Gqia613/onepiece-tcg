@@ -392,6 +392,7 @@
         // 相手のレストのキャラを「次の相手のリフレッシュでアクティブにしない」（OP08ミンク族）。_noRefreshSeqに相手の次ターンseqをセット。
         case 'lockRefresh': {
           const seq = G.turnSeq + 1;
+          if (op.includeLeader && G.players[o].leader.rested) { G.players[o].leader._noRefreshSeq = seq; flog(side, '相手リーダーは次のリフレッシュでアクティブにならない'); } // OP07-059フォクシーL（リーダーもロック）
           if (op.all) { for (const t of oppChars(side, opFilter(op)).filter(c => c.rested)) t._noRefreshSeq = seq; flog(side, '相手のレストのキャラは次のリフレッシュでアクティブにならない'); render(); break; }
           for (let i = 0; i < (op.count || 1); i++) { const cands = oppChars(side, opFilter(op)).filter(c => c.rested && c._noRefreshSeq !== seq); const t = P.isCPU ? cands[0] : await chooseCard(side, cands, '次のリフレッシュでアクティブにしない相手キャラ', 'oppBig', op.optional); if (!t) break; t._noRefreshSeq = seq; flog(side, `「${t.base.name}」は次のリフレッシュでアクティブにならない`); }
           render(); break;
@@ -979,6 +980,7 @@
         if (!p || isNegated(p)) continue; // 効果無効中のキャラは身代わり保護を提供しない
         const st = p.base.fx && p.base.fx.static; if (!st) continue;
         const prot = st.find(o => o.op === 'leaveProtect'); if (!prot) continue;
+        if (prot.cond && !checkCond(prot.cond, p.owner, p)) continue; // 発動条件（リーダー特徴等。OP07-042モリア＝王下七武海リーダー）
         if (cause === 'battle') { if (!prot.includeBattle) continue; } // バトルKOは includeBattle 指定時のみ肩代わり（既定の身代わりは効果除去のみ）
         else if (prot.onlyKO && cause && cause !== 'ko') continue; // KO限定の置換は bounce/deckBottom では発動しない
         // 守る対象の制限: targetSelf=このキャラ自身のみ / targetFilter / 無ければ従来の「元々パワー7000以下」
@@ -1020,6 +1022,13 @@
         } else if (prot.pay === 'free') {
           // コスト無しで場を離れない（OP10-118ルフィ＝ターン1回相手の効果でKOされない。once:'turn'は上のゲートで消化済）
           flog(target.owner, `「${target.base.name}」は相手の効果で離れない`); return true;
+        } else if (prot.pay === 'deckBottomOther') {
+          // 代わりに（このキャラ以外の）自分のキャラ1枚を持ち主のデッキ下に置いて target を場に残す（OP07-042モリア）
+          const cands = ow.chars.filter(c => c !== target && (!prot.filter || matchFilter(c, prot.filter)));
+          if (!cands.length) continue;
+          if (!(await confirmUse(target.owner, `【${p.base.name}】身代わり`, `自分のキャラ1枚をデッキ下に置いて「${target.base.name}」を場に残しますか？`, '残す（他キャラをデッキ下）', '残さない'))) continue;
+          const dt = ow.isCPU ? cands.slice().sort((a, b) => scoreChar(a) - scoreChar(b))[0] : await chooseCard(target.owner, cands, 'デッキ下に置く自分のキャラを選択', 'ownSmall', false); if (!dt) continue;
+          removeCharTo(dt, ow.deck); flog(target.owner, `【${p.base.name}】「${dt.base.name}」をデッキ下に置いて「${target.base.name}」を場に残した`); await checkAllyLeave(target.owner, dt, 'ownEffect'); render(); return true;
         } else if (prot.pay === 'restOpp') {
           // 代わりに相手のキャラ1枚をレストにして target を場に残す（OP07-029ホーキンス）
           const cands = G.players[opp(target.owner)].chars.filter(c => !c.rested && !isRestImmune(c) && !isOppRestImmune(c));

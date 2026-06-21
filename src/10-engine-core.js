@@ -195,6 +195,7 @@
       if (c.selfAttachedDonAtLeast != null && [P.leader, ...P.chars].reduce((s, x) => s + (x ? (x.attachedDon || 0) : 0), 0) < c.selfAttachedDonAtLeast) return false; // 自分の付与ドン合計N以上（OP12-015/024等）
       if (c.donLEOpp && donTotal(side) > donTotal(opp(side))) return false; // 自分の場のドンが相手の場のドン枚数以下（OP12-041/073/078等）
       if (c.oppDonGreater && donTotal(opp(side)) <= donTotal(side)) return false; // 相手の場のドンが自分より多い（OP09-066ジャンバール）
+      if (c.selfDonFewerBy != null && !(donTotal(side) <= donTotal(opp(side)) - c.selfDonFewerBy)) return false; // 自分の場のドンが相手よりN枚以上少ない（OP07-064サンジ）
       if (c.selfHandFewerBy != null && !(P.hand.length <= O.hand.length - c.selfHandFewerBy)) return false; // 自分の手札が相手よりN枚以上少ない（OP09-092ティーチ）
       if (c.activeDonAtMost != null && (P.don.active || 0) > c.activeDonAtMost) return false; // アクティブのドンN枚以下
       if (c.activeDonAtLeast != null && (P.don.active || 0) < c.activeDonAtLeast) return false;
