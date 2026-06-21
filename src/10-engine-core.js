@@ -478,6 +478,7 @@
       if (f.not && matchFilter(card, f.not)) return false; // 下位フィルタに一致するものを除外
       if (f.hasTrigger && !((b.fx && b.fx.trigger) || /【トリガー】/.test(b.text || ''))) return false; // 【トリガー】を持つ
       if (f.or && !f.or.some(sub => matchFilter(card, sub))) return false; // いずれかの下位フィルタに一致
+      if (f.and && !f.and.every(sub => matchFilter(card, sub))) return false; // すべての下位フィルタに一致（OP12-098等）
       return true;
     }
     // opの対象フィルタを構築（op.filter優先。無ければopの各フィールドから。既存opとの後方互換のため未指定は無視される）

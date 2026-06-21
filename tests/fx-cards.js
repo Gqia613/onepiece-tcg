@@ -22,7 +22,7 @@ const { runHarness } = require('./_load-app');  // stubs+CARD_DB+CARD_FX+本体J
     require(path.join(__dirname, '..', 'cards.js'));
     require(path.join(__dirname, '..', 'cards-fx.js'));
     const DB = global.window.CARD_DB, FX = global.window.CARD_FX;
-    for (const [tag, file] of [['OP14', 'official-op14.js'], ['OP13', 'official-op13.js']]) {
+    for (const [tag, file] of [['OP14', 'official-op14.js'], ['OP13', 'official-op13.js'], ['OP12', 'official-op12.js']]) {
       const off = require(path.join(__dirname, '..', 'tools', file));
       const mismatch = [], missing = [];
       for (const no in off) {
@@ -92,6 +92,19 @@ humanPick=function(c){return Promise.resolve((c||[])[0]||null);};
     const yam=I('OP02-042','cpu'), oth=I('OP15-067','cpu'); G.players.cpu.trash=[yam,oth];
     await runFx(C['OP16-096'].fx.onKO,{self:I('OP16-096','cpu'),side:'cpu'});
     ok(G.players.cpu.chars.includes(yam) && !G.players.cpu.chars.includes(oth), 'OP16-096: 名前フィルタでヤマトのみ蘇生');
+
+    // PRB02-015 シリュウ: 黒ひげリーダーなら【ブロッカー】+コスト+4(実効8=除去耐性)、【KO時】相手の元々コスト4以下を1枚KO
+    G.players={cpu:mkP('OP09-081',true),me:mkP('OP13-002',false)}; G.active='cpu'; G.turnSeq=5; G.winner=null;
+    const shiryu=I('PRB02-015','cpu'); G.players.cpu.chars=[shiryu];
+    ok(hasKw(shiryu,'blocker'), 'PRB02-015: 黒ひげリーダーで【ブロッカー】獲得');
+    ok(matchFilter(shiryu,{maxCost:7})===false && matchFilter(shiryu,{maxCost:8})===true, 'PRB02-015: 黒ひげでコスト+4(実効8)');
+    ok(matchFilter(shiryu,{maxBaseCost:4})===true, 'PRB02-015: 元々コストは4のまま(maxBaseCost)');
+    G.players.cpu.leader=inst('OP11-041','cpu'); // 非黒ひげ(ナミ)
+    ok(!hasKw(shiryu,'blocker') && matchFilter(shiryu,{maxCost:4})===true, 'PRB02-015: 非黒ひげでは無条件(ブロッカー無し/コスト4)');
+    G.players.cpu.leader=inst('OP09-081','cpu'); // 黒ひげに戻す
+    const shiV1=I('OP15-067','me'), shiV7=I('OP15-046','me'); G.players.me.chars=[shiV7,shiV1]; // cost1 / サボcost7
+    await runFx(C['PRB02-015'].fx.onKO,{self:shiryu,side:'cpu'});
+    ok(!G.players.me.chars.includes(shiV1) && G.players.me.chars.includes(shiV7), 'PRB02-015: KO時 元々コスト4以下のみKO(cost7は残る)');
 
     // コスト系op: 手札公開/ドンレスト/自キャラトラッシュ
     const P8=Object.keys(C).find(no=>!C[no].leader&&C[no].type==='CHAR'&&C[no].power===8000);
@@ -1589,6 +1602,31 @@ humanPick=function(c){return Promise.resolve((c||[])[0]||null);};
     { const me=LP('OP13-002'); const lf=I('OP12-015','me'); lf.owner='me'; me.chars=[lf]; G.active='me';
       lf.attachedDon=0; me.leader.attachedDon=0; ok(power(lf)===4000, 'OP12-015: 付与ドン0では+2000無し');
       lf.attachedDon=2; ok(power(lf)===4000+2000+2000, 'OP12-015: 付与ドン合計2以上で+2000(付与ドン分の2000も加算)'); }
+
+    // === OP12 バッチ2-6（緑/青/紫/黒/黄の代表） ===
+    ok(['OP12-040','OP12-075','OP12-081','OP12-091','OP12-117'].every(no=>C[no]&&C[no].fx), 'OP12 後続バッチ: fx統合');
+    // OP12-040 クザンL: 効果で手札が捨てられた時、捨てた枚数分ドロー(drawDiscarded)
+    { const me=LP('OP12-040'); me.deck=[I('OP15-067','me'),I('OP15-067','me'),I('OP15-067','me')]; me.hand=[I('OP15-067','me'),I('OP15-067','me')]; const h0=me.hand.length;
+      await doOp({op:'discardOwn',n:2},{side:'me'});
+      ok(me.hand.length===h0-2+2, 'OP12-040: 2枚捨て→2枚ドロー(drawDiscarded)'); }
+    // OP12-075 ミス・オールサンデー: 相手コスト3以下KO→相手がドン1追加
+    { const me=LP('OP13-002'); G.players.cpu.isCPU=true; G.players.cpu.donMax=10; const d0=donTotal('cpu');
+      C['__o3m__']={no:'__o3m__',name:'O3',type:'CHAR',color:[],cost:3,power:4000,counter:1000,traits:[]};
+      const v=mkSyn('__o3m__',C['__o3m__']); v.owner='cpu'; G.players.cpu.chars=[v];
+      const c=I('OP12-075','me'); await runFx(c.base.fx.onPlay,{self:c,side:'me'});
+      ok(!G.players.cpu.chars.includes(v) && donTotal('cpu')===d0+1, 'OP12-075: 相手コスト3以下KO→相手ドン1追加(oppDonFromDeck)'); delete C['__o3m__']; }
+    // OP12-091 ポーカー: トラッシュ3枚デッキ下→SMILE2枚+2000(trashToBottomCost n)
+    { const me=LP('OP13-002'); me.isCPU=true; me.trash=[I('OP15-067','me'),I('OP15-067','me'),I('OP15-067','me')];
+      C['__sm__']={no:'__sm__',name:'SM',type:'CHAR',color:[],cost:3,power:4000,counter:1000,traits:['SMILE']};
+      const s=mkSyn('__sm__',C['__sm__']); s.owner='me'; me.chars=[s];
+      const pk=I('OP12-091','me'); await runFx(pk.base.fx.act.fx,{self:pk,side:'me'});
+      ok(power(s)===6000 && me.deck.length>=3, 'OP12-091: トラッシュ3枚デッキ下→SMILE+2000'); delete C['__sm__']; }
+    // OP12-081 コアラL: 相手リーダーにアタック時 コスト8以上2枚で1ドロー(onLeaderAttack)
+    { const me=LP('OP12-081'); me.deck=[I('OP15-067','me')];
+      C['__c8a__']={no:'__c8a__',name:'C8a',type:'CHAR',color:[],cost:8,power:8000,counter:1000,traits:[]};
+      const a=mkSyn('__c8a__',C['__c8a__']),b=mkSyn('__c8a__',C['__c8a__']); a.owner='me';b.owner='me'; me.chars=[a,b]; const h0=me.hand.length;
+      await runFx(me.leader.base.fx.onLeaderAttack.fx,{self:me.leader,side:'me'});
+      ok(me.hand.length===h0+1, 'OP12-081: コスト8以上2枚で1ドロー(onLeaderAttack)'); delete C['__c8a__']; }
   }catch(e){ console.log('EXCEPTION:', e.message); fail++; }
   console.log('Phase3 fxテスト: pass='+pass+' fail='+fail);
   process.exit(fail?1:0);

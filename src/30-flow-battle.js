@@ -54,6 +54,18 @@
         await runFx(cfg.fx, { self: c, side });
       }
     }
+    // 「ライフが離れた時」誘発（OP12-099カルガラ＝自分のターン中ライフ離脱で1ドロー）。side=ライフが離れた側。
+    async function fireLifeLeft(side) {
+      const P = G.players[side];
+      for (const c of P.chars.slice()) {
+        const cfg = c.base.fx && c.base.fx.onLifeLeave;
+        if (!cfg || isNegated(c) || !P.chars.includes(c)) continue;
+        if (cfg.when === 'selfTurn' && side !== G.active) continue;
+        if (cfg.when === 'oppTurn' && side === G.active) continue;
+        if (cfg.once === 'turn') { if (c._lifeLeftTurn === G.turnSeq) continue; c._lifeLeftTurn = G.turnSeq; }
+        await runFx(cfg.fx, { self: c, side });
+      }
+    }
     // 「自分の場のドン‼がドン‼デッキに戻された時」誘発（OP14-068トレーボル）。ターン1回ガード付き。
     async function fireDonReturned(side) {
       const P = G.players[side];
@@ -271,6 +283,8 @@
       attacker.rested = true;
       const aSide = attacker.owner, dSide = opp(aSide);
       if (attacker.base.type === 'LEADER' && target && target.base.type === 'CHAR') G.players[aSide]._leaderBattledTurn = G.turnSeq; // リーダーが相手キャラとバトル（OP12-020ゾロLの起動メイン条件）
+      // リーダーの onLeaderAttack: このリーダーがアタックした時（vsLeaderで相手リーダー限定。cond対応。OP12-081コアラL）
+      if (attacker.base.type === 'LEADER' && attacker.base.fx && attacker.base.fx.onLeaderAttack && !isNegated(attacker)) { const cfg = attacker.base.fx.onLeaderAttack; if ((!cfg.vsLeader || (target && target.base.type === 'LEADER')) && (!cfg.cond || checkCond(cfg.cond, aSide, attacker))) await runFx(cfg.fx, { self: attacker, side: aSide }); }
       // 【自分のターン中】このキャラがレストになった時（アタックでレスト）の誘発
       if (attacker.base.fx && attacker.base.fx.onSelfRested && !isNegated(attacker) && aSide === G.active) { await fxNote(aSide, 'レスト時', attacker.base.name); await runFx(attacker.base.fx.onSelfRested, { self: attacker, side: aSide }); }
       flog(aSide, `「${attacker.base.name}」が${target.base.type === 'LEADER' ? 'リーダー' : '「' + target.base.name + '」'}にアタック`);
@@ -369,6 +383,7 @@
           if (use) { sfx('trigger'); await fxNote(dSide, 'トリガー発動', card.base.name); flog(dSide, `【トリガー】「${card.base.name}」発動`); await runFx(card.base.fx.trigger, { self: card, side: dSide }); if (!D.chars.includes(card)) D.trash.push(reset(card)); await fireOnTrigger(dSide); }
           else { D.hand.push(card); flog(dSide, 'ライフ1枚を手札に'); }
         } else { D.hand.push(card); flog(dSide, 'ライフ1枚を手札に'); }
+        await fireLifeLeft(dSide); // ライフが手札等へ離れた時（OP12-099カルガラ）
         await checkLeaderHitLife(attacker); // このリーダーのアタックでライフダメージ（ナミ等：自分のデッキを削る）
         await checkLifeZero(dSide);          // ライフが0になった時（エネル等：デッキからライフ補充）
         await leaderOnDamage(dSide);
