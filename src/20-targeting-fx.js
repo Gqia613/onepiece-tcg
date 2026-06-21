@@ -174,11 +174,11 @@
         }
         case 'restChar': {
           const restPool = () => { let arr = oppChars(side, opFilter(op)).filter(c => !c.rested && !isRestImmune(c) && !isOppRestImmune(c)); if (op.includeLeader && !G.players[o].leader.rested) arr = [G.players[o].leader, ...arr]; if (op.includeStage && G.players[o].stage && !G.players[o].stage.rested) arr = [...arr, G.players[o].stage]; return arr; };
-          if (op.all) { for (const t of restPool()) { t.rested = true; flog(side, `「${t.base.name === undefined ? '相手リーダー' : t.base.name}」をレスト`); } break; } // 条件一致を全てレスト
+          if (op.all) { const rs = restPool(); for (const t of rs) { t.rested = true; flog(side, `「${t.base.name === undefined ? '相手リーダー' : t.base.name}」をレスト`); } if (rs.length) await fireOwnRest(side); break; } // 条件一致を全てレスト
           for (let i = 0; i < (op.count || 1); i++) {
             const cands = restPool();
             const t = await chooseCard(side, cands, progText('レストにする相手キャラを選択', i, op.count || 1), 'oppBig', op.optional);
-            if (!t) break; t.rested = true; flog(side, `「${t.base.name}」をレスト`);
+            if (!t) break; t.rested = true; flog(side, `「${t.base.name}」をレスト`); await fireOwnRest(side);
             if (t.base.fx && t.base.fx.onOppRested && !isNegated(t) && t.owner !== side && self && self.base && self.base.type === 'CHAR') { await runFx(t.base.fx.onOppRested, { self: t, side: t.owner }); } // 「相手のキャラの効果でレストになった時」(OP14-070バッファロー。効果源=ctx.self がキャラの時のみ)
           }
           break;
@@ -298,6 +298,19 @@
         // 場のキャラ1枚を持ち主のライフ上に裏向きで加える（OP12-117破壊弦。side:'any'=自分/相手両方が対象）
         case 'charToLife': { const cands = op.side === 'any' ? [...oppChars(side, opFilter(op)), ...P.chars.filter(c => matchFilter(c, opFilter(op)))] : oppChars(side, opFilter(op)); const t = await chooseCard(side, cands, 'ライフに加えるキャラを選択', 'oppBig', op.optional); if (t) { const ow2 = G.players[t.owner]; removeChar(t); const card2 = reset(t); if (op.faceUp) card2._faceUp = true; const bottom = op.pos === 'bottom'; if (bottom) ow2.life.push(card2); else ow2.life.unshift(card2); flog(side, `「${t.base.name}」を${t.owner === side ? '自分' : '相手'}のライフ${bottom ? '下' : '上'}に${op.faceUp ? '表向きで' : ''}加えた`); render(); } break; } // faceUp=表向き / pos:'bottom'（OP11-116人魚柔術）
         case 'handToLife': { if (P.hand.length) { const c = P.hand.slice().sort((a, b) => (a.base.counter || 0) - (b.base.counter || 0))[0]; P.hand.splice(P.hand.indexOf(c), 1); P.life.unshift(faceDown(c)); flog(side, '手札1枚をライフの上に置いた'); } break; }
+        // 手札からfilter一致のキャラ1枚を選び、自分のライフの上に加える（faceUp=表向き）。OP10-103/107/119
+        case 'handCharToLife': {
+          const cands = P.hand.filter(x => x.base.type === 'CHAR' && matchFilter(x, op.filter || {}));
+          if (!cands.length) break;
+          const c = P.isCPU ? cands.slice().sort((a, b) => (b.base.cost || 0) - (a.base.cost || 0))[0] : await chooseFromHand(side, cands, 'ライフの上に加えるキャラを選択（任意）', null, true);
+          if (!c) break; P.hand.splice(P.hand.indexOf(c), 1); c._faceUp = !!op.faceUp; P.life.unshift(c); flog(side, `手札の「${c.base.name}」をライフの上に${op.faceUp ? '表向きで' : '裏向きで'}加えた`); render(); break;
+        }
+        // このキャラをレストにするコスト（OP10-112キッド登場時）。既にレストなら不発。then実行。
+        case 'restSelfCost': {
+          if (!self || self.rested) break;
+          if (!(await confirmUse(side, '自身をレスト', `「${self.base.name}」をレストにして効果を使いますか？`, 'レストして使う', '使わない'))) break;
+          self.rested = true; flog(side, `「${self.base.name}」をレストにした`); render(); await runFx(op.then, ctx); break;
+        }
         case 'handToBottom': {
           for (let i = 0; i < (op.n || 1); i++) {
             if (!P.hand.length) break;
@@ -541,6 +554,7 @@
             const cc = ownChars(side, opFilter(op)).filter(c => c.rested);
             const t = P.isCPU ? cc[0] : await chooseCard(side, cc, 'アクティブにする自分のキャラを選択', 'ownBig', op.optional);
             if (!t) break; t.rested = false; flog(side, `「${t.base.name}」をアクティブにした`);
+            if (op.grantKw) { t.kwGrant.push({ kw: op.grantKw, dur: durTag(op.grantDuration, 'turn') }); flog(side, `「${t.base.name}」に【${kwJa(op.grantKw)}】`); } // アクティブ化＋キーワード付与（OP10-099キッドL＝ブロッカー）
           }
           render(); break;
         }
@@ -823,7 +837,7 @@
           if (op.filter) cands = cands.filter(c => matchFilter(c, op.filter));
           if (op.needsTrigger) cands = cands.filter(c => c.base.fx && c.base.fx.trigger); // 【トリガー】を持つキャラ限定
           const c = await chooseCard(side, cands, 'トラッシュから登場させるキャラ', 'ownBig', true);
-          if (c) { P.trash.splice(P.trash.indexOf(c), 1); await summon(side, c, false, 'trash'); if (op.grantKw && P.chars.includes(c)) c.kwGrant.push({ kw: op.grantKw, dur: durTag(op.grantDuration, 'turn') }); if (op.returnEndTurn && P.chars.includes(c)) (G._pendingTurnEnd = G._pendingTurnEnd || []).push({ side, self: c, fx: [{ op: '_returnCardBottom', uid: c.uid }] }); } // returnEndTurn=このターン終了時に持ち主のデッキ下（OP11-092ヘルメッポ）
+          if (c) { P.trash.splice(P.trash.indexOf(c), 1); await summon(side, c, false, 'trash'); if (op.rested && P.chars.includes(c)) c.rested = true; if (op.grantKw && P.chars.includes(c)) c.kwGrant.push({ kw: op.grantKw, dur: durTag(op.grantDuration, 'turn') }); if (op.returnEndTurn && P.chars.includes(c)) (G._pendingTurnEnd = G._pendingTurnEnd || []).push({ side, self: c, fx: [{ op: '_returnCardBottom', uid: c.uid }] }); } // rested=レストで登場（OP10-090フランキー）／returnEndTurn=このターン終了時に持ち主のデッキ下（OP11-092ヘルメッポ）
           break;
         }
         case '_returnCardBottom': { for (const sd of ['me', 'cpu']) { const PP = G.players[sd]; const c = PP.chars.find(x => x.uid === op.uid); if (c) { removeChar(c); G.players[c.owner].deck.push(reset(c)); flog(side, `「${c.base.name}」を持ち主のデッキの下に置いた`); render(); break; } } break; } // 指定uidのキャラをデッキ下（ヘルメッポのターン終了時返却）
@@ -873,6 +887,8 @@
       if (cause === 'ko' && isKoImmune(target)) { flog(target.owner, `「${target.base.name}」は相手の効果ではKOされない`); return true; }
       // 一時的な「自分の元々パワーN以下のキャラは相手の効果でKOされない」（OP10-070トレーボル＝次相手ターン終了まで）
       if (cause === 'ko') { const wk = G.players[target.owner] && G.players[target.owner]._weakKoImmune; if (wk && G.turnSeq <= wk.until && (target.base.power || 0) <= wk.maxBasePower) { flog(target.owner, `「${target.base.name}」は元々パワー${wk.maxBasePower}以下なので相手の効果でKOされない`); return true; } }
+      // 「このキャラはバトルでKOされない」常在（condBuff battleImmune・cond対応。OP10-104カリブー）
+      if (cause === 'battle' && !isNegated(target)) { const st = target.base.fx && target.base.fx.static; if (st) for (const o of st) { if (o.op === 'condBuff' && o.battleImmune && (!o.cond || checkCond(o.cond, target.owner, target))) { flog(target.owner, `「${target.base.name}」はバトルではKOされない`); return true; } } }
       // 「相手の元々パワーN以下のキャラの効果でKOされない」(OP14-003ベッジ。source=KO元のキャラ)
       if (cause === 'ko' && source && source.base && !isNegated(target)) {
         const st = target.base.fx && target.base.fx.static;
@@ -930,6 +946,9 @@
           if (p === target || p.rested) continue;
           if (!(await confirmUse(target.owner, `【${p.base.name}】身代わり`, `「${p.base.name}」をレストにして「${target.base.name}」を場に残しますか？`, '残す（このキャラをレスト）', '残さない'))) continue;
           p.rested = true; flog(target.owner, `【${p.base.name}】自身をレストにして「${target.base.name}」を場に残した`); render(); return true;
+        } else if (prot.pay === 'free') {
+          // コスト無しで場を離れない（OP10-118ルフィ＝ターン1回相手の効果でKOされない。once:'turn'は上のゲートで消化済）
+          flog(target.owner, `「${target.base.name}」は相手の効果で離れない`); return true;
         } else if (prot.pay === 'restActiveDon') {
           // 代わりにアクティブのドンN枚をレストにして target を場に残す（OP10-074ピーカ）
           const n = prot.n || 2; if (ow.don.active < n) continue;

@@ -1245,6 +1245,8 @@ window.CARD_FX = {
   "OP10-034": {"static":[{"op":"leaveProtect","targetSelf":true,"includeBattle":true,"once":"turn","pay":"lifeToHand"}]},
   // OP10-035 ブルック: 【KO時】相手のリーダーかコスト5以下1枚をレスト
   "OP10-035": {"onKO":[{"op":"restChar","side":"opp","filter":{"maxCost":5},"includeLeader":true,"count":1,"optional":true}]},
+  // OP10-036 ペローナ: 【自分のターン中】【ターン1回】キャラが自分の効果でレストになった時、ドン1アクティブ
+  "OP10-036": {"onOwnRest":{"when":"selfTurn","once":"turn","fx":[{"op":"donActivate","n":1}]}},
   // OP10-037 リム: このキャラが相手効果で離れる場合 代わりにODYSSEY1枚をレスト ／【自分のターン終了時】ODYSSEY1枚をアクティブ
   "OP10-037": {"static":[{"op":"leaveProtect","targetSelf":true,"once":"turn","pay":"restOwnCards","n":1,"filter":{"traitIncludes":"ODYSSEY"}}],"onTurnEnd":[{"op":"activateOwnChar","count":1,"filter":{"restedOnly":true,"traitIncludes":"ODYSSEY"}}]},
   // OP10-038 ロロノア・ゾロ: 【相手のターン中】レストのキャラ2枚以上で +2000
@@ -1322,5 +1324,75 @@ window.CARD_FX = {
   // OP10-080 小熊玩具: 【カウンター】リーダーかキャラ+4000→ドン7以上かつ手札5以下なら1ドロー
   "OP10-080": {"counter":{"cost":0,"fx":[{"op":"powerMod","side":"self","leader":true,"amount":4000,"battle":true,"count":1,"optional":true},{"op":"cond","check":{"and":[{"donAtLeast":7},{"selfHandAtMost":5}]},"then":[{"op":"draw","n":1}]}]}},
   // OP10-081 ウソップ(c4): 【登場時】ドレスローザのリーダー/ステージをレスト：相手コスト2以下1枚KO→デッキ上2枚トラッシュ
-  "OP10-081": {"onPlay":[{"op":"restOwnAsCost","filter":{"traitIncludes":"ドレスローザ","or":[{"type":"LEADER"},{"type":"STAGE"}]},"then":[{"op":"ko","side":"opp","filter":{"maxCost":2},"count":1,"optional":true},{"op":"deckToTrash","n":2}]}]}
+  "OP10-081": {"onPlay":[{"op":"restOwnAsCost","filter":{"traitIncludes":"ドレスローザ","or":[{"type":"LEADER"},{"type":"STAGE"}]},"then":[{"op":"ko","side":"opp","filter":{"maxCost":2},"count":1,"optional":true},{"op":"deckToTrash","n":2}]}]},
+  /* ===== OP10 バッチ5（黒・082-099。黒ひげ/ドレスローザ起動メイン） ===== */
+  // OP10-082 クザン(黒): 相手効果で場を離れない ／【起動メイン】自身トラッシュ：1ドロー→トラッシュから「クザン」以外のコスト5以下黒ひげを登場
+  "OP10-082": {"static":[{"op":"condBuff","immune":true}],"act":{"label":"自身トラッシュ:1ドロー＋黒ひげ蘇生","cost":{},"fx":[{"op":"trashSelfCost","then":[{"op":"draw","n":1},{"op":"reviveFromTrash","maxCost":5,"filter":{"traitIncludes":"黒ひげ海賊団","nameExcludes":"クザン"}}]}]}},
+  // OP10-083 光月モモの助(黒c2): 【起動メイン】自身＋ドレスローザのリーダー/ステージをレスト：相手キャラ1枚をコスト-2
+  "OP10-083": {"act":{"label":"自身+ドレスローザをレスト:相手コスト-2","cost":{"restSelf":true},"fx":[{"op":"restOwnAsCost","filter":{"traitIncludes":"ドレスローザ","or":[{"type":"LEADER"},{"type":"STAGE"}]},"then":[{"op":"addCostBuff","side":"opp","count":1,"amount":-2,"duration":"turn","optional":true}]}]}},
+  // OP10-085 ジーザス・バージェス: 【ドン×1】トラッシュ8枚以上で【速攻】
+  "OP10-085": {"static":[{"op":"staticKeyword","kw":"rush","cond":{"and":[{"donX1":true},{"trashAtLeast":8}]}}]},
+  // OP10-086 シリュウ: 【相手のターン中】+2000 ／【起動メイン】【ターン1回】黒ひげリーダーでこのキャラ登場ターンなら相手の元々コスト3以下1枚KO
+  "OP10-086": {"static":[{"op":"condBuff","cond":{"oppTurn":true},"power":2000}],"act":{"label":"黒ひげ＆登場ターン:相手元々コスト3以下KO","cost":{},"fx":[{"op":"cond","check":{"and":[{"leaderTraitIncludes":"黒ひげ海賊団"},{"selfSummonedThisTurn":true}]},"then":[{"op":"ko","side":"opp","filter":{"maxBaseCost":3},"count":1,"optional":true}]}]}},
+  // OP10-087 トニートニー・チョッパー(黒c2): 【起動メイン】自身＋ドレスローザのリーダー/ステージをレスト：相手手札5以上なら相手1枚捨て→デッキ上2枚トラッシュ
+  "OP10-087": {"act":{"label":"自身+ドレスローザをレスト:相手手札破壊","cost":{"restSelf":true},"fx":[{"op":"restOwnAsCost","filter":{"traitIncludes":"ドレスローザ","or":[{"type":"LEADER"},{"type":"STAGE"}]},"then":[{"op":"cond","check":{"oppHandAtLeast":5},"then":[{"op":"oppDiscard","n":1}]},{"op":"deckToTrash","n":2}]}]}},
+  // OP10-088 ナミ(黒c2): 【起動メイン】自身＋ドレスローザのリーダー/ステージをレスト：1ドロー→デッキ上2枚トラッシュ
+  "OP10-088": {"act":{"label":"自身+ドレスローザをレスト:1ドロー","cost":{"restSelf":true},"fx":[{"op":"restOwnAsCost","filter":{"traitIncludes":"ドレスローザ","or":[{"type":"LEADER"},{"type":"STAGE"}]},"then":[{"op":"draw","n":1},{"op":"deckToTrash","n":2}]}]}},
+  // OP10-090 フランキー(黒): 【ブロッカー】 ／【KO時】トラッシュからコスト3以下ドレスローザをレストで登場
+  "OP10-090": {"onKO":[{"op":"reviveFromTrash","maxCost":3,"rested":true,"filter":{"traitIncludes":"ドレスローザ"}}]},
+  // OP10-091 ブルック(黒c3): 【起動メイン】自身＋ドレスローザのリーダー/ステージをレスト：相手コスト1以下1枚KO→デッキ上2枚トラッシュ
+  "OP10-091": {"act":{"label":"自身+ドレスローザをレスト:相手1以下KO","cost":{"restSelf":true},"fx":[{"op":"restOwnAsCost","filter":{"traitIncludes":"ドレスローザ","or":[{"type":"LEADER"},{"type":"STAGE"}]},"then":[{"op":"ko","side":"opp","filter":{"maxCost":1},"count":1,"optional":true},{"op":"deckToTrash","n":2}]}]}},
+  // OP10-092 ペローナ(黒): 【起動メイン】【ターン1回】トラッシュからスリラーバーク2枚をデッキ下：「ペローナ」以外のキャラ1枚を+2000
+  "OP10-092": {"act":{"label":"スリラーバーク2枚デッキ下:他キャラ+2000","cost":{},"fx":[{"op":"trashToBottomCost","n":2,"filter":{"traitIncludes":"スリラーバーク海賊団"},"then":[{"op":"powerMod","side":"self","amount":2000,"duration":"turn","count":1,"optional":true,"filter":{"nameExcludes":"ペローナ"}}]}]}},
+  // OP10-093 ホーミング聖: 【起動メイン】自身トラッシュ：自分の黒キャラ1枚を次相手ターン終了までコスト+3
+  "OP10-093": {"act":{"label":"自身トラッシュ:黒キャラをコスト+3","cost":{},"fx":[{"op":"trashSelfCost","then":[{"op":"addCostBuff","side":"self","count":1,"amount":3,"duration":"untilNextEnd","optional":true,"filter":{"color":"黒"}}]}]}},
+  // OP10-094 リューマ: 【ドン×1】【ダブルアタック】
+  "OP10-094": {"static":[{"op":"staticKeyword","kw":"doubleAttack","cond":{"donX1":true}}]},
+  // OP10-095 ロロノア・ゾロ(黒c4): 【登場時】ドレスローザのリーダー/ステージをレスト：相手コスト4以下1枚KO→デッキ上2枚トラッシュ
+  "OP10-095": {"onPlay":[{"op":"restOwnAsCost","filter":{"traitIncludes":"ドレスローザ","or":[{"type":"LEADER"},{"type":"STAGE"}]},"then":[{"op":"ko","side":"opp","filter":{"maxCost":4},"count":1,"optional":true},{"op":"deckToTrash","n":2}]}]},
+  // OP10-096 王下七武海はもう要らねェ…!!!: 【メイン】相手のコスト8以下の王下七武海1枚KO
+  "OP10-096": {"main":{"fx":[{"op":"ko","side":"opp","filter":{"traitIncludes":"王下七武海","maxCost":8},"count":1,"optional":true}]}},
+  // OP10-097 ゴムゴムの犀榴弾砲: 【メイン】ドレスローザ1枚を+2000→トラッシュ10枚以上なら【バニッシュ】(近似:対象は再選択)
+  "OP10-097": {"main":{"fx":[{"op":"powerMod","side":"self","amount":2000,"duration":"turn","count":1,"optional":true,"filter":{"traitIncludes":"ドレスローザ"}},{"op":"cond","check":{"trashAtLeast":10},"then":[{"op":"giveKeyword","target":"chooseOwn","kw":"banish","duration":"turn","filter":{"traitIncludes":"ドレスローザ"}}]}]}},
+  // OP10-098 解放: 【メイン】自分のキャラが相手より2枚以上少ないなら 相手の元々コスト6以下1枚＋コスト4以下1枚KO
+  "OP10-098": {"main":{"fx":[{"op":"cond","check":{"selfCharsFewerBy":2},"then":[{"op":"ko","side":"opp","filter":{"maxBaseCost":6},"count":1,"optional":true},{"op":"ko","side":"opp","filter":{"maxBaseCost":4},"count":1,"optional":true}]}]}},
+  // OP10-099 ユースタス・キッド LEADER: 【自分のターン終了時】ライフ上1枚を表向き：コスト3〜8の超新星1枚をアクティブにし次相手ターン終了まで【ブロッカー】
+  "OP10-099": {"onTurnEnd":[{"op":"flipLifeCost","then":[{"op":"activateOwnChar","count":1,"filter":{"traitIncludes":"超新星","minCost":3,"maxCost":8,"restedOnly":true},"grantKw":"blocker","grantDuration":"untilNextEnd"}]}]},
+  /* ===== OP10 バッチ6（黄・100-119。超新星＝ライフ操作） ===== */
+  // OP10-100 イナズマ: 【ドン×1】【アタック時】お互いのライフ合計以下のコストの相手キャラ1枚をレスト
+  "OP10-100": {"onAttack":[{"op":"cond","check":{"donX1":true},"then":[{"op":"restChar","side":"opp","filter":{"maxCostFrom":"totalLife"},"count":1,"optional":true}]}]},
+  // OP10-102 エンポリオ・イワンコフ: 【起動メイン】【ターン1回】革命軍3枚を+1000→ライフ上1枚を手札に
+  "OP10-102": {"act":{"label":"革命軍3枚+1000→ライフ手札","cost":{},"fx":[{"op":"powerMod","side":"self","amount":1000,"duration":"turn","count":3,"optional":true,"filter":{"traitIncludes":"革命軍"}},{"op":"lifeToHand","n":1}]}},
+  // OP10-103 カポネ・ベッジ(黄): 【登場時】ライフ上か下1枚を手札に：手札から超新星キャラ1枚をライフ上に表向きで加える
+  "OP10-103": {"onPlay":[{"op":"lifeCost","pos":"choose","then":[{"op":"handCharToLife","faceUp":true,"filter":{"traitIncludes":"超新星"}}]}]},
+  // OP10-104 カリブー: 【ドン×1】超新星リーダーかつ相手ライフ3以上で このキャラはバトルでKOされない
+  "OP10-104": {"static":[{"op":"condBuff","battleImmune":true,"cond":{"and":[{"donX1":true},{"leaderTraitIncludes":"超新星"},{"oppLifeAtLeast":3}]}}]},
+  // OP10-106 キラー: 【KO時】超新星リーダーなら デッキ上3枚から超新星かキッド海賊団1枚を手札に
+  "OP10-106": {"onKO":[{"op":"cond","check":{"leaderTraitIncludes":"超新星"},"then":[{"op":"search","look":3,"count":1,"filter":{"or":[{"traitIncludes":"超新星"},{"traitIncludes":"キッド海賊団"}]},"optional":true}]}]},
+  // OP10-107 ジュエリー・ボニー: 【ブロッカー】 ／【登場時】ライフ上か下1枚を手札に：手札からコスト5の超新星キャラ1枚をライフ上に表向きで加える
+  "OP10-107": {"onPlay":[{"op":"lifeCost","pos":"choose","then":[{"op":"handCharToLife","faceUp":true,"filter":{"traitIncludes":"超新星","cost":5}}]}]},
+  // OP10-108 スクラッチメン・アプー: 「アプー」以外の自分の黄・超新星がいれば【ブロッカー】を得る
+  "OP10-108": {"static":[{"op":"staticKeyword","kw":"blocker","cond":{"selfCharOther":{"filter":{"color":"黄","traitIncludes":"超新星"}}}}]},
+  // OP10-109 バジル・ホーキンス: 【KO時】相手のライフ上1枚をトラッシュ
+  "OP10-109": {"onKO":[{"op":"lifeTrash","side":"opp"}]},
+  // OP10-110 ヒート＆ワイヤー: 【登場時】相手のライフ枚数以下のコストの相手キャラ1枚をレスト
+  "OP10-110": {"onPlay":[{"op":"restChar","side":"opp","filter":{"maxCostFrom":"oppLife"},"count":1,"optional":true}]},
+  // OP10-111 モンキー・D・ルフィ(c1): 【登場時】デッキ上5枚から「ルフィ」以外の超新星1枚を手札に
+  "OP10-111": {"onPlay":[{"op":"search","look":5,"count":1,"filter":{"traitIncludes":"超新星"},"exclude":"モンキー・D・ルフィ","optional":true}]},
+  // OP10-112 ユースタス・キッド(c8): 【登場時】このキャラをレスト：相手ライフ上1枚をトラッシュ ／【自分のターン終了時】相手ライフ2枚以下なら1ドロー＋手札1枚捨て
+  "OP10-112": {"onPlay":[{"op":"restSelfCost","then":[{"op":"lifeTrash","side":"opp"}]}],"onTurnEnd":[{"op":"cond","check":{"oppLifeAtMost":2},"then":[{"op":"draw","n":1},{"op":"discardCost","count":1}]}]},
+  // OP10-113 ロロノア・ゾロ(c3): 自分のライフが相手より少ないと【速攻】
+  "OP10-113": {"static":[{"op":"staticKeyword","kw":"rush","cond":{"selfLifeLessThanOpp":true}}]},
+  // OP10-114 X・ドレーク: 【起動メイン】このキャラをレスト：自ライフが相手以下なら相手コスト4以下1枚レスト
+  "OP10-114": {"act":{"label":"自身レスト:ライフ劣勢なら相手4以下レスト","cost":{"restSelf":true},"fx":[{"op":"cond","check":{"selfLifeLEOpp":true},"then":[{"op":"restChar","side":"opp","filter":{"maxCost":4},"count":1,"optional":true}]}]}},
+  // OP10-115 “新世界”で会おうぜ: 【カウンター】リーダーかキャラ+4000→自ライフ0なら1ドロー
+  "OP10-115": {"counter":{"cost":0,"fx":[{"op":"powerMod","side":"self","leader":true,"amount":4000,"battle":true,"count":1,"optional":true},{"op":"cond","check":{"lifeAtMost":0},"then":[{"op":"draw","n":1}]}]}},
+  // OP10-116 電磁砲: 【メイン】相手コスト5以下1枚KO（ライフ確認の並べ替えは簡略）
+  "OP10-116": {"main":{"fx":[{"op":"ko","side":"opp","filter":{"maxCost":5},"count":1,"optional":true}]}},
+  // OP10-117 ROOM: 【カウンター】自ライフ1枚以下なら リーダーかキャラ+3000→自分のコスト5以下1枚をアクティブに
+  "OP10-117": {"counter":{"cost":0,"fx":[{"op":"cond","check":{"lifeAtMost":1},"then":[{"op":"powerMod","side":"self","leader":true,"amount":3000,"battle":true,"count":1,"optional":true},{"op":"activateOwnChar","count":1,"filter":{"maxCost":5,"restedOnly":true}}]}]}},
+  // OP10-118 モンキー・D・ルフィ(c6): ターン1回相手効果でKOされない ／【アタック時】トラッシュ3枚をデッキ下：相手手札5以上なら相手1枚捨て
+  "OP10-118": {"static":[{"op":"leaveProtect","targetSelf":true,"onlyKO":true,"once":"turn","pay":"free"}],"onAttack":[{"op":"trashToDeckCost","n":3,"then":[{"op":"cond","check":{"oppHandAtLeast":5},"then":[{"op":"oppDiscard","n":1}]}]}]},
+  // OP10-119 トラファルガー・ロー(c7): 【登場時】手札から超新星キャラ1枚をライフ上に裏向きで加える→超新星リーダーにレストのドン1付与
+  "OP10-119": {"onPlay":[{"op":"handCharToLife","filter":{"traitIncludes":"超新星"}},{"op":"donAttach","target":"leader","n":1}]}
 };

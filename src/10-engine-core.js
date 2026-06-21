@@ -189,6 +189,7 @@
       if (c.oppRestedCardsAtLeast != null && ([O.leader, ...O.chars, O.stage].filter(x => x && x.rested).length + (O.don.rested || 0)) < c.oppRestedCardsAtLeast) return false; // 相手のレストのカードがN枚以上（OP11-023アーロン）
       if (c.selfAttachedDon && !([P.leader, ...P.chars].some(x => x && (x.attachedDon || 0) > 0))) return false; // 自分の付与されているドンがある（OP13紫の付与シナジー）
       if (c.selfLifeLEOpp && P.life.length > O.life.length) return false; // 自分のライフ枚数が相手以下（OP13-102エジソン）
+      if (c.selfLifeLessThanOpp && P.life.length >= O.life.length) return false; // 自分のライフ枚数が相手より少ない（OP10-113ゾロ）
       if (c.selfAttachedDonAtLeast != null && [P.leader, ...P.chars].reduce((s, x) => s + (x ? (x.attachedDon || 0) : 0), 0) < c.selfAttachedDonAtLeast) return false; // 自分の付与ドン合計N以上（OP12-015/024等）
       if (c.donLEOpp && donTotal(side) > donTotal(opp(side))) return false; // 自分の場のドンが相手の場のドン枚数以下（OP12-041/073/078等）
       if (c.activeDonAtMost != null && (P.don.active || 0) > c.activeDonAtMost) return false; // アクティブのドンN枚以下
@@ -223,6 +224,8 @@
       if (c.restedDonAtLeast != null && (P.don.rested || 0) < c.restedDonAtLeast) return false; // 自分のレストのドンN枚以上（OP12-021いっぽんマツ）
       if (c.selfRestedCharsAtLeast != null && P.chars.filter(ch => ch.rested).length < c.selfRestedCharsAtLeast) return false; // 自分のレストのキャラN枚以上（OP10白ひげ/エネル/ミホーク/ゾロ）
       if (c.selfCharCostSumAtLeast != null && P.chars.reduce((s, ch) => s + (ch.base.cost || 0), 0) < c.selfCharCostSumAtLeast) return false; // 自分のキャラのコスト合計N以上（OP10-022ロー）
+      if (c.selfSummonedThisTurn && !(card && card.summonedTurn === G.turnSeq)) return false; // このキャラが登場したターン（OP10-086シリュウ）
+      if (c.selfCharsFewerBy != null && !(P.chars.length <= O.chars.length - c.selfCharsFewerBy)) return false; // 自分のキャラが相手よりN枚以上少ない（OP10-098解放）
       if (c.selfTurn && G.active !== side) return false;
       if (c.oppTurn && G.active === side) return false;
       return true;
@@ -479,6 +482,7 @@
       if (f.minCost != null && _ec < f.minCost) return false;
       if (f.maxCostFrom === 'oppLife' && _ec > (G.players[card.owner] ? G.players[card.owner].life.length : 0)) return false; // 「相手のライフ枚数以下のコスト」＝対象の持ち主のライフ枚数で動的判定
       if (f.maxCostFrom === 'don' && _ec > (G.players[card.owner] ? donTotal(card.owner) : 0)) return false; // 「自分の場のドン枚数以下のコスト」（OP13-099虚の玉座）
+      if (f.maxCostFrom === 'totalLife' && _ec > ((G.players.me ? G.players.me.life.length : 0) + (G.players.cpu ? G.players.cpu.life.length : 0))) return false; // 「お互いのライフ合計枚数以下のコスト」（OP10-100イナズマ）
       if (f.maxCost != null && _ec > f.maxCost) return false;
       if (f.maxBaseCost != null && (b.cost || 0) > f.maxBaseCost) return false; // 「元々のコスト(基本コスト)N以下」＝base.costで判定(常在/一時のコスト増減を見ない)
       if (f.minBaseCost != null && (b.cost || 0) < f.minBaseCost) return false;

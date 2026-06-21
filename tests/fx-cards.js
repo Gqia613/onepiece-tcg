@@ -22,7 +22,7 @@ const { runHarness } = require('./_load-app');  // stubs+CARD_DB+CARD_FX+本体J
     require(path.join(__dirname, '..', 'cards.js'));
     require(path.join(__dirname, '..', 'cards-fx.js'));
     const DB = global.window.CARD_DB, FX = global.window.CARD_FX;
-    for (const [tag, file] of [['OP14', 'official-op14.js'], ['OP13', 'official-op13.js'], ['OP12', 'official-op12.js'], ['OP11', 'official-op11.js']]) {
+    for (const [tag, file] of [['OP14', 'official-op14.js'], ['OP13', 'official-op13.js'], ['OP12', 'official-op12.js'], ['OP11', 'official-op11.js'], ['OP10', 'official-op10.js']]) {
       const off = require(path.join(__dirname, '..', 'tools', file));
       const mismatch = [], missing = [];
       for (const no in off) {
@@ -304,6 +304,19 @@ humanPick=function(c){return Promise.resolve((c||[])[0]||null);};
         const s=G.players.cpu.chars.find(c=>c.no===wano);
         ok(s&&s.kwGrant.some(g=>g.kw==='rush'),'OP16-079: トラッシュからワノ国登場で速攻');
       } else ok(true,'OP16-079: ワノ国未検出'); }
+    // ★お玉OP16-081(act -2000)の無駄撃ち防止 actWorthUsing/candidateActions（CPUが条件未達/KO不成立で起動する問題の回帰）
+    { const mkY=(myAtk,opp,don)=>{ G.players={me:mkP('OP16-079',false),cpu:mkP('OP11-041',true)}; G.active='me';G.turnSeq=5;G.winner=null;
+        G.players.me.don.active=don||0; const ot=I('OP16-081','me');
+        G.players.me.chars=[ot,...myAtk.map(n=>I(n,'me'))]; G.players.cpu.chars=opp.map(n=>I(n,'cpu')); return ot; };
+      let ot=mkY(['OP15-067'],['OP15-067'],0);
+      ok(actWorthUsing('me',ot)===false,'お玉OP16-081: コスト8以上不在→起動しない(条件未達)');
+      ot=mkY(['OP16-098'],['OP16-096'],0); // 条件OK(相手8ヤマトc8)・だが98ヤマトP5000では-2000してもP8000をKO不可・ブロッカー無
+      ok(actWorthUsing('me',ot)===false,'お玉OP16-081: 条件OKでも-2000がKO不成立&ブロッカー無→起動しない(無駄)');
+      ok(!candidateActions('me').some(a=>a.k==='act'&&a.uid===ot.uid),'お玉OP16-081: 無駄なactはpuct候補(candidateActions)からも除外');
+      ot=mkY(['OP16-098'],['OP16-096','OP16-088'],0); // 相手にブロッカー(霜月牛マル)
+      ok(actWorthUsing('me',ot)===true,'お玉OP16-081: 相手ブロッカーがいる→起動する');
+      ot=mkY(['OP16-098'],['OP16-096','OP16-083'],0); // おでんP6000を98ヤマトP5000が-2000(→4000)でKO可
+      ok(actWorthUsing('me',ot)===true,'お玉OP16-081: -2000で初めてKO可→起動する'); }
     // OP16-089: rushChar(登場ターンにアタック可・リーダー不可)
     G.players={cpu:mkP('OP11-041',true),me:mkP('OP13-002',false)}; G.active='cpu'; G.players.cpu.turnsTaken=3;
     const mh=I('OP16-089','cpu'); mh.summonedTurn=G.turnSeq; mh.rested=false; G.players.cpu.chars=[mh];
@@ -1695,6 +1708,41 @@ humanPick=function(c){return Promise.resolve((c||[])[0]||null);};
       me.trash=[mkSyn('__sw__',C['__sw__'])]; me.trash[0].owner='me';
       await runFx([{op:'reviveFromTrash',maxCost:8,returnEndTurn:true,filter:{traitIncludes:'SWORD'}}],{self:me.leader,side:'me'});
       ok(me.chars.some(c=>c.base.no==='__sw__') && G._pendingTurnEnd.length===1, 'OP11-092: SWORD蘇生＋ターン終了時デッキ下を予約'); delete C['__sw__']; }
+
+    /* ===== OP10 新機構の回帰 ===== */
+    // OP10-024/038 selfRestedCharsAtLeast: 自分のレストのキャラ2枚以上の条件
+    { const me=LP('OP13-002'); G.players.cpu=mkP('OP11-041',true);
+      const a=I('OP10-012','me'),b=I('OP10-012','me'); a.owner='me';b.owner='me'; a.rested=true;b.rested=true; me.chars=[a,b];
+      ok(checkCond({selfRestedCharsAtLeast:2},'me',null), 'OP10: selfRestedCharsAtLeast=2 成立');
+      a.rested=false; ok(!checkCond({selfRestedCharsAtLeast:2},'me',null), 'OP10: レスト1枚では不成立'); }
+    // OP10-070 トレーボル: grantWeakKoImmune＝元々パワー1000以下が相手効果KOされない
+    { const me=LP('OP13-002'); me.isCPU=true; G.players.cpu=mkP('OP11-041',true); G.turnSeq=5;
+      const t=I('OP10-070','me'); t.owner='me'; me.chars=[t];
+      await runFx(C['OP10-070'].fx.onPlay,{self:t,side:'me'});
+      C['__w__']={no:'__w__',name:'W',type:'CHAR',color:['紫'],cost:1,power:1000,counter:1000,traits:[]};
+      const w=mkSyn('__w__',C['__w__']); w.owner='me';
+      ok(await protectFromEffect(w,'ko',G.players.cpu.leader)===true, 'OP10-070: 元々パワー1000以下は相手効果でKOされない'); delete C['__w__']; }
+    // OP10-104 カリブー: battleImmune（バトルでKOされない・条件: 超新星L＋相手ライフ3以上＋ドン×1）
+    { C['__sh__']={no:'__sh__',name:'超新星L',type:'LEADER',color:['黄'],cost:0,power:5000,life:5,traits:['超新星']};
+      G.players={me:mkP('__sh__',false),cpu:mkP('OP11-041',true)}; G.active='me'; G.turnSeq=5; G.winner=null;
+      const me=G.players.me; me.isCPU=true; G.players.cpu.life=[I('OP11-096','cpu'),I('OP11-096','cpu'),I('OP11-096','cpu')];
+      const k=I('OP10-104','me'); k.owner='me'; k.attachedDon=1; me.chars=[k];
+      ok(await protectFromEffect(k,'battle',null)===true, 'OP10-104: 条件成立でバトルKO耐性');
+      k.attachedDon=0; ok(await protectFromEffect(k,'battle',null)===false, 'OP10-104: ドン×1なしでは耐性なし'); delete C['__sh__']; }
+    // OP10-036 ペローナ: 自分の効果でキャラがレストになった時ドン1アクティブ(fireOwnRest)
+    { const me=LP('OP13-002'); me.isCPU=true; G.active='me'; G.turnSeq=5; G.players.cpu=mkP('OP11-041',true);
+      const per=I('OP10-036','me'); per.owner='me'; per._ownRestTurn=null; me.chars=[per];
+      const oc=I('OP10-012','cpu'); oc.owner='cpu'; oc.rested=false; G.players.cpu.chars=[oc];
+      me.don={active:0,rested:2};
+      await runFx([{op:'restChar',side:'opp',count:1}],{self:me.leader,side:'me'});
+      ok(me.don.active===1 && oc.rested===true, 'OP10-036: 相手キャラをレスト→ペローナでドン1アクティブ'); }
+    // OP10-100 maxCostFrom totalLife フィルタ
+    { const me=LP('OP13-002'); G.players.cpu=mkP('OP11-041',true);
+      me.life=[I('OP11-096','me')]; G.players.cpu.life=[I('OP11-096','cpu'),I('OP11-096','cpu')];
+      C['__c3__']={no:'__c3__',name:'C3',type:'CHAR',color:[],cost:3,power:3000,counter:1000,traits:[]};
+      C['__c4__']={no:'__c4__',name:'C4',type:'CHAR',color:[],cost:4,power:3000,counter:1000,traits:[]};
+      const c3=mkSyn('__c3__',C['__c3__']); c3.owner='cpu'; const c4=mkSyn('__c4__',C['__c4__']); c4.owner='cpu';
+      ok(matchFilter(c3,{maxCostFrom:'totalLife'})===true && matchFilter(c4,{maxCostFrom:'totalLife'})===false, 'OP10-100: ライフ合計3以下のコストのみ対象'); delete C['__c3__']; delete C['__c4__']; }
   }catch(e){ console.log('EXCEPTION:', e.message); fail++; }
   console.log('Phase3 fxテスト: pass='+pass+' fail='+fail);
   process.exit(fail?1:0);

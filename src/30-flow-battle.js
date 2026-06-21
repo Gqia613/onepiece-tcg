@@ -55,6 +55,19 @@
       }
     }
     // 「相手がイベントを発動した時」誘発（OP11-012フランキー/102ケイミー）。eventSide=イベントを使った側→その相手のキャラを誘発。
+    // 「キャラが自分の効果でレストになった時」誘発（OP10-036ペローナ＝自分のターン中ターン1回ドン1アクティブ）。side=効果を使った側。
+    async function fireOwnRest(side) {
+      const P = G.players[side];
+      for (const c of [...P.chars, P.leader, P.stage]) {
+        const cfg = c && c.base.fx && c.base.fx.onOwnRest;
+        if (!cfg || isNegated(c)) continue;
+        if (cfg.when === 'selfTurn' && side !== G.active) continue;
+        if (cfg.when === 'oppTurn' && side === G.active) continue;
+        if (cfg.cond && !checkCond(cfg.cond, side, c)) continue;
+        if (cfg.once === 'turn') { if (c._ownRestTurn === G.turnSeq) continue; c._ownRestTurn = G.turnSeq; }
+        await runFx(cfg.fx, { self: c, side });
+      }
+    }
     async function fireOppEvent(eventSide) {
       const oppSide = opp(eventSide), P = G.players[oppSide];
       for (const c of P.chars.slice()) {
