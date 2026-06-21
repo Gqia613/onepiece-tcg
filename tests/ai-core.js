@@ -128,6 +128,18 @@ function chk(name, cond) { if (cond) pass++; else { fail++; console.log('  ✗ '
   const wn = await playNpol(55);
   chk('npolicy 1局完走（勝者確定・フリーズ無し）', wn === 'me' || wn === 'cpu');
 
+  // 9) ★Phase2: policy-guided 決定化ロールアウト探索(puct)が実機で1局完走（小設定・clone/復元/境界価値ロールアウト統合）
+  async function playPuct(seed) {
+    G._puctDet = 1; G._puctLook = 1; G._puctWidth = 3;
+    G.players = {}; G.winner = null; G.inGame = false; seedRng(seed);
+    startGame('teach', 'enel'); G.players.me.isCPU = true; G.players.me.agent = 'puct'; G.players.cpu.agent = 'heuristic';
+    let it = 0; while (!(G.winner && !G._sim) && it < 3000000) { await new Promise(r => setImmediate(r)); it++; }
+    G._puctDet = null; G._puctLook = null; G._puctWidth = null;
+    return G.winner;
+  }
+  const wp2 = await playPuct(31);
+  chk('puct 1局完走（勝者確定・フリーズ無し）', wp2 === 'me' || wp2 === 'cpu');
+
   console.log('  AI基盤テスト: pass=' + pass + ' fail=' + fail);
   process.exit(fail ? 1 : 0);
 })();

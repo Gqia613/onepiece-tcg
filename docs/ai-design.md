@@ -227,3 +227,30 @@ OPCGは**リーダーごとに盤面の価値が違う**（カウンターの切
 - **全段を実機で実装・測定した**：A=着手不変／B=中立／C=有意に退行。**確実な強さは依然「よく調整された heuristic」**（§7と一致・既定で出荷）。
 - **足場は完成**：前向きモデル(`clone/loadGameState`)・エージェントseam(`AGENTS`)・価値NN(`mlpForward/trainMLP`)・方策NN(`polFeatures/policyPickAttack/train-policy`)・反復ループ(`improvedAttack/selfplay-iterate`)・決定的測定器・回帰(`tests/ai-core.js`)。**Pythonへの移植は「同じ特徴量・同じ着手API・同じ測定」で1:1にできる**。
 - **JSで超えられない理由の確定**：①探索が1-ply/マクロ方針止まり（深いPUCT木が無い）②価値/方策が小さな線形/MLPで mid-state にexploitable ③self-playの局数が桁違いに足りない。**①②③を同時に満たすのがAlphaZero規模＝Python/GPU**。次の一歩はそこ（§7-(C)）。
+
+## 9. Python/GPU 版（AlphaZero ルート）— 着手・進捗
+JS版で天井(§8)を確定したのを受け、**heuristicを実際に超える本命ルート**に着手。詳細・実行手順は `pytorch/README.md`。
+
+### 9.1 構成（エンジン=JSのまま橋でつなぐ）
+264枚fxを持つ検証済みエンジンをPython再実装は非現実的。よって **engine=JS(真実源)** を保ち:
+`自己対戦=Node(tools/az-export.js) → 学習=PyTorch/MPS(pytorch/train.py) → 推論=JS(mlpForward/mlpLogit)`。
+特徴量(evalFeatures17/polFeatures16)も重み形式({type,mean,std,W1,b1,W2,b2})もJSと完全一致（meta.json でDRY）。
+
+### 9.2 ✅ Phase 1（橋の検証・完了）
+- `tools/az-export.js`(Node→JSON) ＋ `pytorch/train.py`(PyTorch/MPS→JS重み) 実装。
+- 400局/value9578・policy10451 で **MPS(GPU)学習が走り、JSが重みをロードして動作**（`tests/ai-core.js` pass)。精度はJS版同等。
+- 教師=heuristic段階なので強さ≈heuristic（橋の検証が目的）。出荷src/は無改変。
+
+### 9.3 ✅ Phase 2 part1（本物のper-action探索・完了／★崩壊しない初の探索）
+- `AGENTS.puct`（`src/70-ai.js` `puctTurn`/`puctSearch`/`rolloutAfterTurn`/`priorScore`）。
+  **①方策ネット(prior)で候補を上位Wに絞る → ②各候補を「適用→heuristicで残りを打つ→相手LOOKターン→価値」で決定化K回平均評価 → ③最良の第1手を実行**、を1手ずつ再探索。既定 det=3/look=1/width=5。
+- **核心＝評価は必ず【ターン境界の価値】**（look=1で次の自分手番開始＝価値ネットの学習分布）。これが **vlook崩壊(-58pt)/Stage C退行(-25pt)を回避**。
+- 測定（同一seedペア・N=120）: **teach視点 +7.5pt(改善20/退行11 p=0.150) / enel視点 -3.3pt(15/19 p=0.608)** → 合算 改善35/退行30＝**≈heuristic（中立）だが崩壊しない・teachは弱い正**。「検証精度≠強さ・測定が正」の鉄則どおり、N=30の「両視点+6.7pt」はノイズ込みだった。
+- 位置づけ: **Phase 2 self-play の探索substrate**（各手の訪問/Qを方策ターゲットにできる）。opt-in（既定CPUはheuristic）。
+
+### 9.4 ⏭ Phase 2 part2（次・heuristic超えの鍵）— pytorch/README.md
+1. **探索を深く強く**: puctの sims/width/look を上げ、さらに**多手先の木**へ（現状は1手再探索）。深さで強さが伸びるかを `measure-matchup` で測る（teach +7.5pt が有意に届くか）。
+2. **方策ターゲット=puctの訪問数分布**（heuristicの選択でなく"探索が改善した手"）。`az-export.js` をpuct版に。
+3. **value=自己対戦の最終結果＋policy/value 2ヘッド深層ネット**（`train.py`多層化・JS推論を `layers[]` 対応に拡張）。
+4. **反復**: self-play(puct) → 学習(MPS) → 重み更新 → 強い方策で再self-play。各世代 `measure-matchup` で検証。
+- 限界（正直に）: 16GB/8コア/MPS単機は数百万局に届かない。狙いは**数万局規模の小型AlphaZero**。①深い探索②大きめネット③探索改善の方策が揃えば天井(≈heuristic)を**超える可能性**があり、超えるかは測定して初めて分かる。

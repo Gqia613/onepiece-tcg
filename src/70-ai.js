@@ -399,6 +399,66 @@
       try { return await heuristicTurn(side); } finally { G._polImprove = false; }
     }
     AGENTS.npimprove = { takeTurn: npimproveTurn };  // P.agent='npimprove'（1-ply価値先読みの教師方策）
+
+    /* ===== Phase 2（Python/GPUルート）: policy-guided 決定化ロールアウト探索（per-action・本物の探索の第1版） =====
+       ①方策ネット(prior)で候補手を上位Wに絞る → ②各候補を「適用→heuristicで残りを打つ→相手LOOKターン→価値」で
+       決定化K回平均評価 → ③最良の第1手を実行、を1手ずつ繰り返す。
+       ★vlook崩壊(mid-state価値をgreedy)を避ける核心＝評価は必ず【ターン境界の価値】（look=1で次の自分手番開始＝価値ネット学習分布）。
+       ★Phase2自己対戦の方策ターゲット源（各手の訪問/Qを記録すれば AlphaZero の policy target になる）。pytorch/README.md。 */
+    function priorScore(side, a) {
+      if (a.k === 'attack') { const m = pickPolicyModel(side); if (m) return mlpLogit(m, polFeatures(side, a)); const D = G.players[opp(side)]; const tg = findCard(a.tuid); return tg ? (tg === D.leader ? 1 : 0.5) : 0; }
+      if (a.k === 'char') { const c = findCard(a.uid); return (typeof scoreChar === 'function' && c) ? scoreChar(c) / 6 : 1; }
+      if (a.k === 'event' || a.k === 'act' || a.k === 'leader' || a.k === 'stage') return 1.2;
+      return 0; // stop
+    }
+    // side のターンを「今ここで終える」前提でロールアウト: endTurn → 相手/自分 look ターン heuristic → 価値[0,1]
+    async function rolloutAfterTurn(side, look) {
+      if (!G.winner) await endTurn(side);
+      let cur = side, t = 0;
+      while (!G.winner && t < look) { cur = opp(cur); await beginTurn(cur); t++; }
+      return G.winner ? (G.winner === side ? 1 : 0) : evalWinProb(side);
+    }
+    // 1手分の探索: 候補を prior で上位Wに絞り、各を K 決定化ロールアウト平均(境界価値)で評価。Q降順 [{a,q}] を返す。
+    async function puctSearch(side, opt) {
+      const K = (opt && opt.det) || 3, LOOK = (opt && opt.look != null) ? opt.look : 1, W = (opt && opt.width) || 5;
+      const all = candidateActions(side).filter(a => a.k !== 'stop');
+      if (!all.length) return { scored: [], stop: true };
+      const top = all.map(a => ({ a, p: priorScore(side, a) })).sort((x, y) => y.p - x.p).slice(0, W).map(x => x.a);
+      const cand = [...top, { k: 'stop' }];
+      const rootClone = cloneGameState(G), saved = Object.assign({}, G), rngSave = rngState();
+      const scored = [];
+      for (const a of cand) {
+        let sum = 0;
+        for (let d = 0; d < K; d++) {
+          loadGameState(determinize(rootClone, side));
+          G.players.me.isCPU = true; G.players.cpu.isCPU = true;
+          G._sim = true; G._noChain = true;
+          try {
+            if (a.k !== 'stop') { await applyAction(side, a); if (!G.winner) await heuristicTurn(side); }
+            sum += await rolloutAfterTurn(side, LOOK);
+          } finally { G._sim = false; G._noChain = false; }
+        }
+        scored.push({ a, q: sum / K });
+      }
+      for (const k of Object.keys(G)) delete G[k]; Object.assign(G, saved); rngState(rngSave);
+      scored.sort((x, y) => y.q - x.q);
+      return { scored, stop: false };
+    }
+    async function puctTurn(side) {
+      if (G._sim) return heuristicTurn(side);                          // 入れ子探索＝指数爆発を防ぐ
+      const opt = { det: G._puctDet || 3, look: G._puctLook != null ? G._puctLook : 1, width: G._puctWidth || 5 };
+      let guard = 0;
+      while (guard++ < 14 && !G.winner) {
+        const r = await puctSearch(side, opt);
+        if (r.stop || !r.scored.length) break;
+        const best = r.scored[0];
+        if (best.a.k === 'stop') break;                               // どの手も「今終える」を上回らない
+        await applyAction(side, best.a);                              // 最良の第1手を本番実行
+        if (G.winner) return;
+      }
+    }
+    AGENTS.puct = { takeTurn: puctTurn };   // P.agent='puct'（policy-guided 決定化ロールアウト探索）
+
     if (typeof window !== 'undefined') { window.polFeatures = polFeatures; window.legalActions = legalActions; window.POL_FEAT = POL_FEAT; window.improvedAttack = improvedAttack; }
 
     // 外部（テスト/将来のMCTS）から使えるよう公開（ブラウザ・Node両対応）。

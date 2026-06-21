@@ -44,13 +44,17 @@ OPCG_AGENT=npolicy node tools/measure-matchup.js     # 強さ測定（同一seed
 - 400局/value 9578・policy 10451 サンプルで学習。**MPS(GPU)で学習が走り、JSが重みをロードして動作**（`tests/ai-core.js` pass=20 fail=0）。
 - 精度は JS版と同等（value acc 0.69〜0.92 / policy top1 0.78〜0.91）。**この段階は教師=heuristicなので強さは ≈heuristic**（橋の検証が目的）。
 
-### ⏭ Phase 2（次・ここが heuristic を超える鍵）
-1. **本物の per-action PUCT 木探索を JS に実装**（`src/70-ai.js`）。prior=policyネット, leaf=valueネット, 不完全情報は **determinize(PIMC/IS-MCTS)**。
-   既存の「1-ply / マクロ方針」を置換。探索数（sims/move）で強さが伸びる本物の探索。
-2. **方策ターゲット = PUCT の訪問数分布**（heuristicの選択ではなく「探索が改善した手」）。`az-export.js` を PUCT 版に。
-3. **value ターゲット = 自己対戦の最終結果**（既に対応）。**policy/value 2ヘッド・共有trunk**の深いネットへ（`train.py` を多層化）。
-4. **反復**: self-play(PUCT) → 学習(MPS) → 重み更新 → 強くなった方策で再 self-play。各世代 `measure-matchup` で検証。
-5. JS推論を**多層対応**に拡張（`mean,std,layers:[{W,b,act}]`）。深いネットを載せる。
+### ✅ Phase 2 part1（本物のper-action探索・完了）— ★崩壊しない初の探索
+- `AGENTS.puct`（`src/70-ai.js`）。**方策ネット(prior)で候補を絞り → 各候補を「適用→heuristicで残りを打つ→相手LOOKターン→価値」で決定化K回平均評価 → 最良の第1手を実行**、を1手ずつ再探索。
+- **核心＝評価は必ずターン境界の価値**（look=1＝次の自分手番開始＝価値ネット学習分布）。これで **vlook崩壊(-58pt)/Stage C退行(-25pt)を回避**。
+- 測定（同一seedペア N=120）: **teach +7.5pt(p=0.15) / enel -3.3pt(p=0.61)** ＝ **≈heuristic（中立）だが崩壊しない・teachは弱い正**。
+- 使い方: `OPCG_AGENT=puct node tools/measure-matchup.js`。対人UIは `G.players.cpu.agent='puct'`（既定はheuristic）。
+
+### ⏭ Phase 2 part2（次・heuristic超えの鍵）
+1. **探索を深く強く**: puctの sims/width/look を上げ、**多手先の木**へ（現状は1手再探索）。teach +7.5pt が有意に届くかを `measure-matchup` で測る。
+2. **方策ターゲット = puct の訪問数分布**（heuristicの選択ではなく「探索が改善した手」）。`az-export.js` を puct 版に。
+3. **value=自己対戦の最終結果＋policy/value 2ヘッド深層ネット**（`train.py` 多層化）。JS推論を `layers:[{W,b,act}]` 対応に拡張。
+4. **反復**: self-play(puct) → 学習(MPS) → 重み更新 → 強い方策で再self-play。各世代 `measure-matchup` で検証。
 
 ### 想定と限界（正直に）
 - 16GB/8コア/MPS の単機では **AlphaZero の「数百万局」には届かない**。狙うのは数万局規模の小型AlphaZero。
