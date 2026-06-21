@@ -1656,5 +1656,71 @@ window.CARD_FX = {
   // OP08-040 アトモス: 【登場時】手札から白ひげ2枚を公開：白ひげリーダーなら相手コスト4以下1枚を手札に戻す
   "OP08-040": {"onPlay":[{"op":"revealCost","count":2,"filter":{"traitIncludes":"白ひげ海賊団"},"then":[{"op":"cond","check":{"leaderTraitIncludes":"白ひげ海賊団"},"then":[{"op":"bounce","side":"opp","maxCost":4,"count":1,"optional":true}]}]}]},
   // OP08-041 アフェランドラ: 【起動メイン】このキャラを手札に戻す：九蛇海賊団リーダーなら相手コスト1以下1枚をデッキ下
-  "OP08-041": {"act":{"label":"自身を手札へ:九蛇なら相手1以下デッキ下","cost":{},"fx":[{"op":"bounceSelfCost","then":[{"op":"cond","check":{"leaderTraitIncludes":"九蛇海賊団"},"then":[{"op":"deckBottom","side":"opp","filter":{"maxCost":1},"count":1,"optional":true}]}]}]}}
+  "OP08-041": {"act":{"label":"自身を手札へ:九蛇なら相手1以下デッキ下","cost":{},"fx":[{"op":"bounceSelfCost","then":[{"op":"cond","check":{"leaderTraitIncludes":"九蛇海賊団"},"then":[{"op":"deckBottom","side":"opp","filter":{"maxCost":1},"count":1,"optional":true}]}]}]}},
+  /* ===== OP08 バッチ3（青・042-061＝白ひげ/百獣/ビッグマム） ===== */
+  // OP08-042 エドワード・ウィーブル: 【ドン×1】【アタック時】コスト3以下1枚を手札に戻す
+  "OP08-042": {"onAttack":[{"op":"cond","check":{"donX1":true},"then":[{"op":"bounce","side":"any","maxCost":3,"count":1,"optional":true}]}]},
+  // OP08-044 キングデュー: 【起動メイン】【ターン1回】手札から白ひげ2枚を公開：このキャラ+2000
+  "OP08-044": {"act":{"label":"白ひげ2枚公開:このキャラ+2000","cost":{},"fx":[{"op":"revealCost","count":2,"filter":{"traitIncludes":"白ひげ海賊団"},"then":[{"op":"powerMod","side":"self","target":"self","amount":2000,"duration":"turn"}]}]}},
+  // OP08-045 サッチ: KO/相手効果離脱の代わりにトラッシュへ置き1ドロー
+  "OP08-045": {"static":[{"op":"leaveProtect","targetSelf":true,"pay":"trashSelfDraw","draw":1}],"onKO":[{"op":"draw","n":1}]},
+  // OP08-046 シャクヤク: 【自分のターン中】【ターン1回】キャラが自分の効果で離れた時、相手手札5以上なら相手は手札1枚をデッキ下→このキャラをレスト
+  "OP08-046": {"onAllyLeave":{"when":"selfTurn","once":"turn","cause":"ownEffect","fx":[{"op":"cond","check":{"oppHandAtLeast":5},"then":[{"op":"oppHandToBottom","n":1}]},{"op":"restThis"}]}},
+  // OP08-049 スピード・ジル: 【登場時】デッキ上1枚を公開、白ひげなら このターン【速攻】
+  "OP08-049": {"onPlay":[{"op":"revealTop","filter":{"traitIncludes":"白ひげ海賊団"},"then":[{"op":"giveKeyword","target":"self","kw":"rush","duration":"turn"}]}]},
+  // OP08-051 バッキン: 【自分のターン中】【登場時】自分の「エドワード・ウィーブル」1枚を+2000
+  "OP08-051": {"onPlay":[{"op":"powerMod","side":"self","amount":2000,"duration":"turn","count":1,"optional":true,"filter":{"nameIncludes":"エドワード・ウィーブル"}}]},
+  // OP08-052 ポートガス・D・エース(c5): 【登場時】デッキ上1枚公開、コスト4以下の白ひげキャラを登場
+  "OP08-052": {"onPlay":[{"op":"playFromDeck","look":1,"filter":{"traitIncludes":"白ひげ海賊団","maxCost":4}}]},
+  // OP08-053 愛してくれて………ありがとう!!!: 【メイン】白ひげリーダーなら デッキ上3枚から白ひげか「ルフィ」1枚を手札に
+  "OP08-053": {"main":{"fx":[{"op":"cond","check":{"leaderTraitIncludes":"白ひげ海賊団"},"then":[{"op":"search","look":3,"count":1,"filter":{"or":[{"traitIncludes":"白ひげ海賊団"},{"nameIncludes":"モンキー・D・ルフィ"}]},"optional":true}]}]}},
+  // OP08-054 いきなり“キング”は取れねェだろうよい: 【カウンター】リーダーかキャラ+3000→デッキ上1枚公開しコスト3以下の白ひげキャラを登場
+  "OP08-054": {"counter":{"cost":0,"fx":[{"op":"powerMod","side":"self","leader":true,"amount":3000,"battle":true,"count":1,"optional":true},{"op":"playFromDeck","look":1,"filter":{"traitIncludes":"白ひげ海賊団","maxCost":3}}]}},
+  // OP08-055 鳳凰印: 【メイン】手札から白ひげ2枚を公開：コスト6以下1枚を持ち主のデッキ下
+  "OP08-055": {"main":{"fx":[{"op":"revealCost","count":2,"filter":{"traitIncludes":"白ひげ海賊団"},"then":[{"op":"deckBottom","side":"any","maxCost":6,"count":1,"optional":true}]}]}},
+  // OP08-056 モビー・ディック号(STAGE): 【自分のターン中】【ターン1回】白ひげキャラが効果で離れた時、1ドロー＋手札1枚をデッキへ
+  "OP08-056": {"onAllyLeave":{"when":"selfTurn","once":"turn","filter":{"traitIncludes":"白ひげ海賊団"},"fx":[{"op":"draw","n":1},{"op":"handToBottom","n":1}]}},
+  // OP08-058 シャーロット・プリン LEADER: 【アタック時】ライフ上2枚を表向き：ドンデッキからドン1レスト追加
+  "OP08-058": {"onAttack":[{"op":"flipLifeCost","n":2,"then":[{"op":"donFromDeck","n":1,"mode":"rested"}]}]},
+  // OP08-059 アルベル: 【起動メイン】自身トラッシュ：百獣リーダー＋場のドン10枚なら手札からコスト7以下「キング」1枚を登場
+  "OP08-059": {"act":{"label":"自身トラッシュ:ドン10で「キング」登場","cost":{},"fx":[{"op":"trashSelfCost","then":[{"op":"cond","check":{"and":[{"leaderTraitIncludes":"百獣海賊団"},{"donAtLeast":10}]},"then":[{"op":"playSpecificFromHand","name":"キング","filter":{"maxCost":7},"optional":true}]}]}]}},
+  // OP08-060 キング: 【登場時】ドン-1：相手の場のドン5枚以上なら このターン【速攻】
+  "OP08-060": {"onPlay":[{"op":"donMinus","n":1},{"op":"cond","check":{"oppDonAtLeast":5},"then":[{"op":"giveKeyword","target":"self","kw":"rush","duration":"turn"}]}]},
+  // OP08-061 シャーロット・オーブン: 【アタック時】ドン-1：相手コスト3以下1枚KO
+  "OP08-061": {"onAttack":[{"op":"donMinus","n":1},{"op":"ko","side":"opp","filter":{"maxCost":3},"count":1,"optional":true}]},
+  /* ===== OP08 バッチ4（紫・062-081＝ビッグマム/百獣 ドン循環） ===== */
+  // OP08-062 シャーロット・カタクリ(c2): 【起動メイン】自身トラッシュ：ビッグマムリーダーなら手札からコスト3以上かつ相手ドン以下の「カタクリ」を登場
+  "OP08-062": {"act":{"label":"自身トラッシュ:カタクリを登場","cost":{},"fx":[{"op":"trashSelfCost","then":[{"op":"cond","check":{"leaderTraitIncludes":"ビッグ・マム海賊団"},"then":[{"op":"playSpecificFromHand","nameIncludes":"シャーロット・カタクリ","filter":{"minCost":3,"maxCostFrom":"oppDon"},"optional":true}]}]}]}},
+  // OP08-063 シャーロット・カタクリ(c6): 【登場時】ライフ上1枚を裏向き：ドンデッキからドン1アクティブ追加
+  "OP08-063": {"onPlay":[{"op":"lifeFlipDownCost","then":[{"op":"donFromDeck","n":1,"mode":"active"}]}]},
+  // OP08-064 シャーロット・クラッカー: 【起動メイン】【ターン1回】ドン-1：手札から「ビスケット兵」1枚を登場
+  "OP08-064": {"act":{"label":"ドン-1:ビスケット兵を登場","cost":{},"fx":[{"op":"donMinus","n":1},{"op":"playSpecificFromHand","name":"ビスケット兵","optional":true}]}},
+  // OP08-066 シャーロット・ブリュレ: 【ブロッカー】 ／【KO時】ドンデッキからドン1レスト追加
+  "OP08-066": {"onKO":[{"op":"donFromDeck","n":1,"mode":"rested"}]},
+  // OP08-067 シャーロット・プリン(c3): 【自分のターン中】【ターン1回】ドンが戻された時、ドンデッキからドン1レスト追加
+  "OP08-067": {"onDonReturned":[{"op":"cond","once":"turn","check":{"selfTurn":true},"then":[{"op":"donFromDeck","n":1,"mode":"rested"}]}]},
+  // OP08-068 シャーロット・ペロスペロー: 【KO時】ドンデッキからドン1レスト追加
+  "OP08-068": {"onKO":[{"op":"donFromDeck","n":1,"mode":"rested"}]},
+  // OP08-069 シャーロット・リンリン(c9): 【登場時】ドン-1＋手札1枚捨て：デッキ上1枚をライフに→相手コスト6以下1枚を相手ライフに表向き
+  "OP08-069": {"onPlay":[{"op":"donMinus","n":1},{"op":"discardCost","count":1,"optional":true,"then":[{"op":"lifeAddFromDeck","n":1},{"op":"charToLife","filter":{"maxCost":6},"faceUp":true,"optional":true}]}]},
+  // OP08-070 タマゴ男爵: 【ブロッカー】 ／【KO時】ドン-1：手札からコスト5以下「ヒヨコ子爵」1枚を登場
+  "OP08-070": {"onKO":[{"op":"donMinus","n":1},{"op":"playSpecificFromHand","name":"ヒヨコ子爵","filter":{"maxCost":5},"optional":true}]},
+  // OP08-071 ニワトリ伯爵: 【相手のターン中】【KO時】ドン-1：デッキからコスト4以下「タマゴ男爵」1枚を登場しシャッフル
+  "OP08-071": {"onKO":[{"op":"cond","check":{"oppTurn":true},"then":[{"op":"donMinus","n":1},{"op":"playFromDeck","look":"all","filter":{"nameIncludes":"タマゴ男爵","maxCost":4}}]}]},
+  // OP08-073 ヒヨコ子爵: 【相手のターン中】【KO時】ドン-1：デッキからコスト6以下「ニワトリ伯爵」1枚を登場しシャッフル
+  "OP08-073": {"onKO":[{"op":"cond","check":{"oppTurn":true},"then":[{"op":"donMinus","n":1},{"op":"playFromDeck","look":"all","filter":{"nameIncludes":"ニワトリ伯爵","maxCost":6}}]}]},
+  // OP08-074 ブラックマリア: 【起動メイン】【ターン1回】他に「ブラックマリア」がいなければドン5レスト追加→ターン終了時、相手のドン枚数に合わせて自分のドンを戻す
+  "OP08-074": {"act":{"label":"ドン5レスト追加(ターン終了時に調整)","cost":{},"fx":[{"op":"cond","check":{"noSelfChar":{"nameIncludes":"ブラックマリア"}},"then":[{"op":"donFromDeck","n":5,"mode":"rested"},{"op":"scheduleTurnEnd","fx":[{"op":"donReturnToMatchOpp"}]}]}]}},
+  // OP08-075 キャンディメイデン: 【メイン】ドン-1：相手コスト2以下1枚をレスト→自分のライフをすべて裏向きに
+  "OP08-075": {"main":{"fx":[{"op":"donMinus","n":1},{"op":"restChar","side":"opp","filter":{"maxCost":2},"count":1,"optional":true},{"op":"flipAllLifeDown"}]}},
+  // OP08-076 しぬほど…おいしい♡: 【メイン】ドン1アクティブ追加→相手にパワー6000以上がいればさらにドン1アクティブ追加
+  "OP08-076": {"main":{"fx":[{"op":"donFromDeck","n":1,"mode":"active"},{"op":"cond","check":{"oppChar":{"minEffPower":6000}},"then":[{"op":"donFromDeck","n":1,"mode":"active"}]}]}},
+  // OP08-077 覇海: 【メイン】ドン-2：百獣かビッグマムリーダーなら相手コスト6以下2枚KO
+  "OP08-077": {"main":{"fx":[{"op":"donMinus","n":2},{"op":"cond","check":{"or":[{"leaderTraitIncludes":"百獣海賊団"},{"leaderTraitIncludes":"ビッグ・マム海賊団"}]},"then":[{"op":"ko","side":"opp","filter":{"maxCost":6},"count":2,"optional":true}]}]}},
+  // OP08-079 カイドウ(c9): 【起動メイン】【ターン1回】手札1枚捨て：登場ターンなら相手コスト7以下1枚KO→相手1枚捨て
+  "OP08-079": {"act":{"label":"手札1捨て:登場ターンなら相手7以下KO＋相手捨て","cost":{},"fx":[{"op":"discardCost","count":1,"optional":true,"then":[{"op":"cond","check":{"selfSummonedThisTurn":true},"then":[{"op":"ko","side":"opp","filter":{"maxCost":7},"count":1,"optional":true},{"op":"oppDiscard","n":1}]}]}]}},
+  // OP08-080 クイーン(c1): 【登場時】デッキ上5枚から「クイーン」以外の百獣1枚を手札に
+  "OP08-080": {"onPlay":[{"op":"search","look":5,"count":1,"filter":{"traitIncludes":"百獣海賊団"},"exclude":"クイーン","optional":true}]},
+  // OP08-081 ゲルニカ: 【アタック時】トラッシュから『CP』3枚をデッキ下：相手のコスト0キャラ1枚KO
+  "OP08-081": {"onAttack":[{"op":"trashToDeckCost","n":3,"filter":{"traitIncludes":"CP"},"then":[{"op":"ko","side":"opp","filter":{"cost":0},"count":1,"optional":true}]}]}
 };

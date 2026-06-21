@@ -488,6 +488,7 @@
       if (f.maxCostFrom === 'oppLife' && _ec > (G.players[card.owner] ? G.players[card.owner].life.length : 0)) return false; // 「相手のライフ枚数以下のコスト」＝対象の持ち主のライフ枚数で動的判定
       if (f.maxCostFrom === 'don' && _ec > (G.players[card.owner] ? donTotal(card.owner) : 0)) return false; // 「自分の場のドン枚数以下のコスト」（OP13-099虚の玉座）
       if (f.maxCostFrom === 'totalLife' && _ec > ((G.players.me ? G.players.me.life.length : 0) + (G.players.cpu ? G.players.cpu.life.length : 0))) return false; // 「お互いのライフ合計枚数以下のコスト」（OP10-100イナズマ）
+      if (f.maxCostFrom === 'oppDon' && _ec > (card.owner ? donTotal(opp(card.owner)) : 0)) return false; // 「相手の場のドン枚数以下のコスト」（OP08-062カタクリ）
       if (f.maxCost != null && _ec > f.maxCost) return false;
       if (f.maxBaseCost != null && (b.cost || 0) > f.maxBaseCost) return false; // 「元々のコスト(基本コスト)N以下」＝base.costで判定(常在/一時のコスト増減を見ない)
       if (f.minBaseCost != null && (b.cost || 0) < f.minBaseCost) return false;

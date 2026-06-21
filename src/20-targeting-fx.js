@@ -382,6 +382,10 @@
         }
         // 相手のアクティブのドンをN枚レストにする（OP08-030ペドロ）
         case 'restOppDon': { const O4 = G.players[o]; const n = Math.min(op.n || 1, O4.don.active); O4.don.active -= n; O4.don.rested += n; if (n) flog(side, `相手のドン${n}枚をレストにした`); render(); break; }
+        // 自分の場のドンを「相手の場のドン枚数」と同じになるまでドンデッキへ戻す（OP08-074ブラックマリア・ターン終了時）
+        case 'donReturnToMatchOpp': { const want = donTotal(o); let excess = Math.max(0, donTotal(side) - want); while (excess > 0) { if (P.don.rested > 0) P.don.rested--; else if (P.don.active > 0) P.don.active--; else break; excess--; } if (donTotal(side) <= want) flog(side, '自分のドンを相手と同じ枚数に戻した'); render(); break; }
+        // 自分のライフをすべて裏向きにする（OP08-075キャンディメイデン）
+        case 'flipAllLifeDown': { for (const l of P.life) l._faceUp = false; flog(side, '自分のライフをすべて裏向きにした'); render(); break; }
         // このキャラを持ち主の手札に戻すコスト（OP08-041アフェランドラ）。払えたら then。
         case 'bounceSelfCost': { if (!self || !(P.chars.includes(self))) break; if (!(await confirmUse(side, '自身を手札へ', `「${self.base.name}」を手札に戻して効果を使いますか？`, '戻して使う'))) break; bounceCard(self); flog(side, `「${self.base.name}」を手札に戻した`); await checkAllyLeave(side, self, 'ownEffect'); await runFx(op.then, ctx); break; }
         // 自分の元々パワーN以下のキャラを、durationの間、相手の効果でKOされないようにする（OP10-070トレーボル）
@@ -428,7 +432,7 @@
         }
         case 'bottomOwn': { for (let i = 0; i < op.n; i++) { const c = await chooseFromHand(side, P.hand, 'デッキ下に置く手札を選択'); if (!c) break; P.hand.splice(P.hand.indexOf(c), 1); P.deck.push(reset(c)); } flog(side, `手札${op.n}枚をデッキ下`); break; }
         // デッキ上 look 枚から filter一致のキャラ1枚を登場、残りをデッキ下（OP11-051サンジ）。grantKwで登場時付与。
-        case 'playFromDeck': { const look = P.deck.splice(0, op.look || 5); const cands = look.filter(c => c.base.type === 'CHAR' && matchFilter(c, op.filter || {})); const pc = P.isCPU ? cands.slice().sort((a, b) => (b.base.power || 0) - (a.base.power || 0))[0] : await chooseCard(side, cands, '登場させるキャラを選択（任意）', 'ownBig', true); if (pc) { look.splice(look.indexOf(pc), 1); await summon(side, pc, false); if (op.rested && P.chars.includes(pc)) pc.rested = true; if (op.grantKw && P.chars.includes(pc)) pc.kwGrant.push({ kw: op.grantKw, dur: durTag(op.grantDuration, 'turn') }); } for (const r of look) P.deck.push(r); flog(side, `デッキ上${op.look || 5}枚から登場/デッキ下`); render(); break; } // rested=レストで登場（OP08-007チョッパー）
+        case 'playFromDeck': { const all = op.look === 'all'; const look = all ? P.deck.splice(0, P.deck.length) : P.deck.splice(0, op.look || 5); const cands = look.filter(c => c.base.type === 'CHAR' && matchFilter(c, op.filter || {})); const pc = P.isCPU ? cands.slice().sort((a, b) => (b.base.power || 0) - (a.base.power || 0))[0] : await chooseCard(side, cands, '登場させるキャラを選択（任意）', 'ownBig', true); if (pc) { look.splice(look.indexOf(pc), 1); await summon(side, pc, false); if (op.rested && P.chars.includes(pc)) pc.rested = true; if (op.grantKw && P.chars.includes(pc)) pc.kwGrant.push({ kw: op.grantKw, dur: durTag(op.grantDuration, 'turn') }); } for (const r of look) P.deck.push(r); if (all || op.shuffle) shuffle(P.deck); flog(side, all ? 'デッキから登場（シャッフル）' : `デッキ上${op.look || 5}枚から登場/デッキ下`); render(); break; } // look:'all'=デッキ全体から登場しシャッフル（OP08-071/073）／rested=レストで登場（OP08-007）
         case 'discardOwn': { const n = op.all ? P.hand.length : (op.toSize != null ? Math.max(0, P.hand.length - op.toSize) : op.n); for (let i = 0; i < n; i++) { const c = await chooseFromHand(side, P.hand, '⚠ 捨てる手札を選択', null, false, 'danger'); if (!c) break; P.hand.splice(P.hand.indexOf(c), 1); P.trash.push(reset(c)); } if (n) { flog(side, `手札${n}枚を捨てた`); await fireHandDiscarded(side, n); } break; }
         case 'cond': if (checkCond(op.check, side, self)) await runFx(op.then, ctx); else if (op.else) await runFx(op.else, ctx); break;
         // 手札公開コスト: 手札の filter 一致カードを count 枚公開できる場合のみ then を実行（公開=手札に残す。任意）
@@ -514,11 +518,12 @@
         case 'stageToBottomCost': { if (!P.stage) break; const st = P.stage; P.stage = null; P.deck.push(reset(st)); flog(side, `ステージ「${st.base.name}」をデッキ下へ`); render(); await runFx(op.then, ctx); break; }
         // 自分のライフの上から1枚を表向きにするコスト（OP13-114/117）。任意。
         case 'flipLifeCost': {
-          if (!P.life.length) break;
-          if (!(await confirmUse(side, 'ライフを表向き', 'ライフの上から1枚を表向きにして効果を使いますか？', '表向きにして使う', '使わない'))) break;
-          P.life[0]._faceUp = true; flog(side, 'ライフの上から1枚を表向きにした'); render();
+          const fn = op.n || 1; if (P.life.length < fn) break; // n枚（既定1）を表向きにできる場合のみ
+          if (!(await confirmUse(side, 'ライフを表向き', `ライフの上から${fn}枚を表向きにして効果を使いますか？`, '表向きにして使う', '使わない'))) break;
+          for (let i = 0; i < fn; i++) if (P.life[i]) P.life[i]._faceUp = true; flog(side, `ライフの上から${fn}枚を表向きにした`); render();
           await runFx(op.then, ctx); break;
         }
+        case 'restThis': { if (self) { self.rested = true; flog(side, `「${self.base.name}」をレストにした`); render(); } break; } // このキャラをレストにする（強制・OP08-046シャクヤク）
         // 自分のトラッシュから n 枚(filter一致)をデッキの下に置くコスト（OP13-081コアラ / OP12-091/094）。任意。
         case 'trashToBottomCost': {
           const tn = op.n || 1;
@@ -994,6 +999,12 @@
         } else if (prot.pay === 'free') {
           // コスト無しで場を離れない（OP10-118ルフィ＝ターン1回相手の効果でKOされない。once:'turn'は上のゲートで消化済）
           flog(target.owner, `「${target.base.name}」は相手の効果で離れない`); return true;
+        } else if (prot.pay === 'trashSelfDraw') {
+          // バウンス/デッキ送りの代わりにトラッシュへ置き1ドロー（OP08-045サッチ。KOはonKO側で処理するため'ko'では発動しない）
+          if (cause === 'ko') continue;
+          if (!ow.chars.includes(target)) continue;
+          removeChar(target); ow.trash.push(reset(target)); draw(target.owner, prot.draw || 1);
+          flog(target.owner, `【${target.base.name}】効果による移動の代わりにトラッシュへ置き${prot.draw || 1}ドロー`); render(); return true;
         } else if (prot.pay === 'restActiveDon') {
           // 代わりにアクティブのドンN枚をレストにして target を場に残す（OP10-074ピーカ）
           const n = prot.n || 2; if (ow.don.active < n) continue;
