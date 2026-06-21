@@ -171,6 +171,19 @@
     //   →展開では温存し、捨てる手段では最優先で捨てる（CPUが大型を素出しして弱い問題の対策）。
     function isYamatoLeader(side) { const L = G.players[side] && G.players[side].leader; return !!(L && L.base && L.base.no === 'OP16-079'); }
     function yamatoReviveTarget(no) { return no === 'OP16-096' || no === 'OP16-097' || no === 'OP16-085'; }
+    // ★起動メインを「今使う価値があるか」判定（無駄撃ち防止）。CPUが条件未達/対象不在でも起動する問題の対策。
+    //   ① 先頭が cond の起動は、条件を満たさない時は使わない（お玉「コスト8以上がいる場合」・6ヤマト「8ヤマトがトラッシュにある場合」等）。
+    //   ② 相手キャラを対象にする効果(パワー減/KO/レスト/バウンス)なのに相手キャラが0なら使わない（無駄）。
+    function actWorthUsing(side, c) {
+      const fx = c.base.fx && c.base.fx.act && c.base.fx.act.fx;
+      if (!fx || !fx.length) return false;
+      const first = fx[0];
+      if (first.op === 'cond' && first.check && !checkCond(first.check, side, c)) return false;
+      const ops = (first.op === 'cond' && Array.isArray(first.then)) ? first.then : fx;
+      const needOpp = ops.some(o => (o.op === 'powerMod' && o.side === 'opp') || ['ko', 'koZero', 'restChar', 'bounce', 'deckBottom', 'handToBottom'].includes(o.op));
+      if (needOpp && G.players[opp(side)].chars.length === 0) return false;
+      return true;
+    }
     // 除去/パワー操作を撃つ価値のある相手キャラがいるか（雑魚への浪費を避ける）
     function oppHasWorthyTarget(side) {
       return G.players[opp(side)].chars.some(x => hasKw(x, 'blocker') || power(x) >= 5000 || (x.base.fx && (x.base.fx.onKO || x.base.fx.act)));
@@ -339,7 +352,7 @@
       // 3) 起動効果（エネル等）。エネルのリーダー効果は第2ターン以降ほぼ常に得（ドンランプ＋付与）なので毎ターン使う
       if (P.leader.base.leader === 'enel' && P.turnsTaken >= 2 && P._enelUsedTurn !== G.turnSeq) await leaderActivate(side);
       // 起動メインはキャラだけでなくステージ（ハチノス/マリンフォード等）も対象にする
-      for (const c of [P.leader, ...P.chars, ...(P.stage ? [P.stage] : [])]) { if (c.base.fx && c.base.fx.act && c._actTurn !== G.turnSeq && !isNegated(c)) { const cost = c.base.fx.act.cost || {}; if ((!cost.don || P.don.active >= cost.don) && (!cost.restSelf || !c.rested)) { if (cost.don) payDon(side, cost.don); if (cost.restSelf) c.rested = true; c._actTurn = G.turnSeq; await fxNote(side, '起動メイン', c.base.name); await runFx(c.base.fx.act.fx, { self: c, side }); await sleep(160); } } }
+      for (const c of [P.leader, ...P.chars, ...(P.stage ? [P.stage] : [])]) { if (c.base.fx && c.base.fx.act && c._actTurn !== G.turnSeq && !isNegated(c)) { const cost = c.base.fx.act.cost || {}; if ((!cost.don || P.don.active >= cost.don) && (!cost.restSelf || !c.rested) && actWorthUsing(side, c)) { if (cost.don) payDon(side, cost.don); if (cost.restSelf) c.rested = true; c._actTurn = G.turnSeq; await fxNote(side, '起動メイン', c.base.name); await runFx(c.base.fx.act.fx, { self: c, side }); await sleep(160); } } }
       // 4) アタック（リーサルが見えたらリーダー集中、そうでなければ盤面と圧を使い分け）
       if (canAttackThisTurn(side)) {
         if (cpuCanLethal(side)) { plan.lethal = true; plan.donReserve = 0; }
