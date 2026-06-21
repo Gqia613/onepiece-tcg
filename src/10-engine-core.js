@@ -205,6 +205,7 @@
       if (c.selfHandAtMost != null && P.hand.length > c.selfHandAtMost) return false;
       if (c.selfHandAtLeast != null && P.hand.length < c.selfHandAtLeast) return false; // 自分の手札N枚以上（OP12-043クザン/087ロビン等）
       if (c.trashAtLeast != null && P.trash.length < c.trashAtLeast) return false;
+      if (c.deckAtMost != null && P.deck.length > c.deckAtMost) return false; // 自分のデッキN枚以下（OP03-045/049/053）
       if (c.trashEventAtLeast != null && P.trash.filter(x => x.base.type === 'EVENT').length < c.trashEventAtLeast) return false; // トラッシュにイベントN枚以上（OP12-059/065等）
       if (c.trashAtMost != null && P.trash.length > c.trashAtMost) return false;
       if (c.trashCount != null) { const f = c.trashCount; const n = P.trash.filter(x => matchFilter(x, f.filter || {})).length; if (f.min != null && n < f.min) return false; if (f.max != null && n > f.max) return false; } // タイプ等で絞ったトラッシュ枚数
@@ -508,6 +509,7 @@
       if (f.maxPower != null && (b.power || 0) > f.maxPower) return false;
       if (f.minPower != null && (b.power || 0) < f.minPower) return false;
       if (f.hasTrigger && !(b.fx && b.fx.trigger)) return false; // 【トリガー】を持つカード（OP09-062ロビンLの捨てコスト）
+      if (f.noEffect && b.fx && Object.keys(b.fx).length) return false; // 元々効果のないキャラ（fx無し。OP03-091ヘルメッポ）
       if (f.nameIncludes && !normName(b.name).includes(normName(f.nameIncludes)) && !(b.aliasName && normName(b.aliasName).includes(normName(f.nameIncludes)))) return false; // 別名対応（OP04-099おリン=シャーロット・リンリン）
       if (f.traitNot && (b.traits || []).some(t => t.includes(f.traitNot))) return false; // 指定特徴(部分一致)を持つものを除外
       if (f.nameExcludes && normName(b.name).includes(normName(f.nameExcludes))) return false; // 指定名を含むものを除外
