@@ -56,7 +56,14 @@
     /* 手札からの選択（捨てる/デッキ下など） */
     async function chooseFromHand(side, cands, text, prefer, optional, cls) {
       cands = cands.filter(Boolean); if (cands.length === 0) return null;
-      if (G.players[side].isCPU) { const a = cands.slice().sort((x, y) => (x.base.counter || 0) - (y.base.counter || 0) || (x.base.cost || 0) - (y.base.cost || 0)); return a[0]; }
+      if (G.players[side].isCPU) {
+        // ★黒ヤマト: 蘇生先(8ヤマト/9モモ)を最優先で捨てる(トラッシュに送って踏み倒す)。他は従来どおり低カウンター/低コストから捨てる。
+        const ya = (typeof isYamatoLeader === 'function') && isYamatoLeader(side);
+        const a = cands.slice().sort((x, y) =>
+          (ya ? ((yamatoReviveTarget(y.base.no) ? 1 : 0) - (yamatoReviveTarget(x.base.no) ? 1 : 0)) : 0)
+          || (x.base.counter || 0) - (y.base.counter || 0) || (x.base.cost || 0) - (y.base.cost || 0));
+        return a[0];
+      }
       return await humanPick(cands, text, !!optional, cls);
     }
 
@@ -93,6 +100,7 @@
         case 'draw': draw(side, op.n); flog(side, `${op.n}ドロー`); break;
         case 'drawDiscarded': { const k = ctx.discarded || 1; if (draw(side, k)) flog(side, `${k}ドロー`); break; } // 捨てた枚数分ドロー（OP12-040クザン）
         case 'condAttacker': { if (ctx.attacker && (ctx.attacker.base.attribute || '').includes(op.attr)) await runFx(op.then, ctx); break; } // アタッカーが属性Xを持つ場合（OP11-088シュウ）
+        case 'peekOppDeck': { if (G.players[o].deck.length) flog(side, `相手のデッキの上を確認: 「${G.players[o].deck[0].base.name}」`); break; } // 相手デッキトップを見る（OP11-062/070カタクリ等）
         // デッキの上1枚を公開し、filter一致なら登場させてもよい（OP12-058）。grantKwで登場時にキーワード付与。
         case 'revealTopPlay': {
           if (!P.deck.length) break; const top = P.deck[0]; flog(side, `デッキの上を公開: ${top.base.name}`);
@@ -308,7 +316,12 @@
         }
         case 'lifeAddFromDeck': { for (let i = 0; i < op.n; i++) { if (P.deck.length) { const c = P.deck.shift(); if (op.faceUp) c._faceUp = true; P.life.unshift(c); } } flog(side, `デッキ上${op.n}枚をライフに${op.faceUp ? '表向きで' : ''}加えた`); break; }
         case 'flipLifeUp': { if (P.life.length) { P.life[0]._faceUp = true; flog(side, '自分のライフの一番上を表向きにした'); floatOn(P.leader.uid, 'LIFE表', 'heal'); render(); await sleep(160); } break; }
-        case 'lifeTrash': { const c = P.life.shift(); if (c) { P.trash.push(c); flog(side, '自ライフ1枚をトラッシュ'); } break; }
+        case 'lifeTrash': { // side:'both'=お互いのライフ上1枚トラッシュ（OP11-102ケイミー）／'opp'=相手のみ／既定=自分
+          const sides = op.side === 'both' ? [side, o] : op.side === 'opp' ? [o] : [side];
+          for (const sd of sides) { const PP = G.players[sd]; const c = PP.life.shift(); if (c) { PP.trash.push(c); flog(side, sd === side ? '自ライフ1枚をトラッシュ' : '相手ライフ1枚をトラッシュ'); } }
+          render(); break;
+        }
+        case 'activateSelf': { if (self) { self.rested = false; flog(side, `「${self.base.name}」をアクティブにした`); render(); } break; } // このキャラをアクティブにする（OP11-107チョンマゲ＝ターン終了時）
         case 'lifeSwap': {
           if (!P.life.length) { flog(side, 'ライフが無く効果なし'); break; }
           if (P.isCPU) { P.hand.push(P.life.shift()); flog(side, '【ライフ操作】ライフ上1枚を手札に'); }
@@ -339,6 +352,8 @@
           render(); break;
         }
         case 'bottomOwn': { for (let i = 0; i < op.n; i++) { const c = await chooseFromHand(side, P.hand, 'デッキ下に置く手札を選択'); if (!c) break; P.hand.splice(P.hand.indexOf(c), 1); P.deck.push(reset(c)); } flog(side, `手札${op.n}枚をデッキ下`); break; }
+        // デッキ上 look 枚から filter一致のキャラ1枚を登場、残りをデッキ下（OP11-051サンジ）。grantKwで登場時付与。
+        case 'playFromDeck': { const look = P.deck.splice(0, op.look || 5); const cands = look.filter(c => c.base.type === 'CHAR' && matchFilter(c, op.filter || {})); const pc = P.isCPU ? cands.slice().sort((a, b) => (b.base.power || 0) - (a.base.power || 0))[0] : await chooseCard(side, cands, '登場させるキャラを選択（任意）', 'ownBig', true); if (pc) { look.splice(look.indexOf(pc), 1); await summon(side, pc, false); if (op.grantKw && P.chars.includes(pc)) pc.kwGrant.push({ kw: op.grantKw, dur: durTag(op.grantDuration, 'turn') }); } for (const r of look) P.deck.push(r); flog(side, `デッキ上${op.look || 5}枚から登場/デッキ下`); render(); break; }
         case 'discardOwn': { const n = op.all ? P.hand.length : (op.toSize != null ? Math.max(0, P.hand.length - op.toSize) : op.n); for (let i = 0; i < n; i++) { const c = await chooseFromHand(side, P.hand, '⚠ 捨てる手札を選択', null, false, 'danger'); if (!c) break; P.hand.splice(P.hand.indexOf(c), 1); P.trash.push(reset(c)); } if (n) { flog(side, `手札${n}枚を捨てた`); await fireHandDiscarded(side, n); } break; }
         case 'cond': if (checkCond(op.check, side, self)) await runFx(op.then, ctx); else if (op.else) await runFx(op.else, ctx); break;
         // 手札公開コスト: 手札の filter 一致カードを count 枚公開できる場合のみ then を実行（公開=手札に残す。任意）
@@ -591,10 +606,10 @@
         // 自分のトラッシュから n枚を 持ち主のデッキの下に置くコスト。払えた時 then 実行
         case 'trashToDeckCost': {
           const n = op.n || 1;
-          const movable = P.trash.filter(c => c !== self); // self（このキャラ自身＝KO時の蘇生対象等）は除く
+          const movable = P.trash.filter(c => c !== self && (!op.filter || matchFilter(c, op.filter))); // self除く＋filter（OP11-095ガープ=海軍3枚）
           if (movable.length < n) break;
           if (!(await confirmUse(side, 'トラッシュをデッキ下', `トラッシュ${n}枚をデッキの下に置いて効果を使いますか？`, '置いて使う'))) break;
-          for (let i = 0; i < n; i++) { const c = P.trash.find(x => x !== self); if (!c) break; P.trash.splice(P.trash.indexOf(c), 1); P.deck.push(reset(c)); } flog(side, `トラッシュ${n}枚をデッキの下へ`);
+          for (let i = 0; i < n; i++) { const c = P.trash.find(x => x !== self && (!op.filter || matchFilter(x, op.filter))); if (!c) break; P.trash.splice(P.trash.indexOf(c), 1); P.deck.push(reset(c)); } flog(side, `トラッシュ${n}枚をデッキの下へ`);
           await runFx(op.then, ctx); break;
         }
         // 「以下から1つを選ぶ」モード選択（options:[{label,fx:[...]}]）
@@ -648,10 +663,10 @@
           break;
         }
         // 相手のトラッシュから filter一致のカードを n枚 デッキの下へ
-        case 'oppTrashToBottom': {
-          const O = G.players[o];
-          for (let i = 0; i < (op.n || 1); i++) { const cands = O.trash.filter(c => matchFilter(c, op.filter || {})); if (!cands.length) break; const t = P.isCPU ? cands[0] : await chooseCard(side, cands, '相手のトラッシュからデッキ下に置くカード', 'oppBig', op.optional); if (!t) break; O.trash.splice(O.trash.indexOf(t), 1); O.deck.push(reset(t)); }
-          flog(side, '相手のトラッシュをデッキの下へ'); render(); break;
+        case 'oppTrashToBottom': { // 公式「相手は自身のトラッシュから〜枚をデッキ下に置く」＝相手が選ぶ（OP11-072モンドール/091ベリーグッド・filterで種別限定）
+          const O = G.players[o]; let moved = 0;
+          for (let i = 0; i < (op.n || 1); i++) { const cands = O.trash.filter(c => matchFilter(c, op.filter || {})); if (!cands.length) break; const t = O.isCPU ? cands[0] : await chooseCard(o, cands, 'デッキ下に置くトラッシュを選択', 'ownSmall', false); if (!t) break; O.trash.splice(O.trash.indexOf(t), 1); O.deck.push(reset(t)); moved++; }
+          if (moved) flog(side, `相手はトラッシュ${moved}枚をデッキの下へ`); render(); break;
         }
         // ドン!!デッキから n枚まで コストエリアに追加（mode:'rest'|'active'、donMax上限まで）
         case 'donFromDeck': {
@@ -786,9 +801,10 @@
           if (op.filter) cands = cands.filter(c => matchFilter(c, op.filter));
           if (op.needsTrigger) cands = cands.filter(c => c.base.fx && c.base.fx.trigger); // 【トリガー】を持つキャラ限定
           const c = await chooseCard(side, cands, 'トラッシュから登場させるキャラ', 'ownBig', true);
-          if (c) { P.trash.splice(P.trash.indexOf(c), 1); await summon(side, c, false, 'trash'); if (op.grantKw && P.chars.includes(c)) c.kwGrant.push({ kw: op.grantKw, dur: durTag(op.grantDuration, 'turn') }); }
+          if (c) { P.trash.splice(P.trash.indexOf(c), 1); await summon(side, c, false, 'trash'); if (op.grantKw && P.chars.includes(c)) c.kwGrant.push({ kw: op.grantKw, dur: durTag(op.grantDuration, 'turn') }); if (op.returnEndTurn && P.chars.includes(c)) (G._pendingTurnEnd = G._pendingTurnEnd || []).push({ side, self: c, fx: [{ op: '_returnCardBottom', uid: c.uid }] }); } // returnEndTurn=このターン終了時に持ち主のデッキ下（OP11-092ヘルメッポ）
           break;
         }
+        case '_returnCardBottom': { for (const sd of ['me', 'cpu']) { const PP = G.players[sd]; const c = PP.chars.find(x => x.uid === op.uid); if (c) { removeChar(c); G.players[c.owner].deck.push(reset(c)); flog(side, `「${c.base.name}」を持ち主のデッキの下に置いた`); render(); break; } } break; } // 指定uidのキャラをデッキ下（ヘルメッポのターン終了時返却）
         // 自分のライフをすべて見て好きな順に並べ替え（OP13-105モモの助）。人間は上から順にプロンプトで選択、CPUは現状維持。
         case 'reorderLife': {
           if (P.life.length <= 1) { if (P.life.length) flog(side, '自分のライフを確認'); break; }
@@ -870,8 +886,14 @@
           addBuff(ow.leader, -(prot.amount || 2000), 'turnEnd'); floatOn(ow.leader.uid, `-${prot.amount || 2000}`, 'dmg');
           flog(target.owner, `【${p.base.name}】リーダーのパワーを下げて「${target.base.name}」を守った`); return true;
         }
+        if (prot.pay === 'toLifeFaceDown') { // 代わりに target を持ち主のライフの上に裏向きで加える（OP11-101カポネ・ベッジ＝超新星を守る）。p自身は対象外
+          if (p === target) continue;
+          if (!(await confirmUse(target.owner, `【${p.base.name}】身代わり`, `「${target.base.name}」をライフの上に裏向きで加えますか？`, '加える（ライフ裏向き）', '加えない'))) continue;
+          if (ow.chars.includes(target)) removeChar(target); else continue;
+          ow.life.unshift(faceDown(reset(target))); flog(target.owner, `【${p.base.name}】「${target.base.name}」をライフの上に裏向きで加えた`); render(); return true;
+        }
         if (prot.pay === 'restOwnCards') {
-          const n = prot.n || 2; const pool = [ow.leader, ...ow.chars].filter(c => c && c !== target && !c.rested && !(prot.excludeLeader && c === ow.leader)); // excludeLeader=「自分のキャラ」限定（リーダー除外。OP14-034）
+          const n = prot.n || 2; const pool = [ow.leader, ...ow.chars].filter(c => c && c !== target && !c.rested && !(prot.excludeLeader && c === ow.leader) && (!prot.filter || matchFilter(c, prot.filter))); // excludeLeader=「自分のキャラ」限定（リーダー除外。OP14-034）。filter=レスト対象の限定（OP11-110フカボシ＝魚人島/しらほし）
           if (pool.length < n) continue;
           if (!(await confirmUse(target.owner, `【${p.base.name}】身代わり`, `自分のカード${n}枚をレストにして「${target.base.name}」を守りますか？`, `守る（${n}枚レスト）`, '守らない'))) continue;
           let picks;

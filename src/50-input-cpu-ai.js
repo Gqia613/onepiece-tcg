@@ -166,6 +166,11 @@
       s += (c.base.cost || 0) * 0.3;
       return s;
     }
+    // ★黒ヤマト(OP16-079)専用ロジック: 8ヤマト(OP16-096/097)/9モモ(OP16-085)は「素出し」より
+    //   「捨ててトラッシュから踏み倒し蘇生(6ヤマトの起動メイン/5モモ+しのぶ/その縁)」する方が強い。
+    //   →展開では温存し、捨てる手段では最優先で捨てる（CPUが大型を素出しして弱い問題の対策）。
+    function isYamatoLeader(side) { const L = G.players[side] && G.players[side].leader; return !!(L && L.base && L.base.no === 'OP16-079'); }
+    function yamatoReviveTarget(no) { return no === 'OP16-096' || no === 'OP16-097' || no === 'OP16-085'; }
     // 除去/パワー操作を撃つ価値のある相手キャラがいるか（雑魚への浪費を避ける）
     function oppHasWorthyTarget(side) {
       return G.players[opp(side)].chars.some(x => hasKw(x, 'blocker') || power(x) >= 5000 || (x.base.fx && (x.base.fx.onKO || x.base.fx.act)));
@@ -300,7 +305,13 @@
       // 1) キャラ展開
       let g = 0;
       while (g++ < 12) {
-        const pl = P._noPlayTurn === G.turnSeq ? [] : P.hand.filter(c => c.base.type === 'CHAR' && !summonBanned(side, c) && effCost(side, c) <= P.don.active).sort((a, b) => scoreChar(b) - scoreChar(a));
+        const pl = (() => {
+          if (P._noPlayTurn === G.turnSeq) return [];
+          let cand = P.hand.filter(c => c.base.type === 'CHAR' && !summonBanned(side, c) && effCost(side, c) <= P.don.active);
+          // ★黒ヤマト: 8ヤマト/9モモは素出しせず温存（捨ててトラッシュから踏み倒す方が強い）。他に出せる手があるなら大型は出さない。
+          if (isYamatoLeader(side)) { const alt = cand.filter(c => !yamatoReviveTarget(c.base.no)); if (alt.length) cand = alt; }
+          return cand.sort((a, b) => scoreChar(b) - scoreChar(a));
+        })();
         if (!pl.length) break;
         const c = pl[0];
         if (P.chars.length >= 5) {
