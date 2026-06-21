@@ -11,12 +11,8 @@ window.CARD_FX = {
   // OP14-041 ボア・ハンコック: 相手のターン中に自分のキャラが登場した時、1ドロー（ターン1回制限なし）
   "OP14-041": {"onAllyEnter":{"when":"oppTurn","fx":[{"op":"draw","n":1}]}},
   /* ----- 同名・別Noのリーダー（番号キーで実装。curatedの短縮キーとは独立＝誤適用なし） ----- */
-  // OP15-098 モンキー・Ｄ・ルフィ(空島): 自分の元々パワー6000以上の《空島》キャラが相手に場を離れる時、代わりにライフ上1枚を手札に加えられる
-  "OP15-098": {"static":[{"op":"leaveProtect","pay":"lifeToHand","targetFilter":{"minPower":6000,"trait":"空島"}}]},
   // ST29-001 モンキー・Ｄ・ルフィ(エッグヘッド/四皇): 【アタック時】自分のライフが2枚以下なら1ドローし手札1枚を捨てる
   "ST29-001": {"onAttack":[{"op":"cond","check":"life<=2","then":[{"op":"draw","n":1},{"op":"discardOwn","n":1}]}]},
-  // OP16-022 モンキー・Ｄ・ルフィ(インペルダウン): 【起動メイン】【ターン1回】自キャラが《インペルダウン》のみの場合、ドン!!2枚までアクティブに
-  "OP16-022": {"act":{"label":"インペルダウンのみ:ドン2アクティブ","cost":{},"fx":[{"op":"donActivate","n":2,"cond":{"allSelfChar":{"trait":"インペルダウン"}}}]}},
   // OP16-001 ポートガス・Ｄ・エース: 【起動メイン】【ターン1回】自分のパワー8000以上の「モンキー・Ｄ・ルフィ」か《白ひげ海賊団》キャラ1枚までにこのターン中【速攻】
   "OP16-001": {"act":{"label":"P8000+のルフィ/白ひげに速攻","cost":{},"fx":[{"op":"giveKeyword","kw":"rush","target":"chooseOwn","filter":{"minEffPower":8000,"or":[{"name":"モンキー・Ｄ・ルフィ"},{"traitIncludes":"白ひげ海賊団"}]}}]}},
   // OP11-040 ルフィ(麦わら): ターン開始時、場のドン8以上ならデッキ上5枚から《麦わら》1枚を手札へ（残りはデッキ下＝並び替え選択は簡略）
@@ -518,7 +514,6 @@ window.CARD_FX = {
   "OP15-115": {"main":{"don":2,"fx":[{"op":"ko","side":"opp","count":1,"maxCost":4,"optional":true},{"op":"lifeToHand","n":1}]},"trigger":[{"op":"ko","side":"opp","count":1,"maxCost":4,"optional":true}]},
   "OP15-116": {"main":{"fx":[{"op":"cond","check":{"leaderTrait":"麦わらの一味"},"then":[{"op":"lifeTrash"},{"op":"lifeAddFromDeck","n":1},{"op":"discardOwn","n":1}]}]},"counter":{"cost":0,"fx":[{"op":"powerMod","side":"self","all":true,"leader":true,"amount":4000,"battle":true,"filter":{"type":"LEADER"}}]}},
   "OP15-117": {"main":{"fx":[{"op":"draw","n":1},{"op":"donAttach","target":"chooseOwn","n":1,"filter":{"trait":"空島"}}]},"trigger":[{"op":"cond","check":{"leaderTrait":"空島"},"then":[{"op":"draw","n":2}]}]},
-  "OP16-001": {"act":{"label":"パワー8000以上のルフィか白ひげに【速攻】","cost":{},"fx":[{"op":"giveKeyword","target":"chooseOwn","kw":"rush","duration":"turn","filter":{"minPower":8000,"or":[{"name":"モンキー・D・ルフィ"},{"traitIncludes":"白ひげ海賊団"}]}}]}},
   "OP16-002": {"onPlay":[{"op":"revealCost","count":1,"filter":{"type":"CHAR","power":8000},"then":[{"op":"draw","n":1}]}]},
   "OP16-003": {"static":[{"op":"grantKeywordToLeader","kw":"doubleAttack","cond":"selfTurn"},{"op":"leaderBuffStatic","power":2000,"cond":"selfTurn"}],"onPlay":[{"op":"revealCost","count":2,"filter":{"type":"CHAR","power":8000},"then":[{"op":"powerMod","side":"opp","amount":-6000,"count":1,"optional":true}]}]},
   "OP16-005": {"costMod":{"cond":{"selfChar":{"minPower":8000,"traitIncludes":"白ひげ海賊団"}},"amount":-3},"static":[{"op":"staticKeyword","kw":"blocker"}]},

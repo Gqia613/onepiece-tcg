@@ -5,6 +5,16 @@
    Phase3で新カードを実装したら、ここに1〜2ケース足すこと。 */
 const { runHarness } = require('./_load-app');  // stubs+CARD_DB+CARD_FX+本体JS(src/00..60) の連結・実行を集約
 
+// ★cards-fx.js のキー重複ガード: JSオブジェクトは同キーを静かに後勝ち上書きする（前の定義が死ぬ）ので重複は必ずバグ。
+{ const fs = require('fs'), path = require('path');
+  const txt = fs.readFileSync(path.join(__dirname, '..', 'cards-fx.js'), 'utf8');
+  const re = /"([A-Z0-9]+-\d+[A-Za-z0-9_]*)"\s*:/g; let m; const cnt = {};
+  while ((m = re.exec(txt))) cnt[m[1]] = (cnt[m[1]] || 0) + 1;
+  const dup = Object.keys(cnt).filter(k => cnt[k] > 1);
+  if (dup.length) { console.log('  NG: cards-fx.js に重複キー（後勝ち上書きでバグ）: ' + dup.join(', ')); process.exit(1); }
+  console.log('  ✓ cards-fx.js キー重複なし (' + Object.keys(cnt).length + 'キー)');
+}
+
 const harness = String.raw`
 showPrompt=function(cfg){const o=(cfg.opts||[]).filter(x=>!x.disabled);const p=o.find(x=>String(x.v).indexOf('pick:')===0)||o[0];if(cfg.onPick)cfg.onPick(p&&p.v);return Promise.resolve(p&&p.v);};
 humanPick=function(c){return Promise.resolve((c||[])[0]||null);};
@@ -1114,6 +1124,11 @@ humanPick=function(c){return Promise.resolve((c||[])[0]||null);};
       ok(power(za)===7000, 'OP14-086 condBuff: トラッシュ7枚以上で自身+1000');
       ok(!matchFilter(bwc,{maxCost:3}) && matchFilter(bwc,{maxCost:5}), 'OP14-086 allyCost: B・W実効コスト+2(maxCost3外/5内)');
       me.trash=[]; ok(power(za)===6000 && matchFilter(bwc,{maxCost:3}), 'OP14-086: トラッシュ7未満で無効'); delete C['__bwc__']; }
+
+    // === cards-fx.js 重複キー解消の回帰（正しい版が残ったか） ===
+    ok(JSON.stringify(C['OP16-001'].fx.act).includes('minEffPower') && !JSON.stringify(C['OP16-001'].fx.act).includes('"minPower"'), 'OP16-001: 重複解消後、minEffPower(現在パワー8000以上)版が残存');
+    ok(JSON.stringify(C['OP15-098'].fx).includes('includeBattle'), 'OP15-098: 重複解消後、バトルKOも肩代わり(includeBattle)版が残存');
+    ok(C['OP16-022'].fx && C['OP16-022'].fx.act, 'OP16-022: 重複解消後も起動メイン定義あり');
 
     // === OP14 公式照合で見つかった不具合の修正 回帰 ===
     // OP14-120: 引きの条件は「相手の」コスト0か8以上（selfChar→oppChar）
