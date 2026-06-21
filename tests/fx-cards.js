@@ -22,7 +22,7 @@ const { runHarness } = require('./_load-app');  // stubs+CARD_DB+CARD_FX+本体J
     require(path.join(__dirname, '..', 'cards.js'));
     require(path.join(__dirname, '..', 'cards-fx.js'));
     const DB = global.window.CARD_DB, FX = global.window.CARD_FX;
-    for (const [tag, file] of [['OP14', 'official-op14.js'], ['OP13', 'official-op13.js'], ['OP12', 'official-op12.js'], ['OP11', 'official-op11.js'], ['OP10', 'official-op10.js'], ['OP09', 'official-op09.js'], ['OP08', 'official-op08.js']]) {
+    for (const [tag, file] of [['OP14', 'official-op14.js'], ['OP13', 'official-op13.js'], ['OP12', 'official-op12.js'], ['OP11', 'official-op11.js'], ['OP10', 'official-op10.js'], ['OP09', 'official-op09.js'], ['OP08', 'official-op08.js'], ['OP07', 'official-op07.js']]) {
       const off = require(path.join(__dirname, '..', 'tools', file));
       const mismatch = [], missing = [];
       for (const no in off) {
@@ -1800,6 +1800,26 @@ humanPick=function(c){return Promise.resolve((c||[])[0]||null);};
       const en=mkSyn('__x__',C['__x__']); en.owner='cpu'; me.chars=[self2,ally]; G.players.cpu.chars=[en];
       await runFx([{op:'koAllExceptSelf'}],{self:self2,side:'me'});
       ok(me.chars.includes(self2) && !me.chars.includes(ally) && G.players.cpu.chars.length===0, 'OP08-119: 自身以外の全キャラKO'); delete C['__x__']; }
+
+    /* ===== OP07 新機構の回帰 ===== */
+    // OP07-001 moveAttachedDon: 付与ドンを1キャラに移す
+    { const me=LP('OP13-002'); me.isCPU=true; G.active='me'; G.turnSeq=5; G.players.cpu=mkP('OP11-041',true);
+      C['__alo__']={no:'__alo__',name:'ALo',type:'CHAR',color:[],cost:1,power:1000,counter:1000,traits:[]};
+      C['__ahi__']={no:'__ahi__',name:'AHi',type:'CHAR',color:[],cost:8,power:9000,counter:1000,traits:[]};
+      const src=mkSyn('__alo__',C['__alo__']); src.owner='me'; src.attachedDon=2; const dst=mkSyn('__ahi__',C['__ahi__']); dst.owner='me'; dst.attachedDon=0; me.chars=[dst,src];
+      await runFx([{op:'moveAttachedDon',n:2}],{self:me.leader,side:'me'});
+      ok(dst.attachedDon===2 && src.attachedDon===0, 'OP07-001: 付与ドン2枚を高パワー側へ移動'); delete C['__alo__']; delete C['__ahi__']; }
+    // OP07-002 setPower 相手対象: 相手キャラのパワーを0に
+    { const me=LP('OP13-002'); me.isCPU=true; G.active='me'; G.turnSeq=5; G.players.cpu=mkP('OP11-041',true);
+      C['__b__']={no:'__b__',name:'B',type:'CHAR',color:[],cost:5,power:6000,counter:1000,traits:[]};
+      const t=mkSyn('__b__',C['__b__']); t.owner='cpu'; G.players.cpu.chars=[t];
+      await runFx([{op:'setPower',side:'opp',value:0,count:1}],{self:me.leader,side:'me'});
+      ok(power(t)===0, 'OP07-002: 相手キャラのパワーを0に'); delete C['__b__']; }
+    // OP07-064 selfDonFewerBy cond
+    { const me=LP('OP13-002'); G.players.cpu=mkP('OP11-041',true);
+      me.don={active:1,rested:0}; G.players.cpu.don={active:4,rested:0};
+      ok(checkCond({selfDonFewerBy:2},'me',null), 'OP07-064: ドン3枚差で成立');
+      me.don={active:3,rested:0}; ok(!checkCond({selfDonFewerBy:2},'me',null), 'OP07-064: 1枚差では不成立'); }
   }catch(e){ console.log('EXCEPTION:', e.message); fail++; }
   console.log('Phase3 fxテスト: pass='+pass+' fail='+fail);
   process.exit(fail?1:0);

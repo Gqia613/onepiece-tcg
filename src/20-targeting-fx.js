@@ -98,6 +98,7 @@
       if (op.cond && !checkCond(op.cond, side, self)) return; // 全opで op.cond を尊重（【ドン!!×N】等の条件付き効果）
       switch (op.op) {
         case 'draw': draw(side, op.n); flog(side, `${op.n}ドロー`); break;
+        case 'oppDraw': { draw(o, op.n || 1); flog(side, `相手が${op.n || 1}ドロー`); break; } // 相手にN枚引かせる（OP07-090モルガンズ）
         case 'drawDiscarded': { const k = ctx.discarded || 1; if (draw(side, k)) flog(side, `${k}ドロー`); break; } // 捨てた枚数分ドロー（OP12-040クザン）
         case 'condAttacker': { if (ctx.attacker && (ctx.attacker.base.attribute || '').includes(op.attr)) await runFx(op.then, ctx); break; } // アタッカーが属性Xを持つ場合（OP11-088シュウ）
         case 'peekOppDeck': { if (G.players[o].deck.length) flog(side, `相手のデッキの上を確認: 「${G.players[o].deck[0].base.name}」`); break; } // 相手デッキトップを見る（OP11-062/070カタクリ等）

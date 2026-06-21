@@ -1934,5 +1934,61 @@ window.CARD_FX = {
   // OP07-080 カク: 【登場時】トラッシュから『CP』2枚をデッキ下：相手キャラ1枚をコスト-3
   "OP07-080": {"onPlay":[{"op":"trashToBottomCost","n":2,"filter":{"traitIncludes":"CP"},"then":[{"op":"addCostBuff","side":"opp","count":1,"amount":-3,"duration":"turn","optional":true}]}]},
   // OP07-081 カリファ: 【ドン×1】【自分のターン中】相手のキャラ全コスト-1
-  "OP07-081": {"static":[{"op":"oppCostMod","amount":-1,"cond":{"and":[{"donX1":true},{"selfTurn":true}]}}]}
+  "OP07-081": {"static":[{"op":"oppCostMod","amount":-1,"cond":{"and":[{"donX1":true},{"selfTurn":true}]}}]},
+  /* ===== OP07 バッチ5（黒・082-099＝CP0/CP9/科学者） ===== */
+  // OP07-082 キャプテン・ジョン: 【登場時】デッキ上2枚トラッシュ＋相手キャラ1枚をコスト-1
+  "OP07-082": {"onPlay":[{"op":"deckToTrash","n":2},{"op":"addCostBuff","side":"opp","count":1,"amount":-1,"duration":"turn","optional":true}]},
+  // OP07-083 ゲッコー・モリア(c4): 【起動メイン】トラッシュのスリラーバーク4枚をデッキ下：このターン【バニッシュ】＋1000
+  "OP07-083": {"act":{"label":"スリラーバーク4枚デッキ下:バニッシュ＋1000","cost":{},"fx":[{"op":"trashToBottomCost","n":4,"filter":{"traitIncludes":"スリラーバーク海賊団"},"then":[{"op":"giveKeyword","target":"self","kw":"banish","duration":"turn"},{"op":"powerMod","side":"self","target":"self","amount":1000,"duration":"turn"}]}]}},
+  // OP07-085 ステューシー(c9): 【登場時】自分のキャラ1枚をトラッシュ：相手キャラ1枚KO
+  "OP07-085": {"onPlay":[{"op":"trashOwnCharCost","then":[{"op":"ko","side":"opp","count":1,"optional":true}]}]},
+  // OP07-086 スパンダム: 【登場時】デッキ上2枚トラッシュ＋相手キャラ1枚をコスト-2
+  "OP07-086": {"onPlay":[{"op":"deckToTrash","n":2},{"op":"addCostBuff","side":"opp","count":1,"amount":-2,"duration":"turn","optional":true}]},
+  // OP07-087 バスカビル: 【自分のターン中】相手にコスト0がいれば+3000
+  "OP07-087": {"static":[{"op":"condBuff","cond":{"and":[{"selfTurn":true},{"oppChar":{"cost":0}}]},"power":3000}]},
+  // OP07-088 ハットリ: 【自分のターン中】【登場時】自分の「ロブ・ルッチ」1枚を+2000
+  "OP07-088": {"onPlay":[{"op":"powerMod","side":"self","amount":2000,"duration":"turn","count":1,"optional":true,"filter":{"nameIncludes":"ロブ・ルッチ"}}]},
+  // OP07-090 モルガンズ: 【登場時】相手は手札1枚捨て(公開)→相手は1ドロー
+  "OP07-090": {"onPlay":[{"op":"oppDiscard","n":1},{"op":"oppDraw","n":1}]},
+  // OP07-091 モンキー・D・ルフィ(c5): 【アタック時】相手コスト2以下1枚KO→トラッシュのコスト4以上を3枚デッキ下で+1000(近似)
+  "OP07-091": {"onAttack":[{"op":"ko","side":"opp","filter":{"maxCost":2},"count":1,"optional":true},{"op":"trashToBottomCost","n":3,"filter":{"minCost":4,"type":"CHAR"},"then":[{"op":"powerMod","side":"self","target":"self","amount":1000,"duration":"turn"}]}]},
+  // OP07-092 ヨセフ: 【登場時】トラッシュの『CP』2枚をデッキ下：相手コスト1以下1枚KO
+  "OP07-092": {"onPlay":[{"op":"trashToBottomCost","n":2,"filter":{"traitIncludes":"CP"},"then":[{"op":"ko","side":"opp","filter":{"maxCost":1},"count":1,"optional":true}]}]},
+  // OP07-093 ロブ・ルッチ(c5): 【登場時】トラッシュ3枚をデッキ下：相手1枚捨て→相手トラッシュ1枚をデッキ下
+  "OP07-093": {"onPlay":[{"op":"trashToBottomCost","n":3,"then":[{"op":"oppDiscard","n":1},{"op":"oppTrashToBottom","n":1}]}]},
+  // OP07-094 剃: 【カウンター】リーダーかキャラ+2000→トラッシュ10枚以上なら『CP』キャラ1枚を手札に戻す
+  "OP07-094": {"counter":{"cost":0,"fx":[{"op":"powerMod","side":"self","leader":true,"amount":2000,"battle":true,"count":1,"optional":true},{"op":"cond","check":{"trashAtLeast":10},"then":[{"op":"bounceOwnCharCost","filter":{"traitIncludes":"CP"}}]}]}},
+  // OP07-095 鉄塊: 【カウンター】リーダーかキャラ+4000→トラッシュ10枚以上ならさらに+2000
+  "OP07-095": {"counter":{"cost":0,"fx":[{"op":"powerMod","side":"self","leader":true,"amount":4000,"battle":true,"count":1,"optional":true},{"op":"cond","check":{"trashAtLeast":10},"then":[{"op":"powerMod","side":"self","leader":true,"amount":2000,"battle":true,"count":1,"optional":true}]}]}},
+  // OP07-096 嵐脚: 【メイン】1ドロー→トラッシュ10枚以上なら相手キャラ1枚をコスト-3
+  "OP07-096": {"main":{"fx":[{"op":"draw","n":1},{"op":"cond","check":{"trashAtLeast":10},"then":[{"op":"addCostBuff","side":"opp","count":1,"amount":-3,"duration":"turn","optional":true}]}]}},
+  // OP07-097 ベガパンク LEADER: このリーダーはアタック不可 ／【起動メイン】【ターン1回】ドン1レスト：手札からコスト5以下エッグヘッドをライフ表向きか登場
+  "OP07-097": {"static":[{"op":"cantAttack"}],"act":{"label":"ドン1レスト:エッグヘッドをライフか登場","cost":{},"fx":[{"op":"restDonCost","n":1,"then":[{"op":"chooseOption","options":[{"label":"ライフ上に表向きで加える","fx":[{"op":"handCharToLife","faceUp":true,"filter":{"traitIncludes":"エッグヘッド","maxCost":5}}]},{"label":"登場させる","fx":[{"op":"playCharFromHand","filter":{"traitIncludes":"エッグヘッド","maxCost":5},"count":1,"optional":true}]}]}]}]}},
+  // OP07-098 アトラス: 自分のライフが相手より少ないとバトルでKOされない
+  "OP07-098": {"static":[{"op":"condBuff","battleImmune":true,"cond":{"selfLifeLessThanOpp":true}}]},
+  /* ===== OP07 バッチ6（黄・100-119＝エッグヘッド/ライフ管理） ===== */
+  // OP07-100 エジソン: 【登場時】自ライフ2枚以下なら2ドロー＋手札2枚捨て
+  "OP07-100": {"onPlay":[{"op":"cond","check":{"lifeAtMost":2},"then":[{"op":"draw","n":2},{"op":"discardCost","count":2}]}]},
+  // OP07-105 ピタゴラス: 【KO時】自ライフ2枚以下ならトラッシュからコスト4以下のエッグヘッドをレストで登場
+  "OP07-105": {"onKO":[{"op":"cond","check":{"lifeAtMost":2},"then":[{"op":"reviveFromTrash","maxCost":4,"rested":true,"filter":{"traitIncludes":"エッグヘッド"}}]}]},
+  // OP07-106 フザ: 【ドン×1】【アタック時】自ライフ1枚以下なら相手コスト3以下1枚KO
+  "OP07-106": {"onAttack":[{"op":"cond","check":{"and":[{"donX1":true},{"lifeAtMost":1}]},"then":[{"op":"ko","side":"opp","filter":{"maxCost":3},"count":1,"optional":true}]}]},
+  // OP07-109 モンキー・D・ルフィ(c5): 【起動メイン】自身トラッシュ：自ライフ2枚以下なら相手コスト4以下1枚KO→1ドロー
+  "OP07-109": {"act":{"label":"自身トラッシュ:ライフ2以下で相手4以下KO＋1ドロー","cost":{},"fx":[{"op":"trashSelfCost","then":[{"op":"cond","check":{"lifeAtMost":2},"then":[{"op":"ko","side":"opp","filter":{"maxCost":4},"count":1,"optional":true},{"op":"draw","n":1}]}]}]}},
+  // OP07-110 ヨーク: 【登場時】ライフ上か下1枚を手札に：相手コスト2以下1枚KO
+  "OP07-110": {"onPlay":[{"op":"lifeCost","pos":"choose","then":[{"op":"ko","side":"opp","filter":{"maxCost":2},"count":1,"optional":true}]}]},
+  // OP07-111 リリス: 【登場時】デッキ上5枚から「リリス」以外のエッグヘッド1枚を手札に
+  "OP07-111": {"onPlay":[{"op":"search","look":5,"count":1,"filter":{"traitIncludes":"エッグヘッド"},"exclude":"リリス","optional":true}]},
+  // OP07-112 ルーシー(c6): 【アタック時】【ターン1回】ライフ上か下1枚を手札に：相手コスト4以下1枚レスト→自ライフ1枚以下ならデッキ上1枚をライフに
+  "OP07-112": {"onAttack":[{"op":"lifeCost","pos":"choose","once":"turn","then":[{"op":"restChar","side":"opp","filter":{"maxCost":4},"count":1,"optional":true},{"op":"cond","check":{"lifeAtMost":1},"then":[{"op":"lifeAddFromDeck","n":1}]}]}]},
+  // OP07-114 世界最大の頭脳を持つ男: 【メイン】デッキ上5枚から「自身」以外のエッグヘッド1枚を手札に
+  "OP07-114": {"main":{"fx":[{"op":"search","look":5,"count":1,"filter":{"traitIncludes":"エッグヘッド"},"exclude":"世界最大の頭脳を持つ男","optional":true}]}},
+  // OP07-116 焔裂き: 【メイン】/【カウンター】リーダーかキャラ+1000→相手ライフ2枚以下なら相手コスト4以下1枚レスト
+  "OP07-116": {"main":{"fx":[{"op":"powerMod","side":"self","leader":true,"amount":1000,"duration":"turn","count":1,"optional":true},{"op":"cond","check":{"oppLifeAtMost":2},"then":[{"op":"restChar","side":"opp","filter":{"maxCost":4},"count":1,"optional":true}]}]},"counter":{"cost":0,"fx":[{"op":"powerMod","side":"self","leader":true,"amount":1000,"battle":true,"count":1,"optional":true},{"op":"cond","check":{"oppLifeAtMost":2},"then":[{"op":"restChar","side":"opp","filter":{"maxCost":4},"count":1,"optional":true}]}]}},
+  // OP07-117 エッグヘッド(STAGE): 【自分のターン終了時】自ライフ3枚以下ならコスト5以下のエッグヘッド1枚をアクティブ
+  "OP07-117": {"onTurnEnd":[{"op":"cond","check":{"lifeAtMost":3},"then":[{"op":"activateOwnChar","count":1,"filter":{"restedOnly":true,"maxCost":5,"traitIncludes":"エッグヘッド"}}]}]},
+  // OP07-118 サボ(c8): 【登場時】手札1枚捨て：相手コスト5以下1枚＋コスト3以下1枚KO
+  "OP07-118": {"onPlay":[{"op":"discardCost","count":1,"optional":true,"then":[{"op":"ko","side":"opp","filter":{"maxCost":5},"count":1,"optional":true},{"op":"ko","side":"opp","filter":{"maxCost":3},"count":1,"optional":true}]}]},
+  // OP07-119 ポートガス・D・エース(c10): 【登場時】デッキ上1枚をライフに→自ライフ2枚以下ならこのターン【速攻】
+  "OP07-119": {"onPlay":[{"op":"lifeAddFromDeck","n":1},{"op":"cond","check":{"lifeAtMost":2},"then":[{"op":"giveKeyword","target":"self","kw":"rush","duration":"turn"}]}]}
 };
