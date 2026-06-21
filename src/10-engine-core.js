@@ -177,6 +177,7 @@
       if (c.selfCharCount != null) { const f = c.selfCharCount; let arr = f.filter ? P.chars.filter(ch => matchFilter(ch, f.filter)) : P.chars; const n = f.distinctBy === 'name' ? new Set(arr.map(ch => normName(ch.base.name))).size : arr.length; if (f.min != null && n < f.min) return false; if (f.max != null && n > f.max) return false; } // 自キャラの数(distinctBy:'name'で異名数)のしきい値
       if (c.allSelfChar != null) { if (!P.chars.length || !P.chars.every(ch => matchFilter(ch, c.allSelfChar))) return false; } // 自分のキャラが全て一致（「〜のみ」）
       if (c.allSelfCharOther != null) { const others = P.chars.filter(ch => ch !== card); if (!others.length || !others.every(ch => matchFilter(ch, c.allSelfCharOther))) return false; }
+      if (c.selfCharOther != null) { const f = c.selfCharOther; const min = f.min || 1; if (P.chars.filter(ch => ch !== card && matchFilter(ch, f.filter || f)).length < min) return false; } // 自分のキャラ（このカード以外）でfilter一致がmin枚以上（OP11-096リッパー＝他の黒・海軍キャラがいれば【ブロッカー】）
       if (c.selfHand != null) { const min = c.selfHand.min || 1; if (P.hand.filter(h => matchFilter(h, c.selfHand)).length < min) return false; }
       if (c.donAtLeast != null && donTotal(side) < c.donAtLeast) return false;
       if (c.donX1 && !(card && (card.attachedDon || 0) >= 1)) return false; // 【ドン‼×1】= このカードに付与ドン1以上（オブジェクト条件形。OP13-004サボのboardBuff等）
@@ -217,6 +218,8 @@
       if (c.lifeAtLeast != null && P.life.length < c.lifeAtLeast) return false; // 自分のライフN枚以上（OP13-004サボ）
       if (c.donAtMost != null && donTotal(side) > c.donAtMost) return false; // 場のドンN枚以下（OP13-003ロジャー）
       if (c.oppLifeAtMost != null && O.life.length > c.oppLifeAtMost) return false;
+      if (c.oppLifeAtLeast != null && O.life.length < c.oppLifeAtLeast) return false; // 相手のライフN枚以上（OP11-102ケイミー）
+      if (c.totalLifeAtLeast != null && (P.life.length + O.life.length) < c.totalLifeAtLeast) return false; // お互いのライフ合計N枚以上（OP11-114ゴムゴムの火拳銃）
       if (c.selfTurn && G.active !== side) return false;
       if (c.oppTurn && G.active === side) return false;
       return true;

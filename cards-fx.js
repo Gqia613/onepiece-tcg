@@ -202,7 +202,6 @@ window.CARD_FX = {
   "OP14-113": {"onPlay":[{"op":"search","look":5,"filter":{"traits":["アマゾン・リリー","九蛇海賊団"]}},{"op":"discardOwn","n":1}],"trigger":[{"op":"cond","check":"leaderKujya","then":[{"op":"playSelf"}]}]},
   "OP12-119": {"onPlay":[{"op":"discardOwn","n":1,"optional":true},{"op":"lifeAddFromDeck","n":1,"optional":true}],"onKO":[{"op":"cond","check":"oppTurn","then":[{"op":"lifeAddFromDeck","n":1}]}]},
   "OP07-115": {"counter":{"cost":0,"fx":[{"op":"cond","check":"life<=2","then":[{"op":"counterBuff","amount":3000}]}]},"trigger":[{"op":"reviveFromTrash","maxCost":5,"filter":{"trait":"エッグヘッド"}}]},
-  "OP11-106": {"onPlay":[{"op":"lifeToHand"},{"op":"ko","side":"opp","maxCost":5,"count":1,"optional":true}]},
   "OP06-106": {"onPlay":[{"op":"lifeToHand"},{"op":"handToLife"}]},
   "P-096": {"onPlay":[{"op":"draw","n":1},{"op":"discardOwn","n":1}],"act":{"label":"「ナミ」にレストのドン付与","cost":{},"fx":[{"op":"donAttach","target":"leader","n":1}]}},
   "OP15-052": {"static":[{"op":"leaveProtect","pay":"charToBottom"}]},
@@ -1048,5 +1047,129 @@ window.CARD_FX = {
   // OP11-038 ゴムゴムの象銃乱打: 【メイン】ドン1レスト：相手コスト5以下1枚レスト ／【カウンター】リーダー+3000
   "OP11-038": {"main":{"fx":[{"op":"restDonCost","n":1,"then":[{"op":"restChar","side":"opp","filter":{"maxCost":5},"count":1,"optional":true}]}]},"counter":{"cost":0,"fx":[{"op":"leaderBuff","amount":3000,"duration":"battle"}]}},
   // OP11-039 武頼貫: 【カウンター】魚人/人魚のリーダーかキャラ+3000→相手コスト3以下1枚レスト
-  "OP11-039": {"counter":{"cost":0,"fx":[{"op":"powerMod","side":"self","leader":true,"amount":3000,"battle":true,"count":1,"optional":true,"filter":{"or":[{"traitIncludes":"魚人族"},{"traitIncludes":"人魚族"},{"type":"LEADER"}]}},{"op":"restChar","side":"opp","filter":{"maxCost":3},"count":1,"optional":true}]}}
+  "OP11-039": {"counter":{"cost":0,"fx":[{"op":"powerMod","side":"self","leader":true,"amount":3000,"battle":true,"count":1,"optional":true,"filter":{"or":[{"traitIncludes":"魚人族"},{"traitIncludes":"人魚族"},{"type":"LEADER"}]}},{"op":"restChar","side":"opp","filter":{"maxCost":3},"count":1,"optional":true}]}},
+  /* ===== OP11 バッチ3（青・ジェルマ/麦わら。playFromDeck・allSelfChar） ===== */
+  // OP11-042 ヴィト: 【登場時】《ファイアタンク海賊団》1枚を手札から捨てる：このターン【速攻】
+  "OP11-042": {"onPlay":[{"op":"discardCost","count":1,"filter":{"traitIncludes":"ファイアタンク海賊団"},"then":[{"op":"giveKeyword","target":"self","kw":"rush"}]}]},
+  // OP11-043 ヴィンスモーク・イチジ: 【ブロッカー】 ／【相手のアタック時】自キャラが『ジェルマ』のみなら、リーダーかキャラ+1000→デッキ上2枚トラッシュ
+  "OP11-043": {"onOppAttack":[{"op":"cond","check":{"allSelfChar":{"traitIncludes":"ジェルマ"}},"once":"turn","then":[{"op":"powerMod","side":"self","leader":true,"amount":1000,"battle":true,"count":1,"optional":true},{"op":"deckToTrash","n":2}]}]},
+  // OP11-044 ヴィンスモーク・ジャッジ: 【起動メイン】手札1捨て：《ジェルマ66》全を+1000
+  "OP11-044": {"act":{"label":"手札1捨て:ジェルマ66全+1000","cost":{},"fx":[{"op":"discardCost","count":1,"then":[{"op":"powerMod","side":"self","all":true,"amount":1000,"duration":"turn","filter":{"traitIncludes":"ジェルマ66"}}]}]}},
+  // OP11-047 ヴィンスモーク・レイジュ: 【登場時】《ヴィンスモーク家》リーダーならデッキ上5枚から『ジェルマ』1枚を手札へ(残りトラッシュ)
+  "OP11-047": {"onPlay":[{"op":"cond","check":{"leaderTraitIncludes":"ヴィンスモーク家"},"then":[{"op":"search","look":5,"count":1,"filter":{"traitIncludes":"ジェルマ"},"rest":"trash","optional":true}]}]},
+  // OP11-048 カポネ・ベッジ(青): 【登場時】デッキ上4枚からコスト2以上の《ファイアタンク海賊団》か《麦わら》1枚を手札へ
+  "OP11-048": {"onPlay":[{"op":"search","look":4,"count":1,"filter":{"minCost":2,"or":[{"traitIncludes":"ファイアタンク海賊団"},{"traitIncludes":"麦わらの一味"}]},"optional":true}]},
+  // OP11-049 キャロット: 【登場時】デッキ上3枚を並び替えデッキ上/下 ／【相手のアタック時】自身トラッシュ：リーダー+1000
+  "OP11-049": {"onPlay":[{"op":"scry","look":3}],"onOppAttack":[{"op":"trashSelfCost","then":[{"op":"powerMod","side":"self","leader":true,"amount":1000,"battle":true,"count":1,"filter":{"type":"LEADER"}}]}]},
+  // OP11-050 ゴッティ: 【アタック時】《ファイアタンク海賊団》1枚を手札から捨てる：コスト1以下1枚を手札かデッキ下に戻す
+  "OP11-050": {"onAttack":[{"op":"discardCost","count":1,"filter":{"traitIncludes":"ファイアタンク海賊団"},"then":[{"op":"bounce","side":"opp","maxCost":1,"count":1,"optional":true}]}]},
+  // OP11-051 サンジ: 相手効果でKOされた時 デッキ上5枚からコスト5以下の麦わらを登場 ／【登場時】元々パワー5000以下1枚を手札に戻す
+  "OP11-051": {"onKO":[{"op":"playFromDeck","look":5,"filter":{"traitIncludes":"麦わらの一味","maxCost":5}}],"onPlay":[{"op":"bounce","side":"opp","filter":{"maxPower":5000},"count":1,"optional":true}]},
+  // OP11-056 ブルック(青): 【ブロッカー】 ／【登場時】元々コスト1のキャラ1枚をデッキ下
+  "OP11-056": {"onPlay":[{"op":"deckBottom","side":"opp","filter":{"cost":1},"count":1,"optional":true}]},
+  // OP11-057 ペドロ: 手札4枚以下なら【ブロッカー】を得る
+  "OP11-057": {"static":[{"op":"staticKeyword","kw":"blocker","cond":{"selfHandAtMost":4}}]},
+  // OP11-058 モンキー・Ｄ・ルフィ(青5): 【ブロッカー】 ／ 手札5枚以上ならこのキャラはアタックできない
+  "OP11-058": {"static":[{"op":"cantAttack","cond":{"selfHandAtLeast":5}}]},
+  // OP11-059 ゴムゴムの王蛇: 【カウンター】リーダーかキャラ+2000→手札4以下ならさらに+2000
+  "OP11-059": {"counter":{"cost":0,"fx":[{"op":"powerMod","side":"self","leader":true,"amount":2000,"battle":true,"count":1,"optional":true},{"op":"cond","check":{"selfHandAtMost":4},"then":[{"op":"powerMod","side":"self","leader":true,"amount":2000,"battle":true,"count":1,"optional":true}]}]}},
+  // OP11-061 ゴムゴムのJET大蛇砲: 【メイン】相手の元々コスト4以下1枚をデッキ下
+  "OP11-061": {"main":{"fx":[{"op":"deckBottom","side":"opp","filter":{"maxBaseCost":4},"count":1,"optional":true}]}},
+  /* ===== OP11 バッチ4（紫・ビッグ・マム。costGuess・peekOppDeck・oppTrashToBottom） ===== */
+  // OP11-062 シャーロット・カタクリ LEADER: 【アタック時】/【相手のアタック時】ドン-1：相手デッキ上を見る→リーダー+1000
+  "OP11-062": {"onAttack":[{"op":"donMinus","n":1,"once":"turn","then":[{"op":"peekOppDeck"},{"op":"leaderBuff","amount":1000,"duration":"battle"}]}],"onOppAttack":[{"op":"donMinus","n":1,"once":"turn","then":[{"op":"peekOppDeck"},{"op":"leaderBuff","amount":1000,"duration":"battle"}]}]},
+  // OP11-063 サディちゃん: 【登場時】ドン-1：インペルダウンリーダーなら相手コスト3以下1枚レスト
+  "OP11-063": {"onPlay":[{"op":"donMinus","n":1,"then":[{"op":"cond","check":{"leaderTraitIncludes":"インペルダウン"},"then":[{"op":"restChar","side":"opp","filter":{"maxCost":3},"count":1,"optional":true}]}]}]},
+  // OP11-065 シャーロット・アナナ: 「アナナ」以外の自分の紫・ビッグ・マム海賊団キャラがいれば【ブロッカー】を得る
+  "OP11-065": {"static":[{"op":"staticKeyword","kw":"blocker","cond":{"selfCharOther":{"filter":{"color":"紫","traitIncludes":"ビッグ・マム海賊団"}}}}]},
+  // OP11-066 シャーロット・オーブン: 【起動メイン】レスト＋コスト宣言：相手デッキ上が一致なら相手の元々コスト3以下1枚KO→ドン1レスト追加
+  "OP11-066": {"act":{"label":"レスト+コスト宣言:一致で相手3以下KO","cost":{"restSelf":true},"fx":[{"op":"costGuess","cpuGuess":1,"then":[{"op":"ko","side":"opp","filter":{"maxBaseCost":3},"count":1,"optional":true},{"op":"donFromDeck","n":1,"mode":"rested"}]}]}},
+  // OP11-067 シャーロット・カタクリ(c8): 【ブロッカー】 ／【自分のターン終了時】コスト3以上のビッグ・マム2枚をアクティブ→ドン1レスト追加
+  "OP11-067": {"onTurnEnd":[{"op":"activateOwnChar","count":2,"filter":{"minBaseCost":3,"traitIncludes":"ビッグ・マム海賊団"}},{"op":"donFromDeck","n":1,"mode":"rested"}]},
+  // OP11-069 シャーロット・ブリュレ: 【登場時】ライフ上1枚を手札に：ビッグ・マムリーダーならドン1アクティブ追加
+  "OP11-069": {"onPlay":[{"op":"lifeToHand","n":1,"then":[{"op":"cond","check":{"leaderTraitIncludes":"ビッグ・マム海賊団"},"then":[{"op":"donFromDeck","n":1,"mode":"active"}]}]}]},
+  // OP11-070 シャーロット・プリン(紫): 【登場時】デッキ上5枚からコスト2以上のビッグ・マム1枚を手札へ ／【起動メイン】ドン-1+レスト：相手デッキ上を見る
+  "OP11-070": {"onPlay":[{"op":"search","look":5,"count":1,"filter":{"minCost":2,"traitIncludes":"ビッグ・マム海賊団"},"optional":true}],"act":{"label":"ドン-1+レスト:相手デッキ上を見る","cost":{"restSelf":true},"fx":[{"op":"donMinus","n":1,"then":[{"op":"peekOppDeck"}]}]}},
+  // OP11-071 シャーロット・ペロスペロー: 【起動メイン】手札1捨て＋コスト宣言：一致なら1ドロー→ドン1アクティブ追加
+  "OP11-071": {"act":{"label":"手札1捨て+コスト宣言:一致で1ドロー","cost":{},"fx":[{"op":"discardCost","count":1,"then":[{"op":"costGuess","cpuGuess":1,"then":[{"op":"draw","n":1},{"op":"donFromDeck","n":1,"mode":"active"}]}]}]}},
+  // OP11-072 シャーロット・モンドール: 【起動メイン】ドン-1+レスト：相手はトラッシュ2枚をデッキ下→ライフ上1枚を手札に
+  "OP11-072": {"act":{"label":"ドン-1+レスト:相手トラッシュ2枚デッキ下→ライフ手札","cost":{"restSelf":true},"fx":[{"op":"donMinus","n":1,"then":[{"op":"oppTrashToBottom","n":2},{"op":"lifeToHand","n":1}]}]}},
+  // OP11-073 シャーロット・リンリン: ビッグ・マムリーダーで【速攻】 ／【相手のアタック時】ドン-5+コスト宣言：一致ならリーダー+2000
+  "OP11-073": {"static":[{"op":"staticKeyword","kw":"rush","cond":{"leaderTraitIncludes":"ビッグ・マム海賊団"}}],"onOppAttack":[{"op":"donMinus","n":5,"once":"turn","then":[{"op":"costGuess","cpuGuess":1,"then":[{"op":"leaderBuff","amount":2000,"duration":"turn"}]}]}]},
+  // OP11-074 シュトロイゼン: 【起動メイン】ドン-1+レスト+コスト宣言：一致なら相手コスト4以下1枚レスト
+  "OP11-074": {"act":{"label":"ドン-1+レスト+コスト宣言:一致で相手4以下レスト","cost":{"restSelf":true},"fx":[{"op":"donMinus","n":1,"then":[{"op":"costGuess","cpuGuess":1,"then":[{"op":"restChar","side":"opp","filter":{"maxCost":4},"count":1,"optional":true}]}]}]}},
+  // OP11-075 ハグワール・D・サウロ: 【登場時】リーダー「ニコ・ロビン」＋場のドン7以上で2ドロー
+  "OP11-075": {"onPlay":[{"op":"cond","check":{"and":[{"leaderNameIncludes":"ニコ・ロビン"},{"donAtLeast":7}]},"then":[{"op":"draw","n":2}]}]},
+  // OP11-076 ハンニャバル: 【ブロッカー】 ／【登場時】インペルダウンリーダーなら手札からコスト3以下のインペルダウンを登場
+  "OP11-076": {"onPlay":[{"op":"cond","check":{"leaderTraitIncludes":"インペルダウン"},"then":[{"op":"playCharFromHand","filter":{"traitIncludes":"インペルダウン","maxCost":3},"count":1,"optional":true}]}]},
+  // OP11-077 ランドルフ: 【自分のターン中】【ターン1回】自分のドンがドンデッキに戻された時、ビッグ・マム1枚を次相手ターン終了までコスト+2
+  "OP11-077": {"onDonReturned":[{"op":"cond","once":"turn","check":{"selfTurn":true},"then":[{"op":"addCostBuff","side":"self","count":1,"amount":2,"duration":"untilNextEnd","optional":true,"filter":{"traitIncludes":"ビッグ・マム海賊団"}}]}]},
+  // OP11-079 男の勝負に…!!!: 【カウンター】コスト宣言：一致ならリーダーかキャラ+5000
+  "OP11-079": {"counter":{"cost":0,"fx":[{"op":"costGuess","cpuGuess":1,"then":[{"op":"powerMod","side":"self","leader":true,"amount":5000,"battle":true,"count":1,"optional":true}]}]}},
+  // OP11-080 ギア2: 【メイン】ドン2レスト：リーダーが青を含むならドン1レスト追加 ／【カウンター】リーダー+3000
+  "OP11-080": {"main":{"fx":[{"op":"restDonCost","n":2,"then":[{"op":"cond","check":{"leaderColor":"青"},"then":[{"op":"donFromDeck","n":1,"mode":"rested"}]}]}]},"counter":{"cost":0,"fx":[{"op":"leaderBuff","amount":3000,"duration":"battle"}]}},
+  // OP11-081 皇帝剣破々刃: 【メイン】コスト宣言：相手デッキ上が一致なら相手の元々コスト8以下1枚KO
+  "OP11-081": {"main":{"fx":[{"op":"costGuess","cpuGuess":1,"then":[{"op":"ko","side":"opp","filter":{"maxBaseCost":8},"count":1,"optional":true}]}]}},
+  /* ===== OP11 バッチ5（黒・海軍/SMILE。attackActive・trashToDeckCost・reviveFromTrash） ===== */
+  // OP11-082 アラマキ: 【起動メイン】自身トラッシュ：海軍リーダーなら海軍1枚がアクティブにもアタック可→デッキ上2枚トラッシュ
+  "OP11-082": {"act":{"label":"自身トラッシュ:海軍にアクティブアタック付与","cost":{},"fx":[{"op":"trashSelfCost","then":[{"op":"cond","check":{"leaderTraitIncludes":"海軍"},"then":[{"op":"giveKeyword","target":"chooseOwn","kw":"attackActive","duration":"turn","filter":{"traitIncludes":"海軍"}}]},{"op":"deckToTrash","n":2}]}]}},
+  // OP11-083 カリブー(黒): 【ブロッカー】 ／【登場時】自分の手札2枚を捨てる
+  "OP11-083": {"onPlay":[{"op":"discardCost","count":2}]},
+  // OP11-084 クザン(黒): 【登場時】デッキ上3枚トラッシュ ／【アタック時】海軍のリーダーかキャラ1枚がアクティブにもアタック可
+  "OP11-084": {"onPlay":[{"op":"deckToTrash","n":3}],"onAttack":[{"op":"giveKeyword","target":"chooseOwnL","kw":"attackActive","duration":"turn","filter":{"traitIncludes":"海軍"}}]},
+  // OP11-085 黒炭オロチ: 【登場時】トラッシュからコスト5以下のSMILE1枚を手札に
+  "OP11-085": {"onPlay":[{"op":"trashToHand","count":1,"optional":true,"filter":{"maxCost":5,"traitIncludes":"SMILE"}}]},
+  // OP11-086 コリブー: 【登場時】手札1枚を捨てる ／【起動メイン】自身トラッシュ：トラッシュからコスト4以下「カリブー」1枚を登場
+  "OP11-086": {"onPlay":[{"op":"discardCost","count":1}],"act":{"label":"自身トラッシュ:コスト4以下カリブー登場","cost":{},"fx":[{"op":"trashSelfCost","then":[{"op":"reviveFromTrash","maxCost":4,"filter":{"nameIncludes":"カリブー"}}]}]}},
+  // OP11-088 シュウ: 【ブロッカー】 ／【ターン1回】相手のアタック時、そのキャラが属性(斬)なら このバトル中+5000
+  "OP11-088": {"onOppAttack":[{"op":"condAttacker","attr":"斬","once":"turn","then":[{"op":"powerMod","side":"self","target":"self","amount":5000,"battle":true}]}]},
+  // OP11-091 ベリーグッド: 【登場時】相手は自身のトラッシュからイベント3枚をデッキ下
+  "OP11-091": {"onPlay":[{"op":"oppTrashToBottom","n":3,"filter":{"type":"EVENT"}}]},
+  // OP11-092 ヘルメッポ(黒): 【登場時】手札1捨て：1ドロー＋トラッシュから「ヘルメッポ」以外のコスト8以下SWORDを登場(ターン終了時デッキ下)
+  "OP11-092": {"onPlay":[{"op":"discardCost","count":1,"optional":true,"then":[{"op":"draw","n":1},{"op":"reviveFromTrash","maxCost":8,"returnEndTurn":true,"filter":{"traitIncludes":"SWORD","nameExcludes":"ヘルメッポ"}}]}]},
+  // OP11-095 モンキー・D・ガープ: 【登場時】トラッシュから海軍3枚をデッキ下：リーダーにレストのドン1付与→コスト9以上のキャラがいれば相手コスト7以下1枚KO
+  "OP11-095": {"onPlay":[{"op":"trashToDeckCost","n":3,"filter":{"traitIncludes":"海軍"},"then":[{"op":"donAttach","target":"leader","n":1},{"op":"cond","check":{"selfCharCount":{"filter":{"minCost":9},"min":1}},"then":[{"op":"ko","side":"opp","filter":{"maxCost":7},"count":1,"optional":true}]}]}]},
+  // OP11-096 リッパー: 「リッパー」以外の自分の黒・海軍キャラがいれば【ブロッカー】を得る
+  "OP11-096": {"static":[{"op":"staticKeyword","kw":"blocker","cond":{"selfCharOther":{"filter":{"color":"黒","traitIncludes":"海軍"}}}}]},
+  // OP11-097 すっかり衰えた……!!!: 【カウンター】リーダーかキャラ+1000→トラッシュ10枚以上ならコスト3以下の黒キャラ1枚を手札に
+  "OP11-097": {"counter":{"cost":0,"fx":[{"op":"powerMod","side":"self","leader":true,"amount":1000,"battle":true,"count":1,"optional":true},{"op":"cond","check":{"trashAtLeast":10},"then":[{"op":"trashToHand","count":1,"optional":true,"filter":{"maxCost":3,"color":"黒","type":"CHAR"}}]}]}},
+  // OP11-098 海底落下: 【メイン】デッキ上3枚トラッシュ：相手コスト2以下1枚KO
+  "OP11-098": {"main":{"fx":[{"op":"deckTrashCost","n":3,"then":[{"op":"ko","side":"opp","filter":{"maxCost":2},"count":1,"optional":true}]}]}},
+  // OP11-099 ぼくは!!!海軍将校になる男です!!!!: 【メイン】デッキ上3枚から「自身」以外の海軍1枚を公開し手札に(残りトラッシュ)
+  "OP11-099": {"main":{"fx":[{"op":"search","look":3,"count":1,"filter":{"traitIncludes":"海軍"},"exclude":"ぼくは!!!海軍将校になる男です!!!!","rest":"trash","optional":true}]}},
+  /* ===== OP11 バッチ6（黄・しらほし/魚人島。lifeFlipDownCost・lifeCost choose・onOppEvent） ===== */
+  // OP11-100 オトヒメ: 【登場時】しらほしリーダーなら ライフ上1枚を裏向き：1ドロー
+  "OP11-100": {"onPlay":[{"op":"cond","check":{"leaderNameIncludes":"しらほし"},"then":[{"op":"lifeFlipDownCost","then":[{"op":"draw","n":1}]}]}]},
+  // OP11-101 カポネ・ベッジ(黄): 【ブロッカー】 ／【ターン1回】「カポネ・ベッジ」以外の自分の超新星が相手効果で離れる場合、代わりにライフ上に裏向きで加える
+  "OP11-101": {"static":[{"op":"leaveProtect","pay":"toLifeFaceDown","once":"turn","targetFilter":{"traitIncludes":"超新星","nameExcludes":"カポネ・ベッジ"}}]},
+  // OP11-102 ケイミー: 【自分のターン中】【ターン1回】相手がイベントを発動した時、相手ライフ2枚以上なら お互いのライフ上1枚をトラッシュ
+  "OP11-102": {"onOppEvent":{"when":"selfTurn","once":"turn","cond":{"oppLifeAtLeast":2},"fx":[{"op":"lifeTrash","side":"both"}]}},
+  // OP11-103 シャクレ: 【起動メイン】しらほしリーダーで このキャラをレスト＋ライフ上1枚裏向き：相手コスト3以下1枚KO
+  "OP11-103": {"act":{"label":"レスト+ライフ裏向き:相手3以下KO","cost":{"restSelf":true},"fx":[{"op":"cond","check":{"leaderNameIncludes":"しらほし"},"then":[{"op":"lifeFlipDownCost","then":[{"op":"ko","side":"opp","filter":{"maxCost":3},"count":1,"optional":true}]}]}]}},
+  // OP11-104 シャーリー: 【ブロッカー】 ／【登場時】ライフ上1枚裏向き：デッキ上3枚から魚人島1枚を手札に(残りデッキ上下)
+  "OP11-104": {"onPlay":[{"op":"lifeFlipDownCost","then":[{"op":"search","look":3,"count":1,"filter":{"traitIncludes":"魚人島"},"optional":true}]}]},
+  // OP11-106 ゼウス: 【登場時】ライフ上か下1枚を手札に：相手コスト5以下1枚KO
+  "OP11-106": {"onPlay":[{"op":"lifeCost","pos":"choose","then":[{"op":"ko","side":"opp","filter":{"maxCost":5},"count":1,"optional":true}]}]},
+  // OP11-107 チョンマゲ: 【ブロッカー】 ／【起動メイン】【ターン1回】しらほしリーダーで ライフ上1枚裏向き：このターン終了時このキャラをアクティブに
+  "OP11-107": {"act":{"label":"ライフ裏向き:ターン終了時アクティブ","cost":{},"fx":[{"op":"cond","check":{"leaderNameIncludes":"しらほし"},"then":[{"op":"lifeFlipDownCost","then":[{"op":"scheduleTurnEnd","fx":[{"op":"activateSelf"}]}]}]}]}},
+  // OP11-108 ネプチューン: 【登場時】しらほしリーダーで ライフ上1枚裏向き：2ドロー＋手札1枚を捨てる
+  "OP11-108": {"onPlay":[{"op":"cond","check":{"leaderNameIncludes":"しらほし"},"then":[{"op":"lifeFlipDownCost","then":[{"op":"draw","n":2},{"op":"discardCost","count":1}]}]}]},
+  // OP11-109 パッパグ: 【登場時】自分の「ケイミー」がいれば 2ドロー＋手札2枚を捨てる
+  "OP11-109": {"onPlay":[{"op":"cond","check":{"selfChar":{"nameIncludes":"ケイミー"}},"then":[{"op":"draw","n":2},{"op":"discardCost","count":2}]}]},
+  // OP11-110 フカボシ: KOされる場合 代わりに「魚人島」かリーダー「しらほし」1枚をレスト ／【登場時】ライフ上か下1枚を手札に：相手コスト1以下1枚KO
+  "OP11-110": {"static":[{"op":"leaveProtect","targetSelf":true,"onlyKO":true,"pay":"restOwnCards","n":1,"filter":{"or":[{"traitIncludes":"魚人島"},{"type":"LEADER","nameIncludes":"しらほし"}]}}],"onPlay":[{"op":"lifeCost","pos":"choose","then":[{"op":"ko","side":"opp","filter":{"maxCost":1},"count":1,"optional":true}]}]},
+  // OP11-112 メガロ: 【ブロッカー】 ／【相手のターン中】しらほしリーダーなら このキャラ+4000
+  "OP11-112": {"static":[{"op":"condBuff","cond":{"oppTurn":true,"leaderNameIncludes":"しらほし"},"power":4000}]},
+  // OP11-114 ゴムゴムの火拳銃: 【メイン】ドン3レスト：お互いライフ合計5以上で相手の元々コスト5以下1枚KO ／【カウンター】リーダー+3000
+  "OP11-114": {"main":{"fx":[{"op":"restDonCost","n":3,"then":[{"op":"cond","check":{"totalLifeAtLeast":5},"then":[{"op":"ko","side":"opp","filter":{"maxBaseCost":5},"count":1,"optional":true}]}]}]},"counter":{"cost":0,"fx":[{"op":"leaderBuff","amount":3000,"duration":"battle"}]}},
+  // OP11-115 タイプじゃないんですっ…………!!: 【カウンター】しらほしリーダーなら リーダーかキャラ+4000
+  "OP11-115": {"counter":{"cost":0,"fx":[{"op":"cond","check":{"leaderNameIncludes":"しらほし"},"then":[{"op":"powerMod","side":"self","leader":true,"amount":4000,"battle":true,"count":1,"optional":true}]}]}},
+  // OP11-116 人魚柔術 ウルトラマリン: 【メイン】コスト6以下1枚を持ち主のライフ上か下に表向きで加える
+  "OP11-116": {"main":{"fx":[{"op":"charToLife","side":"any","filter":{"maxCost":6},"faceUp":true,"optional":true}]}},
+  // OP11-117 魚人島(STAGE): 【起動メイン】【ターン1回】しらほしリーダーで ライフ上1枚表向き：海王類/魚人族/人魚族1枚を+1000
+  "OP11-117": {"act":{"label":"ライフ表向き:海王類/魚人/人魚に+1000","cost":{},"fx":[{"op":"cond","check":{"leaderNameIncludes":"しらほし"},"then":[{"op":"flipLifeCost","then":[{"op":"powerMod","side":"self","amount":1000,"duration":"turn","count":1,"optional":true,"filter":{"or":[{"traitIncludes":"海王類"},{"traitIncludes":"魚人族"},{"traitIncludes":"人魚族"}]}}]}]}]}},
+  // OP11-118 モンキー・Ｄ・ルフィ(青8): 【速攻】 ／【アタック時】手札1捨て：コスト4以下1枚を手札に戻す→リーダーかキャラ1枚にレストのドン1付与
+  "OP11-118": {"onAttack":[{"op":"discardCost","count":1,"optional":true,"then":[{"op":"bounce","side":"opp","maxCost":4,"count":1,"optional":true},{"op":"donAttach","target":"chooseOwn","n":1}]}]},
+  // OP11-119 コビー(黒8): 【登場時】自分のキャラ1枚がアクティブにもアタック可 ／【アタック時】トラッシュ2枚をデッキ下：リーダーかキャラ1枚を次相手ターン終了まで+1000
+  "OP11-119": {"onPlay":[{"op":"giveKeyword","target":"chooseOwn","kw":"attackActive","duration":"turn"}],"onAttack":[{"op":"trashToDeckCost","n":2,"then":[{"op":"powerMod","side":"self","leader":true,"amount":1000,"duration":"untilNextEnd","count":1,"optional":true}]}]}
 };

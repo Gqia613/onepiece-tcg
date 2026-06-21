@@ -22,7 +22,7 @@ const { runHarness } = require('./_load-app');  // stubs+CARD_DB+CARD_FX+本体J
     require(path.join(__dirname, '..', 'cards.js'));
     require(path.join(__dirname, '..', 'cards-fx.js'));
     const DB = global.window.CARD_DB, FX = global.window.CARD_FX;
-    for (const [tag, file] of [['OP14', 'official-op14.js'], ['OP13', 'official-op13.js'], ['OP12', 'official-op12.js']]) {
+    for (const [tag, file] of [['OP14', 'official-op14.js'], ['OP13', 'official-op13.js'], ['OP12', 'official-op12.js'], ['OP11', 'official-op11.js']]) {
       const off = require(path.join(__dirname, '..', 'tools', file));
       const mismatch = [], missing = [];
       for (const no in off) {
@@ -1643,6 +1643,58 @@ humanPick=function(c){return Promise.resolve((c||[])[0]||null);};
       const a=mkSyn('__c8a__',C['__c8a__']),b=mkSyn('__c8a__',C['__c8a__']); a.owner='me';b.owner='me'; me.chars=[a,b]; const h0=me.hand.length;
       await runFx(me.leader.base.fx.onLeaderAttack.fx,{self:me.leader,side:'me'});
       ok(me.hand.length===h0+1, 'OP12-081: コスト8以上2枚で1ドロー(onLeaderAttack)'); delete C['__c8a__']; }
+
+    /* ===== OP11 新機構の回帰 ===== */
+    // OP11-112 メガロ: 【相手のターン中】しらほしリーダーで +4000（condBuff oppTurn）
+    { C['__shi__']={no:'__shi__',name:'しらほし',type:'LEADER',color:['黄'],cost:0,power:5000,life:5,traits:[]};
+      G.players={me:mkP('__shi__',false),cpu:mkP('OP11-041',true)}; G.active='cpu'; G.turnSeq=5; G.winner=null;
+      const me=G.players.me; const m=I('OP11-112','me'); m.owner='me'; me.chars=[m];
+      ok(power(m)===C['OP11-112'].power+4000, 'OP11-112 メガロ: 相手ターン中しらほしで+4000');
+      G.active='me'; ok(power(m)===C['OP11-112'].power, 'OP11-112: 自分ターンは+0'); delete C['__shi__']; }
+    // OP11-119 コビー(attackActive): 付与でアクティブの相手キャラもアタック対象になる
+    { const me=LP('OP13-002'); G.players.cpu=mkP('OP11-041',true); G.active='me'; G.turnSeq=5; G.winner=null;
+      const atk=I('OP13-002','me'); atk.owner='me'; atk.rested=false; me.chars=[atk];
+      C['__act__']={no:'__act__',name:'A',type:'CHAR',color:[],cost:2,power:3000,counter:1000,traits:[]};
+      const oc=mkSyn('__act__',C['__act__']); oc.owner='cpu'; oc.rested=false; G.players.cpu.chars=[oc];
+      ok(!legalTargets('me',atk).includes(oc), 'OP11 attackActive前: アクティブ相手キャラは対象外');
+      atk.kwGrant=[{kw:'attackActive',dur:'turn'}];
+      ok(legalTargets('me',atk).includes(oc), 'OP11 attackActive後: アクティブ相手キャラもアタック対象'); delete C['__act__']; }
+    // OP11-079 costGuess: 相手デッキ上のコストが宣言と一致なら then 発動
+    { const me=LP('OP13-002'); me.isCPU=true; G.players.cpu=mkP('OP11-041',true); G.active='me'; G.winner=null;
+      G.players.cpu.deck=[I('OP11-096','cpu')]; const h0=me.hand.length; me.deck=[I('OP11-096','me')];
+      await runFx([{op:'costGuess',cpuGuess:1,then:[{op:'draw',n:1}]}],{self:me.leader,side:'me'});
+      ok(me.hand.length===h0+1, 'OP11 costGuess: 宣言一致(コスト1)で then 発動'); }
+    // OP11-102 ケイミー: oppLifeAtLeast 条件 と lifeTrash side:both
+    { const me=LP('OP13-002'); G.players.cpu=mkP('OP11-041',true); G.active='me'; G.winner=null;
+      me.life=[I('OP11-096','me'),I('OP11-096','me')]; G.players.cpu.life=[I('OP11-096','cpu'),I('OP11-096','cpu')];
+      ok(checkCond({oppLifeAtLeast:2},'me',null), 'OP11-102: oppLifeAtLeast=2 成立');
+      await runFx([{op:'lifeTrash',side:'both'}],{self:me.leader,side:'me'});
+      ok(me.life.length===1 && G.players.cpu.life.length===1, 'OP11-102: lifeTrash both で双方ライフ-1'); }
+    // OP11-057 ペドロ: 手札4枚以下で【ブロッカー】(条件付きstaticKeyword・テキスト由来blockerを打ち消す)
+    { const me=LP('OP13-002'); const p=I('OP11-057','me'); p.owner='me'; me.chars=[p];
+      me.hand=[I('OP11-096','me'),I('OP11-096','me'),I('OP11-096','me'),I('OP11-096','me')];
+      ok(hasKw(p,'blocker'), 'OP11-057: 手札4枚以下で【ブロッカー】');
+      me.hand.push(I('OP11-096','me'));
+      ok(!hasKw(p,'blocker'), 'OP11-057: 手札5枚で【ブロッカー】無し'); }
+    // OP11-058 ルフィ青: 手札5枚以上でアタック不可(cantAttack cond)
+    { const me=LP('OP13-002'); const l=I('OP11-058','me'); l.owner='me'; l.rested=false; l.summonedTurn=0; me.chars=[l];
+      G.active='me'; G.players.cpu=mkP('OP11-041',true);
+      me.hand=Array.from({length:5},()=>I('OP11-096','me'));
+      ok(!canCardAttack(l), 'OP11-058: 手札5枚でアタック不可');
+      me.hand.pop(); ok(canCardAttack(l), 'OP11-058: 手札4枚でアタック可'); }
+    // OP11-101 カポネ・ベッジ: 超新星が相手効果で離れる→代わりにライフ上に裏向きで加える(leaveProtect toLifeFaceDown)
+    { const me=LP('OP13-002'); me.isCPU=true; G.players.cpu=mkP('OP11-041',true);
+      const cap=I('OP11-101','me'); cap.owner='me';
+      C['__sn__']={no:'__sn__',name:'SN',type:'CHAR',color:['黄'],cost:3,power:4000,counter:1000,traits:['超新星']};
+      const sn=mkSyn('__sn__',C['__sn__']); sn.owner='me'; me.chars=[cap,sn]; const life0=me.life.length;
+      const prot=await protectFromEffect(sn,'ko',G.players.cpu.leader);
+      ok(prot===true && me.life.length===life0+1 && !me.chars.includes(sn), 'OP11-101: 超新星をライフ上に裏向きで加えて守る'); delete C['__sn__']; }
+    // OP11-092 ヘルメッポ: reviveFromTrash returnEndTurn で「ターン終了時デッキ下」を予約
+    { const me=LP('OP13-002'); me.isCPU=true; G.players.cpu=mkP('OP11-041',true); G._pendingTurnEnd=[];
+      C['__sw__']={no:'__sw__',name:'SW',type:'CHAR',color:['黒'],cost:3,power:4000,counter:1000,traits:['SWORD']};
+      me.trash=[mkSyn('__sw__',C['__sw__'])]; me.trash[0].owner='me';
+      await runFx([{op:'reviveFromTrash',maxCost:8,returnEndTurn:true,filter:{traitIncludes:'SWORD'}}],{self:me.leader,side:'me'});
+      ok(me.chars.some(c=>c.base.no==='__sw__') && G._pendingTurnEnd.length===1, 'OP11-092: SWORD蘇生＋ターン終了時デッキ下を予約'); delete C['__sw__']; }
   }catch(e){ console.log('EXCEPTION:', e.message); fail++; }
   console.log('Phase3 fxテスト: pass='+pass+' fail='+fail);
   process.exit(fail?1:0);

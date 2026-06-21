@@ -262,7 +262,7 @@
       if (card.rested) return false;
       if (cantAttackNeg(card)) return false;
       if (isRestImmune(card)) return false; // 「レストにできない」＝アタック宣言できない（アタックはレストを伴う）
-      if (!isNegated(card) && card.base.fx && card.base.fx.static && card.base.fx.static.some(o => o.op === 'cantAttack')) return false; // 「このリーダー/キャラはアタックできない」常在（効果無効中は解除＝OP14-056ワダツミの自身無効コンボ）
+      if (!isNegated(card) && card.base.fx && card.base.fx.static && card.base.fx.static.some(o => o.op === 'cantAttack' && (!o.cond || checkCond(o.cond, card.owner, card)))) return false; // 「このリーダー/キャラはアタックできない」常在（cond対応＝OP11-058ルフィ手札5以上。効果無効中は解除＝OP14-056ワダツミの自身無効コンボ）
       if (card.owner !== G.active) return false;
       if (!canAttackThisTurn(card.owner)) return false;
       if (card.base.type === 'CHAR' && card.summonedTurn === G.turnSeq && !hasKw(card, 'rush') && !hasKw(card, 'rushChar')) return false;
