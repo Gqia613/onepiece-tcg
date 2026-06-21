@@ -99,6 +99,8 @@
       switch (op.op) {
         case 'draw': draw(side, op.n); flog(side, `${op.n}ドロー`); break;
         case 'oppDraw': { draw(o, op.n || 1); flog(side, `相手が${op.n || 1}ドロー`); break; } // 相手にN枚引かせる（OP07-090モルガンズ）
+        case 'drawToSize': { const tgt = op.n || 3; let k = 0; while (P.hand.length < tgt) { if (!draw(side, 1)) break; k++; } if (k) flog(side, `手札が${tgt}枚になるよう${k}ドロー`); break; } // 手札N枚になるよう引く（OP02-051イワンコフ）
+        case 'nextPlayCostReduce': { P._turnPlayCostReduce = { minCost: op.minCost || 0, amount: op.amount || 1, filter: op.filter || {}, turn: G.turnSeq }; flog(side, 'このターン、対象キャラのプレイコストが軽減される'); break; } // OP02-025錦えもんL（近似:ターン中の対象すべて）
         case 'oppHandToDeckDraw': { const O5 = G.players[o]; const hn = O5.hand.length; O5.deck.push(...O5.hand.splice(0)); shuffle(O5.deck); draw(o, op.n || hn); flog(side, `相手は手札を山に戻しシャッフル→${op.n || hn}ドロー`); render(); break; } // 相手の手札を山に戻しシャッフル→N枚引く（OP06-047プリン）
         case 'grantAllBattleImmune': { P._battleImmuneGrant = { until: durSeq(op.duration || 'turn'), filter: op.filter || {} }; flog(side, 'filter一致の自キャラはバトルでKOされない'); render(); break; } // 自分のfilter一致キャラ全てを一時バトルKO耐性（OP06-096）
         case 'setNoLifeToHand': { P._noLifeToHandTurn = G.turnSeq; flog(side, 'このターン、自分の効果でライフを手札に加えられない'); break; } // OP06-020ホーディL
@@ -297,6 +299,7 @@
             for (let r = k; r > 0;) { if (P.don.rested > 0) { P.don.rested--; r--; } else if (op.fromAny && P.don.active > 0) { P.don.active--; r--; } else break; }
             if (k) floatOn(t.uid, `ドン+${k}`, 'buff');
           }
+          if (targets.some(t => t)) await fireDonAttached(side); // ドン付与誘発（OP02-002ガープL）
           break;
         }
         // 自分の付与ドンを合計Nまで、自分のキャラ1枚に移し替える（OP07-001ドラゴンL）
@@ -415,6 +418,7 @@
         }
         // 相手のアクティブのドンをN枚レストにする（OP08-030ペドロ）
         case 'restOppDon': { const O4 = G.players[o]; const n = Math.min(op.n || 1, O4.don.active); O4.don.active -= n; O4.don.rested += n; if (n) flog(side, `相手のドン${n}枚をレストにした`); render(); break; }
+        case 'oppDonToDeck': { const O7 = G.players[o]; let n = op.n || 1; while (n > 0) { if (O7.don.active > 0) O7.don.active--; else if (O7.don.rested > 0) O7.don.rested--; else break; n--; } flog(side, `相手のドンをドンデッキに戻した`); render(); break; } // 相手のドンをドンデッキへ（OP02-085マゼラン）
         // 自分の場のドンを「相手の場のドン枚数」と同じになるまでドンデッキへ戻す（OP08-074ブラックマリア・ターン終了時）
         case 'donReturnToMatchOpp': { const want = donTotal(o); let excess = Math.max(0, donTotal(side) - want); while (excess > 0) { if (P.don.rested > 0) P.don.rested--; else if (P.don.active > 0) P.don.active--; else break; excess--; } if (donTotal(side) <= want) flog(side, '自分のドンを相手と同じ枚数に戻した'); render(); break; }
         // 自分のライフをすべて裏向きにする（OP08-075キャンディメイデン）

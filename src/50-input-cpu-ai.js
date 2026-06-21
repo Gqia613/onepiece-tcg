@@ -14,7 +14,7 @@
     }
     function promptPick(i) { const ps = G.promptState; if (!ps) return; const o = ps.opts[i]; if (o) ps.pick(o.v); }
 
-    function effCost(side, c) { let cost = c.base.cost || 0; const m = c.base.costMod; if (m && checkCond(m.cond, side, G.players[side].leader)) cost += m.amount; const stg = G.players[side].stage; if (stg && !isNegated(stg) && stg.base.fx && stg.base.fx.static) for (const o of stg.base.fx.static) { if (o.op === 'playCostReduce' && G.active === side && (c.base.cost || 0) >= (o.minCost || 0) && matchFilter(c, o.filter || {})) cost -= o.amount || 0; } return Math.max(0, cost); } // ステージ提供の手札プレイコスト軽減（OP05-097マリージョア=天竜人）
+    function effCost(side, c) { let cost = c.base.cost || 0; const m = c.base.costMod; if (m && checkCond(m.cond, side, G.players[side].leader)) cost += m.amount; const P = G.players[side]; const stg = P.stage; if (stg && !isNegated(stg) && stg.base.fx && stg.base.fx.static) for (const o of stg.base.fx.static) { if (o.op === 'playCostReduce' && G.active === side && (c.base.cost || 0) >= (o.minCost || 0) && matchFilter(c, o.filter || {})) cost -= o.amount || 0; } const tr = P._turnPlayCostReduce; if (tr && tr.turn === G.turnSeq && (c.base.cost || 0) >= (tr.minCost || 0) && matchFilter(c, tr.filter || {})) cost -= tr.amount || 0; return Math.max(0, cost); } // ステージ提供＋ターン中の手札プレイコスト軽減（OP05-097マリージョア/OP02-025錦えもんL）
 
     function findCard(uid) {
       for (const s of ['me', 'cpu']) {
@@ -72,7 +72,7 @@
       opts.push({ t: 'やめる', v: '0', ghost: true });
       const sel = await showPrompt({ title: card.base.name + ' にドン付与', text: '付与する枚数を選択（現在 P' + base + ' ／ アクティブなドン ' + max + '枚・1枚=+1000）', opts });
       const n = parseInt(sel, 10) || 0;
-      if (n > 0) { card.attachedDon += n; P.don.active -= n; floatOn(card.uid, 'ドン+' + n, 'buff'); flog('me', '「' + card.base.name + '」にドン' + n + '枚付与（パワー' + power(card) + '）'); render(); }
+      if (n > 0) { card.attachedDon += n; P.don.active -= n; floatOn(card.uid, 'ドン+' + n, 'buff'); flog('me', '「' + card.base.name + '」にドン' + n + '枚付与（パワー' + power(card) + '）'); render(); await fireDonAttached('me'); }
     }
     function beginAttack(card) {
       if (legalTargets('me').length === 0) { toast('攻撃できる対象がいません'); return; }

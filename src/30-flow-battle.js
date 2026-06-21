@@ -61,6 +61,15 @@
       }
     }
     // 「相手がイベントを発動した時」誘発（OP11-012フランキー/102ケイミー）。eventSide=イベントを使った側→その相手のキャラを誘発。
+    // 「リーダーか自分のキャラにドン‼が付与された時」誘発（OP02-002ガープL）。side=付与した側。
+    async function fireDonAttached(side) {
+      const L = G.players[side].leader;
+      const cfg = !isNegated(L) && L.base.fx && L.base.fx.onDonAttached;
+      if (!cfg) return;
+      if (cfg.when === 'selfTurn' && side !== G.active) return;
+      if (cfg.once === 'turn') { if (L._donAttachedTurn === G.turnSeq) return; L._donAttachedTurn = G.turnSeq; }
+      await runFx(cfg.fx, { self: L, side });
+    }
     // 「キャラが自分の効果でレストになった時」誘発（OP10-036ペローナ＝自分のターン中ターン1回ドン1アクティブ）。side=効果を使った側。
     async function fireOwnRest(side) {
       const P = G.players[side];
