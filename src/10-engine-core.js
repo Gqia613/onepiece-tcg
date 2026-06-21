@@ -384,6 +384,7 @@
       if (f.maxCost != null && _ec > f.maxCost) return false;
       if (f.maxBaseCost != null && (b.cost || 0) > f.maxBaseCost) return false; // 「元々のコスト(基本コスト)N以下」＝base.costで判定(常在/一時のコスト増減を見ない)
       if (f.minBaseCost != null && (b.cost || 0) < f.minBaseCost) return false;
+      if (f.basePower != null && (b.power || 0) !== f.basePower) return false; // 「元々のパワーがちょうどN」（基本パワー完全一致。OP14-058「元々のパワー6000のキャラ」等）
       if (f.minEffPower != null && power(card) < f.minEffPower) return false; // 実効パワー（付与ドン/buff/常在込み）N以上
       if (f.maxEffPower != null && power(card) > f.maxEffPower) return false; // 実効パワーN以下（「パワーN以下」＝現在パワー。「元々のパワーN以下」は maxPower を使う）
       if (f.power != null && (b.power || 0) !== f.power) return false; // 厳密パワー一致

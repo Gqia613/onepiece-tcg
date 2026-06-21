@@ -959,6 +959,105 @@ humanPick=function(c){return Promise.resolve((c||[])[0]||null);};
       ok(!G.players.cpu.chars.includes(v), 'OP14-037 main: カード3枚レスト(restOwnAsCost count)→相手レスト7000以下KO'); }
     { const me=LP('OP13-002'); me.leader.base={...me.leader.base,traits:['バロックワークス','B・W']};
       ok(checkCond({leaderTraitIncludes:'B・W'},'me',null)===true && checkCond({leaderTraitIncludes:'海軍'},'me',null)===false, 'leaderTraitIncludes cond'); }
+
+    // === OP14 バッチ7（koStage/selfDamage/negateSelf/setSummonBan/basePower/onSelfHandDiscarded/leaderRedirect/swapPower-ownPair） ===
+    ok(['OP14-027','OP14-001','OP14-080','OP14-060','OP14-058','OP14-088','OP14-115','OP14-090','OP14-024','OP14-020','OP14-045','OP14-049','OP14-056'].every(no=>C[no]&&C[no].fx), 'OP14バッチ7: 13枚にfx統合');
+    // OP14-027 シャンクス: onSelfRested→相手7000以下レスト ／ static 相手ターン中レストで相手全-1000
+    { const me=LP('OP13-002'); const sh=I('OP14-027','me'); sh.rested=true; me.chars=[sh];
+      C['__v6k__']={no:'__v6k__',name:'V6000',type:'CHAR',color:[],cost:5,power:6000,counter:1000,traits:[]};
+      const v=mkSyn('__v6k__',C['__v6k__']); v.owner='cpu'; v.rested=false; G.players.cpu.chars=[v];
+      await runFx(sh.base.fx.onSelfRested,{self:sh,side:'me'});
+      ok(v.rested, 'OP14-027 onSelfRested: 相手の元々7000以下をレスト');
+      G.active='cpu'; ok(power(v)===5000, 'OP14-027 static: 相手ターン中・自身レストで相手全-1000'); G.active='me'; delete C['__v6k__']; }
+    // OP14-001 ロー: 起動メイン swapPower ownPair（自分の超新星/ハートのキャラ2枚の元々パワー入替）
+    { const me=LP('OP14-001');
+      C['__a3k__']={no:'__a3k__',name:'A3000',type:'CHAR',color:[],cost:2,power:3000,counter:1000,traits:['超新星']};
+      C['__a7k__']={no:'__a7k__',name:'A7000',type:'CHAR',color:[],cost:5,power:7000,counter:1000,traits:['ハートの海賊団']};
+      const a=mkSyn('__a3k__',C['__a3k__']), b=mkSyn('__a7k__',C['__a7k__']); a.owner='me'; b.owner='me'; me.chars=[a,b];
+      await runFx(me.leader.base.fx.act.fx,{self:me.leader,side:'me'});
+      ok(power(a)===7000 && power(b)===3000, 'OP14-001 act: 自分2キャラの元々パワー入替'); delete C['__a3k__']; delete C['__a7k__']; }
+    // OP14-080 モリア: 起動メイン スリラーバークKO→リーダー/キャラ全+1000
+    { const me=LP('OP14-080');
+      C['__sb__']={no:'__sb__',name:'SB',type:'CHAR',color:[],cost:3,power:4000,counter:1000,traits:['スリラーバーク海賊団']};
+      const sb=mkSyn('__sb__',C['__sb__']); sb.owner='me'; const ally=I('OP15-067','me'); me.chars=[sb,ally];
+      const ap=power(ally), lp0=power(me.leader);
+      await runFx(me.leader.base.fx.act.fx,{self:me.leader,side:'me'});
+      ok(!me.chars.includes(sb) && power(ally)===ap+1000 && power(me.leader)===lp0+1000, 'OP14-080 act: スリラーバークKO→リーダーとキャラ全+1000'); delete C['__sb__']; }
+    // OP14-060 ドフラミンゴ: leaderRedirect（ドン-1で重要キャラへの攻撃をリーダーへ）
+    { const me=LP('OP14-060'); me.isCPU=true; me.don={active:2,rested:0}; me.life=[I('OP15-067','me'),I('OP15-067','me')];
+      C['__bdk__']={no:'__bdk__',name:'BigDK',type:'CHAR',color:[],cost:6,power:6000,counter:1000,traits:['ドンキホーテ海賊団']};
+      const big=mkSyn('__bdk__',C['__bdk__']); big.owner='me'; me.chars=[big]; const atk=I('OP15-067','cpu');
+      const dest=await leaderRedirect('me',atk,big);
+      ok(dest===me.leader && donTotal('me')===1, 'OP14-060 leaderRedirect: ドン‼-1で対象をリーダーへ変更'); delete C['__bdk__']; }
+    // OP14-058 海流: main 魚人登場＋元々P6000バウンス ／ counter 1ドロー＋リーダー+3000
+    { const me=LP('OP13-002'); me.don={active:3,rested:0};
+      C['__fm__']={no:'__fm__',name:'魚人A',type:'CHAR',color:[],cost:3,power:5000,counter:1000,traits:['魚人族']};
+      const fm=mkSyn('__fm__',C['__fm__']); fm.owner='me'; me.hand=[fm];
+      C['__p6__']={no:'__p6__',name:'P6000',type:'CHAR',color:[],cost:5,power:6000,counter:1000,traits:[]};
+      const p6=mkSyn('__p6__',C['__p6__']); p6.owner='cpu'; G.players.cpu.chars=[p6];
+      const ev=I('OP14-058','me'); await runFx(ev.base.fx.main.fx,{self:ev,side:'me'});
+      ok(me.chars.some(x=>x.no==='__fm__') && !G.players.cpu.chars.includes(p6), 'OP14-058 main: 魚人登場＋元々パワー6000バウンス(basePower)'); delete C['__fm__']; delete C['__p6__']; }
+    { const me=LP('OP13-002'); me.deck=[I('OP15-067','me')]; const h0=me.hand.length, lp0=power(me.leader);
+      const ev=I('OP14-058','me'); await runFx(ev.base.fx.counter.fx,{self:ev,side:'me',target:me.leader});
+      ok(me.hand.length===h0+1 && power(me.leader)===lp0+3000, 'OP14-058 counter: 1ドロー＋リーダー+3000'); }
+    // OP14-088 ドロフィー: onKO B・Wリーダーで1ドロー＋相手コスト1ステージKO
+    { const me=LP('OP13-002'); me.leader.base={...me.leader.base,traits:['B・W']}; me.deck=[I('OP15-067','me')]; const h0=me.hand.length;
+      C['__st1__']={no:'__st1__',name:'St1',type:'STAGE',color:[],cost:1,traits:[]};
+      const st=mkSyn('__st1__',C['__st1__']); st.owner='cpu'; G.players.cpu.stage=st;
+      const c=I('OP14-088','me'); await runFx(c.base.fx.onKO,{self:c,side:'me'});
+      ok(me.hand.length===h0+1 && !G.players.cpu.stage, 'OP14-088 onKO: 1ドロー＋相手コスト1ステージKO(koStage)'); delete C['__st1__']; }
+    // OP14-115 リンドウ: onKO(相手ターン) ライフ+1→自分1ダメージ（差引同数）＋自ターンは不発
+    { const me=LP('OP13-002'); G.active='cpu';
+      C['__nl__']={no:'__nl__',name:'NL',type:'CHAR',color:[],cost:1,power:1000,counter:1000,traits:[]};
+      me.deck=[mkSyn('__nl__',C['__nl__'])]; me.life=[mkSyn('__nl__',C['__nl__']),mkSyn('__nl__',C['__nl__'])]; const lf0=me.life.length;
+      const c=I('OP14-115','me'); await runFx(c.base.fx.onKO,{self:c,side:'me'});
+      ok(me.life.length===lf0, 'OP14-115 onKO(相手ターン): ライフ+1して1ダメージ＝差引同数(selfDamage)'); G.active='me'; delete C['__nl__']; }
+    // OP14-090 ダズ: static rushChar条件 ／ onPlay 相手コスト0レスト
+    { const me=LP('OP13-002'); const dz=I('OP14-090','me');
+      C['__c0__']={no:'__c0__',name:'C0',type:'CHAR',color:[],cost:0,power:1000,counter:1000,traits:[]};
+      const c0=mkSyn('__c0__',C['__c0__']); c0.owner='me'; me.chars=[dz,c0]; dz.summonedTurn=G.turnSeq;
+      ok(hasKw(dz,'rushChar'), 'OP14-090 static: コスト0キャラがいればrushChar');
+      me.chars=[dz]; ok(!hasKw(dz,'rushChar'), 'OP14-090 static: コスト0/8+がいなければrushChar無し');
+      C['__oc0__']={no:'__oc0__',name:'OC0',type:'CHAR',color:[],cost:0,power:1000,counter:1000,traits:[]};
+      const oc=mkSyn('__oc0__',C['__oc0__']); oc.owner='cpu'; oc.rested=false; G.players.cpu.chars=[oc];
+      await runFx(dz.base.fx.onPlay,{self:dz,side:'me'});
+      ok(oc.rested, 'OP14-090 onPlay: 相手コスト0キャラをレスト'); delete C['__c0__']; delete C['__oc0__']; }
+    // OP14-024 錦えもん: onPlay ドン3アクティブ＋登場ban ／ onKO 相手カード1枚レスト
+    { const me=LP('OP13-002'); me.don={active:0,rested:3};
+      const c=I('OP14-024','me'); await runFx(c.base.fx.onPlay,{self:c,side:'me'});
+      ok(me.don.active===3 && me._noSummonTurn===G.turnSeq, 'OP14-024 onPlay: ドン3アクティブ＋登場ban(setSummonBan)');
+      const v=I('OP15-067','cpu'); v.rested=false; G.players.cpu.chars=[v]; G.players.cpu.leader.rested=false;
+      const c2=I('OP14-024','me'); await runFx(c2.base.fx.onKO,{self:c2,side:'me'});
+      ok(v.rested||G.players.cpu.leader.rested, 'OP14-024 onKO: 相手カード1枚レスト'); }
+    // OP14-020 ミホーク: 起動メイン 1枚レスト→コスト5以上いればドン3アクティブ＋登場ban
+    { const me=LP('OP14-020'); me.don={active:0,rested:3};
+      C['__c5__']={no:'__c5__',name:'C5',type:'CHAR',color:[],cost:5,power:6000,counter:1000,traits:[]};
+      const c5=mkSyn('__c5__',C['__c5__']); c5.owner='me'; c5.rested=false; me.chars=[c5];
+      await runFx(me.leader.base.fx.act.fx,{self:me.leader,side:'me'});
+      ok(me.don.active===3 && me._noSummonTurn===G.turnSeq, 'OP14-020 act: 1枚レスト→コスト5以上でドン3アクティブ＋登場ban'); delete C['__c5__']; }
+    // OP14-045 クロオビ: 効果で手札が捨てられると速攻(onSelfHandDiscarded) ／ onKO 1ドロー
+    { const me=LP('OP13-002'); const kb=I('OP14-045','me'); me.chars=[kb]; kb.summonedTurn=G.turnSeq; me.hand=[I('OP15-067','me')];
+      await doOp({op:'discardOwn',n:1},{side:'me'});
+      ok(hasKw(kb,'rush'), 'OP14-045: 効果で手札が捨てられ速攻(discardOwn→fireHandDiscarded)');
+      me.deck=[I('OP15-067','me')]; const h0=me.hand.length;
+      await runFx(kb.base.fx.onKO,{self:kb,side:'me'});
+      ok(me.hand.length===h0+1, 'OP14-045 onKO: 1ドロー'); }
+    // OP14-049 ジンベエ: 速攻フック ／ onPlay ドン2レスト→2ドロー＋コスト7以下バウンス
+    { const me=LP('OP13-002'); const jb=I('OP14-049','me'); me.chars=[jb]; jb.summonedTurn=G.turnSeq; me.hand=[I('OP15-067','me')];
+      await doOp({op:'oppDiscard',n:0},{side:'cpu'}); // no-op（フック自体の健全性のみ）
+      me.hand=[I('OP15-067','me')]; await doOp({op:'discardOwn',n:1},{side:'me'});
+      ok(hasKw(jb,'rush'), 'OP14-049: 効果で手札が捨てられ速攻');
+      const me2=LP('OP13-002'); me2.don={active:2,rested:0}; me2.deck=[I('OP15-067','me'),I('OP15-067','me')];
+      C['__o5__']={no:'__o5__',name:'O5',type:'CHAR',color:[],cost:5,power:5000,counter:1000,traits:[]};
+      const o5=mkSyn('__o5__',C['__o5__']); o5.owner='cpu'; G.players.cpu.chars=[o5];
+      const jb2=I('OP14-049','me'); const h0=me2.hand.length; await runFx(jb2.base.fx.onPlay,{self:jb2,side:'me'});
+      ok(me2.hand.length===h0+2 && me2.don.rested===2 && !G.players.cpu.chars.includes(o5), 'OP14-049 onPlay: ドン2レスト→2ドロー＋バウンス'); delete C['__o5__']; }
+    // OP14-056 ワダツミ: cantAttack（無効化で解除）＋ 手札が捨てられると自身無効
+    { const me=LP('OP13-002'); const wd=I('OP14-056','me'); me.chars=[wd]; wd.summonedTurn=G.turnSeq-1; wd.rested=false; me.don.active=0;
+      ok(!canCardAttack(wd), 'OP14-056 static: アタックできない(cantAttack)');
+      me.hand=[I('OP15-067','me')]; await doOp({op:'discardOwn',n:1},{side:'me'});
+      ok(isNegated(wd), 'OP14-056: 効果で手札が捨てられ自身効果無効(negateSelf)');
+      ok(canCardAttack(wd), 'OP14-056: 無効化でアタック不可が解除→アタック可'); }
   }catch(e){ console.log('EXCEPTION:', e.message); fail++; }
   console.log('Phase3 fxテスト: pass='+pass+' fail='+fail);
   process.exit(fail?1:0);

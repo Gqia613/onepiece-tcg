@@ -138,9 +138,10 @@
         case 'bounce': {
           if (op.all) { for (const t of oppChars(side, opFilter(op)).slice()) { if (!(await protectFromEffect(t, 'bounce'))) { bounceCard(t); flog(side, `「${t.base.name}」を手札に戻した`); await checkAllyLeave(t.owner, t, 'oppEffect'); } } break; }
           for (let i = 0; i < (op.count || 1); i++) {
-            const cands = oppChars(side, opFilter(op));
-            const t = await chooseCard(side, cands, progText('手札に戻す相手キャラを選択', i, op.count || 1), 'oppBig', op.optional);
-            if (!t) break; if (await protectFromEffect(t, 'bounce')) continue; bounceCard(t); flog(side, `「${t.base.name}」を手札に戻した`); await checkAllyLeave(t.owner, t, 'oppEffect');
+            // side:'any' なら自分/相手両方のキャラが対象（「（持ち主の）手札に戻す」OP14-058/049）。それ以外は相手キャラのみ。
+            const cands = op.side === 'any' ? [...P.chars.filter(c => matchFilter(c, opFilter(op))), ...oppChars(side, opFilter(op))] : oppChars(side, opFilter(op));
+            const t = await chooseCard(side, cands, progText('手札に戻すキャラを選択', i, op.count || 1), 'oppBig', op.optional);
+            if (!t) break; if (await protectFromEffect(t, 'bounce')) continue; bounceCard(t); flog(side, `「${t.base.name}」を手札に戻した`); await checkAllyLeave(t.owner, t, t.owner === side ? 'selfEffect' : 'oppEffect');
           }
           break;
         }
@@ -314,7 +315,7 @@
           render(); break;
         }
         case 'bottomOwn': { for (let i = 0; i < op.n; i++) { const c = await chooseFromHand(side, P.hand, 'デッキ下に置く手札を選択'); if (!c) break; P.hand.splice(P.hand.indexOf(c), 1); P.deck.push(reset(c)); } flog(side, `手札${op.n}枚をデッキ下`); break; }
-        case 'discardOwn': { const n = op.all ? P.hand.length : (op.toSize != null ? Math.max(0, P.hand.length - op.toSize) : op.n); for (let i = 0; i < n; i++) { const c = await chooseFromHand(side, P.hand, '⚠ 捨てる手札を選択', null, false, 'danger'); if (!c) break; P.hand.splice(P.hand.indexOf(c), 1); P.trash.push(reset(c)); } if (n) flog(side, `手札${n}枚を捨てた`); break; }
+        case 'discardOwn': { const n = op.all ? P.hand.length : (op.toSize != null ? Math.max(0, P.hand.length - op.toSize) : op.n); for (let i = 0; i < n; i++) { const c = await chooseFromHand(side, P.hand, '⚠ 捨てる手札を選択', null, false, 'danger'); if (!c) break; P.hand.splice(P.hand.indexOf(c), 1); P.trash.push(reset(c)); } if (n) { flog(side, `手札${n}枚を捨てた`); await fireHandDiscarded(side); } break; }
         case 'cond': if (checkCond(op.check, side, self)) await runFx(op.then, ctx); break;
         // 手札公開コスト: 手札の filter 一致カードを count 枚公開できる場合のみ then を実行（公開=手札に残す。任意）
         case 'revealCost': {
@@ -350,6 +351,7 @@
         // 手札を捨てるコスト: filter一致のカードを count枚 捨てて then を実行（任意・札は消費する）
         case 'discardCost': {
           const cnt = op.count || 1;
+          if (op.cpuSkip && P.isCPU) break; // CPUは使わない任意コスト（手札を大量に切る割に薄い効果＝モリア【アタック時】等）。confirmUseがCPU常true対策。
           const matches = P.hand.filter(c => matchFilter(c, op.filter));
           if (matches.length < cnt) break;
           if (!(await confirmUse(side, '手札を捨てる', `手札${cnt}枚を捨てて効果を使いますか？`, '捨てて使う'))) break;
@@ -362,6 +364,7 @@
           }
           for (const c of toDiscard) { P.hand.splice(P.hand.indexOf(c), 1); P.trash.push(reset(c)); }
           flog(side, `手札${cnt}枚を捨てた: ${toDiscard.map(c => c.base.name).join('、')}`);
+          await fireHandDiscarded(side);
           await runFx(op.then, ctx);
           break;
         }
@@ -387,6 +390,14 @@
         }
         // レストのドン!!を n枚 アクティブに戻す（リソース加速）
         case 'donActivate': { const k = Math.min(op.n || 1, P.don.rested); P.don.rested -= k; P.don.active += k; if (k) flog(side, `ドン${k}枚をアクティブにした`); render(); break; }
+        // 相手のステージ1枚までをKO（OP14-088ドロフィー。filterでコスト制限、isImmuneは除く）
+        case 'koStage': { const O = G.players[o]; if (O.stage && matchFilter(O.stage, opFilter(op)) && !isImmune(O.stage)) { const s = O.stage; O.stage = null; O.trash.push(reset(s)); flog(side, `相手のステージ「${s.base.name}」をKO`); render(); await sleep(120); } break; }
+        // 自分がNダメージを受ける（OP14-115リンドウ。ライフ1枚を失う＝トリガーも誘発し得る）
+        case 'selfDamage': { for (let i = 0; i < (op.n || 1); i++) await dealLeaderDamage(side, { base: {} }, 1, false); break; }
+        // このキャラ(ctx.self)自身の効果を無効化（OP14-056ワダツミ。durationでこのターン中/次相手ターン終了まで）
+        case 'negateSelf': { if (self) { self.negSeq = durSeq(op.duration); flog(side, `「${self.base.name}」は効果が無効になった`); floatOn(self.uid, '無効', 'dmg'); render(); } break; }
+        // このターン、自分はキャラを登場できない（OP14-024錦えもん/OP14-020ミホークのランプ後）
+        case 'setSummonBan': { P._noSummonTurn = G.turnSeq; flog(side, 'このターン、キャラを登場できない'); break; }
         // 自分のアクティブのドンを任意の枚数レスト→1枚ごとに「リーダー or filter一致キャラ」1枚までを このバトル中 +amount（OP13-001ルフィ等の【相手のアタック時】）
         case 'restDonForBuff': {
           const amount = op.amount || 2000; const maxN = op.maxN || 99;
@@ -440,6 +451,10 @@
           if (op.withLeader) {
             const c = P.isCPU ? P.chars.slice().sort((x, y) => power(y) - power(x))[0] : await chooseCard(side, P.chars, '元々のパワーをリーダーと入れ替えるキャラ', 'ownBig', op.optional);
             swap(P.leader, c);
+          } else if (op.ownPair) { // 自分のキャラ2枚の元々のパワーを入れ替える（OP14-001ロー）
+            const pool = P.chars.filter(c => matchFilter(c, opFilter(op)));
+            const a = await chooseCard(side, pool, '元々のパワーを入れ替えるキャラ（1枚目）', 'ownBig', op.optional);
+            if (a) { const b = await chooseCard(side, pool.filter(c => c !== a), '元々のパワーを入れ替えるキャラ（2枚目）', 'ownSmall', op.optional); swap(a, b); }
           } else {
             const a = await chooseCard(side, oppChars(side, opFilter(op)), '入れ替える相手キャラ（1枚目）', 'oppBig', op.optional);
             if (a) { const b = await chooseCard(side, oppChars(side, opFilter(op)).filter(c => c !== a), '入れ替える相手キャラ（2枚目）', 'ownSmall', op.optional); swap(a, b); }
@@ -643,7 +658,7 @@
         // 相手のドン!!を n枚 ドンデッキに戻す（相手のドン総数を減らす）
         case 'oppDonMinus': { const O = G.players[o]; const k = Math.min(op.n || 1, O.don.active + O.don.rested); for (let i = 0; i < k; i++) { if (O.don.rested > 0) O.don.rested--; else if (O.don.active > 0) O.don.active--; } if (k) flog(side, `相手のドン!!-${k}（ドンデッキへ）`); render(); break; }
         // 相手が自身の手札 n枚を捨てる
-        case 'oppDiscard': { const O = G.players[o]; const k = Math.min(op.n || 1, O.hand.length); for (let i = 0; i < k; i++) { let c; if (O.isCPU) c = O.hand.slice().sort((a, b) => (a.base.cost || 0) - (b.base.cost || 0))[0]; else c = await chooseFromHand(o, O.hand.slice(), `捨てる手札（${i + 1}/${k}）`); if (!c) break; O.hand.splice(O.hand.indexOf(c), 1); O.trash.push(reset(c)); } if (k) flog(side, `相手は手札${k}枚を捨てた`); render(); break; }
+        case 'oppDiscard': { const O = G.players[o]; const k = Math.min(op.n || 1, O.hand.length); for (let i = 0; i < k; i++) { let c; if (O.isCPU) c = O.hand.slice().sort((a, b) => (a.base.cost || 0) - (b.base.cost || 0))[0]; else c = await chooseFromHand(o, O.hand.slice(), `捨てる手札（${i + 1}/${k}）`); if (!c) break; O.hand.splice(O.hand.indexOf(c), 1); O.trash.push(reset(c)); } if (k) { flog(side, `相手は手札${k}枚を捨てた`); await fireHandDiscarded(o); } render(); break; }
         // 自分のトラッシュから filter一致のカードを count枚 手札に加える
         case 'trashToHand': { for (let i = 0; i < (op.count || 1); i++) { const cands = P.trash.filter(c => matchFilter(c, op.filter || {})); if (!cands.length) break; const t = P.isCPU ? cands[0] : await chooseCard(side, cands, 'トラッシュから手札に加えるカード', 'ownBig', op.optional); if (!t) break; P.trash.splice(P.trash.indexOf(t), 1); P.hand.push(t); flog(side, `「${t.base.name}」を手札に加えた`); } render(); break; }
         // 自分のデッキの上 n枚をトラッシュに置く（ミル）

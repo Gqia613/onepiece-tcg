@@ -385,6 +385,33 @@ window.CARD_FX = {
   "OP14-120": {"onPlay":[{"op":"setAttackBan","side":"opp","maxCost":9,"duration":"untilNextEnd","count":1,"optional":true},{"op":"cond","check":{"or":[{"selfChar":{"maxCost":0}},{"selfChar":{"minCost":8}}]},"then":[{"op":"draw","n":1}]}],"onKO":[{"op":"discardCost","count":1,"then":[{"op":"reviveSelf"}]}]},
   // OP14-029: 【相手ターン中】このキャラが相手効果で場を離れる場合、代わりに自カード1枚レスト ／【起動メイン】自カード2枚レスト：このキャラを次相手エンドまで+2000
   "OP14-029": {"static":[{"op":"leaveProtect","targetSelf":true,"pay":"restOwnCards","n":1}],"act":{"label":"自カード2枚レスト:自身+2000","cost":{},"fx":[{"op":"restOwnAsCost","count":2,"then":[{"op":"powerMod","target":"self","amount":2000,"duration":"untilNextEnd"}]}]}},
+  /* ===== OP14 バッチ7（新op koStage/selfDamage/negateSelf/setSummonBan/basePower・新hook onSelfHandDiscarded・汎用リダイレクトリーダー） ===== */
+  // OP14-027 シャンクス: 【自分のターン中】レストになった時、相手の元々パワー7000以下1枚までレスト ／【相手のターン中】レストの場合、相手のキャラすべてパワー-1000
+  "OP14-027": {"onSelfRested":[{"op":"restChar","side":"opp","filter":{"maxPower":7000},"count":1,"optional":true}],"static":[{"op":"oppStaticPowerMod","power":-1000,"cond":{"and":[{"oppTurn":true},{"selfRested":true}]}}]},
+  // OP14-001 ロー LEADER: 【起動メイン】【ターン1回】自分の《超新星》か《ハートの海賊団》キャラ2枚の元々のパワーを入れ替える
+  "OP14-001": {"act":{"label":"超新星/ハートのキャラ2枚の元々パワーを入替","cost":{},"fx":[{"op":"swapPower","ownPair":true,"filter":{"traits":["超新星","ハートの海賊団"]}}]}},
+  // OP14-080 モリア LEADER: 【起動メイン】スリラーバークをKO：リーダーとキャラ全+1000 ／【アタック時】手札3捨て(任意)：デッキ上1枚をライフに
+  "OP14-080": {"act":{"label":"スリラーバークをKO:リーダーとキャラ全+1000","cost":{},"fx":[{"op":"trashOwnCharCost","filter":{"trait":"スリラーバーク海賊団"},"then":[{"op":"powerMod","side":"self","all":true,"leader":true,"amount":1000,"duration":"turn"}]}]},"onAttack":[{"op":"discardCost","count":3,"cpuSkip":true,"then":[{"op":"lifeAddFromDeck","n":1}]}]},
+  // OP14-060 ドフラミンゴ LEADER: 【相手のアタック時】【ターン1回】ドン‼-1：リーダーかドンキホーテ海賊団キャラへ対象変更（leaderRedirect）
+  "OP14-060": {"onOppAttack":[{"op":"redirect","cost":{"donMinus":1},"dest":{"leader":true,"traitIncludes":"ドンキホーテ海賊団"},"once":"turn"}]},
+  // OP14-058 海流一本背負い EVENT: 【メイン】ドン3レスト：コスト3以下《魚人族》1枚まで登場→元々パワー6000のキャラ1枚まで手札へ ／【カウンター】1ドロー＋リーダー+3000
+  "OP14-058": {"main":{"fx":[{"op":"restDonCost","n":3,"then":[{"op":"playCharFromHand","maxCost":3,"filter":{"traitIncludes":"魚人族"},"count":1,"optional":true},{"op":"bounce","side":"any","filter":{"basePower":6000},"count":1,"optional":true}]}]},"counter":{"cost":0,"fx":[{"op":"draw","n":1},{"op":"leaderBuff","amount":3000,"duration":"battle"}]}},
+  // OP14-088 ドロフィー: 【KO時】リーダーが『B・W』含むなら1ドロー＋相手コスト1ステージ1枚までKO
+  "OP14-088": {"onKO":[{"op":"cond","check":{"leaderTraitIncludes":"B・W"},"then":[{"op":"draw","n":1},{"op":"koStage","filter":{"cost":1}}]}]},
+  // OP14-115 リンドウ: 【相手のターン中】【KO時】デッキ上1枚までをライフに加える→自分は1ダメージを受ける
+  "OP14-115": {"onKO":[{"op":"cond","check":{"oppTurn":true},"then":[{"op":"lifeAddFromDeck","n":1},{"op":"selfDamage","n":1}]}]},
+  // OP14-090 ダズ: コスト0か8以上のキャラがいれば登場ターンにキャラへアタック可(rushChar) ／【登場時】相手コスト0キャラ1枚までレスト
+  "OP14-090": {"static":[{"op":"staticKeyword","kw":"rushChar","cond":{"or":[{"selfChar":{"maxCost":0}},{"selfChar":{"minCost":8}}]}}],"onPlay":[{"op":"restChar","side":"opp","filter":{"cost":0},"count":1,"optional":true}]},
+  // OP14-024 錦えもん: 【登場時】ドン3アクティブ→このターン登場不可 ／【KO時】相手のカード1枚までレスト
+  "OP14-024": {"onPlay":[{"op":"donActivate","n":3},{"op":"setSummonBan"}],"onKO":[{"op":"restChar","side":"opp","count":1,"optional":true,"includeLeader":true}]},
+  // OP14-020 ミホーク LEADER: 【起動メイン】自カード1枚レスト：コスト5以上キャラがいればドン3アクティブ→このターン登場不可（※相手リーダーが属性(斬)時+1000は属性データ未保持のため未実装）
+  "OP14-020": {"act":{"label":"自カード1枚レスト:コスト5以上いればドン3アクティブ+登場不可","cost":{},"fx":[{"op":"restOwnAsCost","count":1,"then":[{"op":"cond","check":{"selfChar":{"minCost":5}},"then":[{"op":"donActivate","n":3},{"op":"setSummonBan"}]}]}]}},
+  // OP14-045 クロオビ: 効果で自分の手札が捨てられた時このターン【速攻】 ／【KO時】1ドロー
+  "OP14-045": {"onSelfHandDiscarded":[{"op":"giveKeyword","target":"self","kw":"rush"}],"onKO":[{"op":"draw","n":1}]},
+  // OP14-049 ジンベエ: 効果で自分の手札が捨てられた時このターン【速攻】 ／【登場時】ドン2レスト：2ドロー＋コスト7以下キャラ1枚まで手札へ
+  "OP14-049": {"onSelfHandDiscarded":[{"op":"giveKeyword","target":"self","kw":"rush"}],"onPlay":[{"op":"restDonCost","n":2,"then":[{"op":"draw","n":2},{"op":"bounce","side":"any","maxCost":7,"count":1,"optional":true}]}]},
+  // OP14-056 ワダツミ: このキャラはアタックできない(cantAttack＝無効化で解除可) ／効果で自分の手札が捨てられた時このターン効果無効
+  "OP14-056": {"static":[{"op":"cantAttack"}],"onSelfHandDiscarded":[{"op":"negateSelf"}]},
   "OP09-093": {"onPlay":[{"op":"cond","check":"leaderBH","then":[{"op":"negateEffect"}]}]},
   "OP16-104": {"onAttack":[{"op":"powerCopy"}],"trigger":[{"op":"draw","n":1},{"op":"reviveFromTrash","filter":{"cost":1,"traitIncludes":"黒ひげ海賊団"}}]},
   "OP16-109": {"onKO":[{"op":"cond","check":"leaderBH","then":[{"op":"draw","n":1},{"op":"ko","side":"opp","maxCost":1,"count":2,"optional":true}]}],"trigger":[{"op":"cond","check":"leaderBH","then":[{"op":"draw","n":1},{"op":"ko","side":"opp","maxCost":1,"count":2,"optional":true}]}]},

@@ -17,6 +17,7 @@
     }
     async function summon(side, card, noEnter, source) {
       const P = G.players[side];
+      if (P._noSummonTurn === G.turnSeq && source !== 'trash') { flog(side, 'このターンはキャラを登場できない'); return; } // 登場ban（OP14-024/020）。トラッシュからの蘇生など特殊経路は対象外
       if (P.chars.length >= 5) { if (!(await trashCharForRoom(side, false))) return; } // 5体なら枠を空ける（効果による登場でも適用）
       card.owner = side; card.rested = false; card.summonedTurn = G.turnSeq; card.attachedDon = 0; card.buffs = []; card.kwGrant = [];
       P.chars.push(card);
@@ -31,6 +32,16 @@
       // リーダーの【キャラ登場時】誘発（ナミ/ハンコック等。データ駆動 onAllyEnter）
       await checkAllyEnter(side, card);
       render();
+    }
+    // 「効果で自分の手札が捨てられた時」誘発（OP14-045クロオビ/049ジンベエ→速攻, 056ワダツミ→自身無効）。
+    // 手札を捨てる各op（discardOwn/discardCost/oppDiscard）から、捨てられた側を指定して呼ぶ。
+    async function fireHandDiscarded(side) {
+      const P = G.players[side];
+      for (const c of P.chars.slice()) {
+        if (c.base.fx && c.base.fx.onSelfHandDiscarded && P.chars.includes(c) && !isNegated(c)) {
+          await runFx(c.base.fx.onSelfHandDiscarded, { self: c, side });
+        }
+      }
     }
     // リーダーの onReviveFromTrash: トラッシュから filter一致のキャラが登場した時、そのキャラにキーワード付与
     function checkReviveTrigger(side, card) {
@@ -194,7 +205,7 @@
       if (card.rested) return false;
       if (cantAttackNeg(card)) return false;
       if (isRestImmune(card)) return false; // 「レストにできない」＝アタック宣言できない（アタックはレストを伴う）
-      if (card.base.fx && card.base.fx.static && card.base.fx.static.some(o => o.op === 'cantAttack')) return false; // 「このリーダー/キャラはアタックできない」常在
+      if (!isNegated(card) && card.base.fx && card.base.fx.static && card.base.fx.static.some(o => o.op === 'cantAttack')) return false; // 「このリーダー/キャラはアタックできない」常在（効果無効中は解除＝OP14-056ワダツミの自身無効コンボ）
       if (card.owner !== G.active) return false;
       if (!canAttackThisTurn(card.owner)) return false;
       if (card.base.type === 'CHAR' && card.summonedTurn === G.turnSeq && !hasKw(card, 'rush') && !hasKw(card, 'rushChar')) return false;
@@ -268,7 +279,7 @@
         return;
       }
       // 黒ひげ(ティーチ)リーダー: 手札のトリガーを捨ててアタック対象を変更
-      if (!isNegated(G.players[dSide].leader)) { target = await teachRedirect(dSide, attacker, target); G._atkTo = target.uid; }
+      if (!isNegated(G.players[dSide].leader)) { target = await teachRedirect(dSide, attacker, target); target = await leaderRedirect(dSide, attacker, target); G._atkTo = target.uid; }
       // ブロック
       let blkTarget = target;
       if (!(target.base.type === 'LEADER' && G.players[aSide].denyBlock) && !isUnblockable(attacker)) {
@@ -627,6 +638,38 @@
       flog(dSide, `【ティーチ】対象を「${dest.base.type === 'LEADER' ? 'リーダー' : dest.base.name}」へ変更`);
       render(); await sleep(180); return dest;
     }
+    // 汎用リダイレクトリーダー（データ駆動）: リーダーの fx.onOppAttack に {op:'redirect', cost:{donMinus:N}, dest:{leader,traitIncludes/trait}, once} を持つ場合に
+    // アタック対象をリーダー or 指定特徴キャラへ変更する（OP14-060ドフラミンゴ）。ティーチ(手札捨て)とは別経路。
+    async function leaderRedirect(dSide, attacker, target) {
+      const D = G.players[dSide]; const L = D.leader;
+      if (isNegated(L)) return target;
+      const cfg = L.base.fx && L.base.fx.onOppAttack;
+      const rop = cfg && cfg.find ? cfg.find(o => o.op === 'redirect') : null;
+      if (!rop) return target;
+      const tk = '_leadRedirTurn';
+      if (rop.once !== false && D[tk] === G.turnSeq) return target;
+      const costDon = (rop.cost && rop.cost.donMinus) || 0;
+      if (costDon && donTotal(dSide) < costDon) return target;
+      const dst = rop.dest || {};
+      const dests = [];
+      if (dst.leader) dests.push(L);
+      for (const c of D.chars) { if (c === target) continue; if (dst.traitIncludes && (c.base.traits || []).some(t => t.includes(dst.traitIncludes))) dests.push(c); else if (dst.trait && (c.base.traits || []).includes(dst.trait)) dests.push(c); }
+      const valid = dests.filter(c => c !== target);
+      if (!valid.length) return target;
+      const pay = () => { let n = costDon; while (n-- > 0) { if (D.don.active > 0) D.don.active--; else if (D.don.rested > 0) D.don.rested--; } D[tk] = G.turnSeq; }; // ドン‼-N＝ドンデッキへ戻す
+      if (D.isCPU) {
+        let dest = null;
+        if (target.base.type === 'CHAR' && (power(target) >= 5000 || (target.base.fx && (target.base.fx.onKO || target.base.fx.act || hasKw(target, 'blocker')))) && D.life.length >= 2 && valid.includes(L)) dest = L; // 重要キャラを守りライフで受ける
+        if (!dest) return target;
+        pay(); flog(dSide, `【${L.base.name}】ドン‼-${costDon}：アタック対象をリーダーへ変更`); render(); await sleep(200); return dest;
+      }
+      const opts = valid.map(c => ({ t: (c.base.type === 'LEADER' ? 'リーダーに変更' : c.base.name), v: 'rd:' + c.uid, card: { no: c.base.no, sub: 'P' + power(c) } }));
+      opts.push({ t: '変更しない', v: '__no', ghost: true });
+      const v = await showPrompt({ cls: 'defense', title: `🛡 【${L.base.name}】アタック対象を変更`, text: `ドン‼-${costDon}：アタックの対象をリーダーか${dst.traitIncludes || dst.trait || ''}キャラに変更できます（ターン1回）`, opts });
+      if (!v || v === '__no') return target;
+      const dest = valid.find(c => c.uid === +String(v).slice(3)); if (!dest) return target;
+      pay(); flog(dSide, `【${L.base.name}】対象を「${dest.base.type === 'LEADER' ? 'リーダー' : dest.base.name}」へ変更`); render(); await sleep(180); return dest;
+    }
     /* リーダー起動効果（ボタン）: エネルのみ実装 */
     async function leaderActivate(side) {
       const P = G.players[side]; const key = P.leader.base.leader;
@@ -673,6 +716,17 @@
         await fxNote(side, '起動メイン（リーダー）', P.leader.base.name);
         if (draw(side, 1)) { floatOn(P.leader.uid, 'DRAW', 'heal'); flog(side, '【ルーシー】1ドロー'); }
         render();
+      } else if (P.leader.base.fx && P.leader.base.fx.act) {
+        // データ駆動の番号キーリーダー起動メイン（OP14-001ロー/080モリア/020ミホーク等）。コストは {don,restSelf} を支払い、残りは act.fx 内のコストopで表現。
+        const act = P.leader.base.fx.act; const c = act.cost || {};
+        if (P.leader._actTurn === G.turnSeq) { toast('このターンは使用済みです'); return; }
+        if (c.don && P.don.active < c.don) { toast('ドンが足りません'); return; }
+        if (c.don) payDon(side, c.don);
+        if (c.restSelf) P.leader.rested = true;
+        P.leader._actTurn = G.turnSeq;
+        flog(side, `「${P.leader.base.name}」の起動効果`);
+        await fxNote(side, '起動メイン（リーダー）', P.leader.base.name);
+        await runFx(act.fx, { self: P.leader, side }); render();
       } else {
         toast('このリーダーに起動効果はありません');
       }

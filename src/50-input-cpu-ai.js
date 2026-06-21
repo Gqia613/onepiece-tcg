@@ -300,7 +300,7 @@
       // 1) キャラ展開
       let g = 0;
       while (g++ < 12) {
-        const pl = P.hand.filter(c => c.base.type === 'CHAR' && effCost(side, c) <= P.don.active).sort((a, b) => scoreChar(b) - scoreChar(a));
+        const pl = P._noSummonTurn === G.turnSeq ? [] : P.hand.filter(c => c.base.type === 'CHAR' && effCost(side, c) <= P.don.active).sort((a, b) => scoreChar(b) - scoreChar(a));
         if (!pl.length) break;
         const c = pl[0];
         if (P.chars.length >= 5) {
@@ -378,7 +378,7 @@
         const acts = [];
         for (const c of P.hand) {
           const b = c.base;
-          if (b.type === 'CHAR' && effCost(side, c) <= P.don.active && P.chars.length < 5) acts.push({ k: 'char', c });
+          if (b.type === 'CHAR' && P._noSummonTurn !== G.turnSeq && effCost(side, c) <= P.don.active && P.chars.length < 5) acts.push({ k: 'char', c });
           else if (b.type === 'STAGE' && (b.cost || 0) <= P.don.active) acts.push({ k: 'stage', c });
           else if (b.type === 'EVENT' && b.fx && b.fx.main && effCost(side, c) <= P.don.active) acts.push({ k: 'event', c });
         }
