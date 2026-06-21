@@ -43,6 +43,17 @@
         }
       }
     }
+    // 「【トリガー】が発動した時」誘発（OP13-106コニー＝相手ターン中ブロッカー）。side=トリガーを発動した側。
+    async function fireOnTrigger(side) {
+      const P = G.players[side];
+      for (const c of P.chars.slice()) {
+        const cfg = c.base.fx && c.base.fx.onTrigger;
+        if (!cfg || isNegated(c) || !P.chars.includes(c)) continue;
+        if (cfg.when === 'oppTurn' && side === G.active) continue;
+        if (cfg.when === 'selfTurn' && side !== G.active) continue;
+        await runFx(cfg.fx, { self: c, side });
+      }
+    }
     // 「自分の場のドン‼がドン‼デッキに戻された時」誘発（OP14-068トレーボル）。ターン1回ガード付き。
     async function fireDonReturned(side) {
       const P = G.players[side];
@@ -186,6 +197,8 @@
       let add = (P.turnsTaken === 1 && side === G.firstPlayer) ? 1 : 2;
       add = Math.min(add, P.donMax - donTotal(side));
       P.don.active += add;
+      // ゴール・Ｄ・ロジャー(OP13-003): ドンフェイズに置かれるドン1枚をリーダーに付与（場にドンがある場合）
+      if (!isNegated(P.leader) && P.leader.base.fx && P.leader.base.fx.static && P.leader.base.fx.static.some(o => o.op === 'donPhaseAttach') && P.don.active >= 1) { P.don.active--; P.leader.attachedDon++; flog(side, '【ロジャー】ドンフェイズのドン1枚をリーダーに付与'); }
       if (add > 0) sfx('don');
       render(); await sleep(260);
       // メイン
@@ -349,7 +362,7 @@
         if (banish) { D.trash.push(reset(card)); flog(dSide, 'ライフ1枚がバニッシュ（トラッシュ）'); }
         else if (card.base.fx && card.base.fx.trigger) {
           const use = await askTrigger(dSide, card);
-          if (use) { sfx('trigger'); await fxNote(dSide, 'トリガー発動', card.base.name); flog(dSide, `【トリガー】「${card.base.name}」発動`); await runFx(card.base.fx.trigger, { self: card, side: dSide }); if (!D.chars.includes(card)) D.trash.push(reset(card)); }
+          if (use) { sfx('trigger'); await fxNote(dSide, 'トリガー発動', card.base.name); flog(dSide, `【トリガー】「${card.base.name}」発動`); await runFx(card.base.fx.trigger, { self: card, side: dSide }); if (!D.chars.includes(card)) D.trash.push(reset(card)); await fireOnTrigger(dSide); }
           else { D.hand.push(card); flog(dSide, 'ライフ1枚を手札に'); }
         } else { D.hand.push(card); flog(dSide, 'ライフ1枚を手札に'); }
         await checkLeaderHitLife(attacker); // このリーダーのアタックでライフダメージ（ナミ等：自分のデッキを削る）

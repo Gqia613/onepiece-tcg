@@ -15,25 +15,28 @@ const { runHarness } = require('./_load-app');  // stubs+CARD_DB+CARD_FX+本体J
   console.log('  ✓ cards-fx.js キー重複なし (' + Object.keys(cnt).length + 'キー)');
 }
 
-// ★OP14 二重照合: 公式正本(tools/official-op14.js) ⇔ CARD_DB.text 一致 ＋ 全120枚に実装(fx or 純ブロッカー/バニラ)があること。
+// ★OP13/OP14 二重照合: 公式正本(tools/official-opNN.js) ⇔ CARD_DB.text 一致 ＋ 全120枚に実装(fx or 純ブロッカー/バニラ)があること。
+// cards.js/cards-fx.js は require キャッシュされるため一度だけ読み込み、両弾を走査する。
 { const path = require('path'); const saved = global.window; global.window = {};
   try {
-    const off = require(path.join(__dirname, '..', 'tools', 'official-op14.js'));
     require(path.join(__dirname, '..', 'cards.js'));
     require(path.join(__dirname, '..', 'cards-fx.js'));
     const DB = global.window.CARD_DB, FX = global.window.CARD_FX;
-    const mismatch = [], missing = [];
-    for (const no in off) {
-      const c = DB.find(x => x.no === no);
-      let text = (c && (c.text || '').replace(/\s+/g, ' ').trim()) || '効果なし';
-      if (/^[-‐―ー–—\s]*$/.test(text)) text = '効果なし'; // バニラのtext「-」を正規化（official-op14.jsの生成と同じ規則）
-      if (text !== off[no]) mismatch.push(no);
-      const vanilla = off[no] === '効果なし' || (!FX[no] && /ブロッカー/.test(off[no]) && !/【(?!ブロッカー)/.test(off[no]));
-      if (!FX[no] && !vanilla) missing.push(no);
+    for (const [tag, file] of [['OP14', 'official-op14.js'], ['OP13', 'official-op13.js']]) {
+      const off = require(path.join(__dirname, '..', 'tools', file));
+      const mismatch = [], missing = [];
+      for (const no in off) {
+        const c = DB.find(x => x.no === no);
+        let text = (c && (c.text || '').replace(/\s+/g, ' ').trim()) || '効果なし';
+        if (/^[-‐―ー–—\s]*$/.test(text)) text = '効果なし'; // バニラのtext「-」を正規化（official-opNN.jsの生成と同じ規則）
+        if (text !== off[no]) mismatch.push(no);
+        const vanilla = off[no] === '効果なし' || (!FX[no] && /ブロッカー/.test(off[no]) && !/【(?!ブロッカー)/.test(off[no]));
+        if (!FX[no] && !vanilla) missing.push(no);
+      }
+      if (mismatch.length) { console.log('  NG: ' + tag + ' 正本とCARD_DB.text不一致: ' + mismatch.join(', ')); process.exit(1); }
+      if (missing.length) { console.log('  NG: ' + tag + ' 実装漏れ（fxもバニラでもない）: ' + missing.join(', ')); process.exit(1); }
+      console.log('  ✓ ' + tag + ' 二重照合: 正本' + Object.keys(off).length + '枚=CARD_DB.text 一致・全枚数に実装あり');
     }
-    if (mismatch.length) { console.log('  NG: OP14 正本とCARD_DB.text不一致: ' + mismatch.join(', ')); process.exit(1); }
-    if (missing.length) { console.log('  NG: OP14 実装漏れ（fxもバニラでもない）: ' + missing.join(', ')); process.exit(1); }
-    console.log('  ✓ OP14 二重照合: 正本' + Object.keys(off).length + '枚=CARD_DB.text 一致・全枚数に実装あり');
   } finally { global.window = saved; }
 }
 
@@ -1464,6 +1467,62 @@ humanPick=function(c){return Promise.resolve((c||[])[0]||null);};
     { const me=LP('OP13-002'); me.don={active:0,rested:4};
       const lf=I('OP13-118','me'); await runFx(lf.base.fx.onPlay,{self:lf,side:'me'});
       ok(me.don.active===4 && me._noSummonMinCostTurn===G.turnSeq, 'OP13-118: 多色でドン4アクティブ＋元々コスト5以上登場不可'); }
+
+    // === OP13 バッチ7（最終・リーダー/複雑キャラ） ===
+    ok(['OP13-002','OP13-003','OP13-004','OP13-017','OP13-064','OP13-082','OP13-084','OP13-092','OP13-105','OP13-106','OP13-109','OP13-119'].every(no=>C[no]&&C[no].fx), 'OP13バッチ7: 最終14枚にfx統合');
+    // OP13-003 ロジャーL: 場のドン9以下でリーダー-2000
+    { const me=LP('OP13-003'); me.don={active:5,rested:0};
+      ok(power(me.leader)===5000, 'OP13-003: 場のドン9以下でリーダー-2000(condBuff donAtMost)');
+      me.don={active:10,rested:0}; ok(power(me.leader)===7000, 'OP13-003: ドン10では通常'); }
+    // OP13-004 サボL: boardBuff（ドン×1＋コスト8キャラで全+1000）
+    { const me=LP('OP13-004'); me.life=[I('OP15-067','me')]; me.leader.attachedDon=1; G.active='me';
+      C['__c8s__']={no:'__c8s__',name:'C8',type:'CHAR',color:[],cost:8,power:8000,counter:1000,traits:[]};
+      const c8=mkSyn('__c8s__',C['__c8s__']); c8.owner='me'; me.chars=[c8];
+      ok(power(c8)===9000, 'OP13-004 boardBuff: ドン×1＋コスト8キャラで全+1000');
+      me.leader.attachedDon=0; ok(power(c8)===8000, 'OP13-004: ドン×1なしでは無し'); delete C['__c8s__']; }
+    // OP13-017 ドラゴン: 革命軍を守りドラゴン自身-2000(selfPowerMinus)
+    { const me=LP('OP13-002'); const dr=I('OP13-017','me'); dr.owner='me';
+      C['__rev2__']={no:'__rev2__',name:'革B',type:'CHAR',color:[],cost:3,power:4000,counter:1000,traits:['革命軍']};
+      const rev=mkSyn('__rev2__',C['__rev2__']); rev.owner='me'; me.chars=[dr,rev]; const dp=power(dr);
+      ok(await protectFromEffect(rev,'ko',null)===true && power(dr)===dp-2000 && me.chars.includes(rev), 'OP13-017: 革命軍を守りドラゴン-2000'); delete C['__rev2__']; }
+    // OP13-064 ロジャー: 非ロジャー自キャラを無効化
+    { const me=LP('OP13-002'); const rg=I('OP13-064','me'); rg.owner='me';
+      C['__nr__']={no:'__nr__',name:'NonR',type:'CHAR',color:[],cost:3,power:4000,counter:1000,traits:['海賊']};
+      C['__rc__']={no:'__rc__',name:'RogerC',type:'CHAR',color:[],cost:3,power:4000,counter:1000,traits:['ロジャー海賊団']};
+      const nr=mkSyn('__nr__',C['__nr__']), rc=mkSyn('__rc__',C['__rc__']); nr.owner='me'; rc.owner='me'; me.chars=[rg,nr,rc];
+      ok(isNegated(nr) && !isNegated(rc), 'OP13-064: 非ロジャーは効果無効・ロジャーは無効化されない(negateNonTrait)'); delete C['__nr__']; delete C['__rc__']; }
+    // OP13-082 五老星: 自キャラ全トラッシュ→トラッシュから五老星登場
+    { const me=LP('OP13-002'); me.isCPU=true; me.leader.base={...me.leader.base,name:'イム'}; me.hand=[I('OP15-067','me')];
+      const old=I('OP15-067','me'); old.owner='me'; me.chars=[old];
+      C['__ga__']={no:'__ga__',name:'GA',type:'CHAR',color:[],cost:5,power:5000,counter:1000,traits:['五老星']};
+      C['__gb__']={no:'__gb__',name:'GB',type:'CHAR',color:[],cost:5,power:5000,counter:1000,traits:['五老星']};
+      me.trash=[mkSyn('__ga__',C['__ga__']),mkSyn('__gb__',C['__gb__'])];
+      const fr=I('OP13-082','me'); await runFx(fr.base.fx.act.fx,{self:fr,side:'me'});
+      ok(me.chars.some(x=>x.no==='__ga__') && me.chars.some(x=>x.no==='__gb__') && !me.chars.includes(old), 'OP13-082: 自キャラ全トラッシュ→五老星5体登場(massReviveFromTrash)'); delete C['__ga__']; delete C['__gb__']; }
+    // OP13-084 ピーター聖: トラッシュ10以上で《五老星》全の元々パワー7000(allySetBase)
+    { const me=LP('OP13-002'); G.active='me';
+      C['__g5p__']={no:'__g5p__',name:'G5',type:'CHAR',color:[],cost:4,power:5000,counter:1000,traits:['五老星']};
+      const g5=mkSyn('__g5p__',C['__g5p__']); g5.owner='me'; const pt=I('OP13-084','me'); pt.owner='me'; me.chars=[g5,pt];
+      me.trash=[]; for(let i=0;i<10;i++) me.trash.push(I('OP15-067','me'));
+      ok(power(g5)===7000, 'OP13-084 allySetBase: トラッシュ10以上で五老星の元々パワー7000');
+      me.trash=[]; ok(power(g5)===5000, 'OP13-084: トラッシュ10未満では元のまま'); delete C['__g5p__']; }
+    // OP13-092 ミョスガルド聖: ライフ3以下でトラッシュからマリージョアステージ登場
+    { const me=LP('OP13-002'); me.life=[I('OP15-067','me')];
+      C['__mj__']={no:'__mj__',name:'MJ',type:'STAGE',color:[],cost:1,traits:['聖地マリージョア']};
+      me.trash=[mkSyn('__mj__',C['__mj__'])];
+      const mg=I('OP13-092','me'); await runFx(mg.base.fx.onPlay,{self:mg,side:'me'});
+      ok(me.stage && me.stage.no==='__mj__', 'OP13-092: トラッシュからマリージョアステージ登場(reviveStage)'); delete C['__mj__']; }
+    // OP13-106 コニー: トリガー発動でブロッカー(相手ターン中)
+    { const me=LP('OP13-002'); G.active='cpu'; const cn=I('OP13-106','me'); cn.owner='me'; me.chars=[cn];
+      await fireOnTrigger('me');
+      ok(hasKw(cn,'blocker'), 'OP13-106: トリガー発動でブロッカー(onTrigger・相手ターン中)'); G.active='me'; }
+    // OP13-109 ボニー: 場離れ代わりにライフ表向き(flipLifeUp)
+    { const me=LP('OP13-002'); me.life=[I('OP15-067','me')]; const bn=I('OP13-109','me'); bn.owner='me'; me.chars=[bn];
+      ok(await protectFromEffect(bn,'ko',null)===true && me.life[0]._faceUp, 'OP13-109: 相手効果の場離れ代わりにライフ表向き'); }
+    // OP13-119 エース: ライフ3以下で速攻
+    { const me=LP('OP13-002'); const ac=I('OP13-119','me'); ac.owner='me'; me.chars=[ac]; ac.summonedTurn=G.turnSeq; G.active='me';
+      me.life=[I('OP15-067','me')]; ok(hasKw(ac,'rush'), 'OP13-119: ライフ3以下で速攻');
+      me.life=[I('OP15-067','me'),I('OP15-067','me'),I('OP15-067','me'),I('OP15-067','me')]; ok(!hasKw(ac,'rush'), 'OP13-119: ライフ4以上では速攻無し'); }
   }catch(e){ console.log('EXCEPTION:', e.message); fail++; }
   console.log('Phase3 fxテスト: pass='+pass+' fail='+fail);
   process.exit(fail?1:0);

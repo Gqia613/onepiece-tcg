@@ -750,6 +750,22 @@
           if (c) { P.trash.splice(P.trash.indexOf(c), 1); await summon(side, c, false, 'trash'); if (op.grantKw && P.chars.includes(c)) c.kwGrant.push({ kw: op.grantKw, dur: durTag(op.grantDuration, 'turn') }); }
           break;
         }
+        // 自分のライフをすべて見て好きな順に並べ替え（OP13-105モモの助）。並べ替えUIは無いため確認のみ＝合法性に影響なし。
+        case 'reorderLife': { if (P.life.length) flog(side, `自分のライフ${P.life.length}枚を確認した`); break; }
+        // トラッシュから filter一致のステージ1枚を登場（OP13-092ミョスガルド）
+        case 'reviveStage': {
+          const cands = P.trash.filter(c => c.base.type === 'STAGE' && matchFilter(c, op.filter || {}));
+          const c = P.isCPU ? cands[0] : await chooseCard(side, cands, 'トラッシュから登場させるステージ', 'ownBig', op.optional !== false);
+          if (c) { P.trash.splice(P.trash.indexOf(c), 1); if (P.stage) P.trash.push(reset(P.stage)); P.stage = c; c.owner = side; c.rested = false; flog(side, `ステージ「${c.base.name}」をトラッシュから登場`); if (c.base.fx && c.base.fx.onPlay) await runFx(c.base.fx.onPlay, { self: c, side }); render(); }
+          break;
+        }
+        // 自分のキャラすべてをトラッシュ→トラッシュから filter一致(カード名の異なる)キャラを最大count体登場（OP13-082五老星）
+        case 'massReviveFromTrash': {
+          for (const c of P.chars.slice()) removeCharTo(c, P.trash);
+          const n = op.count || 5, used = [];
+          for (let i = 0; i < n; i++) { const cands = P.trash.filter(c => c.base.type === 'CHAR' && matchFilter(c, op.filter || {}) && !used.includes(normName(c.base.name))); const c = P.isCPU ? cands[0] : await chooseCard(side, cands, `トラッシュから登場（${i + 1}/${n}）`, 'ownBig', true); if (!c) break; used.push(normName(c.base.name)); P.trash.splice(P.trash.indexOf(c), 1); await summon(side, c, false, 'trash'); }
+          break;
+        }
         case 'denyBlockerVsLeader': P.denyBlock = true; flog(side, '相手はリーダーへのアタックをブロック不可'); break;
         case 'oppDamage': { for (let i = 0; i < op.n; i++) await dealLeaderDamage(o, { base: {} }, 1, false); break; }
         case 'condBuff': case 'grantUnblockable': case 'unblockableAttack': break; // staticで処理
@@ -816,6 +832,16 @@
           if (!(await confirmUse(target.owner, `【${p.base.name}】身代わり`, `「${p.base.name}」をKOして「${target.base.name}」を守りますか？`, '守る（このキャラをKO）', '守らない'))) continue;
           removeCharTo(p, ow.trash);
           flog(target.owner, `【${p.base.name}】自身をKOして「${target.base.name}」を守った`); return true;
+        } else if (prot.pay === 'selfPowerMinus') {
+          // 代わりにこのキャラ(p=身代わり元)を、このターン中パワー-N（OP13-017ドラゴン: 革命軍を守りドラゴン自身が-2000）
+          if (!(await confirmUse(target.owner, `【${p.base.name}】身代わり`, `「${p.base.name}」をパワー-${prot.amount || 2000}にして「${target.base.name}」を場に残しますか？`, `残す（${p.base.name}-${prot.amount || 2000}）`, '残さない'))) continue;
+          addBuff(p, -(prot.amount || 2000), 'turn'); floatOn(p.uid, `-${prot.amount || 2000}`, 'dmg');
+          flog(target.owner, `【${p.base.name}】自身をパワー-${prot.amount || 2000}にして「${target.base.name}」を場に残した`); return true;
+        } else if (prot.pay === 'flipLifeUp') {
+          // 代わりに自分のライフの上から1枚を表向きにして target を場に残す（OP13-109ボニー）。
+          if (!ow.life.length) continue;
+          if (!(await confirmUse(target.owner, `【${p.base.name}】身代わり`, `ライフの上から1枚を表向きにして「${target.base.name}」を場に残しますか？`, '残す（ライフ表向き）', '残さない'))) continue;
+          ow.life[0]._faceUp = true; flog(target.owner, `【${p.base.name}】ライフ1枚を表向きにして「${target.base.name}」を場に残した`); render(); return true;
         } else if (prot.pay === 'discardFromHand') {
           const f = prot.discardFilter || {};
           const cands = ow.hand.filter(h => matchFilter(h, f));

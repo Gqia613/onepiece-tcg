@@ -782,5 +782,34 @@ window.CARD_FX = {
   // OP13-118 モンキー・Ｄ・ルフィ: 【ダブルアタック】 ／【登場時】リーダー多色ならドン4アクティブ→元々コスト5以上を登場不可
   "OP13-118": {"onPlay":[{"op":"cond","check":{"leaderMulticolor":true},"then":[{"op":"donActivate","n":4},{"op":"setSummonBan","minBaseCost":5}]}]},
   // OP13-120 サボ: 【ブロッカー】 ／【起動メイン】自分のキャラ1枚を次相手ターン終了までコスト+2→リーダーにレストのドン1付与
-  "OP13-120": {"act":{"label":"自キャラ1枚コスト+2→リーダーに付与ドン1","cost":{},"fx":[{"op":"addCostBuff","side":"self","count":1,"amount":2,"duration":"untilNextEnd","optional":true},{"op":"donAttach","target":"leader","n":1}]}}
+  "OP13-120": {"act":{"label":"自キャラ1枚コスト+2→リーダーに付与ドン1","cost":{},"fx":[{"op":"addCostBuff","side":"self","count":1,"amount":2,"duration":"untilNextEnd","optional":true},{"op":"donAttach","target":"leader","n":1}]}},
+  /* ===== OP13 バッチ7（最終・リーダー/複雑キャラ。boardBuff/allySetBase/negateNonTrait/massReviveFromTrash/onTrigger/donPhaseAttach等） ===== */
+  // OP13-002 ポートガス・Ｄ・エース LEADER: 【相手のアタック時】ターン1回 手札1捨て：相手リーダーかキャラ1枚を-2000（※被ダメ/6000+KO時の1ドローは未実装）
+  "OP13-002": {"onOppAttack":[{"op":"discardCost","count":1,"once":"turn","then":[{"op":"powerMod","side":"opp","includeLeader":true,"amount":-2000,"battle":true,"count":1,"optional":true}]}]},
+  // OP13-003 ゴール・Ｄ・ロジャー LEADER: ドンフェイズのドン1枚をリーダーに付与 ／ 場のドン9以下でリーダー-2000
+  "OP13-003": {"static":[{"op":"donPhaseAttach"},{"op":"condBuff","cond":{"donAtMost":9},"power":-2000}]},
+  // OP13-004 サボ LEADER: ライフ4以上でリーダー-1000 ／【ドン×1】コスト8以上キャラがいればリーダーとキャラ全+1000
+  "OP13-004": {"static":[{"op":"condBuff","cond":{"lifeAtLeast":4},"power":-1000},{"op":"boardBuff","cond":{"and":[{"donX1":true},{"selfChar":{"minCost":8}}]},"power":1000}]},
+  // OP13-017 モンキー・Ｄ・ドラゴン: 【ターン1回】革命軍が相手効果で場を離れる代わりに、このキャラを-2000で残す
+  "OP13-017": {"static":[{"op":"leaveProtect","targetFilter":{"traitIncludes":"革命軍"},"once":"turn","pay":"selfPowerMinus","amount":2000}]},
+  // OP13-064 ゴール・Ｄ・ロジャー: 自分のリーダー以外＆非「ロジャー海賊団」の自キャラは効果無効 ／【登場時】ドン-3：リーダー+2000＋相手全-2000(次相手エンドまで)
+  "OP13-064": {"static":[{"op":"negateNonTrait","trait":"ロジャー海賊団"}],"onPlay":[{"op":"donMinus","n":3},{"op":"leaderBuff","amount":2000,"duration":"untilNextEnd"},{"op":"powerMod","side":"opp","all":true,"amount":-2000,"duration":"untilNextEnd"}]},
+  // OP13-082 五老星: 【起動メイン】リーダー「イム」ならドン1レスト＋手札1捨て：自キャラ全トラッシュ→トラッシュからパワー5000の異名《五老星》5体登場
+  "OP13-082": {"act":{"label":"イム:自キャラ全トラッシュ→五老星5体登場","cost":{"don":1},"fx":[{"op":"cond","check":{"leaderNameIncludes":"イム"},"then":[{"op":"discardCost","count":1,"then":[{"op":"massReviveFromTrash","filter":{"power":5000,"trait":"五老星"},"count":5}]}]}]}},
+  // OP13-084 シェパード・十・ピーター聖: トラッシュ7以上で場を離れない ／【自分のターン中】トラッシュ10以上で《五老星》全ての元々パワーを7000
+  "OP13-084": {"static":[{"op":"condBuff","cond":{"trashAtLeast":7},"immune":true},{"op":"allySetBase","value":7000,"filter":{"trait":"五老星"},"cond":{"and":[{"selfTurn":true},{"trashAtLeast":10}]}}]},
+  // OP13-092 ミョスガルド聖: 【登場時】ライフ3以下なら、トラッシュからコスト1の《聖地マリージョア》ステージを登場
+  "OP13-092": {"onPlay":[{"op":"cond","check":{"lifeAtMost":3},"then":[{"op":"reviveStage","filter":{"cost":1,"traitIncludes":"聖地マリージョア"},"optional":true}]}]},
+  // OP13-099 虚の玉座 STAGE: 【自分のターン中】トラッシュ19以上でリーダー+1000 ／【起動メイン】このカードとドン3レスト：手札から場のドン枚数以下のコストの黒《五老星》を登場
+  "OP13-099": {"static":[{"op":"leaderBuffStatic","cond":{"and":[{"selfTurn":true},{"trashAtLeast":19}]},"power":1000}],"act":{"label":"このカードとドン3レスト:黒五老星を登場","cost":{"restSelf":true},"fx":[{"op":"restDonCost","n":3,"then":[{"op":"playCharFromHand","filter":{"color":"黒","trait":"五老星","maxCostFrom":"don"},"count":1,"optional":true}]}]}},
+  // OP13-105 光月モモの助: 【登場時】自分のライフすべてを見て好きな順に置く（並べ替えUIは無いため確認のみ）
+  "OP13-105": {"onPlay":[{"op":"reorderLife"}]},
+  // OP13-106 コニー: 【相手のターン中】【トリガー】が発動した時、このキャラはこのターン中【ブロッカー】を得る
+  "OP13-106": {"onTrigger":{"when":"oppTurn","fx":[{"op":"giveKeyword","target":"self","kw":"blocker","duration":"turn"}]}},
+  // OP13-109 ジュエリー・ボニー: このキャラが相手効果で場を離れる代わりに、自分のライフ上1枚を表向きにする
+  "OP13-109": {"static":[{"op":"leaveProtect","targetSelf":true,"pay":"flipLifeUp"}]},
+  // OP13-119 ポートガス・Ｄ・エース: ライフ3以下で【速攻】 ／【登場時】リーダーにレストのドン1付与→相手コスト5以下1枚を手札に戻す（※相手の登場は未実装）
+  "OP13-119": {"static":[{"op":"staticKeyword","kw":"rush","cond":{"lifeAtMost":3}}],"onPlay":[{"op":"donAttach","target":"leader","n":1},{"op":"bounce","side":"opp","maxCost":5,"count":1,"optional":true}]},
+  // OP13-079 イム LEADER: 【起動メイン】【ターン1回】《天竜人》キャラか手札1枚をトラッシュ：1ドロー（※デッキ構築制約「コスト2以上イベント不可」とゲーム開始時の聖地マリージョア登場は特殊ルールのため未実装）
+  "OP13-079": {"act":{"label":"天竜人キャラか手札1枚をトラッシュ:1ドロー","cost":{},"fx":[{"op":"chooseOption","options":[{"label":"天竜人キャラをトラッシュ","fx":[{"op":"trashOwnCharCost","filter":{"traitIncludes":"天竜人"},"then":[{"op":"draw","n":1}]}]},{"label":"手札1枚を捨てる","fx":[{"op":"discardCost","count":1,"then":[{"op":"draw","n":1}]}]}]}]}}
 };

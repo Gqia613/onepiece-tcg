@@ -175,6 +175,8 @@
       if (c.allSelfCharOther != null) { const others = P.chars.filter(ch => ch !== card); if (!others.length || !others.every(ch => matchFilter(ch, c.allSelfCharOther))) return false; }
       if (c.selfHand != null) { const min = c.selfHand.min || 1; if (P.hand.filter(h => matchFilter(h, c.selfHand)).length < min) return false; }
       if (c.donAtLeast != null && donTotal(side) < c.donAtLeast) return false;
+      if (c.donX1 && !(card && (card.attachedDon || 0) >= 1)) return false; // 【ドン‼×1】= このカードに付与ドン1以上（オブジェクト条件形。OP13-004サボのboardBuff等）
+      if (c.donX2 && !(card && (card.attachedDon || 0) >= 2)) return false;
       if (c.selfAttachedDon && !([P.leader, ...P.chars].some(x => x && (x.attachedDon || 0) > 0))) return false; // 自分の付与されているドンがある（OP13紫の付与シナジー）
       if (c.selfLifeLEOpp && P.life.length > O.life.length) return false; // 自分のライフ枚数が相手以下（OP13-102エジソン）
       if (c.activeDonAtMost != null && (P.don.active || 0) > c.activeDonAtMost) return false; // アクティブのドンN枚以下
@@ -199,6 +201,8 @@
       if (c.selfCostAtLeast != null) { let ec = (card && card.base ? (card.base.cost || 0) : 0); if (card && card.buffs) ec += card.buffs.reduce((s, b) => s + (b.costAmt || 0), 0); if (card && !isNegated(card) && card.base && card.base.fx && card.base.fx.static) for (const o of card.base.fx.static) if (o.op === 'staticCost') ec += o.amount || 0; if (ec < c.selfCostAtLeast) return false; } // このキャラの盤面実効コスト（常在+一時コスト込み）がN以上
       if (c.oppCharKOedThisTurn && !(G._koedThisTurn && G._koedThisTurn[opp(side)] === G.turnSeq)) return false; // このターン相手キャラがKOされた
       if (c.lifeAtMost != null && P.life.length > c.lifeAtMost) return false;
+      if (c.lifeAtLeast != null && P.life.length < c.lifeAtLeast) return false; // 自分のライフN枚以上（OP13-004サボ）
+      if (c.donAtMost != null && donTotal(side) > c.donAtMost) return false; // 場のドンN枚以下（OP13-003ロジャー）
       if (c.oppLifeAtMost != null && O.life.length > c.oppLifeAtMost) return false;
       if (c.selfTurn && G.active !== side) return false;
       if (c.oppTurn && G.active === side) return false;
@@ -226,7 +230,20 @@
     }
 
     /* ---------- パワー / 耐性 / キーワード ---------- */
-    function isNegated(card) { return !!(card && card.negSeq != null); }
+    function isNegated(card) {
+      if (!card) return false;
+      if (card.negSeq != null) return true;
+      // 場全体negate（OP13-064ロジャー: 自分のリーダー以外＆「ロジャー海賊団」を含む特徴を持たない自キャラを効果無効）
+      if (card.base.type === 'CHAR') {
+        const own = G.players[card.owner];
+        if (own) for (const s of [own.leader, ...own.chars]) {
+          if (!s || s === card || s.negSeq != null) continue;
+          const st = s.base.fx && s.base.fx.static; if (!st) continue;
+          for (const o of st) if (o.op === 'negateNonTrait' && !(card.base.traits || []).some(t => t.includes(o.trait))) return true;
+        }
+      }
+      return false;
+    }
     function cantAttackNeg(card) { return !!(card && card.noAtkSeq != null); }
     // 「レストにできない」状態（restImmune）: アタックもブロックもできず、レスト系効果の対象にもならない
     function isRestImmune(card) {
@@ -248,6 +265,11 @@
         if (o.op === 'staticSetBase' && (!o.cond || checkCond(o.cond, card.owner, card))) base = o.value; // 常在「元々のパワーをNにする」
         if (o.op === 'staticSetBaseToLeader' && (!o.cond || checkCond(o.cond, card.owner, card))) base = (G.players[card.owner].leader.base.power || 0); // 「元々のパワーが自分のリーダーの元々パワーと同じになる」(OP14-053ビスタ)
       }
+      // 場全体「元々のパワーをNにする」（allySetBase: 自分のキャラ/リーダーのstaticが filter一致の自キャラのbaseを上書き。OP13-084ピーター=五老星7000）。lightMatchで再帰回避。
+      if (card.base.type === 'CHAR') for (const src of [G.players[card.owner].leader, ...G.players[card.owner].chars]) {
+        if (!src || isNegated(src)) continue; const ss = src.base.fx && src.base.fx.static; if (!ss) continue;
+        for (const o of ss) { if (o.op === 'allySetBase' && (!o.cond || checkCond(o.cond, src.owner, src)) && lightMatch(card, o.filter)) base = o.value; }
+      }
       for (const b of card.buffs) if (b.setBase != null) base = b.setBase; // 「元々のパワーをNにする」一時上書き(turn/oppNextEnd等)
       let p = base;
       if (card.owner === G.active) p += card.attachedDon * 1000; // 付与ドンは自分のターン中のみ+1000計上（相手ターンでは表示・計算とも元に戻る）
@@ -265,6 +287,11 @@
           const ss = src.base.fx && src.base.fx.static; if (!ss) continue;
           for (const o of ss) { if (o.op === 'leaderBuffStatic' && checkCond(o.cond, src.owner, src)) p += o.power || 0; }
         }
+      }
+      // リーダー由来の「自分のリーダーとキャラすべて」全体パワー付与（boardBuff・cond対応。OP13-004サボ）。リーダー/キャラ両方に適用。
+      if (card.base.type === 'CHAR' || card.base.type === 'LEADER') {
+        const Lb = G.players[card.owner].leader;
+        if (Lb && !isNegated(Lb) && Lb.base.fx && Lb.base.fx.static) for (const o of Lb.base.fx.static) { if (o.op === 'boardBuff' && (!o.cond || checkCond(o.cond, card.owner, Lb))) p += o.power || 0; }
       }
       // 相手の場（リーダー/キャラ）の static が「相手の全キャラにパワー±（oppStaticPowerMod）」を課す場合
       if (card.base.type === 'CHAR') {
@@ -417,6 +444,7 @@
       _ec = Math.max(0, _ec);
       if (f.minCost != null && _ec < f.minCost) return false;
       if (f.maxCostFrom === 'oppLife' && _ec > (G.players[card.owner] ? G.players[card.owner].life.length : 0)) return false; // 「相手のライフ枚数以下のコスト」＝対象の持ち主のライフ枚数で動的判定
+      if (f.maxCostFrom === 'don' && _ec > (G.players[card.owner] ? donTotal(card.owner) : 0)) return false; // 「自分の場のドン枚数以下のコスト」（OP13-099虚の玉座）
       if (f.maxCost != null && _ec > f.maxCost) return false;
       if (f.maxBaseCost != null && (b.cost || 0) > f.maxBaseCost) return false; // 「元々のコスト(基本コスト)N以下」＝base.costで判定(常在/一時のコスト増減を見ない)
       if (f.minBaseCost != null && (b.cost || 0) < f.minBaseCost) return false;
