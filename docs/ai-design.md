@@ -277,8 +277,24 @@ puct自己対戦の【ターン境界の盤面特徴＋最終勝敗】で value 
 - **結論**: **手作り evalState が puct の境界評価として既に優秀**（Stage A と整合＝学習value ≈/< 手作り）。**puct を強くするのは policy(prior) であって value ではない**。
   ＝小データ・小ネットの学習valueは、よく調整された手作りevalを超えられない（この規模では）。gating が正しく退行を全棄却＝出荷は安全。
 
-### 9.6 ⏭ さらに伸ばす（part4 候補）
-1. **探索を深く/多手先の木**（現状1手再探索）＋ **方策ターゲット=訪問数分布**（argmaxでなくsoft）。深さは効くと実証済(§9.3)。
-2. **policy gating を全6リーダー**へ拡張、self-play 局数↑（replay buffer 拡大）＝teachの+16ptを他リーダーにも広げる。
-3. **value は大データ・深ネット・2ヘッド共有trunk**でなら手作り超えの可能性（現状の小MLPでは負け）。
-- 限界（正直に）: 16GB/8コア/MPS単機は数百万局に届かない。狙いは**数万局規模の小型AlphaZero**。part2 で「探索＋自己対戦＋gating」が **teach +16.3pt(有意)** を達成＝**正しい構造なら天井(≈heuristic)を超える**ことは実証済み。part3 で value は今の規模では効かないと判明＝**伸ばすべきは policy と 探索の深さ**。
+### 9.6 Phase2 part4：policy gating を全6リーダー(ミラー)へ拡張 → ★5/6リーダーで有意の大勝＋enelの真の弱点を発見
+`tools/selfplay-puct.js OPCG_GATE_LEADERS='lucy:lucy,...,enel:enel'`（全6リーダーをミラーでgating・現方策から継続）。
+- **★最重要発見＝ミラー(公平な同型対戦)で測ると puct の真の実力が出る**。これまでの teach:enel / enel:teach は**デッキ相性で勝率が圧縮**され実力差を隠していた。ミラー実測（最終確認 N=40・全6）:
+  | リーダー | puct 対h(ミラー) | p |
+  |---|---|---|
+  | **lucy** | **+45.0pt(20/2)** | 0.000★ |
+  | **teach** | **+27.5pt(13/2)** | 0.007★ |
+  | **ace** | **+25.0pt(12/2)** | 0.013★ |
+  | **nami** | **+25.0pt(11/1)** | 0.006★ |
+  | **hancock** | **+20.0pt(10/2)** | 0.039★ |
+  | **enel** | **±0.0pt(フォールバック)** | — |
+- **＝6リーダー中5つで heuristic を統計的有意に +20〜45pt 上回る**（part2の「teach単独」から大きく前進）。
+- **★enel の真の弱点を発見**: enel(ドン循環エンジン)はミラー実測で **puct 対h -29.2pt(1/8 p=0.039)**＝**探索がランプ機構を壊す**（他5は+16〜46pt）。enel:teach が不利マッチで「中立」に見え隠れていた。
+  → **対処（測定駆動）**: `src/70-ai.js` `PUCT_SKIP={enel:1}`＝**puctはenelでは素のheuristicにフォールバック**（`G._puctNoSkip`で無効化可）。enelは退行ゼロ・他は強い。
+- gating結果: lucy/ace が自己対戦で更に微増(lucy +50pt)→採用。nami/hancock/teach は高いベースライン維持。enel は全モデル退行で **Stage B に復元**（puctがフォールバックするので enel policy は npolicy 用のみ）。
+- 出荷: `src/ai-policy.js` = lucy/ace(part4自己対戦改善)+teach(part2)+nami/hancock/enel(Stage B)。**既定CPU=heuristicは不変**、puctはopt-in（enelは内部でheuristic）。
+
+### 9.7 到達点と ⏭ part5 候補
+- **到達点**: **puct は5/6リーダーで heuristic を有意に +20〜45pt 上回る強いCPU**（enelのみ探索が機構を壊すため heuristic フォールバック）。AlphaZeroの全要素（本物の探索＋自己対戦＋per-leader gating＋replay buffer）が結実。value学習は今の規模では効かず（手作りeval優位）。
+- ⏭ **part5候補**: ①**enelの探索を直す**（ランプ機構をcandidateActions/rolloutが正しく扱えるよう改良＝フォールバック解除）②**多手先のPUCT木**（現状1手再探索）＋方策ターゲット=訪問数分布 ③大データ・深ネットで value 再挑戦。
+- 限界（正直に）: 16GB/8コア/MPS単機は数百万局に届かない。それでも part1-4 で「探索＋自己対戦＋gating」が **5リーダー +20〜45pt(有意)** を達成＝**正しい構造なら天井(≈heuristic)を明確に超える**ことを実証。残りは規模拡大と enel 個別対応。

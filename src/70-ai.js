@@ -444,8 +444,12 @@
       scored.sort((x, y) => y.q - x.q);
       return { scored, stop: false };
     }
+    // ★puctが苦手なリーダー＝heuristicにフォールバック（測定駆動）。enel(ドン循環エンジン)はミラー実測で
+    //   puctが対heuristic -29pt(p=0.039)＝探索がランプ機構を壊す。他5リーダーは+16〜+46ptで強い。docs/ai-design.md §9.7。
+    var PUCT_SKIP = { enel: 1 };
     async function puctTurn(side) {
       if (G._sim) return heuristicTurn(side);                          // 入れ子探索＝指数爆発を防ぐ
+      if (PUCT_SKIP[leaderKeyOf(side)] && !G._puctNoSkip) return heuristicTurn(side);  // 苦手リーダーは素のheuristic
       const opt = { det: G._puctDet || 3, look: G._puctLook != null ? G._puctLook : 1, width: G._puctWidth || 5 };
       let guard = 0;
       while (guard++ < 14 && !G.winner) {
