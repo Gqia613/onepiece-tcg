@@ -95,6 +95,16 @@
         if (cfg.once === 'turn') { if (c._lifeLeftTurn === G.turnSeq) continue; c._lifeLeftTurn = G.turnSeq; }
         await runFx(cfg.fx, { self: c, side });
       }
+      // 「相手のライフが離れた時」誘発（OP08-105ボニー＝攻撃側で相手のライフ離脱に反応）
+      const A = G.players[opp(side)];
+      for (const c of A.chars.slice()) {
+        const cfg = c.base.fx && c.base.fx.onOppLifeLeave;
+        if (!cfg || isNegated(c) || !A.chars.includes(c)) continue;
+        if (cfg.when === 'selfTurn' && opp(side) !== G.active) continue;
+        if (cfg.when === 'oppTurn' && opp(side) === G.active) continue;
+        if (cfg.once === 'turn') { if (c._oppLifeLeftTurn === G.turnSeq) continue; c._oppLifeLeftTurn = G.turnSeq; }
+        await runFx(cfg.fx, { self: c, side: opp(side) });
+      }
     }
     // 「自分の場のドン‼がドン‼デッキに戻された時」誘発（OP14-068トレーボル）。ターン1回ガード付き。
     async function fireDonReturned(side) {

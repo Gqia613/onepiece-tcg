@@ -22,7 +22,7 @@ const { runHarness } = require('./_load-app');  // stubs+CARD_DB+CARD_FX+本体J
     require(path.join(__dirname, '..', 'cards.js'));
     require(path.join(__dirname, '..', 'cards-fx.js'));
     const DB = global.window.CARD_DB, FX = global.window.CARD_FX;
-    for (const [tag, file] of [['OP14', 'official-op14.js'], ['OP13', 'official-op13.js'], ['OP12', 'official-op12.js'], ['OP11', 'official-op11.js'], ['OP10', 'official-op10.js'], ['OP09', 'official-op09.js']]) {
+    for (const [tag, file] of [['OP14', 'official-op14.js'], ['OP13', 'official-op13.js'], ['OP12', 'official-op12.js'], ['OP11', 'official-op11.js'], ['OP10', 'official-op10.js'], ['OP09', 'official-op09.js'], ['OP08', 'official-op08.js']]) {
       const off = require(path.join(__dirname, '..', 'tools', file));
       const mismatch = [], missing = [];
       for (const no in off) {
@@ -1776,6 +1776,30 @@ humanPick=function(c){return Promise.resolve((c||[])[0]||null);};
       me.don={active:1,rested:0}; G.players.cpu.don={active:3,rested:0};
       ok(checkCond({oppDonGreater:true},'me',null), 'OP09-066: 相手ドンが多い＝成立');
       G.players.cpu.don={active:1,rested:0}; ok(!checkCond({oppDonGreater:true},'me',null), 'OP09-066: 同数では不成立'); }
+
+    /* ===== OP08 新機構の回帰 ===== */
+    // OP08-023 lockRefresh: 相手のレストキャラが次のリフレッシュでアクティブにならない
+    { const me=LP('OP13-002'); me.isCPU=true; G.active='me'; G.turnSeq=5; G.winner=null; G.busy=false; G.firstPlayer='me';
+      G.players.cpu=mkP('OP11-041',true); const cpu=G.players.cpu;
+      const oc=I('OP10-012','cpu'); oc.owner='cpu'; oc.rested=true; cpu.chars=[oc]; cpu.turnsTaken=2;
+      await runFx([{op:'lockRefresh',filter:{maxCost:7},count:1}],{self:me.leader,side:'me'});
+      ok(oc._noRefreshSeq===G.turnSeq+1, 'OP08-023: lockRefreshで_noRefreshSeqがセット');
+      // 相手のターン開始（beginTurn）でレストのままか
+      G.busy=false; await beginTurn('cpu');
+      ok(oc.rested===true && oc._noRefreshSeq==null, 'OP08-023: 次のリフレッシュでアクティブにならずフラグ解除'); }
+    // OP08-083 oppCostMod: シープスヘッドが相手キャラのコストを-1
+    { const me=LP('OP13-002'); G.active='me'; G.turnSeq=5; G.players.cpu=mkP('OP11-041',true);
+      const sh=I('OP08-083','me'); sh.owner='me'; sh.attachedDon=1; me.chars=[sh];
+      C['__t3__']={no:'__t3__',name:'T3',type:'CHAR',color:[],cost:3,power:4000,counter:1000,traits:[]};
+      const tg=mkSyn('__t3__',C['__t3__']); tg.owner='cpu'; G.players.cpu.chars=[tg];
+      ok(matchFilter(tg,{maxCost:2})===true, 'OP08-083: 相手コスト3が-1されてコスト2以下扱い'); delete C['__t3__']; }
+    // OP08-119 koAllExceptSelf: 自身以外の全キャラをKO
+    { const me=LP('OP13-002'); me.isCPU=true; G.turnSeq=5; G.players.cpu=mkP('OP11-041',true);
+      C['__x__']={no:'__x__',name:'X',type:'CHAR',color:[],cost:3,power:4000,counter:1000,traits:[]};
+      const self2=mkSyn('__x__',C['__x__']); self2.owner='me'; const ally=mkSyn('__x__',C['__x__']); ally.owner='me';
+      const en=mkSyn('__x__',C['__x__']); en.owner='cpu'; me.chars=[self2,ally]; G.players.cpu.chars=[en];
+      await runFx([{op:'koAllExceptSelf'}],{self:self2,side:'me'});
+      ok(me.chars.includes(self2) && !me.chars.includes(ally) && G.players.cpu.chars.length===0, 'OP08-119: 自身以外の全キャラKO'); delete C['__x__']; }
   }catch(e){ console.log('EXCEPTION:', e.message); fail++; }
   console.log('Phase3 fxテスト: pass='+pass+' fail='+fail);
   process.exit(fail?1:0);

@@ -1722,5 +1722,73 @@ window.CARD_FX = {
   // OP08-080 クイーン(c1): 【登場時】デッキ上5枚から「クイーン」以外の百獣1枚を手札に
   "OP08-080": {"onPlay":[{"op":"search","look":5,"count":1,"filter":{"traitIncludes":"百獣海賊団"},"exclude":"クイーン","optional":true}]},
   // OP08-081 ゲルニカ: 【アタック時】トラッシュから『CP』3枚をデッキ下：相手のコスト0キャラ1枚KO
-  "OP08-081": {"onAttack":[{"op":"trashToDeckCost","n":3,"filter":{"traitIncludes":"CP"},"then":[{"op":"ko","side":"opp","filter":{"cost":0},"count":1,"optional":true}]}]}
+  "OP08-081": {"onAttack":[{"op":"trashToDeckCost","n":3,"filter":{"traitIncludes":"CP"},"then":[{"op":"ko","side":"opp","filter":{"cost":0},"count":1,"optional":true}]}]},
+  /* ===== OP08 バッチ5（黒・082-099＝百獣/コスト下げ） ===== */
+  // OP08-082 ササキ: 【起動メイン】ドン1レスト＋自身レスト：相手キャラ1枚をコスト-2
+  "OP08-082": {"act":{"label":"ドン1+自身レスト:相手コスト-2","cost":{"restSelf":true},"fx":[{"op":"restDonCost","n":1,"then":[{"op":"addCostBuff","side":"opp","count":1,"amount":-2,"duration":"turn","optional":true}]}]}},
+  // OP08-083 シープスヘッド: 【ドン×1】【自分のターン中】相手のキャラ全コスト-1
+  "OP08-083": {"static":[{"op":"oppCostMod","amount":-1,"cond":{"and":[{"donX1":true},{"selfTurn":true}]}}]},
+  // OP08-084 ジャック: このキャラのコスト+4 ／【起動メイン】レスト：1ドロー＋手札1枚捨て→相手コスト3以下1枚KO
+  "OP08-084": {"static":[{"op":"staticCost","amount":4}],"act":{"label":"レスト:1ドロー1捨て→相手3以下KO","cost":{"restSelf":true},"fx":[{"op":"draw","n":1},{"op":"discardCost","count":1},{"op":"ko","side":"opp","filter":{"maxCost":3},"count":1,"optional":true}]}},
+  // OP08-085 ジンベエ: 【ドン×1】【アタック時】自分にコスト8以上がいれば相手コスト4以下1枚KO
+  "OP08-085": {"onAttack":[{"op":"cond","check":{"and":[{"donX1":true},{"selfCharCount":{"filter":{"minCost":8},"min":1}}]},"then":[{"op":"ko","side":"opp","filter":{"maxCost":4},"count":1,"optional":true}]}]},
+  // OP08-086 ジンラミー: 【登場時】相手にコスト0がいれば2ドロー＋手札2枚捨て
+  "OP08-086": {"onPlay":[{"op":"cond","check":{"oppChar":{"cost":0}},"then":[{"op":"draw","n":2},{"op":"discardCost","count":2}]}]},
+  // OP08-087 スクラッチメン・アプー(c4): 【ブロッカー】 ／【起動メイン】【ターン1回】相手キャラ1枚をコスト-1
+  "OP08-087": {"act":{"label":"相手キャラ1枚をコスト-1","cost":{},"fx":[{"op":"addCostBuff","side":"opp","count":1,"amount":-1,"duration":"turn","optional":true}]}},
+  // OP08-088 デュバル: 【登場時】自分のキャラ1枚を次相手ターン終了までコスト+1
+  "OP08-088": {"onPlay":[{"op":"addCostBuff","side":"self","count":1,"amount":1,"duration":"untilNextEnd","optional":true}]},
+  // OP08-090 ハムレット: 【登場時】トラッシュからコスト2以下のSMILE1枚を登場
+  "OP08-090": {"onPlay":[{"op":"reviveFromTrash","maxCost":2,"filter":{"traitIncludes":"SMILE"}}]},
+  // OP08-091 フーズ・フー: 【登場時】手札1枚を捨てる：相手コスト3以下1枚KO
+  "OP08-091": {"onPlay":[{"op":"discardCost","count":1,"optional":true,"then":[{"op":"ko","side":"opp","filter":{"maxCost":3},"count":1,"optional":true}]}]},
+  // OP08-092 ページワン: 【登場時】トラッシュからコスト4以下「うるティ」1枚を登場
+  "OP08-092": {"onPlay":[{"op":"reviveFromTrash","maxCost":4,"filter":{"nameIncludes":"うるティ"}}]},
+  // OP08-093 X・ドレーク: 【ドン×1】このキャラのコスト+2
+  "OP08-093": {"static":[{"op":"staticCost","amount":2,"cond":{"donX1":true}}]},
+  // OP08-094 炎皇: 【メイン】/【カウンター】トラッシュ3枚をデッキ下：相手コスト2以下1枚KO
+  "OP08-094": {"main":{"fx":[{"op":"trashToBottomCost","n":3,"then":[{"op":"ko","side":"opp","filter":{"maxCost":2},"count":1,"optional":true}]}]},"counter":{"cost":0,"fx":[{"op":"trashToBottomCost","n":3,"then":[{"op":"ko","side":"opp","filter":{"maxCost":2},"count":1,"optional":true}]}]}},
+  // OP08-095 鉄塊 牙閃: 【メイン】トラッシュ10枚以上なら自分のキャラ1枚を次相手ターン終了まで+2000
+  "OP08-095": {"main":{"fx":[{"op":"cond","check":{"trashAtLeast":10},"then":[{"op":"powerMod","side":"self","amount":2000,"duration":"untilNextEnd","count":1,"optional":true}]}]}},
+  // OP08-096 人の夢は!!!終わらねェ!!!!: 【カウンター】デッキ上1枚トラッシュ、コスト6以上ならリーダーかキャラ+5000
+  "OP08-096": {"counter":{"cost":0,"fx":[{"op":"millBuff","minCost":6,"then":[{"op":"powerMod","side":"self","leader":true,"amount":5000,"battle":true,"count":1,"optional":true}]}]}},
+  // OP08-097 ヘリケラトプス: 【メイン】百獣リーダーなら相手キャラ1枚をコスト-2→相手のコスト0キャラ1枚KO
+  "OP08-097": {"main":{"fx":[{"op":"cond","check":{"leaderTraitIncludes":"百獣海賊団"},"then":[{"op":"addCostBuff","side":"opp","count":1,"amount":-2,"duration":"turn","optional":true},{"op":"ko","side":"opp","filter":{"cost":0},"count":1,"optional":true}]}]}},
+  // OP08-098 カルガラ LEADER: 【ドン×1】【アタック時】手札から自分のドン以下のコストのシャンドラの戦士1枚を登場→登場したらライフ上1枚を手札に
+  "OP08-098": {"onAttack":[{"op":"cond","check":{"donX1":true},"then":[{"op":"playCharFromHand","filter":{"traitIncludes":"シャンドラの戦士","maxCostFrom":"don"},"count":1,"optional":true},{"op":"lifeToHand","n":1}]}]},
+  /* ===== OP08 バッチ6（黄・100-119＝空島/シャンドラ/エッグヘッド） ===== */
+  // OP08-100 サウスバード: 【登場時】デッキ上7枚から「アッパーヤード」を登場
+  "OP08-100": {"onPlay":[{"op":"playFromDeck","look":7,"filter":{"nameIncludes":"アッパーヤード"}}]},
+  // OP08-101 シャーロット・エンゼル: 【起動メイン】【ターン1回】ライフ上1枚をトラッシュ：ビッグマムリーダーなら ターン終了時デッキ上1枚をライフに
+  "OP08-101": {"act":{"label":"ライフ1枚トラッシュ:ターン終了時ライフ補充","cost":{},"fx":[{"op":"lifeCost","action":"trash","then":[{"op":"cond","check":{"leaderTraitIncludes":"ビッグ・マム海賊団"},"then":[{"op":"scheduleTurnEnd","fx":[{"op":"lifeAddFromDeck","n":1}]}]}]}]}},
+  // OP08-102 シャーロット・オペラ: 【登場時】手札1枚捨て：自分のライフ枚数以下のコストの相手キャラ1枚KO
+  "OP08-102": {"onPlay":[{"op":"discardCost","count":1,"optional":true,"then":[{"op":"ko","side":"opp","filter":{"maxCostFrom":"casterLife"},"count":1,"optional":true}]}]},
+  // OP08-103 シャーロット・カスタード: 【起動メイン】【ターン1回】ライフ上1枚を手札に：自分のキャラ1枚を次相手ターン終了まで+1000
+  "OP08-103": {"act":{"label":"ライフ1枚手札:キャラ+1000","cost":{},"fx":[{"op":"lifeCost","then":[{"op":"powerMod","side":"self","amount":1000,"duration":"untilNextEnd","count":1,"optional":true}]}]}},
+  // OP08-105 ジュエリー・ボニー: 【ドン×1】【自分のターン中】【ターン1回】相手のライフが離れた時、2ドロー＋手札1枚捨て
+  "OP08-105": {"onOppLifeLeave":{"when":"selfTurn","once":"turn","fx":[{"op":"draw","n":2},{"op":"discardCost","count":1}]}},
+  // OP08-106 ナミ(エッグヘッド): 【登場時】手札の【トリガー】1枚を捨てる：相手コスト5以下1枚KO→手札3枚以下なら1ドロー
+  "OP08-106": {"onPlay":[{"op":"discardCost","count":1,"optional":true,"filter":{"hasTrigger":true},"then":[{"op":"ko","side":"opp","filter":{"maxCost":5},"count":1,"optional":true},{"op":"cond","check":{"selfHandAtMost":3},"then":[{"op":"draw","n":1}]}]}]},
+  // OP08-107 ニトロ: 【起動メイン】レスト：自分の「シャーロット・プリン」1枚を+2000
+  "OP08-107": {"act":{"label":"レスト:プリン1枚+2000","cost":{"restSelf":true},"fx":[{"op":"powerMod","side":"self","amount":2000,"duration":"turn","count":1,"optional":true,"filter":{"nameIncludes":"シャーロット・プリン"}}]}},
+  // OP08-109 モンブラン・ノーランド: 【登場時】シャンドラリーダー＋自分の「カルガラ」がいれば デッキ上1枚をライフに
+  "OP08-109": {"onPlay":[{"op":"cond","check":{"and":[{"leaderTraitIncludes":"シャンドラの戦士"},{"selfChar":{"nameIncludes":"カルガラ"}}]},"then":[{"op":"lifeAddFromDeck","n":1}]}]},
+  // OP08-110 ワイパー: 【登場時】デッキ上5枚から「アッパーヤード」1枚を手札に→手札から「アッパーヤード」1枚を登場
+  "OP08-110": {"onPlay":[{"op":"search","look":5,"count":1,"filter":{"nameIncludes":"アッパーヤード"},"optional":true},{"op":"playSpecificFromHand","nameIncludes":"アッパーヤード","optional":true}]},
+  // OP08-111 S-シャーク: 【ドン×1】【アタック時】相手はこのバトル中【ブロッカー】発動不可
+  "OP08-111": {"onAttack":[{"op":"cond","check":{"donX1":true},"then":[{"op":"denyBlocker","all":true}]}]},
+  // OP08-112 S-スネーク: 【登場時】「ルフィ」以外の相手コスト6以下1枚は次相手ターン終了までアタック不可
+  "OP08-112": {"onPlay":[{"op":"setAttackBan","filter":{"maxCost":6,"nameExcludes":"モンキー・D・ルフィ"},"count":1,"duration":"untilNextEnd","optional":true}]},
+  // OP08-114 S-ホーク: 【ドン×1】自分のライフが相手より少ないと 斬とのバトルでKOされず+2000（近似:全バトル耐性）
+  "OP08-114": {"static":[{"op":"condBuff","battleImmune":true,"power":2000,"cond":{"and":[{"donX1":true},{"selfLifeLessThanOpp":true}]}}]},
+  // OP08-115 大地は敗けない!!!: 【カウンター】シャンドラリーダーなら リーダーかキャラ+3000→手札から「アッパーヤード」1枚を登場
+  "OP08-115": {"counter":{"cost":0,"fx":[{"op":"cond","check":{"leaderTraitIncludes":"シャンドラの戦士"},"then":[{"op":"powerMod","side":"self","leader":true,"amount":3000,"battle":true,"count":1,"optional":true},{"op":"playSpecificFromHand","nameIncludes":"アッパーヤード","optional":true}]}]}},
+  // OP08-116 燃焼砲: 【カウンター】リーダーかキャラ+4000→ライフ上か下1枚を手札に：手札からシャンドラの戦士1枚をライフ上に表向きで加える
+  "OP08-116": {"counter":{"cost":0,"fx":[{"op":"powerMod","side":"self","leader":true,"amount":4000,"battle":true,"count":1,"optional":true},{"op":"lifeCost","pos":"choose","then":[{"op":"handCharToLife","faceUp":true,"filter":{"traitIncludes":"シャンドラの戦士"}}]}]}},
+  // OP08-117 燃焼剣: 【メイン】ライフ上1枚トラッシュ：相手コスト7以下1枚KO
+  "OP08-117": {"main":{"fx":[{"op":"lifeCost","action":"trash","then":[{"op":"ko","side":"opp","filter":{"maxCost":7},"count":1,"optional":true}]}]}},
+  // OP08-118 シルバーズ･レイリー(c8): 【登場時】相手2枚を-3000/-2000(次相手ターン終了まで)→相手のパワー3000以下1枚KO
+  "OP08-118": {"onPlay":[{"op":"powerMod","side":"opp","amount":-3000,"duration":"untilNextEnd","count":1,"optional":true},{"op":"powerMod","side":"opp","amount":-2000,"duration":"untilNextEnd","count":1,"optional":true},{"op":"ko","side":"opp","filter":{"maxEffPower":3000},"count":1,"optional":true}]},
+  // OP08-119 カイドウ＆リンリン(c10): 【アタック時】ドン-10：このキャラ以外の全キャラKO→デッキ上1枚をライフに＋相手ライフ上1枚をトラッシュ
+  "OP08-119": {"onAttack":[{"op":"donMinus","n":10},{"op":"koAllExceptSelf"},{"op":"lifeAddFromDeck","n":1},{"op":"lifeTrash","side":"opp"}]}
 };

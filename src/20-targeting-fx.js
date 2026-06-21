@@ -386,6 +386,8 @@
         case 'donReturnToMatchOpp': { const want = donTotal(o); let excess = Math.max(0, donTotal(side) - want); while (excess > 0) { if (P.don.rested > 0) P.don.rested--; else if (P.don.active > 0) P.don.active--; else break; excess--; } if (donTotal(side) <= want) flog(side, '自分のドンを相手と同じ枚数に戻した'); render(); break; }
         // 自分のライフをすべて裏向きにする（OP08-075キャンディメイデン）
         case 'flipAllLifeDown': { for (const l of P.life) l._faceUp = false; flog(side, '自分のライフをすべて裏向きにした'); render(); break; }
+        // デッキ上1枚をトラッシュに置き、そのコストが minCost 以上なら then 実行（OP08-096人の夢は終わらねェ）
+        case 'millBuff': { if (!P.deck.length) break; const top = P.deck.shift(); P.trash.push(reset(top)); flog(side, `デッキの上「${top.base.name}」をトラッシュに置いた`); if ((top.base.cost || 0) >= (op.minCost || 0)) await runFx(op.then, ctx); render(); break; }
         // このキャラを持ち主の手札に戻すコスト（OP08-041アフェランドラ）。払えたら then。
         case 'bounceSelfCost': { if (!self || !(P.chars.includes(self))) break; if (!(await confirmUse(side, '自身を手札へ', `「${self.base.name}」を手札に戻して効果を使いますか？`, '戻して使う'))) break; bounceCard(self); flog(side, `「${self.base.name}」を手札に戻した`); await checkAllyLeave(side, self, 'ownEffect'); await runFx(op.then, ctx); break; }
         // 自分の元々パワーN以下のキャラを、durationの間、相手の効果でKOされないようにする（OP10-070トレーボル）
@@ -432,7 +434,7 @@
         }
         case 'bottomOwn': { for (let i = 0; i < op.n; i++) { const c = await chooseFromHand(side, P.hand, 'デッキ下に置く手札を選択'); if (!c) break; P.hand.splice(P.hand.indexOf(c), 1); P.deck.push(reset(c)); } flog(side, `手札${op.n}枚をデッキ下`); break; }
         // デッキ上 look 枚から filter一致のキャラ1枚を登場、残りをデッキ下（OP11-051サンジ）。grantKwで登場時付与。
-        case 'playFromDeck': { const all = op.look === 'all'; const look = all ? P.deck.splice(0, P.deck.length) : P.deck.splice(0, op.look || 5); const cands = look.filter(c => c.base.type === 'CHAR' && matchFilter(c, op.filter || {})); const pc = P.isCPU ? cands.slice().sort((a, b) => (b.base.power || 0) - (a.base.power || 0))[0] : await chooseCard(side, cands, '登場させるキャラを選択（任意）', 'ownBig', true); if (pc) { look.splice(look.indexOf(pc), 1); await summon(side, pc, false); if (op.rested && P.chars.includes(pc)) pc.rested = true; if (op.grantKw && P.chars.includes(pc)) pc.kwGrant.push({ kw: op.grantKw, dur: durTag(op.grantDuration, 'turn') }); } for (const r of look) P.deck.push(r); if (all || op.shuffle) shuffle(P.deck); flog(side, all ? 'デッキから登場（シャッフル）' : `デッキ上${op.look || 5}枚から登場/デッキ下`); render(); break; } // look:'all'=デッキ全体から登場しシャッフル（OP08-071/073）／rested=レストで登場（OP08-007）
+        case 'playFromDeck': { const all = op.look === 'all'; const look = all ? P.deck.splice(0, P.deck.length) : P.deck.splice(0, op.look || 5); const cands = look.filter(c => (c.base.type === 'CHAR' || c.base.type === 'STAGE') && matchFilter(c, op.filter || {})); const pc = P.isCPU ? cands.slice().sort((a, b) => (b.base.power || 0) - (a.base.power || 0))[0] : await chooseCard(side, cands, '登場させるカードを選択（任意）', 'ownBig', true); if (pc) { look.splice(look.indexOf(pc), 1); if (pc.base.type === 'STAGE') { if (P.stage) P.trash.push(reset(P.stage)); P.stage = pc; pc.owner = side; pc.rested = false; if (pc.base.fx && pc.base.fx.onPlay && !isNegated(pc)) await runFx(pc.base.fx.onPlay, { self: pc, side }); } else { await summon(side, pc, false); if (op.rested && P.chars.includes(pc)) pc.rested = true; if (op.grantKw && P.chars.includes(pc)) pc.kwGrant.push({ kw: op.grantKw, dur: durTag(op.grantDuration, 'turn') }); } } for (const r of look) P.deck.push(r); if (all || op.shuffle) shuffle(P.deck); flog(side, all ? 'デッキから登場（シャッフル）' : `デッキ上${op.look || 5}枚から登場/デッキ下`); render(); break; } // look:'all'=デッキ全体から登場しシャッフル（OP08-071/073）／STAGE対応（OP08-100）／rested=レストで登場（OP08-007）
         case 'discardOwn': { const n = op.all ? P.hand.length : (op.toSize != null ? Math.max(0, P.hand.length - op.toSize) : op.n); for (let i = 0; i < n; i++) { const c = await chooseFromHand(side, P.hand, '⚠ 捨てる手札を選択', null, false, 'danger'); if (!c) break; P.hand.splice(P.hand.indexOf(c), 1); P.trash.push(reset(c)); } if (n) { flog(side, `手札${n}枚を捨てた`); await fireHandDiscarded(side, n); } break; }
         case 'cond': if (checkCond(op.check, side, self)) await runFx(op.then, ctx); else if (op.else) await runFx(op.else, ctx); break;
         // 手札公開コスト: 手札の filter 一致カードを count 枚公開できる場合のみ then を実行（公開=手札に残す。任意）
@@ -860,9 +862,11 @@
           else cands = P.hand.slice();
           if (op.filter) cands = cands.filter(x => matchFilter(x, op.filter)); // 追加の絞り込み（コスト等。OP10-026/027錦えもん=コスト6）
           const c = op.choose ? await chooseFromHand(side, cands, '登場させるキャラを選択' + (op.optional ? '（任意）' : ''), null, op.optional) : cands[0];
-          if (c) { P.hand.splice(P.hand.indexOf(c), 1); await summon(side, c, op.noEnter); }
+          if (c) { P.hand.splice(P.hand.indexOf(c), 1); if (c.base.type === 'STAGE') { if (P.stage) P.trash.push(reset(P.stage)); P.stage = c; c.owner = side; c.rested = false; flog(side, `ステージ「${c.base.name}」が登場`); if (c.base.fx && c.base.fx.onPlay && !isNegated(c)) await runFx(c.base.fx.onPlay, { self: c, side }); render(); } else await summon(side, c, op.noEnter); } // STAGEはステージエリアへ（OP08-110/115アッパーヤード）
           break;
         }
+        // 両者の場のキャラすべてを、このキャラ以外KOする（OP08-119カイドウ＆リンリン）
+        case 'koAllExceptSelf': { for (const sd of ['me', 'cpu']) { const PP = G.players[sd]; for (const t of PP.chars.slice()) { if (t === self) continue; if (sd === o && (isKoImmune(t) || await protectFromEffect(t, 'ko', self))) continue; await koCard(t, sd === side ? 'ownEffect' : 'oppEffect'); } } break; }
         case 'trashToLife': {
           const cands = P.trash.filter(c => c.base.type === 'CHAR' && (c.base.cost || 0) <= (op.maxCost != null ? op.maxCost : 99) && (!op.trait || (c.base.traits || []).includes(op.trait)));
           const c = await chooseCard(side, cands, 'トラッシュからライフ上に置くキャラを選択', 'ownBig', op.optional);

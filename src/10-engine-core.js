@@ -482,6 +482,7 @@
       { const o = card.owner; if (o && G.players[o]) { const L = G.players[o].leader; if (L && L.base.leader === 'teach' && !isNegated(L) && G.active !== o && G.players[o].chars.includes(card)) _ec += 1; } }
       if (!isNegated(card) && b.fx && b.fx.static) for (const o of b.fx.static) { if (o.op === 'staticCost' && (!o.cond || checkCond(o.cond, card.owner, card))) _ec += o.amount || 0; } // 常在「このキャラのコスト+N」（盤面の実効コストのみ。プレイコストには影響しない。cond対応）
       { const ow2 = card.owner; if (ow2 && G.players[ow2]) for (const src of [G.players[ow2].leader, ...G.players[ow2].chars]) { if (!src || src === card || isNegated(src)) continue; const ss = src.base.fx && src.base.fx.static; if (!ss) continue; for (const o of ss) { if (o.op === 'allyCost' && (!o.cond || checkCond(o.cond, ow2, src)) && lightMatch(card, o.filter)) _ec += o.amount || 0; } } } // 自分の他キャラ/リーダーのstaticが「自分のフィルタ一致キャラのコスト±（allyCost）」（OP14-086ザラ：B・W全+2／OP10-042ウソップL：ドレスローザ+1）。lightMatchで再帰回避
+      { const ow2 = card.owner; const en = ow2 && G.players[opp(ow2)]; if (en) for (const src of [en.leader, ...en.chars]) { if (!src || isNegated(src)) continue; const ss = src.base.fx && src.base.fx.static; if (!ss) continue; for (const o of ss) { if (o.op === 'oppCostMod' && (!o.cond || checkCond(o.cond, opp(ow2), src)) && lightMatch(card, o.filter)) _ec += o.amount || 0; } } } // 相手の盤面のstaticが「相手のキャラすべてのコスト±（oppCostMod）」を課す（OP08-083シープスヘッド：相手全コスト-1）
       if (card.buffs) _ec += card.buffs.reduce((s, bf) => s + (bf.costAmt || 0), 0); // 盤面の一時コスト増減（addCostBuff）
       _ec = Math.max(0, _ec);
       if (f.minCost != null && _ec < f.minCost) return false;
@@ -489,6 +490,7 @@
       if (f.maxCostFrom === 'don' && _ec > (G.players[card.owner] ? donTotal(card.owner) : 0)) return false; // 「自分の場のドン枚数以下のコスト」（OP13-099虚の玉座）
       if (f.maxCostFrom === 'totalLife' && _ec > ((G.players.me ? G.players.me.life.length : 0) + (G.players.cpu ? G.players.cpu.life.length : 0))) return false; // 「お互いのライフ合計枚数以下のコスト」（OP10-100イナズマ）
       if (f.maxCostFrom === 'oppDon' && _ec > (card.owner ? donTotal(opp(card.owner)) : 0)) return false; // 「相手の場のドン枚数以下のコスト」（OP08-062カタクリ）
+      if (f.maxCostFrom === 'casterLife' && _ec > (card.owner && G.players[opp(card.owner)] ? G.players[opp(card.owner)].life.length : 0)) return false; // 効果を使う側(対象の持ち主の相手)のライフ枚数以下のコスト（OP08-102オペラ＝自分のライフ以下）
       if (f.maxCost != null && _ec > f.maxCost) return false;
       if (f.maxBaseCost != null && (b.cost || 0) > f.maxBaseCost) return false; // 「元々のコスト(基本コスト)N以下」＝base.costで判定(常在/一時のコスト増減を見ない)
       if (f.minBaseCost != null && (b.cost || 0) < f.minBaseCost) return false;
