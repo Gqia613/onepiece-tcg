@@ -229,6 +229,7 @@
       if (c.oppLifeAtLeast != null && O.life.length < c.oppLifeAtLeast) return false; // 相手のライフN枚以上（OP11-102ケイミー）
       if (c.totalLifeAtLeast != null && (P.life.length + O.life.length) < c.totalLifeAtLeast) return false; // お互いのライフ合計N枚以上（OP11-114ゴムゴムの火拳銃）
       if (c.totalLifeAtMost != null && (P.life.length + O.life.length) > c.totalLifeAtMost) return false; // お互いのライフ合計N枚以下（OP09-114リンドバーグ）
+      if (c.totalHandLifeAtMost != null && (P.hand.length + P.life.length) > c.totalHandLifeAtMost) return false; // 自分のライフと手札の合計N枚以下（OP04-040クイーンL）
       if (c.restedDonAtLeast != null && (P.don.rested || 0) < c.restedDonAtLeast) return false; // 自分のレストのドンN枚以上（OP12-021いっぽんマツ）
       if (c.selfRestedCharsAtLeast != null && P.chars.filter(ch => ch.rested).length < c.selfRestedCharsAtLeast) return false; // 自分のレストのキャラN枚以上（OP10白ひげ/エネル/ミホーク/ゾロ）
       if (c.selfCharCostSumAtLeast != null && P.chars.reduce((s, ch) => s + (ch.base.cost || 0), 0) < c.selfCharCostSumAtLeast) return false; // 自分のキャラのコスト合計N以上（OP10-022ロー）
@@ -507,7 +508,7 @@
       if (f.maxPower != null && (b.power || 0) > f.maxPower) return false;
       if (f.minPower != null && (b.power || 0) < f.minPower) return false;
       if (f.hasTrigger && !(b.fx && b.fx.trigger)) return false; // 【トリガー】を持つカード（OP09-062ロビンLの捨てコスト）
-      if (f.nameIncludes && !normName(b.name).includes(normName(f.nameIncludes))) return false;
+      if (f.nameIncludes && !normName(b.name).includes(normName(f.nameIncludes)) && !(b.aliasName && normName(b.aliasName).includes(normName(f.nameIncludes)))) return false; // 別名対応（OP04-099おリン=シャーロット・リンリン）
       if (f.traitNot && (b.traits || []).some(t => t.includes(f.traitNot))) return false; // 指定特徴(部分一致)を持つものを除外
       if (f.nameExcludes && normName(b.name).includes(normName(f.nameExcludes))) return false; // 指定名を含むものを除外
       if (f.typeNot && b.type === f.typeNot) return false;

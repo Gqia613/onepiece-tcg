@@ -498,6 +498,8 @@
         }
         // 属性(斬/打/射/特/知)を付与。パラレル(_rN)は本体noの属性を共有。
         if (ATTR) { const a = ATTR[cd.no] || ATTR[cd.no.replace(/_r\d+$/, '')]; if (a) base.attribute = a; }
+        // 別名（「カード名を「X」としても扱う」。OP04-099おリン=シャーロット・リンリン）
+        { const m = /カード名を「(.+?)」としても扱う/.exec(base.text || ''); if (m) base.aliasName = m[1]; }
         if (!wasDef) C[cd.no] = base;
       }
     })();

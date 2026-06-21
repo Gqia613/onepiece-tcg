@@ -35,6 +35,8 @@
       if (hasEnter) await runFx(card.base.fx.onPlay, { self: card, side });
       // リーダーの【キャラ登場時】誘発（ナミ/ハンコック等。データ駆動 onAllyEnter）
       await checkAllyEnter(side, card);
+      // 相手のキャラの【相手がキャラを登場させた時】誘発（OP04-024シュガー）
+      { const O = G.players[opp(side)]; for (const c of O.chars.slice()) { const cfg = c.base.fx && c.base.fx.onOppEnter; if (!cfg || isNegated(c) || !O.chars.includes(c)) continue; if (cfg.when === 'oppTurn' && opp(side) === G.active) continue; if (cfg.when === 'selfTurn' && opp(side) !== G.active) continue; if (cfg.cond && !checkCond(cfg.cond, opp(side), c)) continue; if (cfg.once === 'turn') { if (c._oppEnterTurn === G.turnSeq) continue; c._oppEnterTurn = G.turnSeq; } await runFx(cfg.fx, { self: c, side: opp(side), entered: card }); } }
       render();
     }
     // 「効果で自分の手札が捨てられた時」誘発（OP14-045クロオビ/049ジンベエ→速攻, 056ワダツミ→自身無効）。
@@ -82,6 +84,15 @@
         if (cfg.cond && !checkCond(cfg.cond, oppSide, c)) continue;
         if (cfg.once === 'turn') { if (c._oppEventTurn === G.turnSeq) continue; c._oppEventTurn = G.turnSeq; }
         await runFx(cfg.fx, { self: c, side: oppSide });
+      }
+      // 「自分がイベントを発動した時」誘発（OP04-053ページワン）。eventSide自身のキャラが反応。
+      const E = G.players[eventSide];
+      for (const c of E.chars.slice()) {
+        const cfg = c.base.fx && c.base.fx.onSelfEvent;
+        if (!cfg || isNegated(c) || !E.chars.includes(c)) continue;
+        if (cfg.cond && !checkCond(cfg.cond, eventSide, c)) continue;
+        if (cfg.once === 'turn') { if (c._selfEventTurn === G.turnSeq) continue; c._selfEventTurn = G.turnSeq; }
+        await runFx(cfg.fx, { self: c, side: eventSide });
       }
     }
     // 「ライフが離れた時」誘発（OP12-099カルガラ＝自分のターン中ライフ離脱で1ドロー）。side=ライフが離れた側。
