@@ -10,6 +10,8 @@
        失敗時は公式URL直 → それも失敗ならテキスト表示の3段フォールバック。 */
     const IMG_RAW = no => `https://www.onepiece-cardgame.com/images/cardlist/card/${no}.png`;
     const IMG = no => `https://images.weserv.nl/?url=ssl:www.onepiece-cardgame.com/images/cardlist/card/${no}.png&w=320`;
+    /* ライフ用：横向き(左=カード上部)に回転した表面画像 */
+    const IMG_ROT = no => `https://images.weserv.nl/?url=ssl:www.onepiece-cardgame.com/images/cardlist/card/${no}.png&ro=270&w=320`;
 
     /* ---------- 色 ---------- */
     const COLOR_HEX = { 赤: 'var(--c-red)', 緑: 'var(--c-green)', 青: 'var(--c-blue)', 紫: 'var(--c-purple)', 黒: 'var(--c-black)', 黄: 'var(--c-yellow)' };
@@ -447,6 +449,7 @@
       const DB = (typeof window !== 'undefined' && window.CARD_DB) || (typeof CARD_DB !== 'undefined' ? CARD_DB : null);
       if (!DB) return;
       const FX = (typeof window !== 'undefined' && window.CARD_FX) || (typeof CARD_FX !== 'undefined' ? CARD_FX : null);
+      const ATTR = (typeof window !== 'undefined' && window.CARD_ATTR) || (typeof CARD_ATTR !== 'undefined' ? CARD_ATTR : null); // 属性(斬/打/射/特/知)。cards-attr.js
       for (const cd of DB) {
         if (!cd || !cd.no) continue;
         let base = C[cd.no];          // def() 済みカードはメタ情報を維持して再利用
@@ -479,6 +482,8 @@
           if (Object.keys(timed).length) base.fx = timed;
           delete base.dataOnly;
         }
+        // 属性(斬/打/射/特/知)を付与。パラレル(_rN)は本体noの属性を共有。
+        if (ATTR) { const a = ATTR[cd.no] || ATTR[cd.no.replace(/_r\d+$/, '')]; if (a) base.attribute = a; }
         if (!wasDef) C[cd.no] = base;
       }
     })();

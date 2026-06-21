@@ -1525,6 +1525,26 @@ humanPick=function(c){return Promise.resolve((c||[])[0]||null);};
     { const me=LP('OP13-002'); const ac=I('OP13-119','me'); ac.owner='me'; me.chars=[ac]; ac.summonedTurn=G.turnSeq; G.active='me';
       me.life=[I('OP15-067','me')]; ok(hasKw(ac,'rush'), 'OP13-119: ライフ3以下で速攻');
       me.life=[I('OP15-067','me'),I('OP15-067','me'),I('OP15-067','me'),I('OP15-067','me')]; ok(!hasKw(ac,'rush'), 'OP13-119: ライフ4以上では速攻無し'); }
+
+    // === 属性データ(cards-attr.js)＋属性条件カード ===
+    ok(C['OP14-020'] && C['OP14-020'].attribute==='斬' && C['OP13-025'].attribute==='打' && C['OP15-058'].attribute==='特', '属性付与: ミホーク=斬/コビー=打/エネル=特(cards-attr.js→mergeCardDB)');
+    // OP14-020 ミホーク: 相手リーダーが属性(斬)なら+1000
+    { const me=LP('OP14-020'); // ミホーク(斬)リーダー
+      G.players.cpu.leader.base={...G.players.cpu.leader.base,attribute:'斬'};
+      ok(power(me.leader)===6000, 'OP14-020: 相手リーダー属性(斬)でリーダー+1000(5000→6000)');
+      G.players.cpu.leader.base={...G.players.cpu.leader.base,attribute:'打'};
+      ok(power(me.leader)===5000, 'OP14-020: 相手リーダー非斬では+1000無し'); }
+    // OP13-025 コビー: リーダーが属性(打)ならドン1アクティブ（FILMでなくても）
+    { const me=LP('OP13-002'); me.leader.base={...me.leader.base,attribute:'打',traits:[]}; me.don={active:0,rested:2};
+      const cb=I('OP13-025','me'); await runFx(cb.base.fx.onPlay,{self:cb,side:'me'});
+      ok(me.don.active>=1, 'OP13-025: リーダー属性(打)でドン1アクティブ(leaderAttr)');
+      const me2=LP('OP13-002'); me2.leader.base={...me2.leader.base,attribute:'斬',traits:[]}; me2.don={active:0,rested:2};
+      const cb2=I('OP13-025','me'); await runFx(cb2.base.fx.onPlay,{self:cb2,side:'me'});
+      ok(me2.don.active===0, 'OP13-025: 非打・非FILMでは発動しない'); }
+    // matchFilter attr フィルタ（属性を持つキャラ）
+    { const me=LP('OP13-002');
+      const sh=I('OP14-020','me'); // 斬属性のカード(リーダーだが属性付き)
+      ok(matchFilter(sh,{attr:'斬'}) && !matchFilter(sh,{attr:'打'}), 'matchFilter attr: 属性(斬)を持つ判定'); }
   }catch(e){ console.log('EXCEPTION:', e.message); fail++; }
   console.log('Phase3 fxテスト: pass='+pass+' fail='+fail);
   process.exit(fail?1:0);

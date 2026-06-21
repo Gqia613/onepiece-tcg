@@ -400,8 +400,8 @@ window.CARD_FX = {
   "OP14-090": {"static":[{"op":"staticKeyword","kw":"rushChar","cond":{"or":[{"selfChar":{"maxCost":0}},{"selfChar":{"minCost":8}},{"oppChar":{"maxCost":0}},{"oppChar":{"minCost":8}}]}}],"onPlay":[{"op":"restChar","side":"opp","filter":{"cost":0},"count":1,"optional":true}]},
   // OP14-024 錦えもん: 【登場時】ドン3アクティブ→このターン登場不可 ／【KO時】相手のカード1枚までレスト
   "OP14-024": {"onPlay":[{"op":"donActivate","n":3},{"op":"setSummonBan"}],"onKO":[{"op":"restChar","side":"opp","count":1,"optional":true,"includeLeader":true}]},
-  // OP14-020 ミホーク LEADER: 【起動メイン】自カード1枚レスト：コスト5以上キャラがいればドン3アクティブ→このターン登場不可（※相手リーダーが属性(斬)時+1000は属性データ未保持のため未実装）
-  "OP14-020": {"act":{"label":"自カード1枚レスト:コスト5以上いればドン3アクティブ+登場不可","cost":{},"fx":[{"op":"restOwnAsCost","count":1,"then":[{"op":"cond","check":{"selfChar":{"minCost":5}},"then":[{"op":"donActivate","n":3},{"op":"setSummonBan"}]}]}]}},
+  // OP14-020 ミホーク LEADER: 【起動メイン】自カード1枚レスト：コスト5以上キャラがいればドン3アクティブ→このターン登場不可
+  "OP14-020": {"static":[{"op":"condBuff","cond":{"oppLeaderAttr":"斬"},"power":1000}],"act":{"label":"自カード1枚レスト:コスト5以上いればドン3アクティブ+登場不可","cost":{},"fx":[{"op":"restOwnAsCost","count":1,"then":[{"op":"cond","check":{"selfChar":{"minCost":5}},"then":[{"op":"donActivate","n":3},{"op":"setSummonBan"}]}]}]}},
   // OP14-045 クロオビ: 効果で自分の手札が捨てられた時このターン【速攻】 ／【KO時】1ドロー
   "OP14-045": {"onSelfHandDiscarded":[{"op":"giveKeyword","target":"self","kw":"rush"}],"onKO":[{"op":"draw","n":1}]},
   // OP14-049 ジンベエ: 効果で自分の手札が捨てられた時このターン【速攻】 ／【登場時】ドン2レスト：2ドロー＋コスト7以下キャラ1枚まで手札へ
@@ -643,8 +643,8 @@ window.CARD_FX = {
   "OP13-023": {"onPlay":[{"op":"donActivate","n":2},{"op":"setSummonBan","minBaseCost":5}],"onKO":[{"op":"playCharFromHand","maxCost":5,"count":1,"optional":true,"rested":true}]},
   // OP13-024 ゴードン: 【登場時】手札の《音楽》か《FILM》1枚公開：このターン終了時ドン2アクティブ
   "OP13-024": {"onPlay":[{"op":"revealCost","filter":{"or":[{"traitIncludes":"音楽"},{"traitIncludes":"FILM"}]},"then":[{"op":"delayedDonActivate","n":2}]}]},
-  // OP13-025 コビー: 【ブロッカー】 ／【登場時】リーダーが《FILM》ならドン1アクティブ（※属性(打)条件は属性データ未保持で未実装）
-  "OP13-025": {"onPlay":[{"op":"cond","check":{"leaderTraitIncludes":"FILM"},"then":[{"op":"donActivate","n":1}]}]},
+  // OP13-025 コビー: 【ブロッカー】 ／【登場時】リーダーが《FILM》ならドン1アクティブ
+  "OP13-025": {"onPlay":[{"op":"cond","check":{"or":[{"leaderTraitIncludes":"FILM"},{"leaderAttr":"打"}]},"then":[{"op":"donActivate","n":1}]}]},
   // OP13-026 サニーくん: 【起動メイン】ドン1レスト：自身を次の相手ターン終了まで+2000
   "OP13-026": {"act":{"label":"ドン1レスト:自身+2000","cost":{"don":1},"fx":[{"op":"powerMod","target":"self","amount":2000,"duration":"untilNextEnd"}]}},
   // OP13-027 サンジ: 【登場時】ドン2アクティブ ／【自分のターン終了時】リーダー《FILM》か《麦わら》ならドン1アクティブ

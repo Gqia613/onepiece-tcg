@@ -22,6 +22,7 @@ function loadParts(htmlPath) {
     stubs: fs.readFileSync(path.join(__dirname, 'stubs.js'), 'utf8'),
     cards: fs.readFileSync(path.join(ROOT, 'cards.js'), 'utf8'),      // window.CARD_DB
     cardsfx: fs.readFileSync(path.join(ROOT, 'cards-fx.js'), 'utf8'), // window.CARD_FX
+    cardsattr: fs.readFileSync(path.join(ROOT, 'cards-attr.js'), 'utf8'), // window.CARD_ATTR（属性）
     app: loadApp(htmlPath),                                           // src/00..60-*.js
   };
 }
@@ -29,9 +30,9 @@ function loadParts(htmlPath) {
 // stubs+cards+cards-fx+本体JS+harness を一時ファイルに連結して Node 実行し、標準出力を返す。
 // harness はテスト本体のJS文字列（各ハーネスの String.raw`...`）。execOpts は execSync へ素通し（timeout 等）。
 function runHarness(name, harness, execOpts = {}) {
-  const { stubs, cards, cardsfx, app } = loadParts();
+  const { stubs, cards, cardsfx, cardsattr, app } = loadParts();
   const tmp = path.join(os.tmpdir(), `opcg-${name}-${Date.now()}-${Math.random().toString(36).slice(2)}.js`);
-  fs.writeFileSync(tmp, [stubs, cards, cardsfx, app, harness].join('\n'));
+  fs.writeFileSync(tmp, [stubs, cards, cardsfx, cardsattr, app, harness].join('\n'));
   try { return cp.execSync('node ' + JSON.stringify(tmp), { encoding: 'utf8', ...execOpts }); }
   finally { try { fs.unlinkSync(tmp); } catch (_) { /* noop */ } }
 }

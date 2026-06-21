@@ -167,6 +167,8 @@
       if (c.leaderNameIncludes != null && !normName(P.leader.base.name).includes(normName(c.leaderNameIncludes))) return false;
       if (c.leaderColor != null && !(P.leader.base.color || []).includes(c.leaderColor)) return false;
       if (c.leaderMulticolor && (P.leader.base.color || []).length < 2) return false; // リーダーが多色（2色以上）。OP13-051ハンコック等
+      if (c.leaderAttr != null && !((P.leader.base.attribute || '').includes(c.leaderAttr))) return false; // 自分のリーダーが属性Xを持つ（OP13-025コビーの属性(打)）
+      if (c.oppLeaderAttr != null && !((O.leader.base.attribute || '').includes(c.oppLeaderAttr))) return false; // 相手のリーダーが属性Xを持つ（OP14-020ミホークの属性(斬)）
       if (c.selfChar != null) { const min = c.selfChar.min || 1; if (P.chars.filter(ch => matchFilter(ch, c.selfChar)).length < min) return false; }
       if (c.oppChar != null) { const min = c.oppChar.min || 1; if (O.chars.filter(ch => matchFilter(ch, c.oppChar)).length < min) return false; } // 相手の場のキャラ条件
       if (c.noSelfChar != null) { if (P.chars.some(ch => matchFilter(ch, c.noSelfChar))) return false; }
@@ -431,6 +433,7 @@
       if (f.trait && !(b.traits || []).includes(f.trait)) return false;
       if (f.color && !(b.color || []).includes(f.color)) return false; // 色一致（赤/緑/青/紫/黒/黄）
       if (f.colorNot && (b.color || []).includes(f.colorNot)) return false;
+      if (f.attr && !((b.attribute || '').includes(f.attr))) return false; // 属性(斬/打/射/特/知)を持つ
       if (f.traitIncludes && !(b.traits || []).some(t => t.includes(f.traitIncludes))) return false; // 特徴の部分一致（例「白ひげ海賊団」を含む特徴）
       if (f.traits && !(b.traits || []).some(t => f.traits.includes(t))) return false;
       if (f.name && normName(b.name) !== normName(f.name)) return false;
