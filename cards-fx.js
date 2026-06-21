@@ -1538,5 +1538,53 @@ window.CARD_FX = {
   // OP09-080 サウザンド・サニー号(STAGE): 【相手のターン中】このステージをレスト：麦わらキャラが相手効果で離れた時、ドンデッキからドン1レスト追加
   "OP09-080": {"onAllyLeave":{"when":"oppTurn","cause":"oppEffect","filter":{"traitIncludes":"麦わらの一味"},"fx":[{"op":"restSelfCost","then":[{"op":"donFromDeck","n":1,"mode":"rested"}]}]}},
   // OP09-081 マーシャル・Ｄ・ティーチ LEADER: 自分の登場時効果は無効 ／【起動メイン】手札1枚を捨てる：次相手ターン終了まで相手の登場時効果を無効
-  "OP09-081": {"static":[{"op":"negateOwnOnPlay"}],"act":{"label":"手札1捨て:相手の登場時効果を無効","cost":{},"fx":[{"op":"discardCost","count":1,"optional":true,"then":[{"op":"negateOppOnPlay","duration":"untilNextEnd"}]}]}}
+  "OP09-081": {"static":[{"op":"negateOwnOnPlay"}],"act":{"label":"手札1捨て:相手の登場時効果を無効","cost":{},"fx":[{"op":"discardCost","count":1,"optional":true,"then":[{"op":"negateOppOnPlay","duration":"untilNextEnd"}]}]}},
+  /* ===== OP09 バッチ5（黒・082-099＝黒ひげ） ===== */
+  // OP09-083 ヴァン・オーガー: 【起動メイン】レスト：黒ひげリーダーなら相手キャラ1枚をコスト-3 ／【KO時】1ドロー
+  "OP09-083": {"act":{"label":"レスト:黒ひげなら相手コスト-3","cost":{"restSelf":true},"fx":[{"op":"cond","check":{"leaderTraitIncludes":"黒ひげ海賊団"},"then":[{"op":"addCostBuff","side":"opp","count":1,"amount":-3,"duration":"turn","optional":true}]}]},"onKO":[{"op":"draw","n":1}]},
+  // OP09-084 カタリーナ・デボン: 【起動メイン】【ターン1回】黒ひげリーダーなら次相手ターン終了まで【Wアタック】か【バニッシュ】か【ブロッカー】
+  "OP09-084": {"act":{"label":"黒ひげ:Wアタック/バニッシュ/ブロッカーを得る","cost":{},"fx":[{"op":"cond","check":{"leaderTraitIncludes":"黒ひげ海賊団"},"then":[{"op":"chooseOption","options":[{"label":"ダブルアタック","fx":[{"op":"giveKeyword","target":"self","kw":"doubleAttack","duration":"untilNextEnd"}]},{"label":"バニッシュ","fx":[{"op":"giveKeyword","target":"self","kw":"banish","duration":"untilNextEnd"}]},{"label":"ブロッカー","fx":[{"op":"giveKeyword","target":"self","kw":"blocker","duration":"untilNextEnd"}]}]}]}]}},
+  // OP09-085 ゲッコー・モリア: 【登場時】トラッシュからコスト2以下のスリラーバークをレストで登場
+  "OP09-085": {"onPlay":[{"op":"reviveFromTrash","maxCost":2,"rested":true,"filter":{"traitIncludes":"スリラーバーク海賊団"}}]},
+  // OP09-087 シャーロット・プリン: 【登場時】相手の手札5枚以上なら相手1枚捨て
+  "OP09-087": {"onPlay":[{"op":"cond","check":{"oppHandAtLeast":5},"then":[{"op":"oppDiscard","n":1}]}]},
+  // OP09-088 シリュウ(c3): 【ドン×1】【アタック時】手札2枚を捨てる：2ドロー
+  "OP09-088": {"onAttack":[{"op":"cond","check":{"donX1":true},"then":[{"op":"discardCost","count":2,"optional":true,"then":[{"op":"draw","n":2}]}]}]},
+  // OP09-089 ストロンガー: 【起動メイン】手札1枚捨て＋自身トラッシュ：黒ひげリーダーなら1ドロー→相手キャラ1枚をコスト-2
+  "OP09-089": {"act":{"label":"手札1捨て+自身トラッシュ:黒ひげで1ドロー＋相手-2","cost":{},"fx":[{"op":"discardCost","count":1,"then":[{"op":"trashSelfCost","then":[{"op":"cond","check":{"leaderTraitIncludes":"黒ひげ海賊団"},"then":[{"op":"draw","n":1},{"op":"addCostBuff","side":"opp","count":1,"amount":-2,"duration":"turn","optional":true}]}]}]}]}},
+  // OP09-090 ドクQ: 【起動メイン】レスト：黒ひげリーダーなら相手コスト1以下1枚KO ／【KO時】1ドロー
+  "OP09-090": {"act":{"label":"レスト:黒ひげなら相手1以下KO","cost":{"restSelf":true},"fx":[{"op":"cond","check":{"leaderTraitIncludes":"黒ひげ海賊団"},"then":[{"op":"ko","side":"opp","filter":{"maxCost":1},"count":1,"optional":true}]}]},"onKO":[{"op":"draw","n":1}]},
+  // OP09-092 マーシャル・D・ティーチ(c3): 【起動メイン】レスト：手札が相手より3枚以上少ないなら2ドロー＋手札1枚捨て
+  "OP09-092": {"act":{"label":"レスト:手札劣勢なら2ドロー＋1捨て","cost":{"restSelf":true},"fx":[{"op":"cond","check":{"selfHandFewerBy":3},"then":[{"op":"draw","n":2},{"op":"discardCost","count":1}]}]}},
+  // OP09-097 闇水: 【カウンター】相手のリーダーかキャラ1枚を効果無効＋-4000
+  "OP09-097": {"counter":{"cost":0,"fx":[{"op":"negateChoose","side":"opp","duration":"turn","amount":-4000,"optional":true}]}},
+  // OP09-098 闇穴道: 【メイン】黒ひげリーダーなら相手キャラ1枚を効果無効→コスト4以下ならKO
+  "OP09-098": {"main":{"fx":[{"op":"cond","check":{"leaderTraitIncludes":"黒ひげ海賊団"},"then":[{"op":"negateChoose","side":"opp","charsOnly":true,"duration":"turn","koIfMaxCost":4,"optional":true}]}]}},
+  /* ===== OP09 バッチ6（黄・100-119＝革命軍/オハラ/ライフ） ===== */
+  // OP09-101 クザン(c4): 【登場時】相手コスト3以下1枚を相手ライフに表向きで置く→相手1枚捨て
+  "OP09-101": {"onPlay":[{"op":"charToLife","filter":{"maxCost":3},"faceUp":true,"optional":true},{"op":"oppDiscard","n":1}]},
+  // OP09-102 クローバー博士: 【登場時】ニコ・ロビンリーダーなら デッキ上3枚から【トリガー】1枚を手札に
+  "OP09-102": {"onPlay":[{"op":"cond","check":{"leaderNameIncludes":"ニコ・ロビン"},"then":[{"op":"search","look":3,"count":1,"filter":{"hasTrigger":true},"optional":true}]}]},
+  // OP09-103 コアラ(c6): 【ブロッカー】 ／【登場時】ライフ上か下1枚を手札に：手札からコスト4以下の革命軍1枚を登場→1ドロー
+  "OP09-103": {"onPlay":[{"op":"lifeCost","pos":"choose","then":[{"op":"playCharFromHand","filter":{"traitIncludes":"革命軍","maxCost":4},"count":1,"optional":true},{"op":"draw","n":1}]}]},
+  // OP09-104 サボ(c7): 【登場時】手札から革命軍キャラ1枚をライフ上に表向きで加える→ライフ2枚以上ならライフ上か下1枚を手札に
+  "OP09-104": {"onPlay":[{"op":"handCharToLife","faceUp":true,"filter":{"traitIncludes":"革命軍"}},{"op":"cond","check":{"lifeAtLeast":2},"then":[{"op":"lifeCost","pos":"choose"}]}]},
+  // OP09-106 ニコ・オルビア: 【登場時】リーダーが「ニコ・ロビン」なら+3000
+  "OP09-106": {"onPlay":[{"op":"cond","check":{"leaderNameIncludes":"ニコ・ロビン"},"then":[{"op":"leaderBuff","amount":3000,"duration":"turn"}]}]},
+  // OP09-107 ニコ・ロビン(c6): 【登場時】相手ライフ3枚以上なら相手ライフ上1枚をトラッシュ
+  "OP09-107": {"onPlay":[{"op":"cond","check":{"oppLifeAtLeast":3},"then":[{"op":"lifeTrash","side":"opp"}]}]},
+  // OP09-110 ピエール: 【登場時】2ドロー＋手札2枚捨て
+  "OP09-110": {"onPlay":[{"op":"draw","n":2},{"op":"discardCost","count":2}]},
+  // OP09-112 ベロ・ベティ: 【登場時】自ライフ2枚以下なら1ドロー
+  "OP09-112": {"onPlay":[{"op":"cond","check":{"lifeAtMost":2},"then":[{"op":"draw","n":1}]}]},
+  // OP09-114 リンドバーグ: 【登場時】お互いライフ合計5枚以下なら相手のパワー2000以下1枚KO
+  "OP09-114": {"onPlay":[{"op":"cond","check":{"totalLifeAtMost":5},"then":[{"op":"ko","side":"opp","filter":{"maxEffPower":2000},"count":1,"optional":true}]}]},
+  // OP09-115 アイス塊「両棘矛」: 【メイン】相手のコスト3以下の【トリガー】持ち1枚KO
+  "OP09-115": {"main":{"fx":[{"op":"ko","side":"opp","filter":{"maxCost":3,"hasTrigger":true},"count":1,"optional":true}]}},
+  // OP09-116 ”奇跡”ナメんじゃないよォ!!!!: 【カウンター】リーダーかキャラ+2000
+  "OP09-116": {"counter":{"cost":0,"fx":[{"op":"powerMod","side":"self","leader":true,"amount":2000,"battle":true,"count":1,"optional":true}]}},
+  // OP09-117 デレシ!!: 【メイン】デッキ上5枚から「自身」以外の【トリガー】持ち2枚を手札に
+  "OP09-117": {"main":{"fx":[{"op":"search","look":5,"count":2,"filter":{"hasTrigger":true},"exclude":"デレシ!!","optional":true}]}},
+  // OP09-119 モンキー・D・ルフィ(c9): 【登場時】ドン-1：1ドロー＋このターン【速攻】
+  "OP09-119": {"onPlay":[{"op":"donMinus","n":1},{"op":"draw","n":1},{"op":"giveKeyword","target":"self","kw":"rush","duration":"turn"}]}
 };

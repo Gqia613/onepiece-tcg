@@ -229,7 +229,11 @@
           const pool = op.charsOnly || op.filter || op.maxCost != null ? D.chars : [D.leader, ...D.chars]; // フィルタ/maxCost/charsOnly指定時はキャラのみ
           const cands = pool.filter(c => matchFilter(c, opFilter(op)));
           const t = await chooseCard(side, cands, '効果を無効にする相手のキャラ1枚', 'oppBig', op.optional !== false);
-          if (t) { t.negSeq = durSeq(op.duration); flog(side, `「${t.base.type === 'LEADER' ? '相手リーダー' : t.base.name}」を効果無効`); floatOn(t.uid, '無効', 'dmg'); }
+          if (t) {
+            t.negSeq = durSeq(op.duration); flog(side, `「${t.base.type === 'LEADER' ? '相手リーダー' : t.base.name}」を効果無効`); floatOn(t.uid, '無効', 'dmg');
+            if (op.amount) { addBuff(t, op.amount, op.battle ? 'battle' : durTag(op.duration, 'turn')); floatOn(t.uid, `${op.amount}`, 'dmg'); } // 無効＋パワー減（OP09-097闇水）
+            if (op.koIfMaxCost != null && t.base.type !== 'LEADER' && (t.base.cost || 0) <= op.koIfMaxCost) { if (!(await protectFromEffect(t, 'ko', self))) await koCard(t, 'oppEffect'); } // 無効＋コスト条件KO（OP09-098闇穴道）
+          }
           render();
           break;
         }

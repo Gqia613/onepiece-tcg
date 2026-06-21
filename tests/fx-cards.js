@@ -22,7 +22,7 @@ const { runHarness } = require('./_load-app');  // stubs+CARD_DB+CARD_FX+本体J
     require(path.join(__dirname, '..', 'cards.js'));
     require(path.join(__dirname, '..', 'cards-fx.js'));
     const DB = global.window.CARD_DB, FX = global.window.CARD_FX;
-    for (const [tag, file] of [['OP14', 'official-op14.js'], ['OP13', 'official-op13.js'], ['OP12', 'official-op12.js'], ['OP11', 'official-op11.js'], ['OP10', 'official-op10.js']]) {
+    for (const [tag, file] of [['OP14', 'official-op14.js'], ['OP13', 'official-op13.js'], ['OP12', 'official-op12.js'], ['OP11', 'official-op11.js'], ['OP10', 'official-op10.js'], ['OP09', 'official-op09.js']]) {
       const off = require(path.join(__dirname, '..', 'tools', file));
       const mismatch = [], missing = [];
       for (const no in off) {
@@ -1743,6 +1743,39 @@ humanPick=function(c){return Promise.resolve((c||[])[0]||null);};
       C['__c4__']={no:'__c4__',name:'C4',type:'CHAR',color:[],cost:4,power:3000,counter:1000,traits:[]};
       const c3=mkSyn('__c3__',C['__c3__']); c3.owner='cpu'; const c4=mkSyn('__c4__',C['__c4__']); c4.owner='cpu';
       ok(matchFilter(c3,{maxCostFrom:'totalLife'})===true && matchFilter(c4,{maxCostFrom:'totalLife'})===false, 'OP10-100: ライフ合計3以下のコストのみ対象'); delete C['__c3__']; delete C['__c4__']; }
+
+    /* ===== OP09 新機構の回帰 ===== */
+    // OP09-018 失せろ: koByTotalPower＝合計パワー4000以下になるよう複数KO
+    { const me=LP('OP13-002'); me.isCPU=true; G.players.cpu=mkP('OP11-041',true);
+      C['__p1__']={no:'__p1__',name:'P1',type:'CHAR',color:[],cost:2,power:1000,counter:1000,traits:[]};
+      C['__p5__']={no:'__p5__',name:'P5',type:'CHAR',color:[],cost:5,power:5000,counter:1000,traits:[]};
+      const lo=mkSyn('__p1__',C['__p1__']),hi=mkSyn('__p5__',C['__p5__']); lo.owner='cpu';hi.owner='cpu'; G.players.cpu.chars=[lo,hi];
+      await runFx([{op:'koByTotalPower',count:2,maxTotal:4000}],{self:me.leader,side:'me'});
+      ok(G.players.cpu.chars.includes(hi) && !G.players.cpu.chars.includes(lo), 'OP09-018: 合計4000以下＝1000はKO・5000は残る'); delete C['__p1__']; delete C['__p5__']; }
+    // OP09-022 リムL: summonRested＝自分のキャラはレストで登場
+    { C['__rim__']={no:'__rim__',name:'リムL',type:'LEADER',color:['緑'],cost:0,power:5000,life:5,traits:['ODYSSEY'],fx:{static:[{op:'summonRested'}]}};
+      G.players={me:mkP('__rim__',false),cpu:mkP('OP11-041',true)}; G.active='me'; G.turnSeq=5; G.winner=null; G.busy=false;
+      const me=G.players.me; const c=I('OP10-012','me');
+      await summon('me',c,false);
+      ok(me.chars.includes(c) && c.rested===true, 'OP09-022: summonRestedでキャラがレスト登場'); delete C['__rim__']; }
+    // OP09-033 ロビン: grantTraitKoImmune＝filter一致の自キャラが効果KO耐性
+    { const me=LP('OP13-002'); me.isCPU=true; G.turnSeq=5; G.players.cpu=mkP('OP11-041',true);
+      await runFx([{op:'grantTraitKoImmune',duration:'untilNextEnd',filter:{traitIncludes:'麦わらの一味'}}],{self:me.leader,side:'me'});
+      C['__mw__']={no:'__mw__',name:'MW',type:'CHAR',color:[],cost:3,power:4000,counter:1000,traits:['麦わらの一味']};
+      const mw=mkSyn('__mw__',C['__mw__']); mw.owner='me';
+      ok(await protectFromEffect(mw,'ko',G.players.cpu.leader)===true, 'OP09-033: 麦わらは効果でKOされない'); delete C['__mw__']; }
+    // OP09-081 ティーチL: negateOwnOnPlay＝自分の登場時効果が無効
+    { C['__tea__']={no:'__tea__',name:'ティーチL',type:'LEADER',color:['黒'],cost:0,power:5000,life:4,traits:['黒ひげ海賊団'],fx:{static:[{op:'negateOwnOnPlay'}]}};
+      G.players={me:mkP('__tea__',false),cpu:mkP('OP11-041',true)}; G.active='me'; G.turnSeq=5; G.winner=null; G.busy=false;
+      const me=G.players.me; me.deck=[I('OP11-096','me'),I('OP11-096','me'),I('OP11-096','me')]; const h0=me.hand.length;
+      const drawer=I('OP10-004','me'); // 登場時5枚見て手札に加える効果
+      await summon('me',drawer,false);
+      ok(me.hand.length===h0, 'OP09-081: 自分の登場時効果が無効化される'); delete C['__tea__']; }
+    // OP09-066 oppDonGreater cond
+    { const me=LP('OP13-002'); G.players.cpu=mkP('OP11-041',true);
+      me.don={active:1,rested:0}; G.players.cpu.don={active:3,rested:0};
+      ok(checkCond({oppDonGreater:true},'me',null), 'OP09-066: 相手ドンが多い＝成立');
+      G.players.cpu.don={active:1,rested:0}; ok(!checkCond({oppDonGreater:true},'me',null), 'OP09-066: 同数では不成立'); }
   }catch(e){ console.log('EXCEPTION:', e.message); fail++; }
   console.log('Phase3 fxテスト: pass='+pass+' fail='+fail);
   process.exit(fail?1:0);

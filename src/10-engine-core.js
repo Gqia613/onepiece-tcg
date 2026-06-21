@@ -195,6 +195,7 @@
       if (c.selfAttachedDonAtLeast != null && [P.leader, ...P.chars].reduce((s, x) => s + (x ? (x.attachedDon || 0) : 0), 0) < c.selfAttachedDonAtLeast) return false; // 自分の付与ドン合計N以上（OP12-015/024等）
       if (c.donLEOpp && donTotal(side) > donTotal(opp(side))) return false; // 自分の場のドンが相手の場のドン枚数以下（OP12-041/073/078等）
       if (c.oppDonGreater && donTotal(opp(side)) <= donTotal(side)) return false; // 相手の場のドンが自分より多い（OP09-066ジャンバール）
+      if (c.selfHandFewerBy != null && !(P.hand.length <= O.hand.length - c.selfHandFewerBy)) return false; // 自分の手札が相手よりN枚以上少ない（OP09-092ティーチ）
       if (c.activeDonAtMost != null && (P.don.active || 0) > c.activeDonAtMost) return false; // アクティブのドンN枚以下
       if (c.activeDonAtLeast != null && (P.don.active || 0) < c.activeDonAtLeast) return false;
       if (c.oppHandAtLeast != null && O.hand.length < c.oppHandAtLeast) return false;
@@ -224,6 +225,7 @@
       if (c.oppLifeAtMost != null && O.life.length > c.oppLifeAtMost) return false;
       if (c.oppLifeAtLeast != null && O.life.length < c.oppLifeAtLeast) return false; // 相手のライフN枚以上（OP11-102ケイミー）
       if (c.totalLifeAtLeast != null && (P.life.length + O.life.length) < c.totalLifeAtLeast) return false; // お互いのライフ合計N枚以上（OP11-114ゴムゴムの火拳銃）
+      if (c.totalLifeAtMost != null && (P.life.length + O.life.length) > c.totalLifeAtMost) return false; // お互いのライフ合計N枚以下（OP09-114リンドバーグ）
       if (c.restedDonAtLeast != null && (P.don.rested || 0) < c.restedDonAtLeast) return false; // 自分のレストのドンN枚以上（OP12-021いっぽんマツ）
       if (c.selfRestedCharsAtLeast != null && P.chars.filter(ch => ch.rested).length < c.selfRestedCharsAtLeast) return false; // 自分のレストのキャラN枚以上（OP10白ひげ/エネル/ミホーク/ゾロ）
       if (c.selfCharCostSumAtLeast != null && P.chars.reduce((s, ch) => s + (ch.base.cost || 0), 0) < c.selfCharCostSumAtLeast) return false; // 自分のキャラのコスト合計N以上（OP10-022ロー）
