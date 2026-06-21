@@ -30,20 +30,24 @@ step('構文チェック (node --check)', ()=>{
 });
 
 // 2) デッキ整合
-step('デッキ整合（全6デッキ50枚）', ()=>{
+step('デッキ整合（全デッキ50枚）', ()=>{
   const s=loadApp(HTML); const defs=new Set(); let m;
   // 複数行 def({ \n no: '...' } とコロン後の空白に対応
   const dre=/def\(\{\s*no:\s*['"]([\w-]+)['"]/g; while(m=dre.exec(s))defs.add(m[1]);
   // 空振り（正規表現が現行コード形式に未対応）を偽合格にしないためのガード
   if(defs.size<50) throw {stdout:`  ✗ カード定義の抽出に失敗（定義数 ${defs.size}）— 正規表現がコード形式に未対応の可能性\n`};
+  // ★有効カード = def()登録 ∪ CARD_DB(cards.js)。デッキは CARD_DB のカードも使える（mergeCardDBでCに統合・カスタムデッキと同じ）。
+  const valid=new Set(defs); let nm;
+  const dbtxt=fs.readFileSync(path.join(ROOT,'cards.js'),'utf8'); const nre=/"no":"([\w-]+)"/g; while(nm=nre.exec(dbtxt))valid.add(nm[1]);
+  if(valid.size<defs.size+100) throw {stdout:`  ✗ CARD_DBの抽出に失敗（有効 ${valid.size}）\n`};
   const dkre=/id:\s*['"](\w+)['"][\s\S]*?leader:\s*['"]([\w-]+)['"][\s\S]*?list:\s*\{([\s\S]*?)\}/g;
   let d,bad=0,rep=[],deckCount=0;
   while(d=dkre.exec(s)){ deckCount++; let sum=0,miss=[]; const cre=/['"]([\w-]+)['"]\s*:\s*(\d+)/g; let c;
-    while(c=cre.exec(d[3])){ sum+=+c[2]; if(!defs.has(c[1]))miss.push(c[1]); }
-    if(sum!==50||!defs.has(d[2])||miss.length){ bad++; rep.push(`${d[1]}:sum=${sum}${defs.has(d[2])?'':' LEADER未定義='+d[2]}${miss.length?' MISSING='+miss.join(','):''}`); } }
+    while(c=cre.exec(d[3])){ sum+=+c[2]; if(!valid.has(c[1]))miss.push(c[1]); }
+    if(sum!==50||!valid.has(d[2])||miss.length){ bad++; rep.push(`${d[1]}:sum=${sum}${valid.has(d[2])?'':' LEADER未定義='+d[2]}${miss.length?' MISSING='+miss.join(','):''}`); } }
   if(deckCount<6) throw {stdout:`  ✗ デッキ抽出に失敗（検出 ${deckCount}/6）— 正規表現がコード形式に未対応の可能性\n`};
   if(bad){ throw {stdout:'  NG: '+rep.join(' | ')+'\n'}; }
-  console.log('  ✓ 全6デッキ50枚・全カード定義済み（定義数 '+defs.size+' / デッキ '+deckCount+'）');
+  console.log('  ✓ 全'+deckCount+'デッキ50枚・全カード有効（def '+defs.size+' / CARD_DB込み有効 '+valid.size+'）');
 });
 
 // 3) CPU対CPU
