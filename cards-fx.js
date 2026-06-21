@@ -810,6 +810,27 @@ window.CARD_FX = {
   "OP13-109": {"static":[{"op":"leaveProtect","targetSelf":true,"pay":"flipLifeUp"}]},
   // OP13-119 ポートガス・Ｄ・エース: ライフ3以下で【速攻】 ／【登場時】リーダーにレストのドン1付与→相手コスト5以下1枚を手札に戻す→戻したら相手はコスト4以下を登場(oppPlayAfter)
   "OP13-119": {"static":[{"op":"staticKeyword","kw":"rush","cond":{"lifeAtMost":3}}],"onPlay":[{"op":"donAttach","target":"leader","n":1},{"op":"bounce","side":"opp","maxCost":5,"count":1,"optional":true,"oppPlayAfter":4}]},
-  // OP13-079 イム LEADER: 【起動メイン】【ターン1回】《天竜人》キャラか手札1枚をトラッシュ：1ドロー（※デッキ構築制約「コスト2以上イベント不可」とゲーム開始時の聖地マリージョア登場は特殊ルールのため未実装）
-  "OP13-079": {"act":{"label":"天竜人キャラか手札1枚をトラッシュ:1ドロー","cost":{},"fx":[{"op":"chooseOption","options":[{"label":"天竜人キャラをトラッシュ","fx":[{"op":"trashOwnCharCost","filter":{"traitIncludes":"天竜人"},"then":[{"op":"draw","n":1}]}]},{"label":"手札1枚を捨てる","fx":[{"op":"discardCost","count":1,"then":[{"op":"draw","n":1}]}]}]}]}}
+  // OP13-079 イム LEADER: 【起動メイン】【ターン1回】《天竜人》キャラか手札1枚をトラッシュ：1ドロー（デッキ構築制約=builderValidate / ゲーム開始時マリージョア登場=startGame で実装済）
+  "OP13-079": {"act":{"label":"天竜人キャラか手札1枚をトラッシュ:1ドロー","cost":{},"fx":[{"op":"chooseOption","options":[{"label":"天竜人キャラをトラッシュ","fx":[{"op":"trashOwnCharCost","filter":{"traitIncludes":"天竜人"},"then":[{"op":"draw","n":1}]}]},{"label":"手札1枚を捨てる","fx":[{"op":"discardCost","count":1,"then":[{"op":"draw","n":1}]}]}]}]}},
+  /* ===== OP12 バッチ1（赤・イベント2公開/付与ドン。レイリー覇気016-019は後続） ===== */
+  // OP12-003 クロッカス: 【KO時】イベント2枚公開：手札からパワー3000以下の赤キャラを登場
+  "OP12-003": {"onKO":[{"op":"revealCost","count":2,"filter":{"type":"EVENT"},"then":[{"op":"playCharFromHand","filter":{"color":"赤","maxPower":3000},"count":1,"optional":true}]}]},
+  // OP12-004 光月おでん: 【起動メイン】イベント2枚公開：自身+2000
+  "OP12-004": {"act":{"label":"イベント2枚公開:自身+2000","cost":{},"fx":[{"op":"revealCost","count":2,"filter":{"type":"EVENT"},"then":[{"op":"powerMod","target":"self","amount":2000,"duration":"turn"}]}]}},
+  // OP12-006 シャクヤク: 【登場時】デッキ上5枚から「ルフィ」か赤イベント1枚を手札へ
+  "OP12-006": {"onPlay":[{"op":"search","look":5,"count":1,"filter":{"or":[{"name":"モンキー・Ｄ・ルフィ"},{"color":"赤","type":"EVENT"}]},"optional":true}]},
+  // OP12-007 シャンクス(c2): 【登場時】「シャンクス」以外のロジャー海賊団キャラ1枚にこのターン【速攻】
+  "OP12-007": {"onPlay":[{"op":"giveKeyword","target":"chooseOwn","kw":"rush","duration":"turn","filter":{"traitIncludes":"ロジャー海賊団","nameExcludes":"シャンクス"}}]},
+  // OP12-008 シャンクス(c4): 【ブロッカー】 ／【相手のアタック時】手札1捨て：相手リーダーかキャラ1枚を-2000
+  "OP12-008": {"onOppAttack":[{"op":"discardCost","count":1,"once":"turn","then":[{"op":"powerMod","side":"opp","includeLeader":true,"amount":-2000,"battle":true,"count":1,"optional":true}]}]},
+  // OP12-009 ジンベエ: 【登場時】イベント2枚公開：このターン【速攻】＋次相手エンドまで+1000
+  "OP12-009": {"onPlay":[{"op":"revealCost","count":2,"filter":{"type":"EVENT"},"then":[{"op":"giveKeyword","target":"self","kw":"rush"},{"op":"powerMod","target":"self","amount":1000,"duration":"untilNextEnd"}]}]},
+  // OP12-012 バギー: 【登場時】「バギー」以外のロジャー海賊団キャラ1枚に次相手エンドまで【ブロッカー】
+  "OP12-012": {"onPlay":[{"op":"giveKeyword","target":"chooseOwn","kw":"blocker","duration":"untilNextEnd","filter":{"traitIncludes":"ロジャー海賊団","nameExcludes":"バギー"}}]},
+  // OP12-013 はっちゃん: 【起動メイン】このキャラをレスト＋イベント2枚公開：リーダーかキャラにレストのドン2付与
+  "OP12-013": {"act":{"label":"レスト+イベント2公開:付与ドン2","cost":{"restSelf":true},"fx":[{"op":"revealCost","count":2,"filter":{"type":"EVENT"},"then":[{"op":"donAttach","target":"chooseOwn","n":2}]}]}},
+  // OP12-014 ボア・ハンコック: 【登場時】デッキ上5枚から「ルフィ」か赤イベント1枚 ／【起動メイン】自身トラッシュ：付与ドン2
+  "OP12-014": {"onPlay":[{"op":"search","look":5,"count":1,"filter":{"or":[{"name":"モンキー・Ｄ・ルフィ"},{"color":"赤","type":"EVENT"}]},"optional":true}],"act":{"label":"自身トラッシュ:付与ドン2","cost":{},"fx":[{"op":"trashSelfCost","then":[{"op":"donAttach","target":"chooseOwn","n":2}]}]}},
+  // OP12-015 モンキー・Ｄ・ルフィ: 付与ドン合計2以上で+2000 ／【登場時】イベント2枚公開：パワー3000以下の赤キャラ登場→付与ドン1
+  "OP12-015": {"static":[{"op":"condBuff","cond":{"selfAttachedDonAtLeast":2},"power":2000}],"onPlay":[{"op":"revealCost","count":2,"filter":{"type":"EVENT"},"then":[{"op":"playCharFromHand","filter":{"color":"赤","maxPower":3000},"count":1,"optional":true},{"op":"donAttach","target":"chooseOwn","n":1}]}]}
 };

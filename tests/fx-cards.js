@@ -1569,6 +1569,26 @@ humanPick=function(c){return Promise.resolve((c||[])[0]||null);};
       const o4=mkSyn('__o4h__',C['__o4h__']); o4.owner='cpu'; G.players.cpu.hand=[o4];
       const ac=I('OP13-119','me'); await runFx(ac.base.fx.onPlay,{self:ac,side:'me'});
       ok(!G.players.cpu.chars.includes(v) && G.players.cpu.chars.some(x=>x.no==='__o4h__'), 'OP13-119: バウンス→相手がコスト4以下を登場(oppPlayAfter)'); delete C['__o5b__']; delete C['__o4h__']; }
+
+    // === OP12 バッチ1（赤） ===
+    ok(['OP12-003','OP12-004','OP12-008','OP12-013','OP12-015'].every(no=>C[no]&&C[no].fx), 'OP12バッチ1: 赤10枚にfx統合');
+    // OP12-003 クロッカス: イベント2公開→赤パワー3000以下を登場
+    { const me=LP('OP13-002');
+      me.hand=[I('OP13-019','me'),I('OP13-019','me')]; // 赤イベント2枚(OP13-019=火炎イベント)
+      C['__r3__']={no:'__r3__',name:'R3',type:'CHAR',color:['赤'],cost:2,power:3000,counter:1000,traits:[]};
+      me.hand.push(mkSyn('__r3__',C['__r3__']));
+      const c=I('OP12-003','me'); await runFx(c.base.fx.onKO,{self:c,side:'me'});
+      ok(me.chars.some(x=>x.no==='__r3__'), 'OP12-003: イベント2公開(revealCost)→赤キャラ登場'); delete C['__r3__']; }
+    // OP12-008 シャンクス: 相手アタック時 手札1捨て→相手-2000
+    { const me=LP('OP13-002'); me.hand=[I('OP15-067','me')];
+      C['__t6__']={no:'__t6__',name:'T6',type:'CHAR',color:[],cost:5,power:6000,counter:1000,traits:[]};
+      const atk=mkSyn('__t6__',C['__t6__']); atk.owner='cpu'; G.players.cpu.chars=[atk]; const lp0=power(G.players.cpu.leader);
+      const sk=I('OP12-008','me'); await runFx(sk.base.fx.onOppAttack,{self:sk,side:'me',attacker:atk});
+      ok(me.hand.length===0 && (power(G.players.cpu.leader)===lp0-2000 || power(atk)===4000), 'OP12-008 onOppAttack: 手札1捨て→相手リーダー/キャラ-2000'); delete C['__t6__']; }
+    // OP12-015 ルフィ: 付与ドン合計2以上で+2000(selfAttachedDonAtLeast)
+    { const me=LP('OP13-002'); const lf=I('OP12-015','me'); lf.owner='me'; me.chars=[lf]; G.active='me';
+      lf.attachedDon=0; me.leader.attachedDon=0; ok(power(lf)===4000, 'OP12-015: 付与ドン0では+2000無し');
+      lf.attachedDon=2; ok(power(lf)===4000+2000+2000, 'OP12-015: 付与ドン合計2以上で+2000(付与ドン分の2000も加算)'); }
   }catch(e){ console.log('EXCEPTION:', e.message); fail++; }
   console.log('Phase3 fxテスト: pass='+pass+' fail='+fail);
   process.exit(fail?1:0);
