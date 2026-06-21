@@ -1634,7 +1634,7 @@ window.CARD_FX = {
   // OP08-028 ネコマムシ: 【登場時】相手のレストのカードが7枚以上なら このターン【速攻】
   "OP08-028": {"onPlay":[{"op":"cond","check":{"oppRestedCardsAtLeast":7},"then":[{"op":"giveKeyword","target":"self","kw":"rush","duration":"turn"}]}]},
   // OP08-029 ペコムズ: アクティブの時、「ペコムズ」以外のコスト3以下ミンク族は効果でKOされない
-  "OP08-029": {"static":[{"op":"allyKoImmune","filter":{"maxBaseCost":3,"traitIncludes":"ミンク族"}}]},
+  "OP08-029": {"static":[{"op":"allyKoImmune","whenActive":true,"filter":{"maxBaseCost":3,"traitIncludes":"ミンク族","nameExcludes":"ペコムズ"}}]},
   // OP08-030 ペドロ: 【ブロッカー】 ／【KO時】相手のドン1枚をレスト か 相手のレストのコスト6以下1枚KO
   "OP08-030": {"onKO":[{"op":"chooseOption","options":[{"label":"相手のドン1枚をレスト","fx":[{"op":"restOppDon","n":1}]},{"label":"相手のレストのコスト6以下1枚KO","fx":[{"op":"ko","side":"opp","filter":{"restedOnly":true,"maxCost":6},"count":1,"optional":true}]}]}]},
   // OP08-031 ミヤギ: 【登場時】コスト2以下のミンク族1枚をアクティブ
@@ -1790,5 +1790,77 @@ window.CARD_FX = {
   // OP08-118 シルバーズ･レイリー(c8): 【登場時】相手2枚を-3000/-2000(次相手ターン終了まで)→相手のパワー3000以下1枚KO
   "OP08-118": {"onPlay":[{"op":"powerMod","side":"opp","amount":-3000,"duration":"untilNextEnd","count":1,"optional":true},{"op":"powerMod","side":"opp","amount":-2000,"duration":"untilNextEnd","count":1,"optional":true},{"op":"ko","side":"opp","filter":{"maxEffPower":3000},"count":1,"optional":true}]},
   // OP08-119 カイドウ＆リンリン(c10): 【アタック時】ドン-10：このキャラ以外の全キャラKO→デッキ上1枚をライフに＋相手ライフ上1枚をトラッシュ
-  "OP08-119": {"onAttack":[{"op":"donMinus","n":10},{"op":"koAllExceptSelf"},{"op":"lifeAddFromDeck","n":1},{"op":"lifeTrash","side":"opp"}]}
+  "OP08-119": {"onAttack":[{"op":"donMinus","n":10},{"op":"koAllExceptSelf"},{"op":"lifeAddFromDeck","n":1},{"op":"lifeTrash","side":"opp"}]},
+  /* ===== OP07（500年後の未来）バッチ1（赤・001-021＝革命軍/ゴア王国/エース） ===== */
+  // OP07-001 モンキー・D・ドラゴン LEADER: 【起動メイン】【ターン1回】自分の付与ドン合計2枚までを自分のキャラ1枚に移す
+  "OP07-001": {"act":{"label":"付与ドン2枚を1キャラに移す","cost":{},"fx":[{"op":"moveAttachedDon","n":2}]}},
+  // OP07-002 アイン: 【登場時】相手キャラ1枚をこのターン中パワー0
+  "OP07-002": {"onPlay":[{"op":"setPower","side":"opp","value":0,"count":1,"optional":true}]},
+  // OP07-003 アウトルック3世: 【起動メイン】自身トラッシュ：相手キャラ2枚を-2000
+  "OP07-003": {"act":{"label":"自身トラッシュ:相手2枚-2000","cost":{},"fx":[{"op":"trashSelfCost","then":[{"op":"powerMod","side":"opp","amount":-2000,"duration":"turn","count":2,"optional":true}]}]}},
+  // OP07-004 カーリー・ダダン: 【登場時】手札1枚捨て：デッキ上5枚からパワー2000以下のキャラ1枚を手札に
+  "OP07-004": {"onPlay":[{"op":"discardCost","count":1,"optional":true,"then":[{"op":"search","look":5,"count":1,"filter":{"type":"CHAR","maxPower":2000},"optional":true}]}]},
+  // OP07-005 カリーナ: 【ブロッカー】 ／【登場時】相手キャラ1枚を-2000
+  "OP07-005": {"onPlay":[{"op":"powerMod","side":"opp","amount":-2000,"duration":"turn","count":1,"optional":true}]},
+  // OP07-006 ステリー: 【登場時】自分のアクティブのリーダーを-5000：1ドロー＋手札1枚捨て
+  "OP07-006": {"onPlay":[{"op":"leaderMinusCost","amount":5000,"then":[{"op":"draw","n":1},{"op":"discardCost","count":1}]}]},
+  // OP07-009 ドグラ＆マグラ: 【登場時】自分のコスト1の赤キャラ1枚に【ダブルアタック】
+  "OP07-009": {"onPlay":[{"op":"giveKeyword","target":"chooseOwn","kw":"doubleAttack","duration":"turn","filter":{"cost":1,"color":"赤"}}]},
+  // OP07-010 バカラ: 【ブロッカー】 ／【相手のアタック時】【ターン1回】手札1枚捨て：リーダーかキャラ+2000
+  "OP07-010": {"onOppAttack":[{"op":"discardCost","count":1,"optional":true,"once":"turn","then":[{"op":"powerMod","side":"self","leader":true,"amount":2000,"battle":true,"count":1,"optional":true}]}]},
+  // OP07-011 ブルージャム: 【ドン×1】【アタック時】相手のパワー2000以下1枚KO
+  "OP07-011": {"onAttack":[{"op":"cond","check":{"donX1":true},"then":[{"op":"ko","side":"opp","filter":{"maxEffPower":2000},"count":1,"optional":true}]}]},
+  // OP07-012 ポルシェーミ: 【登場時】相手キャラ1枚を-1000
+  "OP07-012": {"onPlay":[{"op":"powerMod","side":"opp","amount":-1000,"duration":"turn","count":1,"optional":true}]},
+  // OP07-013 マスクド・デュース: 【登場時】エースリーダーなら デッキ上5枚から「エース」か赤イベント1枚を手札に
+  "OP07-013": {"onPlay":[{"op":"cond","check":{"leaderNameIncludes":"ポートガス・D・エース"},"then":[{"op":"search","look":5,"count":1,"filter":{"or":[{"nameIncludes":"ポートガス・D・エース"},{"color":"赤","type":"EVENT"}]},"optional":true}]}]},
+  // OP07-014 モーダ: 【自分のターン中】【登場時】自分の「エース」1枚を+2000
+  "OP07-014": {"onPlay":[{"op":"powerMod","side":"self","amount":2000,"duration":"turn","count":1,"optional":true,"filter":{"nameIncludes":"ポートガス・D・エース"}}]},
+  // OP07-015 モンキー・D・ドラゴン(c8): 【速攻】 ／【登場時】リーダーかキャラ1枚にレストのドン2付与
+  "OP07-015": {"onPlay":[{"op":"donAttach","target":"chooseOwn","n":2}]},
+  // OP07-016 銀河・WINK: 【メイン】革命軍1枚を+2000→相手キャラ1枚を-1000
+  "OP07-016": {"main":{"fx":[{"op":"powerMod","side":"self","amount":2000,"duration":"turn","count":1,"optional":true,"filter":{"traitIncludes":"革命軍"}},{"op":"powerMod","side":"opp","amount":-1000,"duration":"turn","count":1,"optional":true}]}},
+  // OP07-017 竜の息吹: 【メイン】相手のパワー3000以下1枚＋コスト1以下のステージ1枚をKO
+  "OP07-017": {"main":{"fx":[{"op":"ko","side":"opp","filter":{"maxEffPower":3000},"count":1,"optional":true},{"op":"koStage","filter":{"maxCost":1},"optional":true}]}},
+  // OP07-018 KEEP OUT: 【カウンター】革命軍1枚を次の自分のターン終了まで+2000(近似:untilNextEnd)
+  "OP07-018": {"counter":{"cost":0,"fx":[{"op":"powerMod","side":"self","amount":2000,"duration":"untilNextEnd","count":1,"optional":true,"filter":{"traitIncludes":"革命軍"}}]}},
+  // OP07-020 アラディン: 【ブロッカー】 ／【KO時】魚人族リーダーなら手札からコスト3以下の魚人/人魚1枚を登場
+  "OP07-020": {"onKO":[{"op":"cond","check":{"leaderTraitIncludes":"魚人族"},"then":[{"op":"playCharFromHand","filter":{"maxCost":3,"or":[{"traitIncludes":"魚人族"},{"traitIncludes":"人魚族"}]},"count":1,"optional":true}]}]},
+  // OP07-021 ウルージ: 【ブロッカー】 ／【自分のターン終了時】ドン1アクティブ
+  "OP07-021": {"onTurnEnd":[{"op":"donActivate","n":1}]},
+  /* ===== OP07 バッチ2（緑・022-041＝超新星/魚人族/ワノ国） ===== */
+  // OP07-022 お玉: 【登場時】デッキ上5枚から「お玉」以外の緑ワノ国1枚を手札に
+  "OP07-022": {"onPlay":[{"op":"search","look":5,"count":1,"filter":{"color":"緑","traitIncludes":"ワノ国"},"exclude":"お玉","optional":true}]},
+  // OP07-023 カリブー: レストのドン6枚以上で+1000 ／【ブロッカー】
+  "OP07-023": {"static":[{"op":"condBuff","cond":{"restedDonAtLeast":6},"power":1000}]},
+  // OP07-024 コアラ: 【相手のアタック時】このキャラをレスト：コスト5以下の魚人族1枚に【ブロッカー】
+  "OP07-024": {"onOppAttack":[{"op":"restSelfCost","then":[{"op":"giveKeyword","target":"chooseOwn","kw":"blocker","duration":"turn","filter":{"traitIncludes":"魚人族","maxCost":5}}]}]},
+  // OP07-025 コリブー(c3): 【登場時】手札からコスト4以下「カリブー」1枚をレストで登場
+  "OP07-025": {"onPlay":[{"op":"playSpecificFromHand","nameIncludes":"カリブー","filter":{"maxCost":4},"rested":true,"optional":true}]},
+  // OP07-026 ジュエリー・ボニー(c5): 【登場時】相手のレストのキャラ1枚を次リフレッシュロック
+  "OP07-026": {"onPlay":[{"op":"lockRefresh","count":1,"optional":true}]},
+  // OP07-029 バジル・ホーキンス: 超新星リーダーで【ブロッカー】 ／【ターン1回】相手効果で離れる場合、代わりに相手キャラ1枚をレスト
+  "OP07-029": {"static":[{"op":"staticKeyword","kw":"blocker","cond":{"leaderTraitIncludes":"超新星"}},{"op":"leaveProtect","targetSelf":true,"once":"turn","pay":"restOpp"}]},
+  // OP07-030 パッパグ: 自分の「ケイミー」がいれば【ブロッカー】を得る
+  "OP07-030": {"static":[{"op":"staticKeyword","kw":"blocker","cond":{"selfChar":{"nameIncludes":"ケイミー"}}}]},
+  // OP07-031 バルトロメオ(c3): 【ブロッカー】 ／【自分のターン中】【ターン1回】キャラが自分の効果でレストになった時、1ドロー＋手札1枚捨て
+  "OP07-031": {"onOwnRest":{"when":"selfTurn","once":"turn","fx":[{"op":"draw","n":1},{"op":"discardCost","count":1}]}},
+  // OP07-032 フィッシャー・タイガー: 登場ターンにキャラへアタック可(速攻:キャラ) ／【登場時】魚人/人魚リーダーなら相手コスト6以下1枚レスト
+  "OP07-032": {"onPlay":[{"op":"cond","check":{"or":[{"leaderTraitIncludes":"魚人族"},{"leaderTraitIncludes":"人魚族"}]},"then":[{"op":"restChar","side":"opp","filter":{"maxCost":6},"count":1,"optional":true}]}]},
+  // OP07-033 モンキー・D・ルフィ(c5): 自分のキャラ3枚以上なら「ルフィ」以外のコスト3以下キャラは相手効果でKOされない
+  "OP07-033": {"static":[{"op":"allyKoImmune","cond":{"selfCharCount":{"min":3}},"filter":{"maxBaseCost":3,"nameExcludes":"モンキー・D・ルフィ"}}]},
+  // OP07-034 ロロノア・ゾロ(c1): 【アタック時】自分のキャラ3枚以上なら このキャラ+2000
+  "OP07-034": {"onAttack":[{"op":"cond","check":{"selfCharCount":{"min":3}},"then":[{"op":"powerMod","side":"self","target":"self","amount":2000,"duration":"turn"}]}]},
+  // OP07-035 因果晒し: 【カウンター】リーダーかキャラ+2000→自分のキャラ3枚以上ならさらに+1000
+  "OP07-035": {"counter":{"cost":0,"fx":[{"op":"powerMod","side":"self","leader":true,"amount":2000,"battle":true,"count":1,"optional":true},{"op":"cond","check":{"selfCharCount":{"min":3}},"then":[{"op":"powerMod","side":"self","leader":true,"amount":1000,"battle":true,"count":1,"optional":true}]}]}},
+  // OP07-036 鬼気 九刀流 阿修羅 魔九閃: 【メイン】リーダーかキャラ+3000→コスト3以上の自キャラ1枚をレスト：相手コスト5以下1枚をレスト
+  "OP07-036": {"main":{"fx":[{"op":"powerMod","side":"self","leader":true,"amount":3000,"duration":"turn","count":1,"optional":true},{"op":"restOwnAsCost","filter":{"minCost":3},"then":[{"op":"restChar","side":"opp","filter":{"maxCost":5},"count":1,"optional":true}]}]}},
+  // OP07-037 ピザお～か～わ～り～!!!: 【メイン】デッキ上5枚から「自身」以外の超新星1枚を手札に
+  "OP07-037": {"main":{"fx":[{"op":"search","look":5,"count":1,"filter":{"traitIncludes":"超新星"},"exclude":"ピザお～か～わ～り～!!!","optional":true}]}},
+  // OP07-039 エドワード・ウィーブル(c4): 【ドン×1】【アタック時】デッキ上3枚を並び替え
+  "OP07-039": {"onAttack":[{"op":"cond","check":{"donX1":true},"then":[{"op":"scry","look":3}]}]},
+  // OP07-040 クロコダイル(c4): 【登場時】ドン1レスト：コスト2以下1枚を手札に戻す
+  "OP07-040": {"onPlay":[{"op":"restDonCost","n":1,"then":[{"op":"bounce","side":"opp","maxCost":2,"count":1,"optional":true}]}]},
+  // OP07-041 グロリオーサ(ニョン婆): 【登場時】デッキ上5枚から「自身」以外のアマゾン・リリーか九蛇1枚を手札に
+  "OP07-041": {"onPlay":[{"op":"search","look":5,"count":1,"filter":{"or":[{"traitIncludes":"アマゾン・リリー"},{"traitIncludes":"九蛇海賊団"}]},"exclude":"グロリオーサ(ニョン婆)","optional":true}]}
 };

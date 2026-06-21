@@ -461,6 +461,7 @@
       if (f.traits && !(b.traits || []).some(t => f.traits.includes(t))) return false;
       if (f.color && !(b.color || []).includes(f.color)) return false;
       if (f.name && normName(b.name) !== normName(f.name)) return false;
+      if (f.nameExcludes && normName(b.name).includes(normName(f.nameExcludes))) return false;
       if (f.minBaseCost != null && (b.cost || 0) < f.minBaseCost) return false;
       if (f.maxBaseCost != null && (b.cost || 0) > f.maxBaseCost) return false;
       if (f.basePower != null && (b.power || 0) !== f.basePower) return false;

@@ -292,6 +292,22 @@
           }
           break;
         }
+        // 自分の付与ドンを合計Nまで、自分のキャラ1枚に移し替える（OP07-001ドラゴンL）
+        case 'moveAttachedDon': {
+          const max = op.n || 2; const sources = [P.leader, ...P.chars].filter(c => (c.attachedDon || 0) > 0);
+          if (!sources.reduce((s, c) => s + (c.attachedDon || 0), 0)) break;
+          const target = P.isCPU ? P.chars.slice().sort((a, b) => power(b) - power(a))[0] : await chooseCard(side, P.chars, '付与ドンを移すキャラ', 'ownBig', true);
+          if (!target) break; let moved = 0;
+          for (const c of sources) { if (c === target) continue; while ((c.attachedDon || 0) > 0 && moved < max) { c.attachedDon--; target.attachedDon = (target.attachedDon || 0) + 1; moved++; } if (moved >= max) break; }
+          if (moved) { floatOn(target.uid, `ドン+${moved}`, 'buff'); flog(side, `付与ドン${moved}枚を「${target.base.name}」へ移した`); } render(); break;
+        }
+        // 自分のアクティブのリーダーをこのターン中パワー-Nにするコスト（OP07-006ステリー）。任意。then実行。
+        case 'leaderMinusCost': {
+          if (P.leader.rested) break; // アクティブのリーダーが条件
+          if (!(await confirmUse(side, 'リーダーをパワー-' + (op.amount || 5000), `自分のリーダーをパワー-${op.amount || 5000}にして効果を使いますか？`, '使う', '使わない'))) break;
+          addBuff(P.leader, -(op.amount || 5000), 'turn'); floatOn(P.leader.uid, `-${op.amount || 5000}`, 'dmg');
+          await runFx(op.then, ctx); break;
+        }
         case 'donAttachAll': { let targets = op.incLeader ? [P.leader, ...P.chars] : P.chars; if (op.filter) targets = targets.filter(t => matchFilter(t, op.filter)); if (op.max != null) targets = targets.slice(0, op.max); for (const t of targets) { const k = Math.min(op.n, P.don.rested); t.attachedDon += k; P.don.rested -= k; } flog(side, op.incLeader ? 'リーダーとキャラにレストのドン付与' : '自キャラにレストのドン付与'); render(); break; } // filter=対象限定／max=最大対象数（OP08-001チョッパーL＝動物/ドラム王国3枚まで1枚ずつ）
         case 'selfToHand': { const z = P.trash; const i = z.indexOf(self); if (i >= 0) { z.splice(i, 1); P.hand.push(self); flog(side, `「${self.base.name}」をトラッシュから手札に加えた`); } break; }
         case 'giveKeyword': {
@@ -498,8 +514,9 @@
           if (op.target === 'leader' || op.target === 'selfAndLeader') targets.push(P.leader);
           if (op.target === 'allOwn') for (const c of ownChars(side, opFilter(op))) targets.push(c); // 条件一致の自キャラ全て
           if (op.target === 'chooseOwn' || op.target === 'chooseOwnL') { const cands = (op.target === 'chooseOwnL' ? [P.leader, ...P.chars] : P.chars).filter(c => matchFilter(c, opFilter(op))); for (let i = 0; i < (op.count || 1); i++) { const t = P.isCPU ? cands[i] : await chooseCard(side, cands.filter(c => !targets.includes(c)), '元々のパワーを変える対象を選択', 'ownBig', op.optional); if (!t) break; if (!targets.includes(t)) targets.push(t); } }
-          for (const t of targets) if (t) { t.buffs.push({ setBase: setVal, until: dur }); floatOn(t.uid, `P${setVal}`, 'buff'); }
-          if (targets.length) { flog(side, `元々のパワーを${setVal}に`); render(); }
+          if (op.side === 'opp' || op.target === 'chooseOpp') { for (let i = 0; i < (op.count || 1); i++) { const t = await chooseCard(side, oppChars(side, opFilter(op)).filter(c => !targets.includes(c)), `パワーを${setVal}にする相手キャラを選択`, 'oppBig', op.optional); if (!t) break; targets.push(t); } } // 相手キャラのパワーをNにする（OP07-002アイン＝パワー0）
+          for (const t of targets) if (t) { t.buffs.push({ setBase: setVal, until: dur }); floatOn(t.uid, `P${setVal}`, t.owner === side ? 'buff' : 'dmg'); }
+          if (targets.length) { flog(side, `パワーを${setVal}に`); render(); }
           break;
         }
         // KO時など: self 自身をトラッシュから登場させる（noEnter:true で登場時効果を発動しない）
@@ -862,7 +879,7 @@
           else cands = P.hand.slice();
           if (op.filter) cands = cands.filter(x => matchFilter(x, op.filter)); // 追加の絞り込み（コスト等。OP10-026/027錦えもん=コスト6）
           const c = op.choose ? await chooseFromHand(side, cands, '登場させるキャラを選択' + (op.optional ? '（任意）' : ''), null, op.optional) : cands[0];
-          if (c) { P.hand.splice(P.hand.indexOf(c), 1); if (c.base.type === 'STAGE') { if (P.stage) P.trash.push(reset(P.stage)); P.stage = c; c.owner = side; c.rested = false; flog(side, `ステージ「${c.base.name}」が登場`); if (c.base.fx && c.base.fx.onPlay && !isNegated(c)) await runFx(c.base.fx.onPlay, { self: c, side }); render(); } else await summon(side, c, op.noEnter); } // STAGEはステージエリアへ（OP08-110/115アッパーヤード）
+          if (c) { P.hand.splice(P.hand.indexOf(c), 1); if (c.base.type === 'STAGE') { if (P.stage) P.trash.push(reset(P.stage)); P.stage = c; c.owner = side; c.rested = false; flog(side, `ステージ「${c.base.name}」が登場`); if (c.base.fx && c.base.fx.onPlay && !isNegated(c)) await runFx(c.base.fx.onPlay, { self: c, side }); render(); } else { await summon(side, c, op.noEnter); if (op.rested && P.chars.includes(c)) c.rested = true; } } // STAGEはステージエリアへ（OP08-110/115）／rested=レストで登場（OP07-025コリブー）
           break;
         }
         // 両者の場のキャラすべてを、このキャラ以外KOする（OP08-119カイドウ＆リンリン）
@@ -940,7 +957,7 @@
       if (cause === 'ko') { const wk = G.players[target.owner] && G.players[target.owner]._weakKoImmune; if (wk && G.turnSeq <= wk.until && (target.base.power || 0) <= wk.maxBasePower) { flog(target.owner, `「${target.base.name}」は元々パワー${wk.maxBasePower}以下なので相手の効果でKOされない`); return true; } }
       if (cause === 'ko') { const tk = G.players[target.owner] && G.players[target.owner]._traitKoImmune; if (tk && G.turnSeq <= tk.until && matchFilter(target, tk.filter)) { flog(target.owner, `「${target.base.name}」は効果でKOされない`); return true; } } // 一時的なfilter一致KO耐性（OP09-033ロビン）
       // 自分の他キャラが提供する「アクティブの時、filter一致の味方は効果でKOされない」常在（OP08-029ペコムズ）
-      if (cause === 'ko') { const ow = G.players[target.owner]; for (const src of ow.chars) { if (src === target || isNegated(src) || src.rested) continue; const st = src.base.fx && src.base.fx.static; if (!st) continue; for (const ob of st) { if (ob.op === 'allyKoImmune' && lightMatch(target, ob.filter)) { flog(target.owner, `「${target.base.name}」は効果でKOされない`); return true; } } } }
+      if (cause === 'ko') { const ow = G.players[target.owner]; for (const src of ow.chars) { if (src === target || isNegated(src)) continue; const st = src.base.fx && src.base.fx.static; if (!st) continue; for (const ob of st) { if (ob.op === 'allyKoImmune' && (!ob.whenActive || !src.rested) && (!ob.cond || checkCond(ob.cond, target.owner, src)) && lightMatch(target, ob.filter)) { flog(target.owner, `「${target.base.name}」は効果でKOされない`); return true; } } } }
       // 「このキャラはバトルでKOされない」常在（condBuff battleImmune・cond対応。OP10-104カリブー）
       if (cause === 'battle' && !isNegated(target)) { const st = target.base.fx && target.base.fx.static; if (st) for (const o of st) { if (o.op === 'condBuff' && o.battleImmune && (!o.cond || checkCond(o.cond, target.owner, target))) { flog(target.owner, `「${target.base.name}」はバトルではKOされない`); return true; } } }
       // 「相手の元々パワーN以下のキャラの効果でKOされない」(OP14-003ベッジ。source=KO元のキャラ)
@@ -1003,6 +1020,13 @@
         } else if (prot.pay === 'free') {
           // コスト無しで場を離れない（OP10-118ルフィ＝ターン1回相手の効果でKOされない。once:'turn'は上のゲートで消化済）
           flog(target.owner, `「${target.base.name}」は相手の効果で離れない`); return true;
+        } else if (prot.pay === 'restOpp') {
+          // 代わりに相手のキャラ1枚をレストにして target を場に残す（OP07-029ホーキンス）
+          const cands = G.players[opp(target.owner)].chars.filter(c => !c.rested && !isRestImmune(c) && !isOppRestImmune(c));
+          if (!cands.length) continue;
+          if (!(await confirmUse(target.owner, `【${p.base.name}】身代わり`, `相手のキャラ1枚をレストにして「${target.base.name}」を場に残しますか？`, '残す（相手をレスト）', '残さない'))) continue;
+          const rt = G.players[target.owner].isCPU ? cands[0] : await chooseCard(target.owner, cands, 'レストにする相手キャラを選択', 'oppBig', false); if (!rt) continue;
+          rt.rested = true; flog(target.owner, `【${p.base.name}】相手の「${rt.base.name}」をレストにして「${target.base.name}」を場に残した`); render(); return true;
         } else if (prot.pay === 'trashSelfDraw') {
           // バウンス/デッキ送りの代わりにトラッシュへ置き1ドロー（OP08-045サッチ。KOはonKO側で処理するため'ko'では発動しない）
           if (cause === 'ko') continue;
