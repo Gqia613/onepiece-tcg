@@ -3378,6 +3378,121 @@ window.CARD_FX = {
   // EB02-061 モンキー・D・ルフィ(c6): 多色リーダー＋相手ドン5以上で【速攻】 ／【アタック時】【ターン1回】アクティブのドン2枚を戻す：このキャラをアクティブ→ライフ上1枚を手札に
   "EB02-061": {"static":[{"op":"staticKeyword","kw":"rush","cond":{"and":[{"leaderMulticolor":true},{"oppDonAtLeast":5}]}}],"onAttack":[{"op":"donMinus","n":2,"once":"turn","then":[{"op":"activateSelf"},{"op":"lifeToHand","n":1}]}]}
 });})();
+/* ===== EB03（PILLARS OF STRENGTH/THE THREE BROTHERS）新規カード ===== */
+(function () { Object.assign(window.CARD_FX, {
+  // EB03-001 ネフェルタリ・ビビ LEADER: 【ターン1回】元々コスト4以上がKOされる代わりに手札1枚捨て ／【起動メイン】レスト：相手1枚-2000→アタック時効果のないキャラ1枚に【速攻】
+  "EB03-001": {"static":[{"op":"leaveProtect","onlyKO":true,"once":"turn","pay":"discardFromHand","targetFilter":{"minBaseCost":4}}],"act":{"label":"レスト:相手-2000＋速攻付与","cost":{},"fx":[{"op":"powerMod","side":"opp","amount":-2000,"duration":"turn","count":1,"optional":true},{"op":"giveKeyword","target":"chooseOwn","kw":"rush","duration":"turn"}]}},
+  // EB03-003 ウタ(c5): 【登場時】「ウタ」リーダーなら2ドロー→手札からパワー6000以下の元々効果のないキャラを登場
+  "EB03-003": {"onPlay":[{"op":"cond","check":{"leaderNameIncludes":"ウタ"},"then":[{"op":"draw","n":2},{"op":"playCharFromHand","filter":{"maxPower":6000,"noEffect":true},"count":1,"optional":true}]}]},
+  // EB03-004 カリーナ(c3): 【ブロッカー】 ／【相手のターン中】多色リーダー＋元々パワー6000以上がいなければ+4000
+  "EB03-004": {"static":[{"op":"condBuff","cond":{"and":[{"oppTurn":true},{"leaderMulticolor":true},{"noSelfChar":{"minPower":6000}}]},"power":4000}]},
+  // EB03-005 シュガー(c3): 【登場時】「シュガー」リーダーなら手札からパワー6000以下のドンキをレスト登場
+  "EB03-005": {"onPlay":[{"op":"cond","check":{"leaderNameIncludes":"シュガー"},"then":[{"op":"playCharFromHand","filter":{"traitIncludes":"ドンキホーテ海賊団","maxPower":6000},"count":1,"optional":true,"rested":true}]}]},
+  // EB03-006 ナミ(c5): 【登場時】リーダー-5000：1ドロー ／【起動メイン】【ターン1回】アラバスタリーダーなら相手1枚-1000
+  "EB03-006": {"onPlay":[{"op":"leaderMinusCost","amount":5000,"then":[{"op":"draw","n":1}]}],"act":{"label":"アラバスタ:相手-1000","cost":{},"fx":[{"op":"cond","check":{"leaderTraitIncludes":"アラバスタ王国"},"then":[{"op":"powerMod","side":"opp","amount":-1000,"duration":"turn","count":1,"optional":true}]}]}},
+  // EB03-007 バカラ(c4): 【ブロッカー】 ／【KO時】手札からパワー6000以下の元々効果のないキャラを登場
+  "EB03-007": {"onKO":[{"op":"playCharFromHand","filter":{"maxPower":6000,"noEffect":true},"count":1,"optional":true}]},
+  // EB03-008 ひばり: 【登場時】/【アタック時】SWORDのリーダーかキャラ1枚がアクティブにもアタック可 ／【起動メイン】【ターン1回】相手1枚-1000
+  "EB03-008": {"onPlay":[{"op":"giveKeyword","target":"chooseOwnL","kw":"attackActive","duration":"turn","filter":{"traitIncludes":"SWORD"}}],"onAttack":[{"op":"giveKeyword","target":"chooseOwnL","kw":"attackActive","duration":"turn","filter":{"traitIncludes":"SWORD"}}],"act":{"label":"相手-1000","cost":{},"fx":[{"op":"powerMod","side":"opp","amount":-1000,"duration":"turn","count":1,"optional":true}]}},
+  // EB03-009 マキノ(c1): 【起動メイン】レスト：元々効果のないキャラ1枚+2000
+  "EB03-009": {"act":{"label":"レスト:効果なしキャラ+2000","cost":{"restSelf":true},"fx":[{"op":"powerMod","side":"self","amount":2000,"duration":"turn","count":1,"optional":true,"filter":{"noEffect":true}}]}},
+  // EB03-010 モネ(c5): 【ブロッカー】 ／【登場時】デッキ上5枚からパワー1000以下キャラかイベント1枚を手札に
+  "EB03-010": {"onPlay":[{"op":"search","look":5,"count":1,"filter":{"or":[{"maxPower":1000,"type":"CHAR"},{"type":"EVENT"}]},"optional":true}]},
+  // EB03-011 いつかまた会えたら…: 【カウンター】ビビリーダーならリーダーかキャラ+4000
+  "EB03-011": {"counter":{"cost":0,"fx":[{"op":"cond","check":{"leaderNameIncludes":"ネフェルタリ・ビビ"},"then":[{"op":"powerMod","side":"self","leader":true,"amount":4000,"battle":true,"count":1,"optional":true}]}]}},
+  // EB03-012 お玉(c2): 【起動メイン】レスト：相手のコスト3以下の動物/SMILEキャラ1枚をレスト
+  "EB03-012": {"act":{"label":"レスト:相手の動物/SMILEをレスト","cost":{"restSelf":true},"fx":[{"op":"restChar","side":"opp","filter":{"maxCost":3,"or":[{"traitIncludes":"動物"},{"traitIncludes":"SMILE"}]},"count":1,"optional":true}]}},
+  // EB03-013 キャロット(c6): 【起動メイン】【ターン1回】登場ターンなら相手のレストのコスト5以下1枚KO→手札から「ゾウ」を登場
+  "EB03-013": {"act":{"label":"登場ターン:相手レスト5以下KO＋ゾウ登場","cost":{},"fx":[{"op":"cond","check":{"selfSummonedThisTurn":true},"then":[{"op":"ko","side":"opp","filter":{"restedOnly":true,"maxCost":5},"count":1,"optional":true},{"op":"playSpecificFromHand","nameIncludes":"ゾウ","optional":true}]}]}},
+  // EB03-014 くいな(c2): 【起動メイン】レスト：属性(斬)リーダーにレストのドン2付与
+  "EB03-014": {"act":{"label":"レスト:斬リーダーにレストのドン2","cost":{"restSelf":true},"fx":[{"op":"cond","check":{"leaderAttr":"斬"},"then":[{"op":"donAttach","target":"leader","n":2}]}]}},
+  // EB03-015 ケイミー(c2): 【起動メイン】レスト：魚人/人魚のリーダーかキャラにレストのドン1付与→相手コスト2以下1枚レスト
+  "EB03-015": {"act":{"label":"レスト:魚人にドン付与＋相手レスト","cost":{"restSelf":true},"fx":[{"op":"donAttach","target":"chooseOwn","n":1,"filter":{"or":[{"traitIncludes":"魚人族"},{"traitIncludes":"人魚族"},{"type":"LEADER"}]}},{"op":"restChar","side":"opp","filter":{"maxCost":2},"count":1,"optional":true}]}},
+  // EB03-016 光月日和(c1): 【登場時】おでんリーダーなら1ドロー ／【起動メイン】自身トラッシュ：ワノ国リーダーにレストのドン1付与
+  "EB03-016": {"onPlay":[{"op":"cond","check":{"leaderNameIncludes":"光月おでん"},"then":[{"op":"draw","n":1}]}],"act":{"label":"自身トラッシュ:ワノ国リーダーにドン1","cost":{},"fx":[{"op":"trashSelfCost","then":[{"op":"cond","check":{"leaderTraitIncludes":"ワノ国"},"then":[{"op":"donAttach","target":"leader","n":1}]}]}]}},
+  // EB03-017 ジュエリー・ボニー(c5): 【登場時】超新星リーダーならドン1アクティブ→相手コスト8以下1枚は次相手エンドまでレスト不可
+  "EB03-017": {"onPlay":[{"op":"cond","check":{"leaderTraitIncludes":"超新星"},"then":[{"op":"donActivate","n":1},{"op":"restImmune","side":"opp","filter":{"maxCost":8},"count":1,"duration":"untilNextEnd","optional":true}]}]},
+  // EB03-018 たしぎ(c4): 【相手のターン中】効果でKOされず【ブロッカー】 ／【自分のターン終了時】ドン1レスト＋手札1捨て：このキャラをアクティブ
+  "EB03-018": {"static":[{"op":"condBuff","koImmune":true,"cond":{"oppTurn":true}},{"op":"staticKeyword","kw":"blocker","cond":{"oppTurn":true}}],"onTurnEnd":[{"op":"restDonCost","n":1,"then":[{"op":"discardCost","count":1,"then":[{"op":"activateSelf"}]}]}]},
+  // EB03-020 出た!負け惜しみ～: 【カウンター】リーダーかキャラ+2000→FILMが2枚以上ならさらに+2000
+  "EB03-020": {"counter":{"cost":0,"fx":[{"op":"powerMod","side":"self","leader":true,"amount":2000,"battle":true,"count":1,"optional":true},{"op":"cond","check":{"selfCharCount":{"filter":{"traitIncludes":"FILM"},"min":2}},"then":[{"op":"powerMod","side":"self","leader":true,"amount":2000,"battle":true,"count":1,"optional":true}]}]}},
+  // EB03-021 アルビダ(c4): 【登場時】手札1捨て：相手の元々パワー4000以下1枚＋元々コスト3以下1枚を持ち主のデッキ下
+  "EB03-021": {"onPlay":[{"op":"discardCost","count":1,"optional":true,"then":[{"op":"deckBottom","side":"opp","filter":{"maxPower":4000},"count":1,"optional":true},{"op":"deckBottom","side":"opp","filter":{"maxBaseCost":3},"count":1,"optional":true}]}]},
+  // EB03-022 イスカ(c6): 【ブロッカー】 ／【登場時】コスト4以下1枚を持ち主のデッキ下
+  "EB03-022": {"onPlay":[{"op":"deckBottom","side":"any","filter":{"maxCost":4},"count":1,"optional":true}]},
+  // EB03-023 カヤ(c2): 【登場時】デッキ上5枚を並び替え
+  "EB03-023": {"onPlay":[{"op":"scry","look":5}]},
+  // EB03-024 ネフェルタリ・ビビ(c5): 【ブロッカー】 ／【登場時】手札からコスト5以下のアラバスタ/麦わらを登場→このターン登場不可(近似:省略)
+  "EB03-024": {"onPlay":[{"op":"playCharFromHand","filter":{"maxCost":5,"or":[{"traitIncludes":"アラバスタ王国"},{"traitIncludes":"麦わらの一味"}]},"count":1,"optional":true}]},
+  // EB03-025 ヒナ(c5): 【登場時】手札1捨て：元々パワー6000のキャラ1枚を手札に戻す
+  "EB03-025": {"onPlay":[{"op":"discardCost","count":1,"optional":true,"then":[{"op":"bounce","side":"any","filter":{"basePower":6000},"count":1,"optional":true}]}]},
+  // EB03-026 ボア・ハンコック(c6): 【登場時】相手手札5以上なら相手は手札1枚をデッキ下 ／【起動メイン】【ターン1回】自キャラ1枚をデッキ下：リーダーとキャラにレストのドン1ずつ
+  "EB03-026": {"onPlay":[{"op":"cond","check":{"oppHandAtLeast":5},"then":[{"op":"oppHandToBottom","n":1}]}],"act":{"label":"自キャラデッキ下:リーダーとキャラにドン1ずつ","cost":{},"fx":[{"op":"deckBottomOwnCharCost","excludeSelf":true,"then":[{"op":"donAttachAll","n":1,"max":1,"incLeader":true}]}]}},
+  // EB03-027 マーガレット(c6): 【登場時】元々パワー7000のキャラ1枚を手札に戻す
+  "EB03-027": {"onPlay":[{"op":"bounce","side":"any","filter":{"basePower":7000},"count":1,"optional":true}]},
+  // EB03-028 ユウ(c2): 【登場時】手札1枚を捨てる ／【起動メイン】自身トラッシュ：手札4枚以下なら2ドロー
+  "EB03-028": {"onPlay":[{"op":"discardCost","count":1}],"act":{"label":"自身トラッシュ:手札4以下で2ドロー","cost":{},"fx":[{"op":"trashSelfCost","then":[{"op":"cond","check":{"selfHandAtMost":4},"then":[{"op":"draw","n":2}]}]}]}},
+  // EB03-029 不届き者‼控えよ‼: 【メイン】ドン4レスト：ハンコックリーダーなら手札からコスト6以下のアマゾン/九蛇を登場 ／【カウンター】「ハンコック」+3000
+  "EB03-029": {"main":{"fx":[{"op":"restDonCost","n":4,"then":[{"op":"cond","check":{"leaderNameIncludes":"ボア・ハンコック"},"then":[{"op":"playCharFromHand","filter":{"maxCost":6,"or":[{"traitIncludes":"アマゾン・リリー"},{"traitIncludes":"九蛇海賊団"}]},"count":1,"optional":true}]}]}]},"counter":{"cost":0,"fx":[{"op":"powerMod","side":"self","amount":3000,"battle":true,"count":1,"optional":true,"filter":{"nameIncludes":"ボア・ハンコック"}}]}},
+  // EB03-031 ヴィンスモーク・レイジュ(c5): 【登場時】ドン-1：「サンジ」リーダーならトラッシュのコスト7以下イベントのメイン効果を発動(近似:省略・代わりに1ドロー)
+  "EB03-031": {"onPlay":[{"op":"donMinus","n":1},{"op":"cond","check":{"leaderNameIncludes":"サンジ"},"then":[{"op":"draw","n":1}]}]},
+  // EB03-032 シャーロット・フランペ(c1): 【自分のターン中】【登場時】自分の「シャーロット・カタクリ」1枚+2000
+  "EB03-032": {"onPlay":[{"op":"powerMod","side":"self","amount":2000,"duration":"turn","count":1,"optional":true,"filter":{"nameIncludes":"シャーロット・カタクリ"}}]},
+  // EB03-033 シャーロット・ブリュレ(c5): 【相手のターン中】【ターン1回】ドンが戻された時、ビッグマムリーダーならドン1レスト追加
+  "EB03-033": {"onDonReturned":[{"op":"cond","once":"turn","check":{"and":[{"oppTurn":true},{"leaderTraitIncludes":"ビッグ・マム海賊団"}]},"then":[{"op":"donFromDeck","n":1,"mode":"rested"}]}]},
+  // EB03-034 シャーロット・リンリン(c7): 【登場時】1ドロー＋手札1枚をデッキ上→ドン1アクティブ追加 ／【KO時】ドン-1：デッキ上1枚をライフに
+  "EB03-034": {"onPlay":[{"op":"draw","n":1},{"op":"handToBottom","n":1},{"op":"donFromDeck","n":1,"mode":"active"}],"onKO":[{"op":"donMinus","n":1},{"op":"lifeAddFromDeck","n":1}]},
+  // EB03-035 シャーロット・プリン(c4): 【ブロッカー】 ／【登場時】ドンが相手以下ならドン1レスト追加
+  "EB03-035": {"onPlay":[{"op":"cond","check":{"donLEOpp":true},"then":[{"op":"donFromDeck","n":1,"mode":"rested"}]}]},
+  // EB03-036 ベビー5(c4): 【登場時】ドン-1：相手の元々コスト3以下2枚KO
+  "EB03-036": {"onPlay":[{"op":"donMinus","n":1},{"op":"ko","side":"opp","filter":{"maxBaseCost":3},"count":2,"optional":true}]},
+  // EB03-037 リム(c4): 【登場時】場のドン7以上なら自分のODYSSEYリーダーとキャラ全を次相手エンドまで+1000
+  "EB03-037": {"onPlay":[{"op":"cond","check":{"donAtLeast":7},"then":[{"op":"powerMod","side":"self","all":true,"leader":true,"amount":1000,"duration":"untilNextEnd","filter":{"traitIncludes":"ODYSSEY"}}]}]},
+  // EB03-038 ごち♡: 【メイン】ドン1レスト：ドン相手以下＋自キャラがジェルマのみならドン2レスト追加 ／【カウンター】リーダー+3000
+  "EB03-038": {"main":{"fx":[{"op":"restDonCost","n":1,"then":[{"op":"cond","check":{"and":[{"donLEOpp":true},{"allSelfChar":{"traitIncludes":"ジェルマ"}}]},"then":[{"op":"donFromDeck","n":2,"mode":"rested"}]}]}]},"counter":{"cost":0,"fx":[{"op":"leaderBuff","amount":3000,"duration":"battle"}]}},
+  // EB03-039 うるティ(c6): 【登場時】百獣リーダーなら1ドロー＋手札1捨て→トラッシュからパワー6000以下の元々効果のないキャラを登場
+  "EB03-039": {"onPlay":[{"op":"cond","check":{"leaderTraitIncludes":"百獣海賊団"},"then":[{"op":"draw","n":1},{"op":"discardCost","count":1},{"op":"reviveFromTrash","filter":{"maxPower":6000,"noEffect":true}}]}]},
+  // EB03-041 孔雀(c4): 【相手のターン中】自分のコスト6以下SWORD全+2000 ／【登場時】海軍1枚捨て：2ドロー
+  "EB03-041": {"static":[{"op":"allyPower","cond":{"oppTurn":true},"power":2000,"filter":{"traitIncludes":"SWORD","maxCost":6}}],"onPlay":[{"op":"discardCost","count":1,"optional":true,"filter":{"traitIncludes":"海軍"},"then":[{"op":"draw","n":2}]}]},
+  // EB03-042 コアラ(c4): 革命軍リーダーでコスト+4 ／【相手のターン中】【KO時】手札/トラッシュから「自身」以外のコスト6以下革命軍か「ロビン」を登場
+  "EB03-042": {"static":[{"op":"staticCost","amount":4,"cond":{"leaderTraitIncludes":"革命軍"}}],"onKO":[{"op":"cond","check":{"oppTurn":true},"then":[{"op":"playFromHandOrTrash","filter":{"maxCost":6,"or":[{"traitIncludes":"革命軍"},{"nameIncludes":"ニコ・ロビン"}],"nameExcludes":"コアラ"}}]}]},
+  // EB03-043 ステューシー(c7): 【ブロッカー】 ／【登場時】トラッシュの『CP』2枚をデッキ下：相手コスト4以下1枚KO
+  "EB03-043": {"onPlay":[{"op":"trashToBottomCost","n":2,"filter":{"traitIncludes":"CP"},"then":[{"op":"ko","side":"opp","filter":{"maxCost":4},"count":1,"optional":true}]}]},
+  // EB03-044 ブラックマリア(c3): 多色リーダーで【ブロッカー】 ／【登場時】デッキ上5枚から「鬼ヶ島」を手札に→手札から「鬼ヶ島」を登場
+  "EB03-044": {"static":[{"op":"staticKeyword","kw":"blocker","cond":{"leaderMulticolor":true}}],"onPlay":[{"op":"search","look":5,"count":1,"filter":{"nameIncludes":"鬼ヶ島"},"optional":true},{"op":"playSpecificFromHand","nameIncludes":"鬼ヶ島","optional":true}]},
+  // EB03-045 ペローナ(c4): 【ブロッカー】 ／【登場時】リーダーかキャラにレストのドン1付与→トラッシュ10以上ならトラッシュのコスト2以下スリラーバークをレスト登場
+  "EB03-045": {"onPlay":[{"op":"donAttach","target":"chooseOwn","n":1},{"op":"cond","check":{"trashAtLeast":10},"then":[{"op":"reviveFromTrash","maxCost":2,"rested":true,"filter":{"traitIncludes":"スリラーバーク海賊団"}}]}]},
+  // EB03-046 ミス・ダブルフィンガー(ザラ)(c4): 【登場時】コスト0か8以上がいれば1ドロー ／【KO時】デッキ上2枚トラッシュ
+  "EB03-046": {"onPlay":[{"op":"cond","check":{"oppChar":{"or":[{"cost":0},{"minCost":8}]}},"then":[{"op":"draw","n":1}]}],"onKO":[{"op":"deckToTrash","n":2}]},
+  // EB03-047 ミス・バレンタイン(ミキータ)(c2): 【登場時】デッキ上3枚トラッシュ ／【KO時】1ドロー
+  "EB03-047": {"onPlay":[{"op":"deckToTrash","n":3}],"onKO":[{"op":"draw","n":1}]},
+  // EB03-048 レベッカ(c2): 【ブロッカー】 ／【登場時】デッキ上5枚からドレスローザのステージを手札に→手札からコスト1のドレスローザステージを登場
+  "EB03-048": {"onPlay":[{"op":"search","look":5,"count":1,"filter":{"traitIncludes":"ドレスローザ","type":"STAGE"},"optional":true},{"op":"playSpecificFromHand","filter":{"traitIncludes":"ドレスローザ","type":"STAGE","cost":1},"optional":true}]},
+  // EB03-049 やっぱりお前らかこの大騒ぎ: 【メイン】ドン7レスト：ペローナリーダーなら手札/トラッシュからコスト6以下＋コスト4以下のスリラーバークを登場 ／【カウンター】リーダー+3000
+  "EB03-049": {"main":{"fx":[{"op":"restDonCost","n":7,"then":[{"op":"cond","check":{"leaderNameIncludes":"ペローナ"},"then":[{"op":"playFromHandOrTrash","filter":{"traitIncludes":"スリラーバーク海賊団","maxCost":6}},{"op":"playFromHandOrTrash","filter":{"traitIncludes":"スリラーバーク海賊団","maxCost":4}}]}]}]},"counter":{"cost":0,"fx":[{"op":"leaderBuff","amount":3000,"duration":"battle"}]}},
+  // EB03-050 コニス(c2): 【登場時】空島1枚に【ダブルアタック】
+  "EB03-050": {"onPlay":[{"op":"giveKeyword","target":"chooseOwn","kw":"doubleAttack","duration":"turn","filter":{"traitIncludes":"空島"}}]},
+  // EB03-051 シャーロット・スムージー(c3): 【登場時】表向きライフがあれば相手コスト2以下1枚KO→自ライフ全裏向き(近似:常時)
+  "EB03-051": {"onPlay":[{"op":"ko","side":"opp","filter":{"maxCost":2},"count":1,"optional":true},{"op":"flipAllLifeDown"}]},
+  // EB03-052 しらほし(c3): 【起動メイン】自身トラッシュ：しらほしリーダーならデッキ上1枚をライフに→海王類全+1000
+  "EB03-052": {"act":{"label":"自身トラッシュ:ライフ補充＋海王類+1000","cost":{},"fx":[{"op":"trashSelfCost","then":[{"op":"cond","check":{"leaderNameIncludes":"しらほし"},"then":[{"op":"lifeAddFromDeck","n":1},{"op":"powerMod","side":"self","all":true,"amount":1000,"duration":"turn","filter":{"traitIncludes":"海王類"}}]}]}]}},
+  // EB03-054 ニコ・ロビン(c3): 【登場時】ライフ上1枚をトラッシュ：デッキ上1枚をライフに
+  "EB03-054": {"onPlay":[{"op":"lifeCost","action":"trash","then":[{"op":"lifeAddFromDeck","n":1}]}]},
+  // EB03-056 ベロ・ベティ(c4): 【登場時】ライフ上1枚を表向き：相手の元々コスト3以下1枚KO
+  "EB03-056": {"onPlay":[{"op":"flipLifeCost","then":[{"op":"ko","side":"opp","filter":{"maxBaseCost":3},"count":1,"optional":true}]}]},
+  // EB03-057 ヤマト(c5): 【登場時】ワノ国リーダーにレストのドン3付与 ／【KO時】相手ライフ上1枚をトラッシュ
+  "EB03-057": {"onPlay":[{"op":"cond","check":{"leaderTraitIncludes":"ワノ国"},"then":[{"op":"donAttach","target":"leader","n":3}]}],"onKO":[{"op":"lifeTrash","side":"opp"}]},
+  // EB03-058 リリス(c5): 【自分のターン中】【登場時】自ライフ2枚以下で1ドロー
+  "EB03-058": {"onPlay":[{"op":"cond","check":{"lifeAtMost":2},"then":[{"op":"draw","n":1}]}]},
+  // EB03-059 S-スネーク(c6): 【登場時】エッグヘッドリーダー＋ライフ2枚以上なら手札の【トリガー】持ちキャラをライフ上に表向きで加える
+  "EB03-059": {"onPlay":[{"op":"cond","check":{"and":[{"leaderTraitIncludes":"エッグヘッド"},{"lifeAtLeast":2}]},"then":[{"op":"handCharToLife","faceUp":true,"filter":{"hasTrigger":true}}]}]},
+  // EB03-060 私のしもべになる？: 【メイン】ナミリーダーならデッキ上4枚からコスト2-8のカード1枚を手札に
+  "EB03-060": {"main":{"fx":[{"op":"cond","check":{"leaderNameIncludes":"ナミ"},"then":[{"op":"search","look":4,"count":1,"filter":{"minCost":2,"maxCost":8},"optional":true}]}]}},
+  // EB03-061 ウタ(c7): 【起動メイン】【ターン1回】ドン1アクティブ→相手のコスト4以下キャラかドン1枚をレスト ／【自分のターン終了時】ドン1レスト：FILM1枚をアクティブ
+  "EB03-061": {"act":{"label":"ドン1アクティブ＋相手レスト","cost":{},"fx":[{"op":"donActivate","n":1},{"op":"restChar","side":"opp","filter":{"maxCost":4},"count":1,"optional":true}]},"onTurnEnd":[{"op":"restDonCost","n":1,"then":[{"op":"activateOwnChar","count":1,"filter":{"restedOnly":true,"traitIncludes":"FILM"}}]}]},
+  // EB03-062 トラファルガー・ロー(c8): 【速攻】 ／【起動メイン】手札1捨て＋自身トラッシュ：デッキ上1枚をライフに→手札からコスト7以下「ロー」を登場
+  "EB03-062": {"act":{"label":"手札1捨て+自身トラッシュ:ライフ補充＋ロー登場","cost":{},"fx":[{"op":"discardCost","count":1,"then":[{"op":"trashSelfCost","then":[{"op":"lifeAddFromDeck","n":1},{"op":"playSpecificFromHand","nameIncludes":"トラファルガー・ロー","filter":{"maxCost":7},"optional":true}]}]}]}}
+});})();
 /* ===== 再録カード（EB/ST/P/PRB）＝効果テキストが本編と完全一致 → 本編のfxを再利用（DRY） ===== */
 (function () { var R = {
   "EB01-007": "OP03-009", "EB02-017": "OP01-016", "EB02-046": "OP07-082",
