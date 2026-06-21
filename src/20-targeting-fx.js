@@ -427,6 +427,7 @@
         // 自分のライフをすべて裏向きにする（OP08-075キャンディメイデン）
         case 'flipAllLifeDown': { for (const l of P.life) l._faceUp = false; flog(side, '自分のライフをすべて裏向きにした'); render(); break; }
         case 'lifeTrashToSize': { const tgt = op.n || 1; let k = 0; while (P.life.length > tgt) { const c = P.life.shift(); if (!c) break; P.trash.push(c); k++; } if (k) flog(side, `自分のライフ${k}枚をトラッシュ（ライフ${tgt}枚に）`); render(); break; } // 自分のライフがN枚になるよう上からトラッシュ（EB01-059/060空島）
+        case 'lifeTrashFaceUp': { const fu = P.life.filter(l => l._faceUp); for (const c of fu) { P.life.splice(P.life.indexOf(c), 1); P.trash.push(c); } if (fu.length) flog(side, `表向きのライフ${fu.length}枚をトラッシュ`); render(); break; } // 表向きのライフをすべてトラッシュ（ST13-002エースL）
         // デッキ上1枚をトラッシュに置き、そのコストが minCost 以上なら then 実行（OP08-096人の夢は終わらねェ）
         case 'millBuff': { if (!P.deck.length) break; const top = P.deck.shift(); P.trash.push(reset(top)); flog(side, `デッキの上「${top.base.name}」をトラッシュに置いた`); if ((top.base.cost || 0) >= (op.minCost || 0)) await runFx(op.then, ctx); render(); break; }
         // このキャラを持ち主の手札に戻すコスト（OP08-041アフェランドラ）。払えたら then。
