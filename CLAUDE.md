@@ -206,7 +206,7 @@ node -e 'const fs=require("fs");fs.writeFileSync("/tmp/app.js",fs.readFileSync("
 - ✅: `donFromDeck` / `donActivate` op 追加済（海軍ランプ・エネル系）。
 - 低: カードデータを設計図 §9 の統一スキーマへ段階移行（新カードがデータ追加だけで済む状態を目指す）。
 - 環境: 2026/4 のブロックアイコン①ローテーション（OP01–04 がスタン落ち）。デッキ合法性の見直し。
-- **進行中の方針**: 全カード効果を `cards-fx.js` に一元化済（264枚）。**OP-16(31件)・OP-15(37件)を公式カードリストと全枚数照合して修正済**（`tools/official-op16.js`/`official-op15.js`が正本）。次は他弾（OP-14以前・EB・ST）を同じ公式照合フロー（公式取得→照合→敵対的検証→回帰追加）で精査する。
+- **進行中の方針**: 全カード効果を `cards-fx.js` に一元化済。**OP-16(31件)・OP-15(37件)を公式カードリストと全枚数照合して修正済**（`tools/official-op16.js`/`official-op15.js`が正本）。**OP-14全120枚を実装完了**（fx109＋バニラ9＋純【ブロッカー】2＝テキスト派生でfx不要。バッチ1〜8）。OP-14で追加した汎用基盤: 場全体の常在 `allyPower`(power)/`allyCost`(matchFilter・lightMatchで再帰回避), 源パワー条件KO耐性 `koImmuneFromWeakSource`(ko opがsource伝播), 自己制約 `oppLeaveImmuneFromSelf`, `staticSetBaseToLeader`, 新フック `onSelfHandDiscarded`/`onDonReturned`/`onOppRested`, 汎用リダイレクトリーダー `leaderRedirect`(fx.onOppAttackのredirect op), leaderActivateのデータ駆動 fx.act フォールバック, 登場ban(setSummonBan), `koStage`/`selfDamage`/`negateSelf`/`donMinusActivateSelf` op, `basePower`フィルタ, `bounce` side:'any', `swapPower` ownPair。**未照合の正確性**: OP-14は公式テキスト転記ベースで実装したが、OP-16/15のような全枚数の敵対的公式照合（`tools/official-opNN.js`化）は未実施。OP14-020ミホークの「相手リーダーが属性(斬)時+1000」は属性データ未保持で未実装(コメント明記)。次は他弾（OP-13以前・EB・ST）を同じ公式照合フローで精査、またはOP-14の公式照合パスを追加する。
 - 未完: ティーチ残りカード（ドクQ・シリュウのパワー値・OP09-093・ハチノス）の1枚ずつの公式再照合。
 
 ---
