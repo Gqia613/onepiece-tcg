@@ -122,6 +122,8 @@
     }
 
     // 盤面の評価（side視点・手作りの生スコア）。学習重みが無い時の evalWinProb フォールバック用。
+    // ※リーダー別の戦略プロファイル(評価重み)をWeb解説から付与する実験を行ったが、ミラー測定で改善せず（enelで±0〜-4pt）撤回。
+    //   enelの弱さは「価値」でなく「探索の深さ」だったため（det3で-29pt→det6で+4pt）。立ち回りリファレンスは docs/deck-strategies.md に保存。
     function evalState(side) {
       const P = G.players[side], D = G.players[opp(side)];
       const bp = arr => arr.reduce((x, c) => x + power(c), 0);
@@ -448,10 +450,15 @@
     //   ※enel はミラー実測で puct が -29pt(探索がランプ機構を壊す)だが、ユーザー指定で条件を撤去（常に探索）。
     //   再びフォールバックさせたいリーダーがあれば { enel:1 } のように追加。`G._puctNoSkip` で一時的に無効化も可。
     var PUCT_SKIP = {};
+    // ★per-leader 探索の深さ。enelは浅い探索(det3)だとミラー-20ptと弱い（コントロール/ランプの計画が見えない）が、
+    //   深い探索(det6/look2/w6)で±0pt＝中立(弱くない)になる。実測スイープで確認。docs/ai-design.md §9.11。
+    //   ＝enelの弱さは「価値」でなく「探索の深さ」だった。深く読む必要があるリーダーだけここに足す。
+    var PUCT_DEPTH = { enel: { det: 6, look: 2, width: 6 } };
     async function puctTurn(side) {
       if (G._sim) return heuristicTurn(side);                          // 入れ子探索＝指数爆発を防ぐ
       if (PUCT_SKIP[leaderKeyOf(side)] && !G._puctNoSkip) return heuristicTurn(side);  // 苦手リーダーは素のheuristic
-      const opt = { det: G._puctDet || 3, look: G._puctLook != null ? G._puctLook : 1, width: G._puctWidth || 5 };
+      const dp = PUCT_DEPTH[leaderKeyOf(side)] || {};                  // リーダー別の既定深さ（無ければ標準）。G._puct* で上書き可
+      const opt = { det: G._puctDet || dp.det || 3, look: G._puctLook != null ? G._puctLook : (dp.look != null ? dp.look : 1), width: G._puctWidth || dp.width || 5 };
       if (typeof showThinking === 'function') showThinking(true);     // ★探索中は「AI思考中」バッジのみ表示（内部試行はrender抑止で非表示）
       try {
         let guard = 0;

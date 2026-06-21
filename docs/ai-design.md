@@ -327,3 +327,11 @@ puct-enel が弱い原因を **行動集計で診断**（enelミラー me=enel v
 - **enelフォールバックを撤去**: `PUCT_SKIP = {}`（空）に変更＝**puctは全6リーダーで探索する**（enelも）。
   ※enelはミラー実測で puct -29pt（§9.8の通り探索がコントロール機構に不適）なので **enelをpuctで打つと弱くなる**ことは承知の上での仕様。再フォールバックは `PUCT_SKIP={enel:1}` に戻すだけ。`G._puctNoSkip` でも一時切替可。
 - **AI思考の表示**: puct探索の内部シミュレーションは画面に出さない（`render`/`log`/`toast`/`floatOn`/`animClass`/`showFxNote`/`showAtkAnnounce`/`banner`/`sfx` を `G._sim` 中は抑止）＋探索中は body直付けの **「🤖 AI思考中…」バッジ**（`showThinking`・`src/40-ui-render.js`）だけ表示。実際に確定した手は通常通りアニメ表示。
+
+### 9.11 各リーダーの「立ち回り」をWeb解説から評価に反映する試み（✗ 価値エンコードは効かず）＋ enelは深さで部分改善
+ユーザー要望「自分の主観でなくWeb上のデッキ解説/立ち回りをAIに学ばせる」を受け、許可日本語ソース(note PROS/tcg-portal/cardrush等)で7デッキの立ち回りを調査し `docs/deck-strategies.md`(攻略リファレンス)に整理。それを `evalState` の **per-leader 戦略プロファイル(評価重み)** に翻訳する実験を実施。
+- **✗ 価値プロファイルは効かなかった**: enelミラー同一seed比較で profile有 vs BASE = **±0〜-4pt(改善せず)**。det3でもdet6でも改善なし。→ **撤回**（`evalState` はBASEに戻す）。Stage A/part3/5/6と同じ「手作りeval≒最適・学習/再重み付けは超えない」の再確認。
+- **★真因＝enelの弱さは「価値」でなく「探索の深さ」**: enelミラーBASEのスイープ(N=40)= **det3/look1 -20pt → det3/look2 -15pt → det6/look2/w6 ±0〜-10pt**(seedで振れる)。深い探索でenelは-29pt級から **約-10pt(軽い負け)** まで改善。ただし**完全には直らず**、enelの最善は依然 heuristic(ミラー50%)。汎用探索は深くしても約-10pt下＝**enelのコントロール/ランプは手調整ロジックが最適**。
+- **実装**: `src/70-ai.js` `PUCT_DEPTH = { enel: { det:6, look:2, width:6 } }`＝**puctTurnでリーダー別の既定深さ**。enelだけ自動で深く読む(他5は det3/look1/w5 のまま高速)。`G._puct*` で上書き可。
+- **ユーザー決定**: 「**AI探索モードではenelもpuct(深さ自動適用)／標準モードはheuristic**」。＝AI探索モードはフォールバック無し(深puctで-10pt)、標準は元々heuristic。
+- 学び: **「各リーダーの強い動き」を価値関数に書いても探索は強くならない**（手作りevalが既にほぼ最適）。効いたのは**探索の深さ**だけ。立ち回り調査は攻略リファレンスとして価値（`docs/deck-strategies.md`）。
