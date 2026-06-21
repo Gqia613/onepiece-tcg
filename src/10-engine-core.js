@@ -184,6 +184,7 @@
       if (c.donX2 && !(card && (card.attachedDon || 0) >= 2)) return false;
       if (c.donX3 && !(card && (card.attachedDon || 0) >= 3)) return false; // 【ドン‼×3】（OP12-020ゾロL）
       if (c.selfActive && card && card.rested) return false; // このカードがアクティブ（OP12-024牛鬼丸）
+      if (c.selfRested && card && !card.rested) return false; // このカードがレスト（ST02-014ドレーク）
       if (c.leaderActive && P.leader.rested) return false; // 自分のリーダーがアクティブ（OP06-088サイ）
       if (c.selfStage != null && !(P.stage && matchFilter(P.stage, c.selfStage))) return false; // 自分の場にfilter一致のステージがある（EB02-033クラバウターマン）
       if (c.leaderBattledChar && P._leaderBattledTurn !== G.turnSeq) return false; // このターン、リーダーが相手キャラとバトルした（OP12-020ゾロL）
