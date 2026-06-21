@@ -44,7 +44,11 @@ function chk(name, cond) { if (cond) pass++; else { fail++; console.log('  ✗ '
   if (W) {
     chk('AI_WEIGHTS features一致', JSON.stringify(W.features) === JSON.stringify(EVAL_FEATURES));
     const models = W.byLeader ? Object.values(W.byLeader).concat(W.default ? [W.default] : []) : (Array.isArray(W.w) ? [W] : []);
-    chk('全モデルのw長 == 特徴量数', models.length > 0 && models.every(m => Array.isArray(m.w) && m.w.length === EVAL_FEATURES.length));
+    const D = EVAL_FEATURES.length;
+    const okModel = m => m.type === 'mlp'
+      ? (m.mean.length === D && m.std.length === D && Array.isArray(m.W1) && m.W1.every(r => r.length === D) && m.W2.length === m.W1.length && m.b1.length === m.W1.length)
+      : (Array.isArray(m.w) && m.w.length === D);
+    chk('全モデルの入力次元 == 特徴量数', models.length > 0 && models.every(okModel));
   }
   const wp = evalWinProb('me');
   chk('evalWinProb in [0,1]', wp >= 0 && wp <= 1);
@@ -98,6 +102,31 @@ function chk(name, cond) { if (cond) pass++; else { fail++; console.log('  ✗ '
   const needsDon = power(m2.leader) - power(a2) >= 2000;     // 2000キャラはリーダー連結に2ドン以上必要
   const pk = cpuPickAttack('cpu', { aggression: 'mid', removalPriority: [] });
   chk('フリーKO可能なら3ドン顔殴りでなくレストKOを選ぶ', needsDon && pk && pk.target === r2);
+
+  // 8) ★Stage B: アタック方策ネット(per-action policy prior)の健全性
+  const LOADED_POL = (typeof window !== 'undefined') ? window.AI_POLICY : null;
+  seedRng(11); G.players = {}; G.turnSeq = 6; G.active = 'cpu';
+  G.players.cpu = buildPlayer('cpu', 'teach', true); G.players.me = buildPlayer('me', 'enel', false);
+  const pcp = G.players.cpu; pcp.turnsTaken = 2; pcp.don = { active: 4, rested: 0 };
+  const _w2 = console.warn; console.warn = () => {};
+  const atk8 = inst('ZZA', 'cpu'); atk8.summonedTurn = 1; atk8.rested = false; pcp.chars = [atk8];
+  console.warn = _w2;
+  chk('polFeatures長 == POL_FEAT', typeof polFeatures === 'function' && typeof POL_FEAT !== 'undefined' && polFeatures('cpu', { k: 'stop' }).length === POL_FEAT.length);
+  const la8 = (typeof legalActions === 'function') ? legalActions('cpu').filter(a => a.k === 'attack') : [];
+  chk('polFeatures(attack)も同次元', la8.length > 0 && polFeatures('cpu', la8[0]).length === POL_FEAT.length);
+  if (typeof window !== 'undefined') window.AI_POLICY = null;
+  chk('方策未学習→policyPickAttackはnull(=cpuPickAttackへフォールバック)', typeof policyPickAttack === 'function' && policyPickAttack('cpu', { aggression: 'mid' }) === null);
+
+  // npolicy エージェントが実機で1局完走（未学習でも cpuPickAttack フォールバックで通常進行）
+  if (typeof window !== 'undefined') window.AI_POLICY = LOADED_POL;     // 学習済みがあれば本物の方策パスを通す
+  async function playNpol(seed) {
+    G.players = {}; G.winner = null; G.inGame = false; seedRng(seed);
+    startGame('teach', 'enel'); G.players.me.isCPU = true; G.players.me.agent = 'npolicy'; G.players.cpu.agent = 'heuristic';
+    let it = 0; while (!(G.winner && !G._sim) && it < 3000000) { await new Promise(r => setImmediate(r)); it++; }
+    return G.winner;
+  }
+  const wn = await playNpol(55);
+  chk('npolicy 1局完走（勝者確定・フリーズ無し）', wn === 'me' || wn === 'cpu');
 
   console.log('  AI基盤テスト: pass=' + pass + ' fail=' + fail);
   process.exit(fail ? 1 : 0);

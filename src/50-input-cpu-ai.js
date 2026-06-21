@@ -338,9 +338,21 @@
           if (ce.length) plan.donReserve = Math.min(2, Math.min(...ce));
         }
         render(); await sleep(200);
+        // Stage B: npolicyエージェント時はアタック着手を学習方策で選ぶ（未学習なら下のcpuPickAttackへフォールバック）
+        const usePol = G._polAttack && typeof pickPolicyModel === 'function' && pickPolicyModel(side);
         let a = 0;
         while (a++ < 12) {
-          const pick = cpuPickAttack(side, plan);
+          if (G._polImprove && typeof improvedAttack === 'function') {
+            // Stage C(DAgger): 教師＝1-ply価値先読みが「正解ラベル」を出す（improvedAttackはフックで記録）。
+            // 状態分布は【生徒】が作る＝着手は方策ネット(未学習ならheuristic)で実行。世代ごとに分布が動く＝真の反復。
+            await improvedAttack(side, plan);                       // 教師ラベル記録（戻り値は使わない）
+            const pick = (typeof pickPolicyModel === 'function' && pickPolicyModel(side)) ? policyPickAttack(side, plan) : cpuPickAttack(side, plan);
+            if (!pick) break;
+            await declareAttack(pick.attacker, pick.target);
+            if (G.winner) return;
+            await sleep(300); continue;
+          }
+          const pick = usePol ? policyPickAttack(side, plan) : cpuPickAttack(side, plan);
           if (!pick) break;
           await declareAttack(pick.attacker, pick.target);
           if (G.winner) return;

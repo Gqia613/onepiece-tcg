@@ -200,3 +200,30 @@ OPCGは**リーダーごとに盤面の価値が違う**（カウンターの切
   - #3 レスト非ブロッカーKO価値: 7→3で**悪化(-6pt teach)**、7→11で**中立**＝**元の7が最適**。
 - **学び**: 単一パラメータの手調整では超えられないが、**具体的なミス（観察由来）をピンポイントで直すと有意に効く**。勝てる改良の源は①ユーザーのプレイ観察 ②負け局のリプレイ分析(`tools/analyze-heuristic.js`)。ループは完成・即iterable。
 - 既知の改善点: mulligan系tweakを測れるよう `startGame(meDeck,cpuDeck,meAgent,cpuAgent)` へ agent 引数を足す。
+
+## 8. AlphaZero型の足場（Stage A/B/C）— JS規模で全段を実装・測定した記録
+「価値NN(A)→方策NN(B)→自己対戦反復(C)」をvanilla JS（外部依存なし・`file://`互換の純JS順伝播/バックプロップ）で**全段実装し、決定的測定（`tools/measure-matchup.js`・同一seedペア＋符号検定）で正直に評価**した。結論を先に書くと **全段とも heuristic を超えない**（A=着手不変／B=中立／C=有意に退行）。これは§0/§7の「ポーカー型＋JS規模では heuristic が天井」を実機で裏取りしたもの。**足場（前向きモデル・エージェントseam・方策ネット・反復ループ・測定器・回帰テスト）は完成**し、本気で超えるなら Python/GPU へそのまま移植できる。
+
+### 8.1 Stage A：NN(MLP)価値関数 〔実装済・着手を変えない〕
+- 実装: `src/70-ai.js` `mlpForward`／学習 `tools/selfplay-train.js` `trainMLP`（標準化→隠れ1層ReLU→sigmoid・BCE・ミニバッチSGD+モメンタム・決定論的init）。`OPCG_MODEL=mlp OPCG_HIDDEN=24` で線形と切替。`src/ai-weights.js` は MLP形式 `{type:'mlp',mean,std,W1,b1,W2,b2}` も持てる（`pickModel`/`evalWinProb`がNN/線形/手作りを自動判別）。
+- **勝率予測器としては改善**: 検証精度 enel 0.66→**0.81**・default 0.68→0.70（lucy/aceは線形が僅か上）。
+- **だが実戦は不変（測定が正）**: MCTS葉評価＝**学習=手作り・正味flip 0・±0.0pt**（teach/enel両視点 N=40）。`vlook`（価値貪欲）は線形もMLPも**完全同一の壊滅 -58pt**（mid-turn状態で価値が飽和→候補が同点→最初の手）。→**価値を学習で差し替えてもMCTSの着手はほぼ変わらない**（探索が支配・§7の「めったに別手を選ばない」）。
+- 既定は `AI_WEIGHTS=null`（手作りeval出荷）。インフラはB/Cで再利用。
+
+### 8.2 Stage B：per-action 方策ネット（アタックprior）〔実装済・中立〕
+- 着眼: 最も戦略的な**アタック着手**だけを学習対象に、候補手(各attack＋stop)を共通次元 `polFeatures`(16次元) で表し softmax でランクする per-action 方策ネット。
+- 実装: `src/70-ai.js` `polFeatures`/`mlpLogit`/`policyPickAttack`/`AGENTS.npolicy`（heuristicTurnのアタック相だけ `G._polAttack` 分岐で方策ネットに差し替え・未学習なら `cpuPickAttack` フォールバック＝退行しない）。学習 `tools/train-policy.js`（heuristicの選択を全候補つきBC収集→softmax-CEで学習→`src/ai-policy.js`。`window.AI_POLICY`を`70-ai`より前にロード）。回帰は `tests/ai-core.js`（polFeatures次元・フォールバックnull・npolicy完走）。
+- 学習結果: 720局/18941サンプル、**top1=0.79〜0.92**（heuristicのアタックを高精度に蒸留）。
+- 強さ: **npolicy ≈ heuristic**（teach +3.3pt/enel +1.7pt・**いずれも非有意** p=0.69/1.00・flipわずか）。退行なし＝足場として機能。「学習 vs 手作り +0.0pt/0flip」は **npolicyが価値重みを使わずAI_POLICYのみ依存**の健全性確認。
+- **本質**: 教師=heuristicの蒸留なので原理的に≈heuristic（想定どおり）。超えるには**教師がheuristicより強い**必要があり、それがStage C。
+
+### 8.3 Stage C：自己対戦【反復】ループ（DAgger）〔実装済・★有意に退行＝価値が教師に足りない実機証明〕
+- 実装: `tools/selfplay-iterate.js`。1世代=①**生徒**(現方策ネット)で自己対戦し状態分布を作る→②各アタック判断で**教師**=`improvedAttack`(`src/70-ai.js`・1-ply価値先読み＝各候補を決定化クローンに適用し`evalWinProb`で評価し最良)が正解ラベルを出す(DAgger)→③(状態,教師ラベル)で方策ネット再学習→`src/ai-policy.js`更新→④`measure-matchup`で強さ測定、を繰り返す。`AGENTS.npimprove`＋`G._polImprove`分岐（src/50）。決定境界・ドレイン・元参照復元はL2/A/Bと同じ規律。
+- 結果（2世代×120局）: 世代0(方策なし=heuristic)72.5% → **世代1で47.5%（teach 対h -25.0pt・改善3/退行13・p=0.021 ★有意な退行）**。教師の **top1がわずか0.49〜0.68**（Stage Bの0.79〜0.92より大幅低＝**教師自身が状態間で矛盾＝不安定**）。世代2はDAgger自己対戦が重く 590s harness上限で打ち切り（既定GAMESを80に下げた）。
+- **根本原因**: 教師=1-ply価値先読みは、mid-attack状態で価値が不正確/exploitable（**vlook崩壊と同根**）→ラベルがノイズ→方策がノイズを蒸留→退行。**価値関数がgreedy改善の"教師"になるほど頑健でない**。これがStage Cが退行する理由＝**自己対戦反復で教師を超えるには「強い探索(>1-ply)＋頑健な深層価値/方策＋大量self-play」が必須**。
+- 出荷状態: 退行する世代1方策は採用せず、`src/ai-policy.js`は**Stage Bの中立方策(720局)に戻す**。npolicy/npimproveは opt-in 実験エージェント（既定CPUは heuristic のまま）。
+
+### 8.4 総括（A/B/Cを終えての結論）
+- **全段を実機で実装・測定した**：A=着手不変／B=中立／C=有意に退行。**確実な強さは依然「よく調整された heuristic」**（§7と一致・既定で出荷）。
+- **足場は完成**：前向きモデル(`clone/loadGameState`)・エージェントseam(`AGENTS`)・価値NN(`mlpForward/trainMLP`)・方策NN(`polFeatures/policyPickAttack/train-policy`)・反復ループ(`improvedAttack/selfplay-iterate`)・決定的測定器・回帰(`tests/ai-core.js`)。**Pythonへの移植は「同じ特徴量・同じ着手API・同じ測定」で1:1にできる**。
+- **JSで超えられない理由の確定**：①探索が1-ply/マクロ方針止まり（深いPUCT木が無い）②価値/方策が小さな線形/MLPで mid-state にexploitable ③self-playの局数が桁違いに足りない。**①②③を同時に満たすのがAlphaZero規模＝Python/GPU**。次の一歩はそこ（§7-(C)）。

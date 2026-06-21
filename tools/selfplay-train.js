@@ -17,6 +17,8 @@ const GAMES = +(process.env.OPCG_GAMES || 1800);
 const MCTS_GAMES = +(process.env.OPCG_MCTS_GAMES || 0); // >0 で mcts自己対戦局(on-distribution補正)を追加（高速設定・遅いので少なめに）
 // 対戦に使うデッキ(=リーダー)プール。既定6リーダー総当たり。OPCG_DECKS='teach,enel' で特定マッチアップに絞れる。
 const DECKS_POOL = (process.env.OPCG_DECKS || 'lucy,ace,nami,hancock,teach,enel').split(',').map(s => s.trim()).filter(Boolean);
+const MODEL = process.env.OPCG_MODEL || 'linear';   // 'linear'(ロジ回帰) or 'mlp'(NN・隠れ1層)。Stage A=mlp
+const HIDDEN = +(process.env.OPCG_HIDDEN || 24);     // mlpの隠れユニット数
 
 const harness = String.raw`
 process.on('unhandledRejection', e => { console.error('UNHANDLED', e && e.stack || e); process.exit(1); });
@@ -27,7 +29,7 @@ showPrompt = function (cfg) { const t = cfg.title || ''; let v;
   if (cfg.onPick) cfg.onPick(v); return Promise.resolve(v); };
 humanPick = function (c) { return Promise.resolve(c[0] || null); };
 
-const GAMES = ` + GAMES + `, MCTS_GAMES = ` + MCTS_GAMES + `;
+const GAMES = ` + GAMES + `, MCTS_GAMES = ` + MCTS_GAMES + `, MODEL = ` + JSON.stringify(MODEL) + `, HIDDEN = ` + HIDDEN + `;
 const LEADERS = ` + JSON.stringify(DECKS_POOL) + `; // 対戦デッキid（プール内で総当たり。OPCG_DECKSで限定可）
 const SAMP = [];   // {f:[...特徴量], lk:リーダーキー, side, gi}
 const WIN = {};
@@ -77,6 +79,54 @@ function evalAcc(X, y, w, b) {
   let ok = 0; for (let i = 0; i < X.length; i++) { let z = b; for (let j = 0; j < w.length; j++) z += w[j] * X[i][j]; if (((1 / (1 + Math.exp(-z))) >= 0.5 ? 1 : 0) === y[i]) ok++; }
   return ok / X.length;
 }
+// ---- NN(MLP・隠れ1層 ReLU→sigmoid) 純JSバックプロップ。標準化はモデルに同梱（推論側 mlpForward と一致） ----
+function trainMLP(X, y, h, epochs, lr) {
+  const n = X.length, d = X[0].length;
+  const mean = new Array(d).fill(0), std = new Array(d).fill(0);
+  for (const r of X) for (let j = 0; j < d; j++) mean[j] += r[j];
+  for (let j = 0; j < d; j++) mean[j] /= n;
+  for (const r of X) for (let j = 0; j < d; j++) { const dv = r[j] - mean[j]; std[j] += dv * dv; }
+  for (let j = 0; j < d; j++) std[j] = Math.sqrt(std[j] / n) || 1;
+  const Xs = X.map(r => r.map((v, j) => (v - mean[j]) / std[j]));
+  seedRng(777);                                                   // 決定論的初期化（学習の再現性）
+  const gauss = () => { let u = 0, v = 0; while (u === 0) u = rng(); while (v === 0) v = rng(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); };
+  const s1 = Math.sqrt(2 / d), s2 = Math.sqrt(2 / h);
+  const W1 = Array.from({ length: h }, () => Array.from({ length: d }, () => gauss() * s1)), b1 = new Array(h).fill(0);
+  const W2 = Array.from({ length: h }, () => gauss() * s2); let b2 = 0;
+  // モメンタム
+  const vW1 = W1.map(r => r.map(() => 0)), vb1 = new Array(h).fill(0), vW2 = new Array(h).fill(0); let vb2 = 0;
+  const mom = 0.9, BS = 256;
+  const order = Xs.map((_, i) => i);
+  for (let e = 0; e < epochs; e++) {
+    for (let i = order.length - 1; i > 0; i--) { const j = rng() * (i + 1) | 0;[order[i], order[j]] = [order[j], order[i]]; }
+    for (let bstart = 0; bstart < n; bstart += BS) {
+      const batch = order.slice(bstart, bstart + BS), m = batch.length;
+      const gW1 = W1.map(r => r.map(() => 0)), gb1 = new Array(h).fill(0), gW2 = new Array(h).fill(0); let gb2 = 0;
+      for (const idx of batch) {
+        const x = Xs[idx]; const z1 = new Array(h), a1 = new Array(h);
+        for (let k = 0; k < h; k++) { let z = b1[k]; const w1 = W1[k]; for (let j = 0; j < d; j++) z += w1[j] * x[j]; z1[k] = z; a1[k] = z > 0 ? z : 0; }
+        let z2 = b2; for (let k = 0; k < h; k++) z2 += W2[k] * a1[k];
+        const p = 1 / (1 + Math.exp(-z2)), dz2 = p - y[idx];
+        gb2 += dz2; for (let k = 0; k < h; k++) { gW2[k] += dz2 * a1[k]; const dz1 = (z1[k] > 0 ? 1 : 0) * dz2 * W2[k]; gb1[k] += dz1; const g = gW1[k]; for (let j = 0; j < d; j++) g[j] += dz1 * x[j]; }
+      }
+      for (let k = 0; k < h; k++) {
+        vb1[k] = mom * vb1[k] - lr * (gb1[k] / m); b1[k] += vb1[k];
+        vW2[k] = mom * vW2[k] - lr * (gW2[k] / m); W2[k] += vW2[k];
+        for (let j = 0; j < d; j++) { vW1[k][j] = mom * vW1[k][j] - lr * (gW1[k][j] / m); W1[k][j] += vW1[k][j]; }
+      }
+      vb2 = mom * vb2 - lr * (gb2 / m); b2 += vb2;
+    }
+  }
+  const rnd = a => Array.isArray(a) ? a.map(rnd) : +a.toFixed(5);
+  return { type: 'mlp', mean: mean.map(v => +v.toFixed(5)), std: std.map(v => +v.toFixed(5)), W1: rnd(W1), b1: rnd(b1), W2: rnd(W2), b2: +b2.toFixed(5) };
+}
+function mlpFwd(m, v) {
+  const x = v.map((val, i) => (val - m.mean[i]) / (m.std[i] || 1));
+  const a1 = m.b1.map((b, k) => { let z = b; const w1 = m.W1[k]; for (let j = 0; j < x.length; j++) z += w1[j] * x[j]; return z > 0 ? z : 0; });
+  let z2 = m.b2; for (let k = 0; k < a1.length; k++) z2 += m.W2[k] * a1[k];
+  return 1 / (1 + Math.exp(-z2));
+}
+function mlpAcc(X, y, m) { let ok = 0; for (let i = 0; i < X.length; i++) if ((mlpFwd(m, X[i]) >= 0.5 ? 1 : 0) === y[i]) ok++; return ok / X.length; }
 // バケツ samples→(X,y) 化＋8:2分割で学習し {w,b,n,valAcc,base} を返す
 function fit(samples) {
   const X = [], y = [];
@@ -85,8 +135,13 @@ function fit(samples) {
   const idx = X.map((_, i) => i); for (let i = idx.length - 1; i > 0; i--) { const j = (i * 1103515245 + 12345 >>> 0) % (i + 1);[idx[i], idx[j]] = [idx[j], idx[i]]; }
   const cut = Math.floor(idx.length * 0.8), Xtr = [], ytr = [], Xva = [], yva = [];
   idx.forEach((k, r) => { (r < cut ? Xtr : Xva).push(X[k]); (r < cut ? ytr : yva).push(y[k]); });
+  const base = +(yva.reduce((a, v) => a + v, 0) / yva.length).toFixed(3);
+  if (MODEL === 'mlp') {
+    const m = trainMLP(Xtr, ytr, HIDDEN, 300, 0.05);
+    return Object.assign(m, { n: X.length, valAcc: +mlpAcc(Xva, yva, m).toFixed(4), base });
+  }
   const m = train(Xtr, ytr, 400, 0.5, 1e-4);
-  return { w: m.w.map(v => +v.toFixed(5)), b: +m.b.toFixed(5), n: X.length, valAcc: +evalAcc(Xva, yva, m.w, m.b).toFixed(4), base: +(yva.reduce((a, v) => a + v, 0) / yva.length).toFixed(3) };
+  return { w: m.w.map(v => +v.toFixed(5)), b: +m.b.toFixed(5), n: X.length, valAcc: +evalAcc(Xva, yva, m.w, m.b).toFixed(4), base };
 }
 
 (async () => {
@@ -100,27 +155,28 @@ function fit(samples) {
     G._mctsRollouts = null; G._mctsDepth = null;
     console.log('mcts局 ' + MCTS_GAMES + ' 追加（高速設定 rollouts=3/depth=2）');
   }
+  // 学習メタ(n/valAcc/base)を除いたモデル本体だけを抽出（線形:{w,b} / MLP:{type,mean,std,W1,b1,W2,b2}）
+  const modelOf = r => { const o = {}; for (const k in r) if (k !== 'n' && k !== 'valAcc' && k !== 'base') o[k] = r[k]; return o; };
   const byLeader = {}, report = [];
   const keys = [...new Set(SAMP.map(s => s.lk))].filter(Boolean);
-  for (const k of keys) { const r = fit(SAMP.filter(s => s.lk === k)); if (r) { byLeader[k] = { w: r.w, b: r.b }; report.push(k + '(n=' + r.n + ',acc=' + r.valAcc + ')'); } }
-  const dft = fit(SAMP); const def = dft ? { w: dft.w, b: dft.b } : null;
+  for (const k of keys) { const r = fit(SAMP.filter(s => s.lk === k)); if (r) { byLeader[k] = modelOf(r); report.push(k + '(n=' + r.n + ',acc=' + r.valAcc + ')'); } }
+  const dft = fit(SAMP); const def = dft ? modelOf(dft) : null;
   const out = { features: EVAL_FEATURES, leaderKeys: LEADER_KEYS, byLeader, default: def,
     meta: { games: GAMES, samples: SAMP.length, perLeader: report, defaultAcc: dft ? dft.valAcc : null } };
   console.log('learned leaders: ' + report.join(' '));
   console.log('default acc=' + (dft ? dft.valAcc : 'n/a') + ' (多数派' + (dft ? dft.base : '-') + ')');
-  console.log('__WEIGHTS__' + JSON.stringify(out));
-  process.exit(0);
+  // ★大きなJSON(MLP)は console.log+process.exit だと pipe フラッシュ前に切れる→write完了後exit
+  process.stdout.write('__WEIGHTS__' + JSON.stringify(out), () => process.exit(0));
 })();
 `;
 
 let stdout;
 try { stdout = runHarness('selfplay', harness, { timeout: 590000 }); }
 catch (e) { process.stdout.write((e.stdout || '') + (e.stderr || '')); process.exit(1); }
-process.stdout.write(stdout.split('__WEIGHTS__')[0]);
-
-const m = stdout.match(/__WEIGHTS__(\{.*\})/);
-if (!m) { console.error('✗ 学習結果(__WEIGHTS__)が取得できませんでした'); process.exit(1); }
-const weights = JSON.parse(m[1]);
+const _mk = stdout.lastIndexOf('__WEIGHTS__');
+process.stdout.write(stdout.slice(0, _mk < 0 ? undefined : _mk));
+if (_mk < 0) { console.error('✗ 学習結果(__WEIGHTS__)が取得できませんでした'); process.exit(1); }
+const weights = JSON.parse(stdout.slice(_mk + '__WEIGHTS__'.length).trim());
 const file = `/* src/ai-weights.js — L3: 自己対戦で学習した【リーダー別】盤面評価の重み。tools/selfplay-train.js が自動生成。手で編集しない。
    学習: ${weights.meta.games}局(6リーダー対フィールド) / ${weights.meta.samples}サンプル / defaultAcc=${weights.meta.defaultAcc}
    リーダー別: ${weights.meta.perLeader.join(' ')}

@@ -174,17 +174,76 @@
       if (Array.isArray(W.w)) return W;                      // 旧フラット形式（後方互換）
       return W.default || null;
     }
-    // side視点の勝率推定 [0,1]。学習重み(window.AI_WEIGHTS, リーダー別)があればロジスティック、無ければ手作りevalにフォールバック。
+    // 学習NN(MLP)の純JS順伝播：標準化→隠れ層(ReLU)→出力(sigmoid)。外部依存なし＝file://でそのまま動く。
+    //   m = { type:'mlp', mean[d], std[d], W1[h][d], b1[h], W2[h], b2 }
+    function mlpForward(m, v) {
+      const x = v.map((val, i) => (val - m.mean[i]) / (m.std[i] || 1));
+      const h = m.b1.map((b, j) => { let z = b; const w1 = m.W1[j]; for (let i = 0; i < x.length; i++) z += w1[i] * x[i]; return z > 0 ? z : 0; });
+      let z2 = m.b2; for (let j = 0; j < h.length; j++) z2 += m.W2[j] * h[j];
+      return 1 / (1 + Math.exp(-z2));
+    }
+    // side視点の勝率推定 [0,1]。学習重み(window.AI_WEIGHTS, リーダー別)があれば NN/線形、無ければ手作りevalにフォールバック。
     function evalWinProb(side) {
       const W = (typeof window !== 'undefined' && window.AI_WEIGHTS) ? window.AI_WEIGHTS : null;
       const m = pickModel(W, side);
-      if (m && Array.isArray(m.w)) {
-        const v = evalFeatures(side); let z = m.b || 0;
-        for (let i = 0; i < m.w.length && i < v.length; i++) z += m.w[i] * v[i];
-        return 1 / (1 + Math.exp(-z));
+      if (m) {
+        const v = evalFeatures(side);
+        if (m.type === 'mlp' && m.W1) return mlpForward(m, v);       // NN(MLP)
+        if (Array.isArray(m.w)) {                                    // 線形(ロジスティック)
+          let z = m.b || 0; for (let i = 0; i < m.w.length && i < v.length; i++) z += m.w[i] * v[i];
+          return 1 / (1 + Math.exp(-z));
+        }
       }
       return 0.5 + 0.5 * Math.tanh(evalState(side) / 4);     // 手作りフォールバック
     }
+
+    /* =====================  Stage B: アタック方策ネット(per-action policy prior)  =====================
+       最も戦略的な「アタック着手」を学習対象にした per-action 方策ネット。
+       候補手(各attack＋stop)を共通次元の特徴量 polFeatures で表し、ネットのロジットを softmax してランク。
+       学習: tools/train-policy.js が heuristic(=cpuPickAttack)の選択を behavioral cloning（Stage B＝教師蒸留）。
+             Stage C では同じネットを「探索(MCTS)が改善した着手」に再学習するだけで強化できる（目標の差し替え）。
+       推論: window.AI_POLICY（src/ai-policy.js, リーダー別）。null なら従来 cpuPickAttack にフォールバック。  */
+    var POL_FEAT = ['atkLeader', 'atkChar', 'stop', 'atkPow', 'tgtPow', 'tgtBlocker', 'powDiff', 'donNeed', 'dbl', 'unblock', 'myDonL', 'myBoard', 'oppBoard', 'myLife', 'oppLife', 'lethalIf'];
+    // 着手a(attack/stop)の特徴量。live状態sで計算（apply不要＝軽量）。全候補が同一次元。
+    function polFeatures(side, a) {
+      const P = G.players[side], D = G.players[opp(side)];
+      const ctx = [(P.don.active || 0) / 10, P.chars.length / 5, D.chars.length / 5, P.life.length / 5, D.life.length / 5];
+      if (a.k === 'stop') return [0, 0, 1, 0, 0, 0, 0, 0, 0, 0, ...ctx, 0];
+      const at = findCard(a.auid), tg = findCard(a.tuid);
+      if (!at || !tg) return [0, 0, 1, 0, 0, 0, 0, 0, 0, 0, ...ctx, 0];
+      const atk = power(at), tp = power(tg), isLead = (tg === D.leader);
+      const donNeed = Math.max(0, Math.ceil((tp - atk) / 1000));
+      const dbl = hasKw(at, 'doubleAttack') ? 1 : 0;
+      const unb = (typeof isUnblockable === 'function' && isUnblockable(at)) ? 1 : 0;
+      const lethalIf = (isLead && D.life.length <= (dbl ? 2 : 1)) ? 1 : 0;   // この攻撃が通れば詰みに近い
+      return [isLead ? 1 : 0, isLead ? 0 : 1, 0, atk / 10000, tp / 10000, hasKw(tg, 'blocker') ? 1 : 0, (atk - tp) / 10000, donNeed / 4, dbl, unb, ...ctx, lethalIf];
+    }
+    // 方策ネットの生ロジット（softmax用・sigmoid前）。m={type:'policy',mean,std,W1[h][d],b1[h],W2[h],b2}
+    function mlpLogit(m, v) {
+      const x = v.map((val, i) => (val - m.mean[i]) / (m.std[i] || 1));
+      let z2 = m.b2; for (let k = 0; k < m.b1.length; k++) { let z = m.b1[k]; const w1 = m.W1[k]; for (let j = 0; j < x.length; j++) z += w1[j] * x[j]; if (z > 0) z2 += m.W2[k] * z; }
+      return z2;
+    }
+    function pickPolicyModel(side) {
+      const W = (typeof window !== 'undefined' && window.AI_POLICY) ? window.AI_POLICY : null;
+      if (!W) return null;
+      return (W.byLeader && W.byLeader[leaderKeyOf(side)]) || W.default || null;
+    }
+    // 学習方策でアタック着手を選ぶ（候補=legalActionsのattack＋stop）。cpuPickAttack同様、選んだら donNeed を付与して返す。
+    // 戻り: {attacker,target} / null(=これ以上殴らない or 未学習)。呼び元は usepol で未学習を切り分ける。
+    function policyPickAttack(side, plan) {
+      const m = pickPolicyModel(side); if (!m) return null;
+      const cands = legalActions(side).filter(a => a.k === 'attack');
+      if (!cands.length) return null;
+      let best = null;
+      for (const a of [...cands, { k: 'stop' }]) { const z = mlpLogit(m, polFeatures(side, a)); if (!best || z > best.z) best = { a, z }; }
+      if (!best || best.a.k === 'stop') return null;            // 方策が「ターンを終える」を最良と判断
+      const at = findCard(best.a.auid), tg = findCard(best.a.tuid); if (!at || !tg) return null;
+      const need = Math.max(0, Math.ceil((power(tg) - power(at)) / 1000));
+      for (let i = 0; i < need && G.players[side].don.active > 0; i++) { at.attachedDon++; G.players[side].don.active--; }
+      return { attacker: at, target: tg };
+    }
+
     /* 候補手の剪定: 全合法手は多すぎる&雑魚への攻撃は無価値。意味のある手だけに絞る。
        - 手札プレイ/起動/リーダー: そのまま（多くない）
        - アタック: リーダーへの攻撃 と「相手の脅威(ブロッカー/大型/効果持ち)レストキャラのKO」だけ
@@ -300,6 +359,47 @@
       // endTurn は呼び出し元(beginTurn)が行う
     }
     AGENTS.vlook = { takeTurn: vlookTurn };  // P.agent='vlook'（価値誘導方策）
+
+    /* Stage B: 方策ネット・エージェント。展開/イベント/起動は heuristic のまま、アタック着手だけ学習方策で選ぶ。
+       実装は heuristicTurn 内の「G._polAttack && pickPolicyModel」分岐（50-input-cpu-ai.js）に集約。
+       未学習(window.AI_POLICY=null)なら自動で cpuPickAttack にフォールバック＝退行しない。 */
+    async function npolicyTurn(side) {
+      G._polAttack = true;
+      try { return await heuristicTurn(side); } finally { G._polAttack = false; }
+    }
+    AGENTS.npolicy = { takeTurn: npolicyTurn };  // P.agent='npolicy'（学習アタック方策）
+
+    /* Stage C: 方策改善オペレータ（policy improvement）。アタック判断の【1-ply価値先読み】＝
+       各候補(各attack＋stop)を決定化クローンに適用し evalWinProb で評価、最良を返す。
+       ＝「現在の価値関数で1手分だけ深く読んだ、方策より強い"教師"」。selfplay-iterate.js が
+       この教師の選択を新しい学習目標に方策ネットを再学習する（自己対戦反復＝AlphaZeroの心臓部）。
+       戻り: { feats:[候補のpolFeatures], ci:選択index, lk, chosen:着手 }。空候補なら null。 */
+    async function improvedAttack(side, plan) {
+      const atts = legalActions(side).filter(a => a.k === 'attack');
+      if (!atts.length) return null;
+      const cands = [...atts, { k: 'stop' }];
+      const feats = cands.map(a => polFeatures(side, a));
+      const snap = cloneGameState(G), saved = Object.assign({}, G), rngSave = rngState();
+      let best = null;
+      for (let ci = 0; ci < cands.length; ci++) {
+        const a = cands[ci];
+        loadGameState(determinize(snap, side));
+        G.players.me.isCPU = true; G.players.cpu.isCPU = true; G._sim = true;
+        let v;
+        try { if (a.k !== 'stop') await applyAction(side, a); v = G.winner ? (G.winner === side ? 1 : 0) : evalWinProb(side); }
+        finally { G._sim = false; }
+        if (!best || v > best.v) best = { ci, v };
+      }
+      for (const k of Object.keys(G)) delete G[k]; Object.assign(G, saved); rngState(rngSave);
+      return { feats, ci: best.ci, lk: leaderKeyOf(side), chosen: cands[best.ci] };
+    }
+    // Stage C データ生成用エージェント: アタック相を improvedAttack（教師）で打つ。selfplay-iterate.js が improvedAttack をフックしてラベル収集。
+    async function npimproveTurn(side) {
+      G._polImprove = true;
+      try { return await heuristicTurn(side); } finally { G._polImprove = false; }
+    }
+    AGENTS.npimprove = { takeTurn: npimproveTurn };  // P.agent='npimprove'（1-ply価値先読みの教師方策）
+    if (typeof window !== 'undefined') { window.polFeatures = polFeatures; window.legalActions = legalActions; window.POL_FEAT = POL_FEAT; window.improvedAttack = improvedAttack; }
 
     // 外部（テスト/将来のMCTS）から使えるよう公開（ブラウザ・Node両対応）。
     if (typeof window !== 'undefined') { window.cloneGameState = cloneGameState; window.loadGameState = loadGameState; }
