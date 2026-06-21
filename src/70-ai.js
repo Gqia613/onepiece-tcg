@@ -263,6 +263,12 @@
           if (threat) acts.push(a);                                        // 脅威キャラのKOのみ
         } else acts.push(a);                                               // 非アタック（プレイ/起動/leader/stop）は全部
       }
+      // ★黒ヤマト: 8ヤマト/9モモの「素出し(char)」は候補から外す（他に出せるcharがあるなら）。捨ててトラッシュから踏み倒す方が強い＝
+      //   heuristicのプレイ抑制(src/50)とAI探索(puct)を揃える。探索が短期の8000ボディに釣られて素出しするのを防ぐ。
+      if (typeof isYamatoLeader === 'function' && isYamatoLeader(side)) {
+        const isTargetChar = a => a.k === 'char' && (c => !!c && yamatoReviveTarget(c.base.no))(findCard(a.uid));
+        if (acts.some(a => a.k === 'char' && !isTargetChar(a))) return acts.filter(a => !isTargetChar(a));
+      }
       return acts;
     }
 
