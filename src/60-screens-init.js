@@ -208,6 +208,7 @@
     function poolCards() {
       const b = G.builder;
       let cards = Object.keys(C).filter(no => cardLegalForLeader(no, b.leaderNo));
+      cards = cards.filter(no => !/_r\d+$/.test(no) || !C[no.replace(/_r\d+$/, '')]); // パラレル(_rN=別イラストの同一カード)は本体があれば一覧から除外＝重複表示防止（本体が無い孤立パラレルのみ残す）
       if (b.filter && b.filter !== 'all') cards = cards.filter(no => C[no].type === b.filter);
       if (b.colorFilter && b.colorFilter !== 'all') cards = cards.filter(no => (C[no].color || []).includes(b.colorFilter));
       if (b.search && b.search.trim()) { const q = b.search.trim().toLowerCase(); cards = cards.filter(no => (C[no].name || '').toLowerCase().includes(q) || no.toLowerCase().includes(q)); }

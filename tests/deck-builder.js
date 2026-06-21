@@ -51,6 +51,12 @@ toast = function () {}; renderSelect = function () {}; backToSelect = function (
     // renderSelect が自分・CPU 両方にカスタムデッキを出す（ordered に含む）
     const ordered = (typeof DECKS !== 'undefined' ? DECKS : []).concat(G.customDecks || []);
     ok(ordered.some(d => d.custom), 'デッキ選択リストにカスタムデッキが含まれる(CPUにも割当可)');
+    // ★パラレル(_rN=別イラストの同一カード)はデッキビルダー一覧に出さない（本体と二重表示する重複を防止）
+    { const blkLeader = Object.keys(C).find(no => C[no].leader && (C[no].color || []).includes('黒')) || leader;
+      G.builder = { leaderNo: blkLeader, list: {}, name: 't', filter: 'all', colorFilter: 'all', search: '' };
+      const pool = poolCards();
+      ok(pool.length > 0 && !pool.some(no => /_r\d+$/.test(no)), 'poolCards: パラレル(_rN)を一覧に含まない（重複表示防止）');
+      ok(pool.includes('ST14-017') && !pool.includes('ST14-017_r1'), 'poolCards: 黒サウザンド・サニー号は本体のみ（パラレル除外）'); }
   } catch (e) { console.log('EXCEPTION:', e.message); fail++; }
   console.log('デッキビルダー検証: pass=' + pass + ' fail=' + fail);
   process.exit(fail ? 1 : 0);
