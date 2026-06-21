@@ -166,6 +166,7 @@
       if (c.oppDonAtLeast != null && donTotal(opp(side)) < c.oppDonAtLeast) return false; // 相手の場のドンN枚以上
       if (c.leaderNameIncludes != null && !normName(P.leader.base.name).includes(normName(c.leaderNameIncludes))) return false;
       if (c.leaderColor != null && !(P.leader.base.color || []).includes(c.leaderColor)) return false;
+      if (c.leaderMulticolor && (P.leader.base.color || []).length < 2) return false; // リーダーが多色（2色以上）。OP13-051ハンコック等
       if (c.selfChar != null) { const min = c.selfChar.min || 1; if (P.chars.filter(ch => matchFilter(ch, c.selfChar)).length < min) return false; }
       if (c.oppChar != null) { const min = c.oppChar.min || 1; if (O.chars.filter(ch => matchFilter(ch, c.oppChar)).length < min) return false; } // 相手の場のキャラ条件
       if (c.noSelfChar != null) { if (P.chars.some(ch => matchFilter(ch, c.noSelfChar))) return false; }

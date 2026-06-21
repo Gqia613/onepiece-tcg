@@ -1301,6 +1301,48 @@ humanPick=function(c){return Promise.resolve((c||[])[0]||null);};
       const v=mkSyn('__r4__',C['__r4__']); v.owner='cpu'; v.rested=true; G.players.cpu.chars=[v];
       const ev=I('OP13-039','me'); await runFx(ev.base.fx.counter.fx,{self:ev,side:'me'});
       ok(!G.players.cpu.chars.includes(v), 'OP13-039 counter: 相手レストのコスト4以下KO'); delete C['__r4__']; }
+
+    // === OP13 バッチ3（青・白ひげ/ハンコック） ===
+    ok(['OP13-041','OP13-044','OP13-046','OP13-047','OP13-051','OP13-053','OP13-055','OP13-058','OP13-059'].every(no=>C[no]&&C[no].fx), 'OP13バッチ3: 青13枚にfx統合');
+    // OP13-041 イゾウ: 2ドロー
+    { const me=LP('OP13-002'); me.deck=[I('OP15-067','me'),I('OP15-067','me')]; const h0=me.hand.length;
+      const c=I('OP13-041','me'); await runFx(c.base.fx.onPlay,{self:c,side:'me'});
+      ok(me.hand.length===h0+2, 'OP13-041: 2ドロー'); }
+    // OP13-051 ハンコック: 多色リーダーで2ドロー(leaderMulticolor) ／ 単色非ハンコックでは不発
+    { const me=LP('OP13-002'); me.deck=[I('OP15-067','me'),I('OP15-067','me')]; const h0=me.hand.length; // OP13-002は赤/青の多色
+      const c=I('OP13-051','me'); await runFx(c.base.fx.onKO,{self:c,side:'me'});
+      ok(me.hand.length===h0+2, 'OP13-051 onKO: 多色リーダーで2ドロー(leaderMulticolor)');
+      const me2=LP('OP13-002'); me2.leader.base={...me2.leader.base,color:['赤'],name:'X'}; me2.deck=[I('OP15-067','me')]; const h1=me2.hand.length;
+      const c2=I('OP13-051','me'); await runFx(c2.base.fx.onKO,{self:c2,side:'me'});
+      ok(me2.hand.length===h1, 'OP13-051: 単色非ハンコックでは発動しない'); }
+    // OP13-046 ビスタ: バトルKOを白ひげ手札捨てで肩代わり(includeBattle)
+    { const me=LP('OP13-002'); const vs=I('OP13-046','me'); vs.owner='me'; me.chars=[vs];
+      C['__wb__']={no:'__wb__',name:'白A',type:'CHAR',color:[],cost:3,power:4000,counter:1000,traits:['白ひげ海賊団']};
+      me.hand=[mkSyn('__wb__',C['__wb__'])];
+      ok(await protectFromEffect(vs,'battle',null)===true && me.hand.length===0, 'OP13-046: バトルKOを白ひげ捨てで肩代わり'); delete C['__wb__']; }
+    // OP13-047 フォッサ: 白ひげのKOを自身トラッシュで肩代わり
+    { const me=LP('OP13-002'); const fo=I('OP13-047','me'); fo.owner='me';
+      C['__wb2__']={no:'__wb2__',name:'白B',type:'CHAR',color:[],cost:3,power:4000,counter:1000,traits:['白ひげ海賊団']};
+      const wb=mkSyn('__wb2__',C['__wb2__']); wb.owner='me'; me.chars=[fo,wb];
+      ok(await protectFromEffect(wb,'ko',null)===true && !me.chars.includes(fo), 'OP13-047: 白ひげKOをフォッサ自身トラッシュで肩代わり'); delete C['__wb2__']; }
+    // OP13-053 ティーチ: 白ひげトラッシュ→1ドロー＋【バニッシュ】
+    { const me=LP('OP13-002'); const tc=I('OP13-053','me'); tc.owner='me'; me.deck=[I('OP15-067','me')];
+      C['__wb3__']={no:'__wb3__',name:'白C',type:'CHAR',color:[],cost:3,power:4000,counter:1000,traits:['白ひげ海賊団']};
+      const wb=mkSyn('__wb3__',C['__wb3__']); wb.owner='me'; me.chars=[tc,wb]; const h0=me.hand.length;
+      await runFx(tc.base.fx.onAttack,{self:tc,side:'me'});
+      ok(me.hand.length===h0+1 && hasKw(tc,'banish'), 'OP13-053 onAttack: 白ひげトラッシュ→1ドロー＋バニッシュ'); delete C['__wb3__']; }
+    // OP13-055 ラクヨウ: 手札4以下で白ひげ全+1000
+    { const me=LP('OP13-002'); me.hand=[]; const rk=I('OP13-055','me'); rk.owner='me';
+      C['__wb4__']={no:'__wb4__',name:'白D',type:'CHAR',color:[],cost:4,power:4000,counter:1000,traits:['白ひげ海賊団']};
+      const wb=mkSyn('__wb4__',C['__wb4__']); wb.owner='me'; me.chars=[rk,wb];
+      await runFx(rk.base.fx.onAttack,{self:rk,side:'me'});
+      ok(power(wb)===5000, 'OP13-055 onAttack: 手札4以下で白ひげ全+1000'); delete C['__wb4__']; }
+    // OP13-058 鳳梨礫: パワー3000以下をデッキ下
+    { const me=LP('OP13-002'); me.don={active:1,rested:0};
+      C['__p3__']={no:'__p3__',name:'P3',type:'CHAR',color:[],cost:2,power:3000,counter:1000,traits:[]};
+      const v=mkSyn('__p3__',C['__p3__']); v.owner='cpu'; G.players.cpu.chars=[v];
+      const ev=I('OP13-058','me'); await runFx(ev.base.fx.main.fx,{self:ev,side:'me'});
+      ok(!G.players.cpu.chars.includes(v) && G.players.cpu.deck.includes(v), 'OP13-058 main: 相手パワー3000以下をデッキ下'); delete C['__p3__']; }
   }catch(e){ console.log('EXCEPTION:', e.message); fail++; }
   console.log('Phase3 fxテスト: pass='+pass+' fail='+fail);
   process.exit(fail?1:0);

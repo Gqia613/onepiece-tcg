@@ -742,7 +742,7 @@
       }
       return true;
     }
-    function kwJa(k) { return { blocker: 'ブロッカー', rush: '速攻', doubleAttack: 'ダブルアタック', unblockable: 'ブロック不可' }[k] || k; }
+    function kwJa(k) { return { blocker: 'ブロッカー', rush: '速攻', doubleAttack: 'ダブルアタック', unblockable: 'ブロック不可', banish: 'バニッシュ', rushChar: '速攻：キャラ' }[k] || k; }
     function reset(c) { c.attachedDon = 0; c.rested = false; c.buffs = []; c.kwGrant = []; c.frozen = false; c.negSeq = null; c.noAtkSeq = null; c._faceUp = false; return c; }
     function faceDown(c) { if (c) c._faceUp = false; return c; } // 手札→ライフへ戻す時は裏向きに（表向きフラグ残留を防ぐ）
 

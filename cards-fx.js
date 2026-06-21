@@ -670,5 +670,32 @@ window.CARD_FX = {
   // OP13-039 ゴムゴムの蛇銃: 【カウンター】相手のレストのコスト4以下1枚をKO
   "OP13-039": {"counter":{"cost":0,"fx":[{"op":"ko","side":"opp","filter":{"maxCost":4,"restedOnly":true},"count":1,"optional":true}]}},
   // OP13-040 強ェとわかってんだから…: 【メイン】ドン2レスト→相手レストのコスト7以下2枚を次リフレッシュでアクティブにしない ／【カウンター】リーダー+3000
-  "OP13-040": {"main":{"fx":[{"op":"restDonCost","n":2,"then":[{"op":"lock","side":"opp","filter":{"maxCost":7,"restedOnly":true},"count":2,"optional":true}]}]},"counter":{"cost":0,"fx":[{"op":"leaderBuff","amount":3000,"duration":"battle"}]}}
+  "OP13-040": {"main":{"fx":[{"op":"restDonCost","n":2,"then":[{"op":"lock","side":"opp","filter":{"maxCost":7,"restedOnly":true},"count":2,"optional":true}]}]},"counter":{"cost":0,"fx":[{"op":"leaderBuff","amount":3000,"duration":"battle"}]}},
+  /* ===== OP13 バッチ3（青・白ひげ/ハンコック。新cond leaderMulticolor・giveKeyword banish） ===== */
+  // OP13-041 イゾウ: 【登場時】2ドロー
+  "OP13-041": {"onPlay":[{"op":"draw","n":2}]},
+  // OP13-044 クリエル: 【アタック時】白ひげのリーダーかキャラにレストのドン1付与 ／【KO時】1ドロー
+  "OP13-044": {"onAttack":[{"op":"donAttach","target":"chooseOwn","n":1,"filter":{"traitIncludes":"白ひげ海賊団"}}],"onKO":[{"op":"draw","n":1}]},
+  // OP13-045 ハルタ: 【アタック時】手札4枚以下なら1ドロー
+  "OP13-045": {"onAttack":[{"op":"cond","check":{"selfHandAtMost":4},"then":[{"op":"draw","n":1}]}]},
+  // OP13-046 ビスタ: 【ダブルアタック】 ／【ターン1回】KO/相手効果で場を離れる代わりに白ひげ1枚を手札から捨てる
+  "OP13-046": {"static":[{"op":"leaveProtect","targetSelf":true,"includeBattle":true,"once":"turn","pay":"discardFromHand","discardFilter":{"traitIncludes":"白ひげ海賊団"}}]},
+  // OP13-047 フォッサ: 自分の白ひげが相手効果でKOされる場合、代わりに自身をトラッシュ
+  "OP13-047": {"static":[{"op":"leaveProtect","targetFilter":{"traitIncludes":"白ひげ海賊団"},"onlyKO":true,"pay":"koSelf"}]},
+  // OP13-050 ボア・サンダーソニア: 【登場時】リーダー「ボア・ハンコック」なら手札からコスト3以下「ボア・ハンコック」を登場
+  "OP13-050": {"onPlay":[{"op":"cond","check":{"leaderNameIncludes":"ボア・ハンコック"},"then":[{"op":"playCharFromHand","maxCost":3,"filter":{"name":"ボア・ハンコック"},"count":1,"optional":true}]}]},
+  // OP13-051 ボア・ハンコック: 【KO時】リーダー「ボア・ハンコック」か多色なら2ドロー
+  "OP13-051": {"onKO":[{"op":"cond","check":{"or":[{"leaderNameIncludes":"ボア・ハンコック"},{"leaderMulticolor":true}]},"then":[{"op":"draw","n":2}]}]},
+  // OP13-052 ボア・マリーゴールド: 【ブロッカー】 ／【登場時】リーダー「ボア・ハンコック」なら手札からコスト6以下「ボア・ハンコック」を登場
+  "OP13-052": {"onPlay":[{"op":"cond","check":{"leaderNameIncludes":"ボア・ハンコック"},"then":[{"op":"playCharFromHand","maxCost":6,"filter":{"name":"ボア・ハンコック"},"count":1,"optional":true}]}]},
+  // OP13-053 マーシャル・Ｄ・ティーチ: 【アタック時】白ひげ1枚トラッシュ：1ドロー＋このターン【バニッシュ】
+  "OP13-053": {"onAttack":[{"op":"trashOwnCharCost","filter":{"traitIncludes":"白ひげ海賊団"},"then":[{"op":"draw","n":1},{"op":"giveKeyword","target":"self","kw":"banish","duration":"turn"}]}]},
+  // OP13-055 ラクヨウ: 【アタック時】手札4枚以下なら自分の白ひげ全てを+1000
+  "OP13-055": {"onAttack":[{"op":"cond","check":{"selfHandAtMost":4},"then":[{"op":"powerMod","side":"self","all":true,"amount":1000,"duration":"turn","filter":{"traitIncludes":"白ひげ海賊団"}}]}]},
+  // OP13-056 リトルオーズJr.: 【アタック時】リーダーが白ひげなら1ドロー
+  "OP13-056": {"onAttack":[{"op":"cond","check":{"leaderTraitIncludes":"白ひげ海賊団"},"then":[{"op":"draw","n":1}]}]},
+  // OP13-058 鳳梨礫: 【メイン】ドン1レスト→相手パワー3000以下1枚をデッキ下 ／【カウンター】リーダー+3000
+  "OP13-058": {"main":{"fx":[{"op":"restDonCost","n":1,"then":[{"op":"deckBottom","side":"opp","filter":{"maxEffPower":3000},"count":1,"optional":true}]}]},"counter":{"cost":0,"fx":[{"op":"leaderBuff","amount":3000,"duration":"battle"}]}},
+  // OP13-059 ブリリアント・パンク: 【メイン】自キャラ1枚を手札に戻す：コスト6以下のキャラ1枚を手札に戻す
+  "OP13-059": {"main":{"fx":[{"op":"bounceOwnCharCost","then":[{"op":"bounce","side":"any","maxCost":6,"count":1,"optional":true}]}]}}
 };
