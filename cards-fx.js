@@ -982,5 +982,38 @@ window.CARD_FX = {
   // OP12-116 鐘を鳴らして君を待つ: 【メイン】デッキ上5枚から《シャンドラの戦士》キャラか「ノーランド」2枚を手札へ
   "OP12-116": {"main":{"fx":[{"op":"search","look":5,"count":2,"filter":{"or":[{"traitIncludes":"シャンドラの戦士","type":"CHAR"},{"name":"モンブラン・ノーランド"}]},"optional":true}]}},
   // OP12-117 破壊弦: 【メイン】ドン5レスト：リーダー超新星ならコスト9以下1枚を持ち主のライフ上か下に裏向きで加える ／【カウンター】リーダー+3000
-  "OP12-117": {"main":{"fx":[{"op":"restDonCost","n":5,"then":[{"op":"cond","check":{"leaderTraitIncludes":"超新星"},"then":[{"op":"charToLife","side":"any","filter":{"maxCost":9},"count":1,"optional":true}]}]}]},"counter":{"cost":0,"fx":[{"op":"leaderBuff","amount":3000,"duration":"battle"}]}}
+  "OP12-117": {"main":{"fx":[{"op":"restDonCost","n":5,"then":[{"op":"cond","check":{"leaderTraitIncludes":"超新星"},"then":[{"op":"charToLife","side":"any","filter":{"maxCost":9},"count":1,"optional":true}]}]}]},"counter":{"cost":0,"fx":[{"op":"leaderBuff","amount":3000,"duration":"battle"}]}},
+  /* ===== OP11 バッチ1（赤・海軍/SWORD。新機構: attackActive/koImmuneFromSourceAttr/condAttacker/onOppEvent/allyKeyword） ===== */
+  // OP11-001 コビー LEADER: SWORDキャラは登場ターンにキャラへアタック可 ／【ターン1回】元々P7000以下の海軍が相手効果で離れる代わりにトラッシュ3枚をデッキ下
+  "OP11-001": {"static":[{"op":"allyKeyword","kw":"rushChar","filter":{"traitIncludes":"SWORD"}},{"op":"leaveProtect","targetFilter":{"traitIncludes":"海軍","maxPower":7000},"once":"turn","pay":"trashToDeck","n":3}]},
+  // OP11-002 アイン: 【登場時】相手1枚を-1000→相手パワー0以下1枚KO
+  "OP11-002": {"onPlay":[{"op":"powerMod","side":"opp","amount":-1000,"count":1,"optional":true,"duration":"turn"},{"op":"ko","side":"opp","filter":{"maxEffPower":0},"count":1,"optional":true}]},
+  // OP11-004 孔雀: 【登場時】デッキ上5枚から「孔雀」以外の海軍1枚を手札へ ／【起動メイン】自身トラッシュ：自キャラ1枚+1000
+  "OP11-004": {"onPlay":[{"op":"search","look":5,"count":1,"filter":{"trait":"海軍","nameExcludes":"孔雀"},"optional":true}],"act":{"label":"自身トラッシュ:自キャラ1枚+1000","cost":{},"fx":[{"op":"trashSelfCost","then":[{"op":"powerMod","side":"self","amount":1000,"count":1,"optional":true,"duration":"turn"}]}]}},
+  // OP11-005 スモーカー: 【ブロッカー】 ／【ドン×1】属性(特)を持たないキャラの効果でKOされない
+  "OP11-005": {"static":[{"op":"koImmuneFromSourceAttr","lacksAttr":"特","cond":{"donX1":true}}]},
+  // OP11-006 ゼット: 【ドン×1】【アタック時】相手の属性(特)キャラ1枚を-5000
+  "OP11-006": {"onAttack":[{"op":"cond","check":{"donX1":true},"then":[{"op":"powerMod","side":"opp","amount":-5000,"count":1,"optional":true,"duration":"turn","filter":{"attr":"特"}}]}]},
+  // OP11-007 たしぎ: 【起動メイン】レスト：海軍リーダーなら海軍1枚を+2000
+  "OP11-007": {"act":{"label":"レスト:海軍リーダーなら海軍1枚+2000","cost":{"restSelf":true},"fx":[{"op":"cond","check":{"leaderTrait":"海軍"},"then":[{"op":"powerMod","side":"self","amount":2000,"count":1,"optional":true,"duration":"turn","filter":{"traitIncludes":"海軍"}}]}]}},
+  // OP11-008 ドール: 【ブロッカー】 ／【登場時】手札1捨て：海軍リーダーなら相手1枚を-6000
+  "OP11-008": {"onPlay":[{"op":"discardCost","count":1,"then":[{"op":"cond","check":{"leaderTrait":"海軍"},"then":[{"op":"powerMod","side":"opp","amount":-6000,"count":1,"optional":true,"duration":"turn"}]}]}]},
+  // OP11-009 ニコ・ロビン: 【ドン×2】【アタック時】相手1枚を次相手ターン終了まで-2000
+  "OP11-009": {"onAttack":[{"op":"cond","check":{"donX2":true},"then":[{"op":"powerMod","side":"opp","amount":-2000,"count":1,"optional":true,"duration":"untilNextEnd"}]}]},
+  // OP11-010 ひばり: 【登場時】相手1枚-2000 ／【アタック時】自身+1000→海軍リーダーはアクティブにもアタック可
+  "OP11-010": {"onPlay":[{"op":"powerMod","side":"opp","amount":-2000,"count":1,"optional":true,"duration":"turn"}],"onAttack":[{"op":"powerMod","target":"self","amount":1000,"duration":"turn"},{"op":"giveKeyword","target":"chooseOwnL","kw":"attackActive","duration":"turn","filter":{"type":"LEADER","traitIncludes":"海軍"}}]},
+  // OP11-012 フランキー: 【自分のターン中】【ターン1回】相手がイベントを発動した時、自分のキャラ全+2000
+  "OP11-012": {"onOppEvent":{"when":"selfTurn","once":"turn","fx":[{"op":"powerMod","side":"self","all":true,"amount":2000,"duration":"turn"}]}},
+  // OP11-013 プリンス・グルス: 【アタック時】相手のパワー2000以下のキャラ全ては【ブロッカー】発動不可
+  "OP11-013": {"onAttack":[{"op":"denyBlocker","side":"opp","filter":{"maxEffPower":2000},"all":true}]},
+  // OP11-014 ボルサリーノ: 【ブロッカー】 ／【起動メイン】レスト：海軍リーダーかキャラはアクティブにもアタック可
+  "OP11-014": {"act":{"label":"レスト:海軍はアクティブにもアタック可","cost":{"restSelf":true},"fx":[{"op":"giveKeyword","target":"chooseOwnL","kw":"attackActive","duration":"turn","filter":{"traitIncludes":"海軍"}}]}},
+  // OP11-016 ロロノア・ゾロ(c5): 【起動メイン】リーダーかキャラにレストのドン1付与
+  "OP11-016": {"act":{"label":"リーダーかキャラにレストのドン1付与","cost":{},"fx":[{"op":"donAttach","target":"chooseOwn","n":1}]}},
+  // OP11-018 実直拳骨: 【メイン】相手1枚-4000→相手パワー6000以下1枚KO
+  "OP11-018": {"main":{"fx":[{"op":"powerMod","side":"opp","amount":-4000,"count":1,"optional":true,"duration":"turn"},{"op":"ko","side":"opp","filter":{"maxEffPower":6000},"count":1,"optional":true}]}},
+  // OP11-019 粘土の巣: 【カウンター】リーダーかキャラ+2000→相手にパワー6000以上がいればさらに+1000
+  "OP11-019": {"counter":{"cost":0,"fx":[{"op":"powerMod","side":"self","leader":true,"amount":2000,"battle":true,"count":1,"optional":true},{"op":"cond","check":{"oppChar":{"minEffPower":6000}},"then":[{"op":"powerMod","side":"self","leader":true,"amount":1000,"duration":"turn","count":1,"optional":true}]}]}},
+  // OP11-020 X狩場: 【メイン】相手2枚-2000→海軍1枚+1000
+  "OP11-020": {"main":{"fx":[{"op":"powerMod","side":"opp","amount":-2000,"count":2,"optional":true,"duration":"turn"},{"op":"powerMod","side":"self","amount":1000,"count":1,"optional":true,"duration":"turn","filter":{"traitIncludes":"海軍"}}]}}
 };

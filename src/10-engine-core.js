@@ -374,6 +374,11 @@
         if (isNegated(src)) continue; const ss = src.base.fx && src.base.fx.static; if (!ss) continue;
         for (const o of ss) { if (o.op === 'grantKeywordNames' && o.kw === kw && (!o.cond || checkCond(o.cond, src.owner, src)) && ((src === card && o.self) || (o.names && o.names.includes(b.name)))) return true; }
       }
+      // 自分のリーダー/キャラの static が「filter一致の自分のキャラにキーワード付与（allyKeyword）」する場合（OP11-001コビーL：SWORDに速攻：キャラ）。lightMatchで再帰回避。
+      for (const src of [G.players[card.owner].leader, ...G.players[card.owner].chars]) {
+        if (!src || isNegated(src)) continue; const ss = src.base.fx && src.base.fx.static; if (!ss) continue;
+        for (const o of ss) { if (o.op === 'allyKeyword' && o.kw === kw && (!o.cond || checkCond(o.cond, src.owner, src)) && lightMatch(card, o.filter)) return true; }
+      }
       // 自分のキャラの static が「リーダーへキーワード付与（grantKeywordToLeader）」する場合
       if (b.type === 'LEADER') {
         for (const src of G.players[card.owner].chars) {

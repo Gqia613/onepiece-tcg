@@ -92,6 +92,7 @@
       switch (op.op) {
         case 'draw': draw(side, op.n); flog(side, `${op.n}ドロー`); break;
         case 'drawDiscarded': { const k = ctx.discarded || 1; if (draw(side, k)) flog(side, `${k}ドロー`); break; } // 捨てた枚数分ドロー（OP12-040クザン）
+        case 'condAttacker': { if (ctx.attacker && (ctx.attacker.base.attribute || '').includes(op.attr)) await runFx(op.then, ctx); break; } // アタッカーが属性Xを持つ場合（OP11-088シュウ）
         // デッキの上1枚を公開し、filter一致なら登場させてもよい（OP12-058）。grantKwで登場時にキーワード付与。
         case 'revealTopPlay': {
           if (!P.deck.length) break; const top = P.deck[0]; flog(side, `デッキの上を公開: ${top.base.name}`);
@@ -443,6 +444,23 @@
         case 'selfDamage': { for (let i = 0; i < (op.n || 1); i++) await dealLeaderDamage(side, { base: {} }, 1, false); break; }
         // このキャラ(ctx.self)自身の効果を無効化（OP14-056ワダツミ。durationでこのターン中/次相手ターン終了まで）
         case 'negateSelf': { if (self) { self.negSeq = durSeq(op.duration); flog(side, `「${self.base.name}」は効果が無効になった`); floatOn(self.uid, '無効', 'dmg'); render(); } break; }
+        // 自分のライフの上から1枚を裏向きにするコスト（OP11しらほし系の資源）。任意。lives既定は裏向きなので主に確認ゲート。
+        case 'lifeFlipDownCost': {
+          if (!P.life.length) break;
+          if (!(await confirmUse(side, 'ライフを裏向き', 'ライフの上から1枚を裏向きにして効果を使いますか？', '裏向きにして使う', '使わない'))) break;
+          P.life[0]._faceUp = false; flog(side, 'ライフの上から1枚を裏向きにした'); render();
+          await runFx(op.then, ctx); break;
+        }
+        // 任意のコストを宣言→相手デッキトップを公開→一致なら then（OP11ビッグ・マム系のコスト宣言）。
+        case 'costGuess': {
+          if (!G.players[o].deck.length) break;
+          let guess;
+          if (P.isCPU) guess = op.cpuGuess != null ? op.cpuGuess : 1; // CPUは控えめに固定宣言
+          else { const opts = []; for (let cc = 0; cc <= 10; cc++) opts.push({ t: 'コスト' + cc, v: 'pick:' + cc }); const v = await showPrompt({ title: 'コストを宣言', text: '相手のデッキの上のコストを宣言（一致で効果発動）', opts }); guess = (typeof v === 'string' && v.indexOf('pick:') === 0) ? +v.slice(5) : 0; }
+          const top = G.players[o].deck[0]; const tcst = top.base.cost || 0; flog(side, `コスト${guess}を宣言→相手デッキの上を公開: 「${top.base.name}」(コスト${tcst})`); render();
+          if (tcst === guess) { flog(side, '宣言一致！'); await runFx(op.then, ctx); } else flog(side, '宣言は外れた');
+          break;
+        }
         // このターン、自分はキャラを登場できない（OP14-024錦えもん/OP14-020ミホークのランプ後）
         case 'setSummonBan': { if (op.minBaseCost != null) { P._noSummonMinCostTurn = G.turnSeq; P._noSummonMinCost = op.minBaseCost; flog(side, `このターン、元々コスト${op.minBaseCost}以上のキャラを登場できない`); } else { P._noSummonTurn = G.turnSeq; flog(side, 'このターン、キャラを登場できない'); } break; }
         // 自分のアクティブのドンを任意の枚数レスト→1枚ごとに「リーダー or filter一致キャラ」1枚までを このバトル中 +amount（OP13-001ルフィ等の【相手のアタック時】）
@@ -645,6 +663,7 @@
         }
         // 相手キャラ count枚の【ブロッカー】をこのターン発動不可にする
         case 'denyBlocker': {
+          if (op.all) { for (const t of oppChars(side, opFilter(op))) t.noBlockSeq = G.turnSeq; flog(side, '相手の対象キャラは【ブロッカー】発動不可'); render(); break; } // 条件一致の相手キャラ全て（OP11-013グルス）
           for (let i = 0; i < (op.count || 1); i++) { const cands = oppChars(side, opFilter(op)).filter(c => c.noBlockSeq !== G.turnSeq); const t = P.isCPU ? cands[0] : await chooseCard(side, cands, '【ブロッカー】発動不可にする相手キャラ', 'oppBig', op.optional); if (!t) break; t.noBlockSeq = G.turnSeq; flog(side, `「${t.base.name}」は【ブロッカー】発動不可`); }
           render(); break;
         }
@@ -805,7 +824,7 @@
       }
       return true;
     }
-    function kwJa(k) { return { blocker: 'ブロッカー', rush: '速攻', doubleAttack: 'ダブルアタック', unblockable: 'ブロック不可', banish: 'バニッシュ', rushChar: '速攻：キャラ' }[k] || k; }
+    function kwJa(k) { return { blocker: 'ブロッカー', rush: '速攻', doubleAttack: 'ダブルアタック', unblockable: 'ブロック不可', banish: 'バニッシュ', rushChar: '速攻：キャラ', attackActive: 'アクティブにもアタック可' }[k] || k; }
     function reset(c) { c.attachedDon = 0; c.rested = false; c.buffs = []; c.kwGrant = []; c.frozen = false; c.negSeq = null; c.noAtkSeq = null; c._faceUp = false; return c; }
     function faceDown(c) { if (c) c._faceUp = false; return c; } // 手札→ライフへ戻す時は裏向きに（表向きフラグ残留を防ぐ）
 
@@ -818,6 +837,8 @@
       if (cause === 'ko' && source && source.base && !isNegated(target)) {
         const st = target.base.fx && target.base.fx.static;
         if (st && st.some(o => o.op === 'koImmuneFromWeakSource' && (source.base.power || 0) <= (o.maxBasePower || 0))) { flog(target.owner, `「${target.base.name}」は元々パワーの低いキャラの効果ではKOされない`); return true; }
+        // 「属性Xを持たないキャラの効果でKOされない」(OP11-005スモーカー。cond対応＝ドン×1等)
+        if (st) for (const o of st) { if (o.op === 'koImmuneFromSourceAttr' && (!o.cond || checkCond(o.cond, target.owner, target)) && !((source.base.attribute || '').includes(o.lacksAttr))) { flog(target.owner, `「${target.base.name}」は属性${o.lacksAttr}を持たないキャラの効果ではKOされない`); return true; } }
       }
       // 「相手のキャラすべては、自分の効果で場を離れない」(OP14-079クロコダイル)。除去しようとする側(=opp(target.owner))の盤面に oppLeaveImmuneFromSelf があれば効果除去を無効化＝自分の効果で相手を場から離せない自己制約。
       if (cause === 'ko' || cause === 'bounce' || cause === 'deckBottom') {

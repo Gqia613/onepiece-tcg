@@ -109,7 +109,7 @@
         const cost = effCost('me', card); if (P.don.active < cost) { toast('ドンが足りません'); return; }
         payDon('me', cost); P.hand.splice(P.hand.indexOf(card), 1);
         if (b.cost >= 3) P._lucyEventTurn = G.turnSeq; // 【ルーシー】起動メイン条件: 当ターンに元々コスト3以上のイベントを発動
-        flog('me', '「' + b.name + '」を使用'); await runFx(b.fx.main.fx, { self: card, side: 'me' }); P.trash.push(reset(card)); render(); await luffyReveal('me');
+        flog('me', '「' + b.name + '」を使用'); await runFx(b.fx.main.fx, { self: card, side: 'me' }); P.trash.push(reset(card)); render(); await luffyReveal('me'); await fireOppEvent("me");
       }
     }
     function uiEndTurn() { if (G.busy || G.active !== 'me' || !G.myActable || G.promptState || G.pendingChoice) return; G.attackSel = null; G.busy = true; G.myActable = false; render(); endTurn('me'); }
@@ -322,7 +322,7 @@
         const c = evs.sort((a, b) => (b.base.cost || 0) - (a.base.cost || 0))[0];
         payDon(side, effCost(side, c)); P.hand.splice(P.hand.indexOf(c), 1);
         if (c.base.cost >= 3) P._lucyEventTurn = G.turnSeq;
-        flog(side, '「' + c.base.name + '」を使用'); await fxNote(side, '効果使用', c.base.name); await runFx(c.base.fx.main.fx, { self: c, side }); P.trash.push(reset(c)); render(); await luffyReveal(side); await sleep(260);
+        flog(side, '「' + c.base.name + '」を使用'); await fxNote(side, '効果使用', c.base.name); await runFx(c.base.fx.main.fx, { self: c, side }); P.trash.push(reset(c)); render(); await luffyReveal(side); await sleep(260); await fireOppEvent(side);
         if (G.winner) return;
       }
       // 3) 起動効果（エネル等）。エネルのリーダー効果は第2ターン以降ほぼ常に得（ドンランプ＋付与）なので毎ターン使う
@@ -397,7 +397,7 @@
         if (p.k === 'stop') break;
         if (p.k === 'char') { payDon(side, effCost(side, p.c)); P.hand.splice(P.hand.indexOf(p.c), 1); await summon(side, p.c, false); }
         else if (p.k === 'stage') { payDon(side, p.c.base.cost || 0); P.hand.splice(P.hand.indexOf(p.c), 1); if (P.stage) P.trash.push(reset(P.stage)); P.stage = p.c; p.c.owner = side; p.c.rested = false; if (p.c.base.fx && p.c.base.fx.onPlay) await runFx(p.c.base.fx.onPlay, { self: p.c, side }); }
-        else if (p.k === 'event') { payDon(side, effCost(side, p.c)); P.hand.splice(P.hand.indexOf(p.c), 1); await runFx(p.c.base.fx.main.fx, { self: p.c, side }); P.trash.push(reset(p.c)); }
+        else if (p.k === 'event') { payDon(side, effCost(side, p.c)); P.hand.splice(P.hand.indexOf(p.c), 1); await runFx(p.c.base.fx.main.fx, { self: p.c, side }); P.trash.push(reset(p.c)); await fireOppEvent(side); }
         else if (p.k === 'act') { const cost = p.c.base.fx.act.cost || {}; if (cost.don) payDon(side, cost.don); if (cost.restSelf) p.c.rested = true; p.c._actTurn = G.turnSeq; await runFx(p.c.base.fx.act.fx, { self: p.c, side }); }
         else if (p.k === 'atk') { await declareAttack(p.c, p.t); }
       }

@@ -54,6 +54,19 @@
         await runFx(cfg.fx, { self: c, side });
       }
     }
+    // 「相手がイベントを発動した時」誘発（OP11-012フランキー/102ケイミー）。eventSide=イベントを使った側→その相手のキャラを誘発。
+    async function fireOppEvent(eventSide) {
+      const oppSide = opp(eventSide), P = G.players[oppSide];
+      for (const c of P.chars.slice()) {
+        const cfg = c.base.fx && c.base.fx.onOppEvent;
+        if (!cfg || isNegated(c) || !P.chars.includes(c)) continue;
+        if (cfg.when === 'selfTurn' && oppSide !== G.active) continue;
+        if (cfg.when === 'oppTurn' && oppSide === G.active) continue;
+        if (cfg.cond && !checkCond(cfg.cond, oppSide, c)) continue;
+        if (cfg.once === 'turn') { if (c._oppEventTurn === G.turnSeq) continue; c._oppEventTurn = G.turnSeq; }
+        await runFx(cfg.fx, { self: c, side: oppSide });
+      }
+    }
     // 「ライフが離れた時」誘発（OP12-099カルガラ＝自分のターン中ライフ離脱で1ドロー）。side=ライフが離れた側。
     async function fireLifeLeft(side) {
       const P = G.players[side];
@@ -262,7 +275,8 @@
     }
     function legalTargets(side, attacker) { // side=attacker側。attacker指定時は対象制限を反映
       const D = G.players[opp(side)]; const arr = (attacker && !canTargetLeader(attacker)) ? [] : [D.leader];
-      for (const c of D.chars) if (c.rested) arr.push(c);
+      const canActive = attacker && hasKw(attacker, 'attackActive'); // 「アクティブのキャラにもアタックできる」(OP11海軍/SWORD)
+      for (const c of D.chars) if (c.rested || canActive) arr.push(c);
       return arr;
     }
 
