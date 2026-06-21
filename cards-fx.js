@@ -1254,5 +1254,73 @@ window.CARD_FX = {
   // OP10-040 弱ェ奴は死に方も選べねェ: 【メイン】/【カウンター】相手のレストのコスト7以下1枚KO
   "OP10-040": {"main":{"fx":[{"op":"ko","side":"opp","filter":{"restedOnly":true,"maxCost":7},"count":1,"optional":true}]},"counter":{"cost":0,"fx":[{"op":"ko","side":"opp","filter":{"restedOnly":true,"maxCost":7},"count":1,"optional":true}]}},
   // OP10-041 ラジオナイフ: 【メイン】相手コスト6以下1枚レスト→相手のレストのコスト5以下1枚KO
-  "OP10-041": {"main":{"fx":[{"op":"restChar","side":"opp","filter":{"maxCost":6},"count":1,"optional":true},{"op":"ko","side":"opp","filter":{"restedOnly":true,"maxCost":5},"count":1,"optional":true}]}}
+  "OP10-041": {"main":{"fx":[{"op":"restChar","side":"opp","filter":{"maxCost":6},"count":1,"optional":true},{"op":"ko","side":"opp","filter":{"restedOnly":true,"maxCost":5},"count":1,"optional":true}]}},
+  /* ===== OP10 バッチ3（青・042-061。ドレスローザ＝リーダー/ステージをレストにするコスト） ===== */
+  // OP10-042 ウソップ LEADER: ドレスローザ(コスト2以上)全コスト+1 ／【相手のターン中】ドレスローザがKO/相手効果離脱時、手札5以下なら1ドロー
+  "OP10-042": {"static":[{"op":"allyCost","filter":{"traitIncludes":"ドレスローザ","minBaseCost":2},"amount":1}],"onAllyLeave":{"when":"oppTurn","once":"turn","filter":{"traitIncludes":"ドレスローザ"},"cond":{"selfHandAtMost":5},"fx":[{"op":"draw","n":1}]}},
+  // OP10-043 ウーシー: 【登場時】ドレスローザのリーダー/ステージ1枚をレスト：「ルフィ」キャラ1枚に【バニッシュ】
+  "OP10-043": {"onPlay":[{"op":"restOwnAsCost","filter":{"traitIncludes":"ドレスローザ","or":[{"type":"LEADER"},{"type":"STAGE"}]},"then":[{"op":"giveKeyword","target":"chooseOwn","kw":"banish","duration":"turn","filter":{"nameIncludes":"モンキー・Ｄ・ルフィ"}}]}]},
+  // OP10-044 カブ: 【登場時】ドレスローザのリーダー/ステージ1枚をレスト：相手コスト1以下1枚を手札に戻す
+  "OP10-044": {"onPlay":[{"op":"restOwnAsCost","filter":{"traitIncludes":"ドレスローザ","or":[{"type":"LEADER"},{"type":"STAGE"}]},"then":[{"op":"bounce","side":"opp","maxCost":1,"count":1,"optional":true}]}]},
+  // OP10-046 キュロス: 【登場時】コスト5以下1枚を持ち主の手札に戻す
+  "OP10-046": {"onPlay":[{"op":"bounce","side":"any","maxCost":5,"count":1,"optional":true}]},
+  // OP10-047 コアラ: 【アタック時】コスト3以上の革命軍1枚を手札に戻す：このキャラ+3000
+  "OP10-047": {"onAttack":[{"op":"bounceOwnCharCost","filter":{"traitIncludes":"革命軍","minCost":3},"excludeSelf":true,"then":[{"op":"powerMod","side":"self","target":"self","amount":3000,"duration":"turn"}]}]},
+  // OP10-048 サイ: 【登場時】ドレスローザのリーダー/ステージ1枚をレスト：相手コスト1以下1枚を手札に戻す
+  "OP10-048": {"onPlay":[{"op":"restOwnAsCost","filter":{"traitIncludes":"ドレスローザ","or":[{"type":"LEADER"},{"type":"STAGE"}]},"then":[{"op":"bounce","side":"opp","maxCost":1,"count":1,"optional":true}]}]},
+  // OP10-049 サボ: 「サボ」以外の自分の元々コスト7以下が相手効果で離れる場合、代わりにこのキャラを手札に戻す
+  "OP10-049": {"static":[{"op":"leaveProtect","pay":"bounceSelf","targetFilter":{"maxBaseCost":7,"nameExcludes":"サボ"}}]},
+  // OP10-051 ハック: 【ドン×1】【アタック時】デッキ上3枚から革命軍キャラ1枚を手札に(残りデッキ下)
+  "OP10-051": {"onAttack":[{"op":"cond","check":{"donX1":true},"then":[{"op":"search","look":3,"count":1,"filter":{"traitIncludes":"革命軍","type":"CHAR"},"optional":true}]}]},
+  // OP10-052 バルトロメオ: 【ブロッカー】 ／【登場時】コスト1以下1枚を持ち主のデッキ下
+  "OP10-052": {"onPlay":[{"op":"deckBottom","side":"opp","filter":{"maxCost":1},"count":1,"optional":true}]},
+  // OP10-053 ビアン: 「ビアン」以外の自分のトンタッタ族がいれば【ブロッカー】を得る
+  "OP10-053": {"static":[{"op":"staticKeyword","kw":"blocker","cond":{"selfCharOther":{"filter":{"traitIncludes":"トンタッタ族"}}}}]},
+  // OP10-055 マルコ: 【ブロッカー】 ／【KO時】相手コスト4以下1枚を持ち主の手札に戻す
+  "OP10-055": {"onKO":[{"op":"bounce","side":"opp","maxCost":4,"count":1,"optional":true}]},
+  // OP10-056 マンシェリー: 【登場時】ドレスローザのリーダー/ステージをレスト＋コスト4以上のドレスローザ1枚を手札に戻す：相手コスト4以下1枚を手札に戻す
+  "OP10-056": {"onPlay":[{"op":"restOwnAsCost","filter":{"traitIncludes":"ドレスローザ","or":[{"type":"LEADER"},{"type":"STAGE"}]},"then":[{"op":"bounceOwnCharCost","filter":{"traitIncludes":"ドレスローザ","minCost":4},"excludeSelf":true,"then":[{"op":"bounce","side":"opp","maxCost":4,"count":1,"optional":true}]}]}]},
+  // OP10-057 レオ: 【登場時】リーダー/ステージ1枚をレスト：ウソップリーダーなら デッキ上5枚から「レオ」以外のドレスローザ2枚を手札に＋手札1枚を捨てる
+  "OP10-057": {"onPlay":[{"op":"restOwnAsCost","filter":{"or":[{"type":"LEADER"},{"type":"STAGE"}]},"then":[{"op":"cond","check":{"leaderNameIncludes":"ウソップ"},"then":[{"op":"search","look":5,"count":2,"filter":{"traitIncludes":"ドレスローザ"},"exclude":"レオ","optional":true},{"op":"discardCost","count":1}]}]}]},
+  // OP10-058 レベッカ: 【登場時】コスト8以上のキャラがいれば1ドロー→手札からドレスローザのコスト7以下を最大2枚登場 ※近似(2枚目のレスト登場は省略)
+  "OP10-058": {"onPlay":[{"op":"cond","check":{"selfCharCount":{"filter":{"minCost":8},"min":1}},"then":[{"op":"draw","n":1},{"op":"playCharFromHand","filter":{"traitIncludes":"ドレスローザ","maxCost":7,"nameExcludes":"レベッカ"},"count":2,"optional":true}]}]},
+  // OP10-059 おまえ…タチ…わ…おれ…が…み…ち…び…く…!!!: 【メイン】デッキ上5枚からドレスローザキャラ1枚を手札に
+  "OP10-059": {"main":{"fx":[{"op":"search","look":5,"count":1,"filter":{"traitIncludes":"ドレスローザ","type":"CHAR"},"optional":true}]}},
+  // OP10-060 バリバリの銃: 【メイン】相手のパワー6000以下1枚を持ち主のデッキ下
+  "OP10-060": {"main":{"fx":[{"op":"deckBottom","side":"opp","filter":{"maxEffPower":6000},"count":1,"optional":true}]}},
+  // OP10-061 必殺!!遠距離“蓑虫星”: 【メイン】1ドロー→相手コスト2以下1枚を手札に戻す
+  "OP10-061": {"main":{"fx":[{"op":"draw","n":1},{"op":"bounce","side":"opp","maxCost":2,"count":1,"optional":true}]}},
+  /* ===== OP10 バッチ4（紫・062-081。ドンキホーテ＋ドン-1） ===== */
+  // OP10-062 ヴァイオレット: 【ブロッカー】 ／【KO時】ドンキリーダーならドン-1：トラッシュから紫イベント1枚を手札に
+  "OP10-062": {"onKO":[{"op":"cond","check":{"leaderTraitIncludes":"ドンキホーテ海賊団"},"then":[{"op":"donMinus","n":1},{"op":"trashToHand","count":1,"optional":true,"filter":{"color":"紫","type":"EVENT"}}]}]},
+  // OP10-063 ヴィンスモーク・サンジ: 【登場時】『ジェルマ』リーダーなら デッキ上5枚から『ジェルマ』1枚を手札に
+  "OP10-063": {"onPlay":[{"op":"cond","check":{"leaderTraitIncludes":"ジェルマ"},"then":[{"op":"search","look":5,"count":1,"filter":{"traitIncludes":"ジェルマ"},"optional":true}]}]},
+  // OP10-065 シュガー(c1): 【起動メイン】ドン1レスト＋自身レスト：デッキ上5枚からドンキ1枚を手札に
+  "OP10-065": {"act":{"label":"ドン1+自身レスト:ドンキ1枚回収","cost":{"restSelf":true},"fx":[{"op":"restDonCost","n":1,"then":[{"op":"search","look":5,"count":1,"filter":{"traitIncludes":"ドンキホーテ海賊団"},"optional":true}]}]}},
+  // OP10-066 ジョーラ: 【相手のアタック時】【ターン1回】ドン2レスト：相手コスト4以下1枚レスト
+  "OP10-066": {"onOppAttack":[{"op":"restDonCost","n":2,"once":"turn","then":[{"op":"restChar","side":"opp","filter":{"maxCost":4},"count":1,"optional":true}]}]},
+  // OP10-067 セニョール・ピンク: 【登場時】ドン-1：トラッシュからコスト5以下の紫イベント1枚を手札に→ドン1アクティブ
+  "OP10-067": {"onPlay":[{"op":"donMinus","n":1},{"op":"trashToHand","count":1,"optional":true,"filter":{"color":"紫","type":"EVENT","maxCost":5}},{"op":"donActivate","n":1}]},
+  // OP10-069 闘魚: 【ドン×1】【アタック時】ドン-1：相手コスト1以下1枚KO
+  "OP10-069": {"onAttack":[{"op":"cond","check":{"donX1":true},"then":[{"op":"donMinus","n":1},{"op":"ko","side":"opp","filter":{"maxCost":1},"count":1,"optional":true}]}]},
+  // OP10-070 トレーボル: 【ブロッカー】 ／【登場時】次の相手ターン終了まで 自分の元々パワー1000以下のキャラ全ては相手効果でKOされない
+  "OP10-070": {"onPlay":[{"op":"grantWeakKoImmune","maxBasePower":1000,"duration":"untilNextEnd"}]},
+  // OP10-071 ドンキホーテ・ドフラミンゴ: 【登場時】ドン-1：手札からコスト5以下ドンキ1枚を登場 ／【相手のアタック時】【ターン1回】ドン1レスト：ドンデッキからドン1アクティブ追加
+  "OP10-071": {"onPlay":[{"op":"donMinus","n":1},{"op":"playCharFromHand","filter":{"traitIncludes":"ドンキホーテ海賊団","maxCost":5},"count":1,"optional":true}],"onOppAttack":[{"op":"restDonCost","n":1,"once":"turn","then":[{"op":"donFromDeck","n":1,"mode":"active"}]}]},
+  // OP10-072 ドンキホーテ・ロシナンテ: 【登場時】手札からイベント1枚を捨てる：2ドロー ／【自分のターン終了時】ドン7以上ならドン2アクティブ
+  "OP10-072": {"onPlay":[{"op":"discardCost","count":1,"optional":true,"filter":{"type":"EVENT"},"then":[{"op":"draw","n":2}]}],"onTurnEnd":[{"op":"cond","check":{"donAtLeast":7},"then":[{"op":"donActivate","n":2}]}]},
+  // OP10-074 ピーカ: 【ターン1回】このキャラが相手効果でKOされる場合、代わりにアクティブのドン2枚をレストにできる
+  "OP10-074": {"static":[{"op":"leaveProtect","targetSelf":true,"onlyKO":true,"once":"turn","pay":"restActiveDon","n":2}]},
+  // OP10-075 フォクシー: 【起動メイン】このキャラをトラッシュ：自分のドンが相手のドン以下なら1ドロー
+  "OP10-075": {"act":{"label":"自身トラッシュ:ドン劣勢なら1ドロー","cost":{},"fx":[{"op":"trashSelfCost","then":[{"op":"cond","check":{"donLEOpp":true},"then":[{"op":"draw","n":1}]}]}]}},
+  // OP10-076 ベビー5: 【登場時】手札1枚を捨てる：ドンキリーダーならドンデッキからドン1アクティブ追加
+  "OP10-076": {"onPlay":[{"op":"discardCost","count":1,"optional":true,"then":[{"op":"cond","check":{"leaderTraitIncludes":"ドンキホーテ海賊団"},"then":[{"op":"donFromDeck","n":1,"mode":"active"}]}]}]},
+  // OP10-078 家族を笑う者はおれが許さん…!!!: 【メイン】/【カウンター】デッキ上3枚から「自身」以外のドンキ1枚を手札に
+  "OP10-078": {"main":{"fx":[{"op":"search","look":3,"count":1,"filter":{"traitIncludes":"ドンキホーテ海賊団"},"exclude":"家族を笑う者はおれが許さん…!!!","optional":true}]},"counter":{"cost":0,"fx":[{"op":"search","look":3,"count":1,"filter":{"traitIncludes":"ドンキホーテ海賊団"},"exclude":"家族を笑う者はおれが許さん…!!!","optional":true}]}},
+  // OP10-079 神誅殺: 【メイン】相手コスト5以下1枚KO→ドンデッキからドン1アクティブ追加
+  "OP10-079": {"main":{"fx":[{"op":"ko","side":"opp","filter":{"maxCost":5},"count":1,"optional":true},{"op":"donFromDeck","n":1,"mode":"active"}]}},
+  // OP10-080 小熊玩具: 【カウンター】リーダーかキャラ+4000→ドン7以上かつ手札5以下なら1ドロー
+  "OP10-080": {"counter":{"cost":0,"fx":[{"op":"powerMod","side":"self","leader":true,"amount":4000,"battle":true,"count":1,"optional":true},{"op":"cond","check":{"and":[{"donAtLeast":7},{"selfHandAtMost":5}]},"then":[{"op":"draw","n":1}]}]}},
+  // OP10-081 ウソップ(c4): 【登場時】ドレスローザのリーダー/ステージをレスト：相手コスト2以下1枚KO→デッキ上2枚トラッシュ
+  "OP10-081": {"onPlay":[{"op":"restOwnAsCost","filter":{"traitIncludes":"ドレスローザ","or":[{"type":"LEADER"},{"type":"STAGE"}]},"then":[{"op":"ko","side":"opp","filter":{"maxCost":2},"count":1,"optional":true},{"op":"deckToTrash","n":2}]}]}
 };

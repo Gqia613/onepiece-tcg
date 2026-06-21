@@ -333,6 +333,8 @@
         }
         // 相手のレストのドンN枚を「次のリフレッシュでアクティブにしない」（OP10-033ナミ）。beginTurnのリフレッシュで消化。
         case 'donRefreshLock': { const O3 = G.players[o]; const n = Math.min(op.n || 1, O3.don.rested); O3._donRefreshLock = (O3._donRefreshLock || 0) + n; if (n) flog(side, `相手のレストのドン${n}枚は次のリフレッシュでアクティブにならない`); break; }
+        // 自分の元々パワーN以下のキャラを、durationの間、相手の効果でKOされないようにする（OP10-070トレーボル）
+        case 'grantWeakKoImmune': { P._weakKoImmune = { until: durSeq(op.duration || 'untilNextEnd'), maxBasePower: op.maxBasePower || 1000 }; flog(side, `元々パワー${op.maxBasePower || 1000}以下の自キャラは相手の効果でKOされない`); break; }
         // このキャラを持ち主のデッキの下に置くコスト（OP10-026/027錦えもん）。払えたら then 実行。
         case 'selfToBottomCost': {
           if (!P.chars.includes(self)) break;
@@ -869,6 +871,8 @@
       if (!target) return false;
       // 「相手の効果ではKOされない」自身の常在: 効果KOのみ無効化（選択・パワー減少等は通すのでバックストップ）
       if (cause === 'ko' && isKoImmune(target)) { flog(target.owner, `「${target.base.name}」は相手の効果ではKOされない`); return true; }
+      // 一時的な「自分の元々パワーN以下のキャラは相手の効果でKOされない」（OP10-070トレーボル＝次相手ターン終了まで）
+      if (cause === 'ko') { const wk = G.players[target.owner] && G.players[target.owner]._weakKoImmune; if (wk && G.turnSeq <= wk.until && (target.base.power || 0) <= wk.maxBasePower) { flog(target.owner, `「${target.base.name}」は元々パワー${wk.maxBasePower}以下なので相手の効果でKOされない`); return true; } }
       // 「相手の元々パワーN以下のキャラの効果でKOされない」(OP14-003ベッジ。source=KO元のキャラ)
       if (cause === 'ko' && source && source.base && !isNegated(target)) {
         const st = target.base.fx && target.base.fx.static;
@@ -926,6 +930,16 @@
           if (p === target || p.rested) continue;
           if (!(await confirmUse(target.owner, `【${p.base.name}】身代わり`, `「${p.base.name}」をレストにして「${target.base.name}」を場に残しますか？`, '残す（このキャラをレスト）', '残さない'))) continue;
           p.rested = true; flog(target.owner, `【${p.base.name}】自身をレストにして「${target.base.name}」を場に残した`); render(); return true;
+        } else if (prot.pay === 'restActiveDon') {
+          // 代わりにアクティブのドンN枚をレストにして target を場に残す（OP10-074ピーカ）
+          const n = prot.n || 2; if (ow.don.active < n) continue;
+          if (!(await confirmUse(target.owner, `【${p.base.name}】身代わり`, `アクティブのドン${n}枚をレストにして「${target.base.name}」を場に残しますか？`, `残す（ドン${n}レスト）`, '残さない'))) continue;
+          ow.don.active -= n; ow.don.rested += n; flog(target.owner, `【${p.base.name}】ドン${n}枚をレストにして「${target.base.name}」を場に残した`); render(); return true;
+        } else if (prot.pay === 'bounceSelf') {
+          // 代わりにこのキャラ(p=身代わり元)を持ち主の手札に戻して target を場に残す（OP10-049サボ）。p===target不可
+          if (p === target) continue;
+          if (!(await confirmUse(target.owner, `【${p.base.name}】身代わり`, `「${p.base.name}」を手札に戻して「${target.base.name}」を場に残しますか？`, '残す（このキャラを手札へ）', '残さない'))) continue;
+          bounceCard(p); flog(target.owner, `【${p.base.name}】自身を手札に戻して「${target.base.name}」を場に残した`); await checkAllyLeave(p.owner, p, 'ownEffect'); render(); return true;
         } else if (prot.pay === 'koSelf') {
           // このキャラ(p)自身をKO(代わりにトラッシュへ)して target を守る。p===target は不可
           if (p === target) continue;

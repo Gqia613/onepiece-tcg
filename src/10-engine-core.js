@@ -473,7 +473,7 @@
       let _ec = b.cost || 0;
       { const o = card.owner; if (o && G.players[o]) { const L = G.players[o].leader; if (L && L.base.leader === 'teach' && !isNegated(L) && G.active !== o && G.players[o].chars.includes(card)) _ec += 1; } }
       if (!isNegated(card) && b.fx && b.fx.static) for (const o of b.fx.static) { if (o.op === 'staticCost' && (!o.cond || checkCond(o.cond, card.owner, card))) _ec += o.amount || 0; } // 常在「このキャラのコスト+N」（盤面の実効コストのみ。プレイコストには影響しない。cond対応）
-      { const ow2 = card.owner; if (ow2 && G.players[ow2]) for (const src of G.players[ow2].chars) { if (src === card || isNegated(src)) continue; const ss = src.base.fx && src.base.fx.static; if (!ss) continue; for (const o of ss) { if (o.op === 'allyCost' && (!o.cond || checkCond(o.cond, ow2, src)) && lightMatch(card, o.filter)) _ec += o.amount || 0; } } } // 自分の他キャラのstaticが「自分のフィルタ一致キャラのコスト±（allyCost）」（OP14-086ザラ：B・W全コスト+2）。lightMatchで再帰回避
+      { const ow2 = card.owner; if (ow2 && G.players[ow2]) for (const src of [G.players[ow2].leader, ...G.players[ow2].chars]) { if (!src || src === card || isNegated(src)) continue; const ss = src.base.fx && src.base.fx.static; if (!ss) continue; for (const o of ss) { if (o.op === 'allyCost' && (!o.cond || checkCond(o.cond, ow2, src)) && lightMatch(card, o.filter)) _ec += o.amount || 0; } } } // 自分の他キャラ/リーダーのstaticが「自分のフィルタ一致キャラのコスト±（allyCost）」（OP14-086ザラ：B・W全+2／OP10-042ウソップL：ドレスローザ+1）。lightMatchで再帰回避
       if (card.buffs) _ec += card.buffs.reduce((s, bf) => s + (bf.costAmt || 0), 0); // 盤面の一時コスト増減（addCostBuff）
       _ec = Math.max(0, _ec);
       if (f.minCost != null && _ec < f.minCost) return false;
