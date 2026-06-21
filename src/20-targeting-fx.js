@@ -322,6 +322,24 @@
           render(); break;
         }
         case 'activateSelf': { if (self) { self.rested = false; flog(side, `「${self.base.name}」をアクティブにした`); render(); } break; } // このキャラをアクティブにする（OP11-107チョンマゲ＝ターン終了時）
+        // ライフ上1枚を公開し、filter一致なら登場してもよい（一致しなければライフ上に残す。OP10-022ロー）
+        case 'revealLifePlay': {
+          if (!P.life.length) break;
+          const top = P.life[0]; flog(side, `ライフの上を公開: 「${top.base.name}」`);
+          if (matchFilter(top, op.filter || {})) {
+            if (P.isCPU || await confirmUse(side, '登場', `公開した「${top.base.name}」を登場させますか？`, '登場させる', 'しない')) { P.life.shift(); top.owner = side; await summon(side, top, false); }
+          }
+          render(); break;
+        }
+        // 相手のレストのドンN枚を「次のリフレッシュでアクティブにしない」（OP10-033ナミ）。beginTurnのリフレッシュで消化。
+        case 'donRefreshLock': { const O3 = G.players[o]; const n = Math.min(op.n || 1, O3.don.rested); O3._donRefreshLock = (O3._donRefreshLock || 0) + n; if (n) flog(side, `相手のレストのドン${n}枚は次のリフレッシュでアクティブにならない`); break; }
+        // このキャラを持ち主のデッキの下に置くコスト（OP10-026/027錦えもん）。払えたら then 実行。
+        case 'selfToBottomCost': {
+          if (!P.chars.includes(self)) break;
+          if (!(await confirmUse(side, '自身をデッキ下', `「${self.base.name}」をデッキの下に置いて効果を使いますか？`, '置いて使う'))) break;
+          P.don.active += self.attachedDon || 0; removeChar(self); P.deck.push(reset(self)); flog(side, `「${self.base.name}」をデッキの下に置いた`);
+          await checkAllyLeave(side, self, 'ownEffect'); await runFx(op.then, ctx); break;
+        }
         case 'lifeSwap': {
           if (!P.life.length) { flog(side, 'ライフが無く効果なし'); break; }
           if (P.isCPU) { P.hand.push(P.life.shift()); flog(side, '【ライフ操作】ライフ上1枚を手札に'); }
@@ -775,7 +793,9 @@
         case 'playSpecificFromHand': {
           let cands;
           if (op.nameIncludes) cands = P.hand.filter(x => x.base.name.includes(op.nameIncludes));
-          else cands = P.hand.filter(x => x.base.name === op.name);
+          else if (op.name) cands = P.hand.filter(x => x.base.name === op.name);
+          else cands = P.hand.slice();
+          if (op.filter) cands = cands.filter(x => matchFilter(x, op.filter)); // 追加の絞り込み（コスト等。OP10-026/027錦えもん=コスト6）
           const c = op.choose ? await chooseFromHand(side, cands, '登場させるキャラを選択' + (op.optional ? '（任意）' : ''), null, op.optional) : cands[0];
           if (c) { P.hand.splice(P.hand.indexOf(c), 1); await summon(side, c, op.noEnter); }
           break;

@@ -1182,5 +1182,77 @@ window.CARD_FX = {
   // OP12-066 カルネ: トラッシュにイベント4枚以上で【ブロッカー】を得る
   "OP12-066": {"static":[{"op":"staticKeyword","kw":"blocker","cond":{"trashEventAtLeast":4}}]},
   // OP13-112 ベガパンク: 付与ドン合計2枚以上で【ブロッカー】を得る
-  "OP13-112": {"static":[{"op":"staticKeyword","kw":"blocker","cond":{"selfAttachedDonAtLeast":2}}]}
+  "OP13-112": {"static":[{"op":"staticKeyword","kw":"blocker","cond":{"selfAttachedDonAtLeast":2}}]},
+  /* ===== OP10（パンクハザード）バッチ1（赤・001-021） ===== */
+  // OP10-001 スモーカー LEADER: 【相手のターン中】海軍/パンクハザードキャラ全+1000 ／【起動メイン】パワー7000以上がいればドン2アクティブ
+  "OP10-001": {"static":[{"op":"allyPower","cond":{"oppTurn":true},"power":1000,"filter":{"or":[{"traitIncludes":"海軍"},{"traitIncludes":"パンクハザード"}]}}],"act":{"label":"パワー7000以上がいればドン2アクティブ","cost":{},"fx":[{"op":"cond","check":{"selfCharCount":{"filter":{"minEffPower":7000},"min":1}},"then":[{"op":"donActivate","n":2}]}]}},
+  // OP10-003 シュガー LEADER: 【自分のターン終了時】パワー6000以上のドンキ海賊団がいればドン1アクティブ
+  "OP10-003": {"onTurnEnd":[{"op":"cond","check":{"selfCharCount":{"filter":{"minEffPower":6000,"traitIncludes":"ドンキホーテ海賊団"},"min":1}},"then":[{"op":"donActivate","n":1}]}]},
+  // OP10-004 ヴェルゴ: 【登場時】デッキ上5枚から「ヴェルゴ」以外のパンクハザード1枚を手札に(残りデッキ下)
+  "OP10-004": {"onPlay":[{"op":"search","look":5,"count":1,"filter":{"traitIncludes":"パンクハザード"},"exclude":"ヴェルゴ","optional":true}]},
+  // OP10-005 サンジ: 【自分のターン中】+3000 ／【KO時】1ドロー
+  "OP10-005": {"static":[{"op":"condBuff","cond":{"selfTurn":true},"power":3000}],"onKO":[{"op":"draw","n":1}]},
+  // OP10-006 シーザー・クラウン: 【登場時】デッキ上5枚から「スマイリー」1枚を手札に→手札から「スマイリー」1枚を登場
+  "OP10-006": {"onPlay":[{"op":"search","look":5,"count":1,"filter":{"nameIncludes":"スマイリー"},"optional":true},{"op":"playSpecificFromHand","name":"スマイリー","optional":true}]},
+  // OP10-007 シーザー兵: 【登場時】手札からコスト2以下のパンクハザード1枚を登場
+  "OP10-007": {"onPlay":[{"op":"playCharFromHand","filter":{"traitIncludes":"パンクハザード","maxCost":2},"count":1,"optional":true}]},
+  // OP10-008 スコッチ: 【ブロッカー】 ／【登場時】「ロック」がいなければ手札から「ロック」1枚を登場
+  "OP10-008": {"onPlay":[{"op":"cond","check":{"noSelfChar":{"nameIncludes":"ロック"}},"then":[{"op":"playSpecificFromHand","name":"ロック","optional":true}]}]},
+  // OP10-009 スマイリー: 【登場時】パンクハザードリーダーなら相手キャラ1枚を-3000
+  "OP10-009": {"onPlay":[{"op":"cond","check":{"leaderTraitIncludes":"パンクハザード"},"then":[{"op":"powerMod","side":"opp","amount":-3000,"duration":"turn","count":1,"optional":true}]}]},
+  // OP10-010 茶ひげ: 【アタック時】パワー6000以上のキャラが1枚以下なら このキャラ+1000
+  "OP10-010": {"onAttack":[{"op":"cond","check":{"selfCharCount":{"filter":{"minEffPower":6000},"max":1}},"then":[{"op":"powerMod","side":"self","target":"self","amount":1000,"duration":"turn"}]}]},
+  // OP10-011 トニートニー・チョッパー: 【ブロッカー】 ／【相手のターン中】+2000
+  "OP10-011": {"static":[{"op":"condBuff","cond":{"oppTurn":true},"power":2000}]},
+  // OP10-015 モチャ: 【登場時】相手キャラ1枚を-1000
+  "OP10-015": {"onPlay":[{"op":"powerMod","side":"opp","amount":-1000,"duration":"turn","count":1,"optional":true}]},
+  // OP10-016 モネ: 【起動メイン】レスト：リーダーかキャラ1枚にレストのドン2付与→相手キャラ1枚を-1000
+  "OP10-016": {"act":{"label":"レスト:レストのドン2付与→相手-1000","cost":{"restSelf":true},"fx":[{"op":"donAttach","target":"chooseOwn","n":2},{"op":"powerMod","side":"opp","amount":-1000,"duration":"turn","count":1,"optional":true}]}},
+  // OP10-017 ロック: 【登場時】「スコッチ」がいなければ手札から「スコッチ」1枚を登場
+  "OP10-017": {"onPlay":[{"op":"cond","check":{"noSelfChar":{"nameIncludes":"スコッチ"}},"then":[{"op":"playSpecificFromHand","name":"スコッチ","optional":true}]}]},
+  // OP10-018 カマクラ十草紙: 【カウンター】リーダーかキャラ+3000→相手リーダーかキャラ-2000
+  "OP10-018": {"counter":{"cost":0,"fx":[{"op":"powerMod","side":"self","leader":true,"amount":3000,"battle":true,"count":1,"optional":true},{"op":"powerMod","side":"opp","leader":true,"amount":-2000,"duration":"turn","count":1,"optional":true}]}},
+  // OP10-019 神避: 【メイン】ドン5レスト：相手のパワー8000以下1枚KO ／【カウンター】リーダー+3000
+  "OP10-019": {"main":{"fx":[{"op":"restDonCost","n":5,"then":[{"op":"ko","side":"opp","filter":{"maxEffPower":8000},"count":1,"optional":true}]}]},"counter":{"cost":0,"fx":[{"op":"leaderBuff","amount":3000,"duration":"battle"}]}},
+  // OP10-020 ゴムゴムのUFO: 【メイン】相手キャラ1枚を-4000→自ライフ2枚以下ならリーダーかキャラ+1000
+  "OP10-020": {"main":{"fx":[{"op":"powerMod","side":"opp","amount":-4000,"duration":"turn","count":1,"optional":true},{"op":"cond","check":{"lifeAtMost":2},"then":[{"op":"powerMod","side":"self","leader":true,"amount":1000,"duration":"turn","count":1,"optional":true}]}]}},
+  // OP10-021 パンクハザード(STAGE): 【起動メイン】レスト：シーザー・クラウンリーダーならリーダーかキャラ1枚にレストのドン1付与
+  "OP10-021": {"act":{"label":"レスト:シーザーならレストのドン1付与","cost":{"restSelf":true},"fx":[{"op":"cond","check":{"leaderNameIncludes":"シーザー・クラウン"},"then":[{"op":"donAttach","target":"chooseOwn","n":1}]}]}},
+  /* ===== OP10 バッチ2（緑・022-041。ODYSSEY/レスト参照） ===== */
+  // OP10-022 トラファルガー・ロー LEADER: 【ドン×1】【起動メイン】キャラのコスト合計5以上で 自キャラ1枚を手札に戻す：ライフ上を公開しコスト5以下超新星キャラなら登場してもよい
+  "OP10-022": {"act":{"label":"自キャラを戻しライフ公開→超新星を登場","cost":{},"fx":[{"op":"cond","check":{"and":[{"donX1":true},{"selfCharCostSumAtLeast":5}]},"then":[{"op":"bounceOwnCharCost","then":[{"op":"revealLifePlay","filter":{"type":"CHAR","traitIncludes":"超新星","maxCost":5}}]}]}]}},
+  // OP10-023 イッショウ: 【登場時】海軍リーダーなら相手コスト5以下2枚レスト
+  "OP10-023": {"onPlay":[{"op":"cond","check":{"leaderTraitIncludes":"海軍"},"then":[{"op":"restChar","side":"opp","filter":{"maxCost":5},"count":2,"optional":true}]}]},
+  // OP10-024 エドワード・ニューゲート: 【登場時】レストのキャラ2枚以上なら相手コスト5以下1枚レスト→相手のレストのコスト3以下1枚KO
+  "OP10-024": {"onPlay":[{"op":"cond","check":{"selfRestedCharsAtLeast":2},"then":[{"op":"restChar","side":"opp","filter":{"maxCost":5},"count":1,"optional":true},{"op":"ko","side":"opp","filter":{"restedOnly":true,"maxCost":3},"count":1,"optional":true}]}]},
+  // OP10-025 エネル: 【登場時】レストのキャラ2枚以上なら3ドロー＋手札2枚を捨てる
+  "OP10-025": {"onPlay":[{"op":"cond","check":{"selfRestedCharsAtLeast":2},"then":[{"op":"draw","n":3},{"op":"discardCost","count":2}]}]},
+  // OP10-026 錦えもん(c2 p1000): 【起動メイン】自身＋トラッシュのパワー0「錦えもん」をデッキ下：手札からコスト6「錦えもん」を登場 ※近似(トラッシュ条件は任意)
+  "OP10-026": {"act":{"label":"自身をデッキ下:コスト6錦えもん登場","cost":{},"fx":[{"op":"selfToBottomCost","then":[{"op":"trashToDeckCost","n":1,"filter":{"nameIncludes":"錦えもん","basePower":0},"optional":true},{"op":"playSpecificFromHand","nameIncludes":"錦えもん","filter":{"cost":6},"optional":true}]}]}},
+  // OP10-027 錦えもん(c2 p0): 同上（トラッシュ側パワー1000）
+  "OP10-027": {"act":{"label":"自身をデッキ下:コスト6錦えもん登場","cost":{},"fx":[{"op":"selfToBottomCost","then":[{"op":"trashToDeckCost","n":1,"filter":{"nameIncludes":"錦えもん","basePower":1000},"optional":true},{"op":"playSpecificFromHand","nameIncludes":"錦えもん","filter":{"cost":6},"optional":true}]}]}},
+  // OP10-028 光月モモの助: 【起動メイン】ドン2レスト＋自身トラッシュ：デッキ上5枚から赤鞘九人男2枚を手札に(残りデッキ下)
+  "OP10-028": {"act":{"label":"ドン2レスト+自身トラッシュ:赤鞘2枚回収","cost":{},"fx":[{"op":"restDonCost","n":2,"then":[{"op":"trashSelfCost","then":[{"op":"search","look":5,"count":2,"filter":{"traitIncludes":"赤鞘九人男"},"optional":true}]}]}]}},
+  // OP10-029 ジュラキュール・ミホーク: 【登場時】レストのキャラ2枚以上なら 自分のレストのコスト5以下ODYSSEY1枚をアクティブ
+  "OP10-029": {"onPlay":[{"op":"cond","check":{"selfRestedCharsAtLeast":2},"then":[{"op":"activateOwnChar","count":1,"filter":{"restedOnly":true,"maxCost":5,"traitIncludes":"ODYSSEY"}}]}]},
+  // OP10-030 スモーカー(c5): 【バニッシュ】 ／【起動メイン】ドン1アクティブ（※「以後キャラ効果でドン不可」の制約は未実装）
+  "OP10-030": {"act":{"label":"ドン1アクティブ","cost":{},"fx":[{"op":"donActivate","n":1}]}},
+  // OP10-032 たしぎ: 「たしぎ」以外の自分の緑キャラが相手効果で離れる場合、代わりにこのキャラをレスト
+  "OP10-032": {"static":[{"op":"leaveProtect","pay":"restSelf","targetFilter":{"color":"緑","nameExcludes":"たしぎ"}}]},
+  // OP10-033 ナミ: 【登場時】レストのODYSSEYキャラ2枚以上なら 相手のレストのドン1枚は次のリフレッシュでアクティブにならない
+  "OP10-033": {"onPlay":[{"op":"cond","check":{"selfRestedCharsAtLeast":2},"then":[{"op":"donRefreshLock","n":1}]}]},
+  // OP10-034 フランキー: 【ターン1回】このキャラがバトルでKOされる場合、代わりにライフ上1枚を手札に加えてもよい
+  "OP10-034": {"static":[{"op":"leaveProtect","targetSelf":true,"includeBattle":true,"once":"turn","pay":"lifeToHand"}]},
+  // OP10-035 ブルック: 【KO時】相手のリーダーかコスト5以下1枚をレスト
+  "OP10-035": {"onKO":[{"op":"restChar","side":"opp","filter":{"maxCost":5},"includeLeader":true,"count":1,"optional":true}]},
+  // OP10-037 リム: このキャラが相手効果で離れる場合 代わりにODYSSEY1枚をレスト ／【自分のターン終了時】ODYSSEY1枚をアクティブ
+  "OP10-037": {"static":[{"op":"leaveProtect","targetSelf":true,"once":"turn","pay":"restOwnCards","n":1,"filter":{"traitIncludes":"ODYSSEY"}}],"onTurnEnd":[{"op":"activateOwnChar","count":1,"filter":{"restedOnly":true,"traitIncludes":"ODYSSEY"}}]},
+  // OP10-038 ロロノア・ゾロ: 【相手のターン中】レストのキャラ2枚以上で +2000
+  "OP10-038": {"static":[{"op":"condBuff","cond":{"oppTurn":true,"selfRestedCharsAtLeast":2},"power":2000}]},
+  // OP10-039 ゴムゴムの龍火炎銃巻き星: 【メイン】ODYSSEYリーダーなら デッキ上5枚からODYSSEYキャラ2枚を手札に
+  "OP10-039": {"main":{"fx":[{"op":"cond","check":{"leaderTraitIncludes":"ODYSSEY"},"then":[{"op":"search","look":5,"count":2,"filter":{"traitIncludes":"ODYSSEY","type":"CHAR"},"optional":true}]}]}},
+  // OP10-040 弱ェ奴は死に方も選べねェ: 【メイン】/【カウンター】相手のレストのコスト7以下1枚KO
+  "OP10-040": {"main":{"fx":[{"op":"ko","side":"opp","filter":{"restedOnly":true,"maxCost":7},"count":1,"optional":true}]},"counter":{"cost":0,"fx":[{"op":"ko","side":"opp","filter":{"restedOnly":true,"maxCost":7},"count":1,"optional":true}]}},
+  // OP10-041 ラジオナイフ: 【メイン】相手コスト6以下1枚レスト→相手のレストのコスト5以下1枚KO
+  "OP10-041": {"main":{"fx":[{"op":"restChar","side":"opp","filter":{"maxCost":6},"count":1,"optional":true},{"op":"ko","side":"opp","filter":{"restedOnly":true,"maxCost":5},"count":1,"optional":true}]}}
 };

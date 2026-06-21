@@ -221,6 +221,8 @@
       if (c.oppLifeAtLeast != null && O.life.length < c.oppLifeAtLeast) return false; // 相手のライフN枚以上（OP11-102ケイミー）
       if (c.totalLifeAtLeast != null && (P.life.length + O.life.length) < c.totalLifeAtLeast) return false; // お互いのライフ合計N枚以上（OP11-114ゴムゴムの火拳銃）
       if (c.restedDonAtLeast != null && (P.don.rested || 0) < c.restedDonAtLeast) return false; // 自分のレストのドンN枚以上（OP12-021いっぽんマツ）
+      if (c.selfRestedCharsAtLeast != null && P.chars.filter(ch => ch.rested).length < c.selfRestedCharsAtLeast) return false; // 自分のレストのキャラN枚以上（OP10白ひげ/エネル/ミホーク/ゾロ）
+      if (c.selfCharCostSumAtLeast != null && P.chars.reduce((s, ch) => s + (ch.base.cost || 0), 0) < c.selfCharCostSumAtLeast) return false; // 自分のキャラのコスト合計N以上（OP10-022ロー）
       if (c.selfTurn && G.active !== side) return false;
       if (c.oppTurn && G.active === side) return false;
       return true;
@@ -443,6 +445,8 @@
     // 軽量フィルタ（base のみ参照。effコスト/power を呼ばない＝再帰しない）。allyPower/allyCost の対象判定用。
     function lightMatch(card, f) {
       if (!f) return true; const b = card.base;
+      if (f.or && !f.or.some(sub => lightMatch(card, sub))) return false; // いずれか一致（再帰だがlightMatchなのでpower()を呼ばない＝安全。OP10-001スモーカー海軍/パンクハザード）
+      if (f.and && !f.and.every(sub => lightMatch(card, sub))) return false;
       if (f.type && b.type !== f.type) return false;
       if (f.trait && !(b.traits || []).includes(f.trait)) return false;
       if (f.traitIncludes && !(b.traits || []).some(t => t.includes(f.traitIncludes))) return false;

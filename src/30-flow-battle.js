@@ -205,7 +205,8 @@
       P.denyBlock = false;
       // リフレッシュ
       setPhase('リフレッシュ');
-      P.don.active += P.don.rested; P.don.rested = 0;
+      const _refLock = Math.min(P._donRefreshLock || 0, P.don.rested); P._donRefreshLock = 0; // ドンN枚は次のリフレッシュでアクティブにならない（OP10-033ナミ）
+      P.don.active += P.don.rested - _refLock; P.don.rested = _refLock;
       const ret = c => { P.don.active += c.attachedDon; c.attachedDon = 0; };
       ret(P.leader); P.chars.forEach(ret); if (P.stage) ret(P.stage);
       const ready = c => { if (c.frozen) { c.frozen = false; } else c.rested = false; };
