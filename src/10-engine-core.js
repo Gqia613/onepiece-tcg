@@ -336,7 +336,7 @@
         }
         // 自分の他のキャラ/リーダーの static が「自分のフィルタ一致キャラにパワー±（allyPower）」を課す場合（OP14-034ルフィ：緑コスト4以上の麦わら全+1000）。
         // lightMatch を使い再帰（minEffPower等→power()）を避ける。
-        for (const src of [G.players[card.owner].leader, ...G.players[card.owner].chars]) {
+        for (const src of [G.players[card.owner].leader, ...G.players[card.owner].chars, G.players[card.owner].stage]) {
           if (!src || src === card || isNegated(src)) continue;
           const ss = src.base.fx && src.base.fx.static; if (!ss) continue;
           for (const o of ss) { if (o.op === 'allyPower' && (!o.cond || checkCond(o.cond, src.owner, src)) && lightMatch(card, o.filter)) p += o.power || 0; }

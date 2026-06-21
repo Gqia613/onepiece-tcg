@@ -292,7 +292,7 @@
           }
           break;
         }
-        case 'donAttachAll': { const targets = op.incLeader ? [P.leader, ...P.chars] : P.chars; for (const t of targets) { const k = Math.min(op.n, P.don.rested); t.attachedDon += k; P.don.rested -= k; } flog(side, op.incLeader ? 'リーダーとキャラ全てにレストのドン付与' : '自キャラにレストのドン付与'); break; }
+        case 'donAttachAll': { let targets = op.incLeader ? [P.leader, ...P.chars] : P.chars; if (op.filter) targets = targets.filter(t => matchFilter(t, op.filter)); if (op.max != null) targets = targets.slice(0, op.max); for (const t of targets) { const k = Math.min(op.n, P.don.rested); t.attachedDon += k; P.don.rested -= k; } flog(side, op.incLeader ? 'リーダーとキャラにレストのドン付与' : '自キャラにレストのドン付与'); render(); break; } // filter=対象限定／max=最大対象数（OP08-001チョッパーL＝動物/ドラム王国3枚まで1枚ずつ）
         case 'selfToHand': { const z = P.trash; const i = z.indexOf(self); if (i >= 0) { z.splice(i, 1); P.hand.push(self); flog(side, `「${self.base.name}」をトラッシュから手札に加えた`); } break; }
         case 'giveKeyword': {
           if (op.target === 'allOwn' || op.target === 'allOwnL') { // 条件一致の自分のキャラ（Lはリーダー含む）全てに付与
@@ -373,6 +373,17 @@
         }
         // 相手のレストのドンN枚を「次のリフレッシュでアクティブにしない」（OP10-033ナミ）。beginTurnのリフレッシュで消化。
         case 'donRefreshLock': { const O3 = G.players[o]; const n = Math.min(op.n || 1, O3.don.rested); O3._donRefreshLock = (O3._donRefreshLock || 0) + n; if (n) flog(side, `相手のレストのドン${n}枚は次のリフレッシュでアクティブにならない`); break; }
+        // 相手のレストのキャラを「次の相手のリフレッシュでアクティブにしない」（OP08ミンク族）。_noRefreshSeqに相手の次ターンseqをセット。
+        case 'lockRefresh': {
+          const seq = G.turnSeq + 1;
+          if (op.all) { for (const t of oppChars(side, opFilter(op)).filter(c => c.rested)) t._noRefreshSeq = seq; flog(side, '相手のレストのキャラは次のリフレッシュでアクティブにならない'); render(); break; }
+          for (let i = 0; i < (op.count || 1); i++) { const cands = oppChars(side, opFilter(op)).filter(c => c.rested && c._noRefreshSeq !== seq); const t = P.isCPU ? cands[0] : await chooseCard(side, cands, '次のリフレッシュでアクティブにしない相手キャラ', 'oppBig', op.optional); if (!t) break; t._noRefreshSeq = seq; flog(side, `「${t.base.name}」は次のリフレッシュでアクティブにならない`); }
+          render(); break;
+        }
+        // 相手のアクティブのドンをN枚レストにする（OP08-030ペドロ）
+        case 'restOppDon': { const O4 = G.players[o]; const n = Math.min(op.n || 1, O4.don.active); O4.don.active -= n; O4.don.rested += n; if (n) flog(side, `相手のドン${n}枚をレストにした`); render(); break; }
+        // このキャラを持ち主の手札に戻すコスト（OP08-041アフェランドラ）。払えたら then。
+        case 'bounceSelfCost': { if (!self || !(P.chars.includes(self))) break; if (!(await confirmUse(side, '自身を手札へ', `「${self.base.name}」を手札に戻して効果を使いますか？`, '戻して使う'))) break; bounceCard(self); flog(side, `「${self.base.name}」を手札に戻した`); await checkAllyLeave(side, self, 'ownEffect'); await runFx(op.then, ctx); break; }
         // 自分の元々パワーN以下のキャラを、durationの間、相手の効果でKOされないようにする（OP10-070トレーボル）
         case 'grantWeakKoImmune': { P._weakKoImmune = { until: durSeq(op.duration || 'untilNextEnd'), maxBasePower: op.maxBasePower || 1000 }; flog(side, `元々パワー${op.maxBasePower || 1000}以下の自キャラは相手の効果でKOされない`); break; }
         // filter一致の自キャラを、durationの間、効果でKOされないようにする（OP09-033ロビン＝ODYSSEY/麦わら）
@@ -417,7 +428,7 @@
         }
         case 'bottomOwn': { for (let i = 0; i < op.n; i++) { const c = await chooseFromHand(side, P.hand, 'デッキ下に置く手札を選択'); if (!c) break; P.hand.splice(P.hand.indexOf(c), 1); P.deck.push(reset(c)); } flog(side, `手札${op.n}枚をデッキ下`); break; }
         // デッキ上 look 枚から filter一致のキャラ1枚を登場、残りをデッキ下（OP11-051サンジ）。grantKwで登場時付与。
-        case 'playFromDeck': { const look = P.deck.splice(0, op.look || 5); const cands = look.filter(c => c.base.type === 'CHAR' && matchFilter(c, op.filter || {})); const pc = P.isCPU ? cands.slice().sort((a, b) => (b.base.power || 0) - (a.base.power || 0))[0] : await chooseCard(side, cands, '登場させるキャラを選択（任意）', 'ownBig', true); if (pc) { look.splice(look.indexOf(pc), 1); await summon(side, pc, false); if (op.grantKw && P.chars.includes(pc)) pc.kwGrant.push({ kw: op.grantKw, dur: durTag(op.grantDuration, 'turn') }); } for (const r of look) P.deck.push(r); flog(side, `デッキ上${op.look || 5}枚から登場/デッキ下`); render(); break; }
+        case 'playFromDeck': { const look = P.deck.splice(0, op.look || 5); const cands = look.filter(c => c.base.type === 'CHAR' && matchFilter(c, op.filter || {})); const pc = P.isCPU ? cands.slice().sort((a, b) => (b.base.power || 0) - (a.base.power || 0))[0] : await chooseCard(side, cands, '登場させるキャラを選択（任意）', 'ownBig', true); if (pc) { look.splice(look.indexOf(pc), 1); await summon(side, pc, false); if (op.rested && P.chars.includes(pc)) pc.rested = true; if (op.grantKw && P.chars.includes(pc)) pc.kwGrant.push({ kw: op.grantKw, dur: durTag(op.grantDuration, 'turn') }); } for (const r of look) P.deck.push(r); flog(side, `デッキ上${op.look || 5}枚から登場/デッキ下`); render(); break; } // rested=レストで登場（OP08-007チョッパー）
         case 'discardOwn': { const n = op.all ? P.hand.length : (op.toSize != null ? Math.max(0, P.hand.length - op.toSize) : op.n); for (let i = 0; i < n; i++) { const c = await chooseFromHand(side, P.hand, '⚠ 捨てる手札を選択', null, false, 'danger'); if (!c) break; P.hand.splice(P.hand.indexOf(c), 1); P.trash.push(reset(c)); } if (n) { flog(side, `手札${n}枚を捨てた`); await fireHandDiscarded(side, n); } break; }
         case 'cond': if (checkCond(op.check, side, self)) await runFx(op.then, ctx); else if (op.else) await runFx(op.else, ctx); break;
         // 手札公開コスト: 手札の filter 一致カードを count 枚公開できる場合のみ then を実行（公開=手札に残す。任意）
@@ -919,6 +930,8 @@
       // 一時的な「自分の元々パワーN以下のキャラは相手の効果でKOされない」（OP10-070トレーボル＝次相手ターン終了まで）
       if (cause === 'ko') { const wk = G.players[target.owner] && G.players[target.owner]._weakKoImmune; if (wk && G.turnSeq <= wk.until && (target.base.power || 0) <= wk.maxBasePower) { flog(target.owner, `「${target.base.name}」は元々パワー${wk.maxBasePower}以下なので相手の効果でKOされない`); return true; } }
       if (cause === 'ko') { const tk = G.players[target.owner] && G.players[target.owner]._traitKoImmune; if (tk && G.turnSeq <= tk.until && matchFilter(target, tk.filter)) { flog(target.owner, `「${target.base.name}」は効果でKOされない`); return true; } } // 一時的なfilter一致KO耐性（OP09-033ロビン）
+      // 自分の他キャラが提供する「アクティブの時、filter一致の味方は効果でKOされない」常在（OP08-029ペコムズ）
+      if (cause === 'ko') { const ow = G.players[target.owner]; for (const src of ow.chars) { if (src === target || isNegated(src) || src.rested) continue; const st = src.base.fx && src.base.fx.static; if (!st) continue; for (const ob of st) { if (ob.op === 'allyKoImmune' && lightMatch(target, ob.filter)) { flog(target.owner, `「${target.base.name}」は効果でKOされない`); return true; } } } }
       // 「このキャラはバトルでKOされない」常在（condBuff battleImmune・cond対応。OP10-104カリブー）
       if (cause === 'battle' && !isNegated(target)) { const st = target.base.fx && target.base.fx.static; if (st) for (const o of st) { if (o.op === 'condBuff' && o.battleImmune && (!o.cond || checkCond(o.cond, target.owner, target))) { flog(target.owner, `「${target.base.name}」はバトルではKOされない`); return true; } } }
       // 「相手の元々パワーN以下のキャラの効果でKOされない」(OP14-003ベッジ。source=KO元のキャラ)

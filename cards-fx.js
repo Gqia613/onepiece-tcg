@@ -1586,5 +1586,75 @@ window.CARD_FX = {
   // OP09-117 デレシ!!: 【メイン】デッキ上5枚から「自身」以外の【トリガー】持ち2枚を手札に
   "OP09-117": {"main":{"fx":[{"op":"search","look":5,"count":2,"filter":{"hasTrigger":true},"exclude":"デレシ!!","optional":true}]}},
   // OP09-119 モンキー・D・ルフィ(c9): 【登場時】ドン-1：1ドロー＋このターン【速攻】
-  "OP09-119": {"onPlay":[{"op":"donMinus","n":1},{"op":"draw","n":1},{"op":"giveKeyword","target":"self","kw":"rush","duration":"turn"}]}
+  "OP09-119": {"onPlay":[{"op":"donMinus","n":1},{"op":"draw","n":1},{"op":"giveKeyword","target":"self","kw":"rush","duration":"turn"}]},
+  /* ===== OP08（二つの伝説）バッチ1（赤・001-021＝ドラム王国/動物） ===== */
+  // OP08-001 トニートニー・チョッパー LEADER: 【起動メイン】【ターン1回】動物/ドラム王国3枚までにレストのドン1ずつ付与
+  "OP08-001": {"act":{"label":"動物/ドラム王国3枚にレストのドン付与","cost":{},"fx":[{"op":"donAttachAll","n":1,"max":3,"filter":{"or":[{"traitIncludes":"動物"},{"traitIncludes":"ドラム王国"}]}}]}},
+  // OP08-004 クロマーリモ: 【登場時】自分の「チェス」がいれば相手のパワー3000以下1枚KO
+  "OP08-004": {"onPlay":[{"op":"cond","check":{"selfChar":{"nameIncludes":"チェス"}},"then":[{"op":"ko","side":"opp","filter":{"maxEffPower":3000},"count":1,"optional":true}]}]},
+  // OP08-005 チェス: 【登場時】相手キャラ1枚を-2000→「クロマーリモ」がいなければ手札から「クロマーリモ」1枚を登場
+  "OP08-005": {"onPlay":[{"op":"powerMod","side":"opp","amount":-2000,"duration":"turn","count":1,"optional":true},{"op":"cond","check":{"noSelfChar":{"nameIncludes":"クロマーリモ"}},"then":[{"op":"playSpecificFromHand","name":"クロマーリモ","optional":true}]}]},
+  // OP08-006 チェスマーリモ: 【自分のターン中】トラッシュに「クロマーリモ」と「チェス」があれば+2000
+  "OP08-006": {"static":[{"op":"condBuff","cond":{"and":[{"selfTurn":true},{"trashCount":{"filter":{"nameIncludes":"クロマーリモ"},"min":1}},{"trashCount":{"filter":{"nameIncludes":"チェス"},"min":1}}]},"power":2000}]},
+  // OP08-007 トニートニー・チョッパー(c3): 【自分のターン中】【登場時】/【アタック時】デッキ上5枚からパワー4000以下の動物1枚をレストで登場
+  "OP08-007": {"onPlay":[{"op":"cond","check":{"selfTurn":true},"then":[{"op":"playFromDeck","look":5,"rested":true,"filter":{"traitIncludes":"動物","maxPower":4000}}]}],"onAttack":[{"op":"playFromDeck","look":5,"rested":true,"filter":{"traitIncludes":"動物","maxPower":4000}}]},
+  // OP08-008 ドルトン: 【登場時】相手キャラ1枚を-1000 ／【ドン×1】【起動メイン】【ターン1回】ライフ上1枚を手札に：このターン【速攻】
+  "OP08-008": {"onPlay":[{"op":"powerMod","side":"opp","amount":-1000,"duration":"turn","count":1,"optional":true}],"act":{"label":"ライフ上1枚を手札に:このターン速攻","cost":{},"fx":[{"op":"cond","check":{"donX1":true},"then":[{"op":"lifeCost","then":[{"op":"giveKeyword","target":"self","kw":"rush","duration":"turn"}]}]}]}},
+  // OP08-010 ハイキングベア: 【ドン×1】【起動メイン】【ターン1回】このキャラ以外の動物1枚を+1000
+  "OP08-010": {"act":{"label":"他の動物1枚を+1000","cost":{},"fx":[{"op":"cond","check":{"donX1":true},"then":[{"op":"powerMod","side":"self","amount":1000,"duration":"turn","count":1,"optional":true,"filter":{"traitIncludes":"動物"}}]}]}},
+  // OP08-012 ラパーン: 【ドン×2】【アタック時】ドラム王国リーダーなら相手のパワー4000以下1枚KO
+  "OP08-012": {"onAttack":[{"op":"cond","check":{"and":[{"donX2":true},{"leaderTraitIncludes":"ドラム王国"}]},"then":[{"op":"ko","side":"opp","filter":{"maxEffPower":4000},"count":1,"optional":true}]}]},
+  // OP08-013 ロブソン: 【ドン×2】【速攻】
+  "OP08-013": {"static":[{"op":"staticKeyword","kw":"rush","cond":{"donX2":true}}]},
+  // OP08-014 ワポル: 【ドン×1】【アタック時】相手キャラ1枚を-2000→このキャラは次相手ターン終了まで+2000
+  "OP08-014": {"onAttack":[{"op":"cond","check":{"donX1":true},"then":[{"op":"powerMod","side":"opp","amount":-2000,"duration":"turn","count":1,"optional":true},{"op":"powerMod","side":"self","target":"self","amount":2000,"duration":"untilNextEnd"}]}]},
+  // OP08-015 Dr.くれは: 【登場時】デッキ上4枚から「くれは」以外のドラム王国か「チョッパー」1枚を手札に
+  "OP08-015": {"onPlay":[{"op":"search","look":4,"count":1,"filter":{"or":[{"traitIncludes":"ドラム王国"},{"nameIncludes":"トニートニー・チョッパー"}]},"exclude":"Dr.くれは","optional":true}]},
+  // OP08-016 Dr.ヒルルク: 【起動メイン】レスト：チョッパーリーダーなら自分の「チョッパー」すべて+2000
+  "OP08-016": {"act":{"label":"レスト:チョッパー全+2000","cost":{"restSelf":true},"fx":[{"op":"cond","check":{"leaderNameIncludes":"トニートニー・チョッパー"},"then":[{"op":"powerMod","side":"self","all":true,"amount":2000,"duration":"turn","filter":{"nameIncludes":"トニートニー・チョッパー"}}]}]}},
+  // OP08-017 おれは決して お前を撃たねェ!!!!: 【カウンター】リーダーかキャラ+4000→相手のリーダーかキャラ-1000
+  "OP08-017": {"counter":{"cost":0,"fx":[{"op":"powerMod","side":"self","leader":true,"amount":4000,"battle":true,"count":1,"optional":true},{"op":"powerMod","side":"opp","leader":true,"amount":-1000,"duration":"turn","count":1,"optional":true}]}},
+  // OP08-018 刻蹄『桜』: 【メイン】自分のキャラ3枚を+1000→相手キャラ1枚を-2000
+  "OP08-018": {"main":{"fx":[{"op":"powerMod","side":"self","amount":1000,"duration":"turn","count":3,"optional":true},{"op":"powerMod","side":"opp","amount":-2000,"duration":"turn","count":1,"optional":true}]}},
+  // OP08-019 バクバク食: 【メイン】/【カウンター】相手キャラ1枚を-3000→自分のキャラ1枚を+3000
+  "OP08-019": {"main":{"fx":[{"op":"powerMod","side":"opp","amount":-3000,"duration":"turn","count":1,"optional":true},{"op":"powerMod","side":"self","amount":3000,"duration":"turn","count":1,"optional":true}]},"counter":{"cost":0,"fx":[{"op":"powerMod","side":"opp","amount":-3000,"duration":"turn","count":1,"optional":true},{"op":"powerMod","side":"self","leader":true,"amount":3000,"battle":true,"count":1,"optional":true}]}},
+  // OP08-020 ドラム王国(STAGE): 【相手のターン中】自分のドラム王国キャラ全+1000
+  "OP08-020": {"static":[{"op":"allyPower","cond":{"oppTurn":true},"power":1000,"filter":{"traitIncludes":"ドラム王国"}}]},
+  /* ===== OP08 バッチ2（緑・022-041＝ミンク族・リフレッシュロック） ===== */
+  // OP08-022 イヌアラシ: 【登場時】ミンク族リーダーなら相手のレストのコスト5以下2枚を次リフレッシュロック
+  "OP08-022": {"onPlay":[{"op":"cond","check":{"leaderTraitIncludes":"ミンク族"},"then":[{"op":"lockRefresh","filter":{"maxCost":5},"count":2,"optional":true}]}]},
+  // OP08-023 キャロット: 【登場時】/【アタック時】相手のレストのコスト7以下1枚を次リフレッシュロック
+  "OP08-023": {"onPlay":[{"op":"lockRefresh","filter":{"maxCost":7},"count":1,"optional":true}],"onAttack":[{"op":"lockRefresh","filter":{"maxCost":7},"count":1,"optional":true}]},
+  // OP08-024 コンスロット: 【アタック時】相手のレストのコスト4以下1枚を次リフレッシュロック
+  "OP08-024": {"onAttack":[{"op":"lockRefresh","filter":{"maxCost":4},"count":1,"optional":true}]},
+  // OP08-025 シシリアン: 【登場時】相手のレストのコスト3以下1枚を次リフレッシュロック
+  "OP08-025": {"onPlay":[{"op":"lockRefresh","filter":{"maxCost":3},"count":1,"optional":true}]},
+  // OP08-026 ジョバンニ: 【ドン×1】【アタック時】相手のレストのコスト1以下1枚を次リフレッシュロック
+  "OP08-026": {"onAttack":[{"op":"cond","check":{"donX1":true},"then":[{"op":"lockRefresh","filter":{"maxCost":1},"count":1,"optional":true}]}]},
+  // OP08-028 ネコマムシ: 【登場時】相手のレストのカードが7枚以上なら このターン【速攻】
+  "OP08-028": {"onPlay":[{"op":"cond","check":{"oppRestedCardsAtLeast":7},"then":[{"op":"giveKeyword","target":"self","kw":"rush","duration":"turn"}]}]},
+  // OP08-029 ペコムズ: アクティブの時、「ペコムズ」以外のコスト3以下ミンク族は効果でKOされない
+  "OP08-029": {"static":[{"op":"allyKoImmune","filter":{"maxBaseCost":3,"traitIncludes":"ミンク族"}}]},
+  // OP08-030 ペドロ: 【ブロッカー】 ／【KO時】相手のドン1枚をレスト か 相手のレストのコスト6以下1枚KO
+  "OP08-030": {"onKO":[{"op":"chooseOption","options":[{"label":"相手のドン1枚をレスト","fx":[{"op":"restOppDon","n":1}]},{"label":"相手のレストのコスト6以下1枚KO","fx":[{"op":"ko","side":"opp","filter":{"restedOnly":true,"maxCost":6},"count":1,"optional":true}]}]}]},
+  // OP08-031 ミヤギ: 【登場時】コスト2以下のミンク族1枚をアクティブ
+  "OP08-031": {"onPlay":[{"op":"activateOwnChar","count":1,"filter":{"restedOnly":true,"maxCost":2,"traitIncludes":"ミンク族"}}]},
+  // OP08-032 ミルキー: 【起動メイン】レスト：ミンク族リーダーならドン1アクティブ
+  "OP08-032": {"act":{"label":"レスト:ミンク族ならドン1アクティブ","cost":{"restSelf":true},"fx":[{"op":"cond","check":{"leaderTraitIncludes":"ミンク族"},"then":[{"op":"donActivate","n":1}]}]}},
+  // OP08-033 ロディ: 【登場時】ミンク族リーダー＋相手のレストのカード7枚以上なら相手のレストのコスト2以下1枚KO
+  "OP08-033": {"onPlay":[{"op":"cond","check":{"and":[{"leaderTraitIncludes":"ミンク族"},{"oppRestedCardsAtLeast":7}]},"then":[{"op":"ko","side":"opp","filter":{"restedOnly":true,"maxCost":2},"count":1,"optional":true}]}]},
+  // OP08-034 ワンダ: 【登場時】デッキ上5枚から「ワンダ」以外のミンク族1枚を手札に
+  "OP08-034": {"onPlay":[{"op":"search","look":5,"count":1,"filter":{"traitIncludes":"ミンク族"},"exclude":"ワンダ","optional":true}]},
+  // OP08-036 エレクトリカルルナ: 【メイン】相手のレストのコスト7以下すべてを次リフレッシュロック
+  "OP08-036": {"main":{"fx":[{"op":"lockRefresh","all":true,"filter":{"maxCost":7}}]}},
+  // OP08-037 ガルチュー: 【メイン】ミンク族1枚をレスト：相手キャラ1枚をレスト
+  "OP08-037": {"main":{"fx":[{"op":"restOwnAsCost","filter":{"traitIncludes":"ミンク族"},"then":[{"op":"restChar","side":"opp","count":1,"optional":true}]}]}},
+  // OP08-038 敵に“仲間”は売らんぜよ!!!: 【メイン】自分のキャラ2枚をレスト：自分のキャラ全ては次相手ターン終了まで効果でKOされない
+  "OP08-038": {"main":{"fx":[{"op":"restOwnAsCost","count":2,"then":[{"op":"grantTraitKoImmune","duration":"untilNextEnd","filter":{"type":"CHAR"}}]}]}},
+  // OP08-039 ゾウ(STAGE): 【起動メイン】レスト：ミンク族リーダーならドン1アクティブ ／【自分のターン終了時】ミンク族1枚をアクティブ
+  "OP08-039": {"act":{"label":"レスト:ミンク族ならドン1アクティブ","cost":{"restSelf":true},"fx":[{"op":"cond","check":{"leaderTraitIncludes":"ミンク族"},"then":[{"op":"donActivate","n":1}]}]},"onTurnEnd":[{"op":"activateOwnChar","count":1,"filter":{"restedOnly":true,"traitIncludes":"ミンク族"}}]},
+  // OP08-040 アトモス: 【登場時】手札から白ひげ2枚を公開：白ひげリーダーなら相手コスト4以下1枚を手札に戻す
+  "OP08-040": {"onPlay":[{"op":"revealCost","count":2,"filter":{"traitIncludes":"白ひげ海賊団"},"then":[{"op":"cond","check":{"leaderTraitIncludes":"白ひげ海賊団"},"then":[{"op":"bounce","side":"opp","maxCost":4,"count":1,"optional":true}]}]}]},
+  // OP08-041 アフェランドラ: 【起動メイン】このキャラを手札に戻す：九蛇海賊団リーダーなら相手コスト1以下1枚をデッキ下
+  "OP08-041": {"act":{"label":"自身を手札へ:九蛇なら相手1以下デッキ下","cost":{},"fx":[{"op":"bounceSelfCost","then":[{"op":"cond","check":{"leaderTraitIncludes":"九蛇海賊団"},"then":[{"op":"deckBottom","side":"opp","filter":{"maxCost":1},"count":1,"optional":true}]}]}]}}
 };

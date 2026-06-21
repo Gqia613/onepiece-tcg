@@ -226,7 +226,7 @@
       P.don.active += P.don.rested - _refLock; P.don.rested = _refLock;
       const ret = c => { P.don.active += c.attachedDon; c.attachedDon = 0; };
       ret(P.leader); P.chars.forEach(ret); if (P.stage) ret(P.stage);
-      const ready = c => { if (c.frozen) { c.frozen = false; } else c.rested = false; };
+      const ready = c => { if (c._noRefreshSeq === G.turnSeq) { c._noRefreshSeq = null; return; } if (c.frozen) { c.frozen = false; } else c.rested = false; }; // _noRefreshSeq=このリフレッシュではアクティブにしない（OP08ミンク族）
       P.leader.rested = false; P.chars.forEach(ready); if (P.stage) P.stage.rested = false;
       expireBuffs(side, 'ownerNextStart');
       expireBuffs(side, 'oppNextEnd'); // 「次の相手のエンドフェイズ終了時まで」のパワー付与は所有者の次ターン開始で失効
