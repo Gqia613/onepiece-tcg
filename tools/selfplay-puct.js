@@ -70,23 +70,29 @@ async function playGame(seed, dMe, dCpu) {
 `;
 }
 
-const POLPATH = path.join(ROOT, 'src', 'ai-policy.js');
-const OUTPOL = path.join(ROOT, 'pytorch', 'out', 'ai-policy.js');
-const MAXBUF = +(process.env.OPCG_MAXBUF || 6000);   // replay buffer の policy サンプル上限（直近を保持＝発散を抑える）
+// ★学習対象: policy(=puctのprior, ai-policy.js) か value(=盤面評価, ai-weights.js)。part3で value を追加。
+const TARGET = process.env.OPCG_TARGET || 'policy';
+const ISVAL = TARGET === 'value';
+const GFILE = path.join(ROOT, 'src', ISVAL ? 'ai-weights.js' : 'ai-policy.js');
+const GOUT = path.join(ROOT, 'pytorch', 'out', ISVAL ? 'ai-weights.js' : 'ai-policy.js');
+const GVAR = ISVAL ? 'AI_WEIGHTS' : 'AI_POLICY';
+const TRAIN_ENV = ISVAL ? { AZ_VALUE_ONLY: '1' } : { AZ_POLICY_ONLY: '1' };
+const MAXBUF = +(process.env.OPCG_MAXBUF || 6000);   // replay buffer のサンプル上限（直近を保持＝発散を抑える）
 // ★per-leader gating: リーダーごとに独立に「そのリーダーをheroにした測定で改善した時だけ」その byLeader モデルを採用。
-//   方策は per-leader モデルが独立なので、teachの強モデルとenelの良モデルを別々に採れる（特化のトレードオフを回避）。
 const GATE = (process.env.OPCG_GATE_LEADERS || 'teach:enel,enel:teach').split(',').map(s => s.split(':'));  // hero:villain
 
-// 実代入は {" (JSON) で始まる。コメント内の `window.AI_POLICY = { feat... }`(説明文)に誤マッチしないよう \{" を要求。
-function parsePolicy(p) { const t = fs.readFileSync(p, 'utf8'); const m = t.match(/window\.AI_POLICY\s*=\s*(\{"[\s\S]*\})\s*;/); return JSON.parse(m[1]); }
-function writePolicy(obj) { fs.writeFileSync(POLPATH, '/* selfplay-puct.js per-leader gated（手で編集しない） */\nwindow.AI_POLICY = ' + JSON.stringify(obj) + ';\n'); }
-// 1リーダー hero を villain 相手に puct vs heuristic 測定 → net(改善-退行)。現在の src/ai-policy.js を使う。
+// window.<VAR> = {...}; を取り出す（実代入は {" で始まる＝コメントの { feat... } に誤マッチしない）。null可。
+function parseAI(p) { const t = fs.readFileSync(p, 'utf8'); const m = t.match(new RegExp('window\\.' + GVAR + '\\s*=\\s*(\\{"[\\s\\S]*\\})\\s*;')); return m ? JSON.parse(m[1]) : null; }
+function writeAI(obj) { fs.writeFileSync(GFILE, '/* selfplay-puct.js per-leader gated（手で編集しない） */\nwindow.' + GVAR + ' = ' + JSON.stringify(obj) + ';\n'); }
+// 1リーダー hero を villain 相手に puct vs heuristic 測定 → net。
+//   policy: 「対h」flip（AI_WEIGHTSはnull固定なので ai-policy のtrialが効く）。
+//   value : 「学習 vs 手作り」flip（measure-matchupは手作りarmでAI_WEIGHTS=null化するので、価値の効果はこちらに出る）。
 function measureLeader(hero, vill) {
   try {
     const out = cp.execSync('node ' + JSON.stringify(path.join(__dirname, 'measure-matchup.js')),
       { encoding: 'utf8', env: Object.assign({}, process.env, { OPCG_AGENT: 'puct', OPCG_HERO: hero, OPCG_VILLAIN: vill, OPCG_N: MEASURE_N }), timeout: 590000 });
     const line = out.split('\n').filter(l => /vs/.test(l) && /対h/.test(l))[0] || '';
-    const m = line.match(/改善(\d+)\/退行(\d+)/);
+    const m = ISVAL ? line.match(/改善=(\d+)\s*退行=(\d+)/) : line.match(/改善(\d+)\/退行(\d+)/);
     return { net: m ? (+m[1] - +m[2]) : 0, str: '    ' + line.trim() };
   } catch (e) { return { net: -999, str: '    (measure失敗 ' + hero + ')' }; }
 }
@@ -112,14 +118,15 @@ function selfplayGen(g) {
 }
 
 (async () => {
-  console.log('▶ Phase2 part2: puct自己対戦ループ（' + GENS + '世代 × ' + GAMES + '局・self-play det' + DET + '/look' + LOOK + '/w' + WIDTH + '・chunk' + CHUNK + '・replay+per-leader gating）');
-  const best = parsePolicy(POLPATH);                       // 現行(Stage B)が初期ベスト（per-leaderモデルの集合）
-  const bestNet = {};                                      // リーダー別の現ベスト net
-  console.log('  世代0（現prior）puct:');
-  for (const [hero, vill] of GATE) { const m = measureLeader(hero, vill); bestNet[hero] = m.net; console.log(m.str + '  [' + hero + ' net=' + m.net + ']'); }
+  console.log('▶ puct自己対戦ループ [target=' + TARGET + ']（' + GENS + '世代 × ' + GAMES + '局・self-play det' + DET + '/look' + LOOK + '/w' + WIDTH + '・chunk' + CHUNK + '・replay+per-leader gating）');
+  const committed = fs.readFileSync(GFILE, 'utf8');         // 退行時に戻す素のファイル（policy=StageB / value=null）
+  let best = parseAI(GFILE);                                // policy: Stage B obj / value: null(手作り)
+  const bestNet = {};
+  if (ISVAL) { for (const [hero] of GATE) bestNet[hero] = 0; console.log('  世代0: value baseline=手作り（学習が手作りを上回る時だけ採用・基準net=0）'); }
+  else { console.log('  世代0（現prior）puct:'); for (const [hero, vill] of GATE) { const m = measureLeader(hero, vill); bestNet[hero] = m.net; console.log(m.str + '  [' + hero + ' net=' + m.net + ']'); } }
   const pBuf = [], vBuf = []; let meta = null;             // replay buffer（世代横断）
   for (let g = 1; g <= GENS; g++) {
-    writePolicy(best);                                     // ★self-playは常にベスト(merged)priorで
+    if (best) writeAI(best); else fs.writeFileSync(GFILE, committed);   // self-playは常にベスト（valueはbest=null→手作り）
     const gen = selfplayGen(g);
     pBuf.push(...gen.pAll); vBuf.push(...gen.vAll); meta = gen.meta;
     if (pBuf.length > MAXBUF) pBuf.splice(0, pBuf.length - MAXBUF);
@@ -127,22 +134,26 @@ function selfplayGen(g) {
     fs.writeFileSync(path.join(DATA, 'policy.json'), JSON.stringify(pBuf));
     fs.writeFileSync(path.join(DATA, 'value.json'), JSON.stringify(vBuf));
     fs.writeFileSync(path.join(DATA, 'meta.json'), JSON.stringify(meta));
-    console.log('  世代' + g + ' self-play: 今回policy=' + gen.pAll.length + ' / buffer=' + pBuf.length);
+    console.log('  世代' + g + ' self-play: policy=' + gen.pAll.length + ' value=' + gen.vAll.length + ' / buf=' + (ISVAL ? vBuf.length : pBuf.length));
     try { // train.py は out/ にだけ書く（AZ_INSTALL無し）。駆動側で per-leader にマージ採用。
       cp.execSync(JSON.stringify(PY) + ' ' + JSON.stringify(path.join(ROOT, 'pytorch', 'train.py')),
-        { encoding: 'utf8', env: Object.assign({}, process.env, { AZ_POLICY_ONLY: '1', AZ_PH: process.env.AZ_PH || '24', AZ_EPOCHS: process.env.AZ_EPOCHS || '500' }), timeout: 590000 });
+        { encoding: 'utf8', env: Object.assign({}, process.env, TRAIN_ENV, { AZ_PH: process.env.AZ_PH || '24', AZ_VH: process.env.AZ_VH || '32', AZ_EPOCHS: process.env.AZ_EPOCHS || '500' }), timeout: 590000 });
     } catch (e) { process.stdout.write('  ✗ train.py失敗: ' + ((e.stdout || '') + (e.stderr || '')).slice(-300) + '\n'); process.exit(1); }
-    const cand = parsePolicy(OUTPOL);
-    for (const [hero, vill] of GATE) {                     // リーダー別に独立採否
-      if (!cand.byLeader || !cand.byLeader[hero]) continue;
+    const cand = parseAI(GOUT);
+    if (!cand || !cand.byLeader) { console.log('  ✗ 世代' + g + ' 学習結果なし（サンプル不足?）'); continue; }
+    if (!best) best = Object.assign({}, cand, { byLeader: {}, default: null });   // value: 空byLeader+default null = 全リーダー手作りから開始
+    for (const [hero, vill] of GATE) {
+      if (!cand.byLeader[hero]) continue;
       const trial = Object.assign({}, best, { byLeader: Object.assign({}, best.byLeader, { [hero]: cand.byLeader[hero] }) });
-      writePolicy(trial);                                  // この hero だけ新モデルに差し替えて測定
+      writeAI(trial);
       const m = measureLeader(hero, vill);
       if (m.net > bestNet[hero]) { best.byLeader[hero] = cand.byLeader[hero]; bestNet[hero] = m.net; console.log('  ✓ 世代' + g + ' [' + hero + '] 採用(net=' + m.net + '):' + m.str.trim()); }
       else { console.log('  ✗ 世代' + g + ' [' + hero + '] 棄却(net=' + m.net + ' <= ' + bestNet[hero] + ')'); }
     }
-    writePolicy(best);                                     // マージ済みベストを反映
+    writeAI(best);
   }
-  writePolicy(best);
-  console.log('▶ part2 完了。per-leader best net: ' + GATE.map(([h]) => h + '=' + bestNet[h]).join(' ') + '（src/ai-policy.js は各リーダー最良モデルの合成）。');
+  // 最終反映。value で1つも採用が無ければ素(null)に戻す。
+  if (ISVAL && best && Object.keys(best.byLeader).length === 0) { fs.writeFileSync(GFILE, committed); console.log('  value: 採用ゼロ→' + GFILE + ' を手作り(null)に戻す'); }
+  else if (best) writeAI(best);
+  console.log('▶ 完了 [target=' + TARGET + ']。per-leader best net: ' + GATE.map(([h]) => h + '=' + bestNet[h]).join(' '));
 })();

@@ -136,6 +136,8 @@ def js_file(varname, obj, header):
     return f'/* {header} */\nwindow.{varname} = {json.dumps(obj, separators=(",", ":"))};\n'
 
 
+VALUE_ONLY = os.environ.get('AZ_VALUE_ONLY', '') == '1'   # 1=policyは学習/反映せず value だけ（part3: 価値レバーの切り分け）
+
 # ---- value（POLICY_ONLY または VAL 空ならスキップ＝手作りevalのまま） ----
 if not POLICY_ONLY and len(VAL) >= 300:
     vby, vdef, vrep, vacc = build(VAL, 'lk', train_value)
@@ -148,16 +150,19 @@ else:
     vjs = None
     print('VALUE  skip（POLICY_ONLY or VAL<300）= 手作りeval(ai-weights=null)のまま')
 
-# ---- policy ----
-pby, pdef, prep, ptop = build(POL, 'lk', train_policy)
-policy = {'feat': POLF, 'leaderKeys': LK, 'byLeader': pby, 'default': pdef,
-          'meta': {'samples': len(POL), 'perLeader': prep, 'defaultTop1': ptop, 'hidden': PH, 'src': 'pytorch/train.py(MPS)'}}
-print('POLICY per-leader:', ' '.join(prep), '| default top1=', ptop)
-pjs = js_file('AI_POLICY', policy, f'pytorch/train.py(MPS) 生成: アタック方策(policy)NN。{len(POL)}サンプル/H={PH}/defaultTop1={ptop}。手で編集しない。')
-(OUT / 'ai-policy.js').write_text(pjs)
-print('wrote', OUT / 'ai-policy.js', ('+ ai-weights.js' if vjs else '(policy only)'))
+# ---- policy（VALUE_ONLY ならスキップ） ----
+if not VALUE_ONLY:
+    pby, pdef, prep, ptop = build(POL, 'lk', train_policy)
+    policy = {'feat': POLF, 'leaderKeys': LK, 'byLeader': pby, 'default': pdef,
+              'meta': {'samples': len(POL), 'perLeader': prep, 'defaultTop1': ptop, 'hidden': PH, 'src': 'pytorch/train.py(MPS)'}}
+    print('POLICY per-leader:', ' '.join(prep), '| default top1=', ptop)
+    pjs = js_file('AI_POLICY', policy, f'pytorch/train.py(MPS) 生成: アタック方策(policy)NN。{len(POL)}サンプル/H={PH}/defaultTop1={ptop}。手で編集しない。')
+    (OUT / 'ai-policy.js').write_text(pjs)
+else:
+    pjs = None
+    print('POLICY skip（VALUE_ONLY）= 既存 ai-policy.js のまま')
+print('wrote', ('ai-weights.js ' if vjs else '') + ('ai-policy.js' if pjs else ''))
 if INSTALL:
-    if vjs:
-        (ROOT / 'src' / 'ai-weights.js').write_text(vjs)
-    (ROOT / 'src' / 'ai-policy.js').write_text(pjs)
-    print('INSTALL=1 → src/ai-policy.js' + (' + src/ai-weights.js' if vjs else '（policyのみ・valueは手作りeval維持）') + ' を更新')
+    if vjs: (ROOT / 'src' / 'ai-weights.js').write_text(vjs)
+    if pjs: (ROOT / 'src' / 'ai-policy.js').write_text(pjs)
+    print('INSTALL=1 → ' + (('src/ai-weights.js ' if vjs else '') + ('src/ai-policy.js' if pjs else '')))
