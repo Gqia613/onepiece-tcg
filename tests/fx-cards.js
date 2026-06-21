@@ -910,6 +910,23 @@ humanPick=function(c){return Promise.resolve((c||[])[0]||null);};
     { const me=LP('OP13-002'); const tgt=me.leader; const cc=I('OP14-036','me'); me.chars=[I('OP15-067','me')]; // レスト元
       const p0=power(tgt); await runFx(cc.base.fx.counter.fx,{self:cc,side:'me',target:tgt});
       ok(power(tgt)===p0+4000, 'OP14-036 counter: カード1枚レスト→対象+4000'); }
+
+    // === OP14 バッチ4（新op swapPower/addCostBuff-all） ===
+    ok(['OP14-009','OP14-017','OP14-082','OP14-021','OP14-061','OP14-069','OP14-076','OP14-078'].every(no=>C[no]&&C[no].fx), 'OP14バッチ4: 8枚にfx統合');
+    { const me=LP('OP13-002');
+      C['__sa__']={no:'__sa__',name:'A',type:'CHAR',color:[],cost:5,power:5000,counter:0,traits:[]};
+      C['__sb__']={no:'__sb__',name:'B',type:'CHAR',color:[],cost:3,power:2000,counter:0,traits:[]};
+      const a=mkSyn('__sa__',C['__sa__']); a.owner='cpu'; const b=mkSyn('__sb__',C['__sb__']); b.owner='cpu'; G.players.cpu.chars=[a,b];
+      const ev=I('OP14-017','me'); await runFx(ev.base.fx.main.fx,{self:ev,side:'me'});
+      ok(power(a)===2000 && power(b)===5000, 'OP14-017 swapPower: 相手2枚の元々パワーを入れ替え'); delete C['__sa__']; delete C['__sb__']; }
+    { const me=LP('OP13-002');
+      C['__sbk__']={no:'__sbk__',name:'SB',type:'CHAR',color:[],cost:3,power:4000,counter:0,traits:['スリラーバーク海賊団']};
+      const s1=mkSyn('__sbk__',C['__sbk__']); const s2=mkSyn('__sbk__',C['__sbk__']); me.chars=[s1,s2];
+      const c=I('OP14-082','me'); await runFx(c.base.fx.onKO,{self:c,side:'me'});
+      ok(s1.buffs.some(b=>b.costAmt===4) && s2.buffs.some(b=>b.costAmt===4), 'OP14-082 addCostBuff-all: スリラーバーク全体コスト+4'); delete C['__sbk__']; }
+    { const me=LP('OP13-002'); const p0=power(me.leader);
+      const ev=I('OP14-076','me'); await runFx(ev.base.fx.counter.fx,{self:ev,side:'me',target:me.leader});
+      ok(power(me.leader)===p0+3000, 'OP14-076 counter: リーダー+3000(battle)'); }
   }catch(e){ console.log('EXCEPTION:', e.message); fail++; }
   console.log('Phase3 fxテスト: pass='+pass+' fail='+fail);
   process.exit(fail?1:0);

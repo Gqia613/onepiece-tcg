@@ -313,6 +313,23 @@ window.CARD_FX = {
   "OP14-065": {"onKO":[{"op":"oppDonMinus","n":1}]},
   // OP14-074: 【登場時】リーダー《ドンキ》ならドンデッキからアクティブ追加 ／【KO時】2ドロー＋1捨て→ドンデッキからレスト2追加
   "OP14-074": {"onPlay":[{"op":"cond","check":{"leaderTrait":"ドンキホーテ海賊団"},"then":[{"op":"donFromDeck","n":1,"mode":"active"}]}],"onKO":[{"op":"draw","n":2},{"op":"discardOwn","n":1},{"op":"donFromDeck","n":2,"mode":"rest"}]},
+  /* ===== OP14 バッチ4（新op swapPower/addCostBuff-all を使用） ===== */
+  // OP14-009: 【速攻】(text) 【相手のアタック時】【ターン1回】手札2枚捨て：リーダーと自キャラ1枚の元々パワーをこのバトル中入れ替える
+  "OP14-009": {"onOppAttack":[{"op":"discardCost","count":2,"once":"turn","then":[{"op":"swapPower","withLeader":true,"battle":true}]}]},
+  // OP14-017: 【メイン】相手の元々パワー9000以下のキャラ2枚の元々パワーをこのターン中入れ替える
+  "OP14-017": {"main":{"fx":[{"op":"swapPower","filter":{"maxPower":9000}}]}},
+  // OP14-082: 【KO時】自《スリラーバーク海賊団》すべてを次相手エンド終了までコスト+4
+  "OP14-082": {"onKO":[{"op":"addCostBuff","side":"self","all":true,"amount":4,"duration":"untilNextEnd","filter":{"traitIncludes":"スリラーバーク海賊団"}}]},
+  // OP14-021: 【自分のターン中】このキャラがレストになった時、ライフ上1枚を手札に加えられる：相手のレストのキャラ/ステージ1枚を次リフレッシュでアクティブにしない
+  "OP14-021": {"onSelfRested":[{"op":"lifeCost","action":"toHand","then":[{"op":"lock","side":"opp","restedOnly":true,"includeStage":true,"count":1,"optional":true}]}]},
+  // OP14-061: 【ターン1回】《ドンキ》が相手効果で場を離れる場合、代わりにドン1枚をドンデッキへ ／【アタック時】ドン‼-1：相手1枚-2000
+  "OP14-061": {"static":[{"op":"leaveProtect","pay":"donToDeck","targetFilter":{"traitIncludes":"ドンキホーテ海賊団"},"once":"turn"}],"onAttack":[{"op":"donMinus","n":1},{"op":"powerMod","side":"opp","amount":-2000,"count":1,"optional":true}]},
+  // OP14-069: 【登場時】ドン‼-3：二択（ドンキならコスト8以下KO ／ 相手コスト7以下3枚を次相手エンドまでレスト不可）
+  "OP14-069": {"onPlay":[{"op":"donMinus","n":3},{"op":"chooseOption","options":[{"label":"ドンキならコスト8以下KO","fx":[{"op":"cond","check":{"leaderTrait":"ドンキホーテ海賊団"},"then":[{"op":"ko","side":"opp","maxCost":8,"count":1,"optional":true}]}]},{"label":"コスト7以下3枚レスト不可","fx":[{"op":"restImmune","side":"opp","maxCost":7,"count":3,"duration":"untilNextEnd","optional":true}]}]}]},
+  // OP14-076: 【メイン】ドン2レスト：ドンキならドンデッキからレスト追加 ／【カウンター】リーダーをこのバトル中+3000
+  "OP14-076": {"main":{"fx":[{"op":"restDonCost","n":2,"then":[{"op":"cond","check":{"leaderTrait":"ドンキホーテ海賊団"},"then":[{"op":"donFromDeck","n":1,"mode":"rest"}]}]}]},"counter":{"cost":0,"fx":[{"op":"leaderBuff","amount":3000,"duration":"battle"}]}},
+  // OP14-078: 【カウンター】ドン‼-1：ドンキならリーダーかキャラ1枚をこのバトル中+4000（+2000→+2000）
+  "OP14-078": {"counter":{"cost":0,"fx":[{"op":"donMinus","n":1},{"op":"cond","check":{"leaderTrait":"ドンキホーテ海賊団"},"then":[{"op":"counterBuff","amount":4000}]}]}},
   "OP09-093": {"onPlay":[{"op":"cond","check":"leaderBH","then":[{"op":"negateEffect"}]}]},
   "OP16-104": {"onAttack":[{"op":"powerCopy"}],"trigger":[{"op":"draw","n":1},{"op":"reviveFromTrash","filter":{"cost":1,"traitIncludes":"黒ひげ海賊団"}}]},
   "OP16-109": {"onKO":[{"op":"cond","check":"leaderBH","then":[{"op":"draw","n":1},{"op":"ko","side":"opp","maxCost":1,"count":2,"optional":true}]}],"trigger":[{"op":"cond","check":"leaderBH","then":[{"op":"draw","n":1},{"op":"ko","side":"opp","maxCost":1,"count":2,"optional":true}]}]},

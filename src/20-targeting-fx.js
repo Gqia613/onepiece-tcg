@@ -433,10 +433,28 @@
           }
           render(); break;
         }
+        // 元々のパワーを入れ替える（withLeader:リーダーと自キャラ1枚 ／ 既定:相手キャラ2枚。duration/battle対応）
+        case 'swapPower': {
+          const dur = op.battle ? 'battle' : durTag(op.duration, 'turnEnd');
+          const swap = (a, b) => { if (!a || !b || a === b) return; const pa = a.base.power || 0, pb = b.base.power || 0; a.buffs.push({ setBase: pb, until: dur }); b.buffs.push({ setBase: pa, until: dur }); floatOn(a.uid, 'P' + pb, 'buff'); floatOn(b.uid, 'P' + pa, 'buff'); flog(side, '元々のパワーを入れ替えた'); };
+          if (op.withLeader) {
+            const c = P.isCPU ? P.chars.slice().sort((x, y) => power(y) - power(x))[0] : await chooseCard(side, P.chars, '元々のパワーをリーダーと入れ替えるキャラ', 'ownBig', op.optional);
+            swap(P.leader, c);
+          } else {
+            const a = await chooseCard(side, oppChars(side, opFilter(op)), '入れ替える相手キャラ（1枚目）', 'oppBig', op.optional);
+            if (a) { const b = await chooseCard(side, oppChars(side, opFilter(op)).filter(c => c !== a), '入れ替える相手キャラ（2枚目）', 'ownSmall', op.optional); swap(a, b); }
+          }
+          render(); break;
+        }
         // 盤面のキャラに一時的なコスト増減を付与（side:'opp'|'self', amount:±N, duration, filter）
         case 'addCostBuff': {
           const dur = durTag(op.duration, 'turnEnd');
           const isOpp = op.side !== 'self';
+          if (op.all) { // 条件一致の対象すべてにコスト±（自分/相手）
+            const cands = isOpp ? oppChars(side, opFilter(op)) : ownChars(side, opFilter(op));
+            for (const t of cands) { t.buffs.push({ costAmt: op.amount, until: dur }); floatOn(t.uid, `コスト${op.amount > 0 ? '+' : ''}${op.amount}`, op.amount < 0 ? 'dmg' : 'buff'); }
+            if (cands.length) flog(side, `対象すべてをコスト${op.amount > 0 ? '+' : ''}${op.amount}`); render(); break;
+          }
           for (let i = 0; i < (op.count || 1); i++) {
             const cands = isOpp ? oppChars(side, opFilter(op)) : ownChars(side, opFilter(op));
             const t = P.isCPU ? cands[i] : await chooseCard(side, cands, `コスト${op.amount > 0 ? '+' : ''}${op.amount}する対象を選択`, isOpp ? 'oppBig' : 'ownBig', op.optional);
