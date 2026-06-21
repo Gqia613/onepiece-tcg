@@ -15,6 +15,28 @@ const { runHarness } = require('./_load-app');  // stubs+CARD_DB+CARD_FX+本体J
   console.log('  ✓ cards-fx.js キー重複なし (' + Object.keys(cnt).length + 'キー)');
 }
 
+// ★OP14 二重照合: 公式正本(tools/official-op14.js) ⇔ CARD_DB.text 一致 ＋ 全120枚に実装(fx or 純ブロッカー/バニラ)があること。
+{ const path = require('path'); const saved = global.window; global.window = {};
+  try {
+    const off = require(path.join(__dirname, '..', 'tools', 'official-op14.js'));
+    require(path.join(__dirname, '..', 'cards.js'));
+    require(path.join(__dirname, '..', 'cards-fx.js'));
+    const DB = global.window.CARD_DB, FX = global.window.CARD_FX;
+    const mismatch = [], missing = [];
+    for (const no in off) {
+      const c = DB.find(x => x.no === no);
+      let text = (c && (c.text || '').replace(/\s+/g, ' ').trim()) || '効果なし';
+      if (/^[-‐―ー–—\s]*$/.test(text)) text = '効果なし'; // バニラのtext「-」を正規化（official-op14.jsの生成と同じ規則）
+      if (text !== off[no]) mismatch.push(no);
+      const vanilla = off[no] === '効果なし' || (!FX[no] && /ブロッカー/.test(off[no]) && !/【(?!ブロッカー)/.test(off[no]));
+      if (!FX[no] && !vanilla) missing.push(no);
+    }
+    if (mismatch.length) { console.log('  NG: OP14 正本とCARD_DB.text不一致: ' + mismatch.join(', ')); process.exit(1); }
+    if (missing.length) { console.log('  NG: OP14 実装漏れ（fxもバニラでもない）: ' + missing.join(', ')); process.exit(1); }
+    console.log('  ✓ OP14 二重照合: 正本' + Object.keys(off).length + '枚=CARD_DB.text 一致・全枚数に実装あり');
+  } finally { global.window = saved; }
+}
+
 const harness = String.raw`
 showPrompt=function(cfg){const o=(cfg.opts||[]).filter(x=>!x.disabled);const p=o.find(x=>String(x.v).indexOf('pick:')===0)||o[0];if(cfg.onPick)cfg.onPick(p&&p.v);return Promise.resolve(p&&p.v);};
 humanPick=function(c){return Promise.resolve((c||[])[0]||null);};
