@@ -314,7 +314,7 @@
           render(); break;
         }
         case 'bottomOwn': { for (let i = 0; i < op.n; i++) { const c = await chooseFromHand(side, P.hand, 'デッキ下に置く手札を選択'); if (!c) break; P.hand.splice(P.hand.indexOf(c), 1); P.deck.push(reset(c)); } flog(side, `手札${op.n}枚をデッキ下`); break; }
-        case 'discardOwn': { for (let i = 0; i < op.n; i++) { const c = await chooseFromHand(side, P.hand, '⚠ 捨てる手札を選択', null, false, 'danger'); if (!c) break; P.hand.splice(P.hand.indexOf(c), 1); P.trash.push(reset(c)); } flog(side, `手札${op.n}枚を捨てた`); break; }
+        case 'discardOwn': { const n = op.all ? P.hand.length : (op.toSize != null ? Math.max(0, P.hand.length - op.toSize) : op.n); for (let i = 0; i < n; i++) { const c = await chooseFromHand(side, P.hand, '⚠ 捨てる手札を選択', null, false, 'danger'); if (!c) break; P.hand.splice(P.hand.indexOf(c), 1); P.trash.push(reset(c)); } if (n) flog(side, `手札${n}枚を捨てた`); break; }
         case 'cond': if (checkCond(op.check, side, self)) await runFx(op.then, ctx); break;
         // 手札公開コスト: 手札の filter 一致カードを count 枚公開できる場合のみ then を実行（公開=手札に残す。任意）
         case 'revealCost': {
@@ -612,11 +612,12 @@
         }
         // 自分のリーダー/ステージ/キャラ（filter一致）1枚をレストにするコスト。任意。払えた時 then を実行
         case 'restOwnAsCost': {
-          const pool = [P.leader, P.stage, ...P.chars].filter(c => c && !c.rested && matchFilter(c, opFilter(op)));
-          if (!pool.length) break;
-          if (!(await confirmUse(side, 'レストにする', 'カード1枚をレストにして効果を使いますか？', 'レストして使う'))) break;
-          const t = P.isCPU ? pool[0] : await chooseCard(side, pool, 'レストにするカードを選択（コスト）', 'ownBig', true);
-          if (!t) break; t.rested = true; flog(side, `「${t.base.name}」をレストにした`);
+          const cnt = op.count || 1; // count枚をレストにできる（足りなければ不発）
+          if ([P.leader, P.stage, ...P.chars].filter(c => c && !c.rested && matchFilter(c, opFilter(op))).length < cnt) break;
+          if (!(await confirmUse(side, 'レストにする', `カード${cnt}枚をレストにして効果を使いますか？`, 'レストして使う'))) break;
+          const rested = [];
+          for (let i = 0; i < cnt; i++) { const pool = [P.leader, P.stage, ...P.chars].filter(c => c && !c.rested && !rested.includes(c) && matchFilter(c, opFilter(op))); const t = P.isCPU ? pool[0] : await chooseCard(side, pool, `レストにするカードを選択（コスト ${i + 1}/${cnt}）`, 'ownBig', false); if (!t) break; t.rested = true; rested.push(t); }
+          if (rested.length < cnt) break; flog(side, `カード${cnt}枚をレストにした`);
           await runFx(op.then, ctx); break;
         }
         // 相手が自身の手札 n枚をデッキの下に置く
@@ -701,6 +702,7 @@
         case 'reviveFromTrash': {
           let cands = P.trash.filter(c => c.base.type === 'CHAR' && (c.base.cost || 0) <= (op.maxCost != null ? op.maxCost : 99)); // maxCost未指定はコスト上限なし（filterで絞る）
           if (op.filter) cands = cands.filter(c => matchFilter(c, op.filter));
+          if (op.needsTrigger) cands = cands.filter(c => c.base.fx && c.base.fx.trigger); // 【トリガー】を持つキャラ限定
           const c = await chooseCard(side, cands, 'トラッシュから登場させるキャラ', 'ownBig', true);
           if (c) { P.trash.splice(P.trash.indexOf(c), 1); await summon(side, c, false, 'trash'); if (op.grantKw && P.chars.includes(c)) c.kwGrant.push({ kw: op.grantKw, dur: durTag(op.grantDuration, 'turn') }); }
           break;
@@ -778,6 +780,12 @@
           if (!(await confirmUse(target.owner, `【${p.base.name}】身代わり`, `ドン1枚をドンデッキに戻して「${target.base.name}」を守りますか？`, '守る（ドン-1）', '守らない'))) continue;
           if (P.don.active > 0) P.don.active--; else P.don.rested--; // active→restの順で1枚ドンデッキへ
           flog(target.owner, `【${p.base.name}】ドンを戻し「${target.base.name}」を守った`); return true;
+        } else if (prot.pay === 'trashToDeck') {
+          const n = prot.n || 3; // 自分のトラッシュから n枚を好きな順でデッキの下に置いて守る
+          if (ow.trash.length < n) continue;
+          if (!(await confirmUse(target.owner, `【${p.base.name}】身代わり`, `トラッシュ${n}枚をデッキの下に置いて「${target.base.name}」を守りますか？`, `守る（トラッシュ${n}枚→デッキ下）`, '守らない'))) continue;
+          for (let i = 0; i < n; i++) { const c = ow.trash.shift(); if (c) ow.deck.push(reset(c)); }
+          flog(target.owner, `【${p.base.name}】トラッシュ${n}枚をデッキ下に置き「${target.base.name}」を守った`); return true;
         } else if (prot.pay === 'charToBottom') {
           const others = ow.chars.filter(c => c !== target);
           if (!others.length) continue;

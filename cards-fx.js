@@ -356,6 +356,35 @@ window.CARD_FX = {
   "OP14-096": {"main":{"fx":[{"op":"restDonCost","n":2,"then":[{"op":"negateChoose","maxCost":5,"optional":true}]}]},"counter":{"cost":0,"fx":[{"op":"cond","check":{"trashAtLeast":10},"then":[{"op":"counterBuff","amount":4000}]}]}},
   // OP14-094: 【ブロッカー】(text) 【登場時】コスト0か8以上のキャラがいれば2ドロー＋手札1捨て
   "OP14-094": {"onPlay":[{"op":"cond","check":{"or":[{"selfChar":{"maxCost":0}},{"selfChar":{"minCost":8}}]},"then":[{"op":"draw","n":2},{"op":"discardOwn","n":1}]}]},
+  /* ===== OP14 バッチ6（新cond leaderTraitIncludes/oppDonAtLeast・new op拡張） ===== */
+  // OP14-084: 【登場時】リーダーが『B・W』含む特徴なら、トラッシュからコスト4以下と1の『B・W』を1枚ずつ登場
+  "OP14-084": {"onPlay":[{"op":"cond","check":{"leaderTraitIncludes":"B・W"},"then":[{"op":"reviveFromTrash","filter":{"traitIncludes":"B・W","maxCost":4}},{"op":"reviveFromTrash","filter":{"traitIncludes":"B・W","cost":1}}]}]},
+  // OP14-087: 【登場時】リーダーが『B・W』含むなら、デッキ上4枚から「ミキータ」以外の『B・W』1枚を手札へ、残りトラッシュ
+  "OP14-087": {"onPlay":[{"op":"cond","check":{"leaderTraitIncludes":"B・W"},"then":[{"op":"search","look":4,"filter":{"traitIncludes":"B・W","nameExcludes":"ミキータ"},"count":1,"rest":"trash"}]}]},
+  // OP14-098: 【メイン】コスト0か8以上のキャラがいれば自『B・W』全コスト+3(次相手エンドまで) ／【カウンター】リーダー+3000
+  "OP14-098": {"main":{"fx":[{"op":"cond","check":{"or":[{"selfChar":{"maxCost":0}},{"selfChar":{"minCost":8}}]},"then":[{"op":"addCostBuff","side":"self","all":true,"amount":3,"duration":"untilNextEnd","filter":{"traitIncludes":"B・W"}}]}]},"counter":{"cost":0,"fx":[{"op":"leaderBuff","amount":3000,"duration":"battle"}]}},
+  // OP14-063: 【登場時】ドンデッキからアクティブ追加 ／【KO時】相手の場のドンが6枚以上なら手札のコスト5以下《ドンキ》1枚を登場
+  "OP14-063": {"onPlay":[{"op":"donFromDeck","n":1,"mode":"active"}],"onKO":[{"op":"cond","check":{"oppDonAtLeast":6},"then":[{"op":"playCharFromHand","maxCost":5,"filter":{"traitIncludes":"ドンキホーテ海賊団"},"count":1,"optional":true}]}]},
+  // OP14-110: 【KO時】トラッシュから「ホグバック」以外のコスト4以下の【トリガー】持ちキャラ1枚を登場
+  "OP14-110": {"onKO":[{"op":"reviveFromTrash","maxCost":4,"needsTrigger":true,"filter":{"nameExcludes":"ホグバック"}}]},
+  // OP14-092: 【相手のターン中】【ターン1回】このキャラがKOされる場合、代わりにトラッシュ3枚をデッキ下に置きKO回避
+  "OP14-092": {"static":[{"op":"leaveProtect","targetSelf":true,"onlyKO":true,"pay":"trashToDeck","n":3,"once":"turn"}]},
+  // OP14-048: 【登場時】相手キャラ1枚を手札に戻す→自分の手札すべてを捨てる
+  "OP14-048": {"onPlay":[{"op":"bounce","side":"opp","count":1,"optional":true},{"op":"discardOwn","all":true}]},
+  // OP14-054: 【登場時】リーダー《魚人族》なら3ドロー ／【自分のターン終了時】手札が5枚になるよう捨てる
+  "OP14-054": {"onPlay":[{"op":"cond","check":{"leaderTrait":"魚人族"},"then":[{"op":"draw","n":3}]}],"onTurnEnd":[{"op":"discardOwn","toSize":5}]},
+  // OP14-039 STAGE: 【登場時】リーダー「ミホーク」なら1ドロー ／【自分のターン終了時】リーダー「ミホーク」ならドン1枚をアクティブに
+  "OP14-039": {"onPlay":[{"op":"cond","check":{"leaderNameIncludes":"ミホーク"},"then":[{"op":"draw","n":1}]}],"onTurnEnd":[{"op":"cond","check":{"leaderNameIncludes":"ミホーク"},"then":[{"op":"donActivate","n":1}]}]},
+  // OP14-037: 【メイン】自カード3枚レスト：相手のレストの元々パワー7000以下1枚KO ／【カウンター】リーダー+3000
+  "OP14-037": {"main":{"fx":[{"op":"restOwnAsCost","count":3,"then":[{"op":"ko","side":"opp","filter":{"maxPower":7000,"restedOnly":true},"count":1,"optional":true}]}]},"counter":{"cost":0,"fx":[{"op":"leaderBuff","amount":3000,"duration":"battle"}]}},
+  // OP14-038: 【メイン】自カード2枚レスト：1ドロー＋相手の元々パワー7000以下1枚レスト ／【カウンター】リーダー+3000
+  "OP14-038": {"main":{"fx":[{"op":"restOwnAsCost","count":2,"then":[{"op":"draw","n":1},{"op":"restChar","side":"opp","filter":{"maxPower":7000},"count":1,"optional":true}]}]},"counter":{"cost":0,"fx":[{"op":"leaderBuff","amount":3000,"duration":"battle"}]}},
+  // OP14-119: 【自ターン中】レストになった時、相手コスト9以下1枚を次相手エンドまでレスト不可 ／【相手アタック時】【ターン1回】手札1捨て：リーダーかキャラ1枚を このバトル中+2000
+  "OP14-119": {"onSelfRested":[{"op":"restImmune","side":"opp","maxCost":9,"duration":"untilNextEnd","count":1,"optional":true}],"onOppAttack":[{"op":"discardCost","count":1,"once":"turn","then":[{"op":"powerMod","side":"self","leader":true,"amount":2000,"battle":true,"count":1,"optional":true}]}]},
+  // OP14-120: 【登場時】相手コスト9以下1枚を次相手エンドまでアタック不可→コスト0か8以上いれば1ドロー ／【KO時】手札1捨て：このキャラをトラッシュから登場
+  "OP14-120": {"onPlay":[{"op":"setAttackBan","side":"opp","maxCost":9,"duration":"untilNextEnd","count":1,"optional":true},{"op":"cond","check":{"or":[{"selfChar":{"maxCost":0}},{"selfChar":{"minCost":8}}]},"then":[{"op":"draw","n":1}]}],"onKO":[{"op":"discardCost","count":1,"then":[{"op":"reviveSelf"}]}]},
+  // OP14-029: 【相手ターン中】このキャラが相手効果で場を離れる場合、代わりに自カード1枚レスト ／【起動メイン】自カード2枚レスト：このキャラを次相手エンドまで+2000
+  "OP14-029": {"static":[{"op":"leaveProtect","targetSelf":true,"pay":"restOwnCards","n":1}],"act":{"label":"自カード2枚レスト:自身+2000","cost":{},"fx":[{"op":"restOwnAsCost","count":2,"then":[{"op":"powerMod","target":"self","amount":2000,"duration":"untilNextEnd"}]}]}},
   "OP09-093": {"onPlay":[{"op":"cond","check":"leaderBH","then":[{"op":"negateEffect"}]}]},
   "OP16-104": {"onAttack":[{"op":"powerCopy"}],"trigger":[{"op":"draw","n":1},{"op":"reviveFromTrash","filter":{"cost":1,"traitIncludes":"黒ひげ海賊団"}}]},
   "OP16-109": {"onKO":[{"op":"cond","check":"leaderBH","then":[{"op":"draw","n":1},{"op":"ko","side":"opp","maxCost":1,"count":2,"optional":true}]}],"trigger":[{"op":"cond","check":"leaderBH","then":[{"op":"draw","n":1},{"op":"ko","side":"opp","maxCost":1,"count":2,"optional":true}]}]},

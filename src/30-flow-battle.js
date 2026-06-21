@@ -175,7 +175,7 @@
     async function endTurn(side) {
       G.myActable = false; setPhase('エンド');
       // 【自分のターン終了時】誘発（手番側のキャラ／リーダー）
-      for (const c of [...G.players[side].chars, G.players[side].leader]) {
+      for (const c of [...G.players[side].chars, G.players[side].leader, G.players[side].stage]) {
         if (c && c.base.fx && c.base.fx.onTurnEnd && !isNegated(c)) { await fxNote(side, 'ターン終了時', c.base.name); await runFx(c.base.fx.onTurnEnd, { self: c, side }); }
       }
       // スケジュールされた「このターン終了時」効果（scheduleTurnEnd）

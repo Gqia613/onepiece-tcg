@@ -162,6 +162,8 @@
       if (c.or && !c.or.some(x => checkCond(x, side, card))) return false;
       if (c.not && checkCond(c.not, side, card)) return false;
       if (c.leaderTrait != null && !(P.leader.base.traits || []).includes(c.leaderTrait)) return false;
+      if (c.leaderTraitIncludes != null && !(P.leader.base.traits || []).some(t => t.includes(c.leaderTraitIncludes))) return false; // 自リーダーが「〜を含む特徴」を持つ
+      if (c.oppDonAtLeast != null && donTotal(opp(side)) < c.oppDonAtLeast) return false; // 相手の場のドンN枚以上
       if (c.leaderNameIncludes != null && !normName(P.leader.base.name).includes(normName(c.leaderNameIncludes))) return false;
       if (c.leaderColor != null && !(P.leader.base.color || []).includes(c.leaderColor)) return false;
       if (c.selfChar != null) { const min = c.selfChar.min || 1; if (P.chars.filter(ch => matchFilter(ch, c.selfChar)).length < min) return false; }
