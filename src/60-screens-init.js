@@ -49,7 +49,6 @@
         [['normal', '標準'], ['strong', '強い(AI探索)']].map(([v, t]) =>
           '<button class="seg-btn' + ((G.cpuStrength || 'normal') === v ? ' on' : '') + '" onclick="setCpuStrength(\'' + v + '\')">' + t + '</button>').join('') +
         '</div></div>' +
-        ((G.cpuStrength === 'strong') ? '<div class="tip">「強い」＝AI先読み探索(puct)。1手に少し時間がかかります（エネルは仕様上ヒューリスティックで対戦）。</div>' : '') +
         '<div class="pick-info">' + pickInfo() + '</div>' +
         '<button class="btn-primary" ' + ((G.sel.me && G.sel.cpu) ? '' : 'disabled') + ' onclick="doStart()">BATTLE START</button>' +
         (!(G.sel.me && G.sel.cpu) ? '<div class="tip warn">' + (!G.sel.me ? '① あなたのデッキを選んでください' : '② 対戦相手のデッキを選んでください') + '</div>' : '') +
@@ -148,6 +147,8 @@
         if (!C[no]) errors.push('未定義カード: ' + no);
         if (b.leaderNo && !cardLegalForLeader(no, b.leaderNo)) errors.push((C[no] ? C[no].name : no) + 'が色不一致');
       }
+      // イム(OP13-079): ルール上、コスト2以上のイベントをデッキに入れられない
+      if (b.leaderNo && C[b.leaderNo] && C[b.leaderNo].name === 'イム') { for (const no of Object.keys(b.list || {})) { if (C[no] && C[no].type === 'EVENT' && (C[no].cost || 0) >= 2) errors.push((C[no].name || no) + 'はイムのデッキに入れられません(コスト2以上イベント禁止)'); } }
       return { ok: errors.length === 0, errors, total };
     }
     function builderToDeck(b, id) {

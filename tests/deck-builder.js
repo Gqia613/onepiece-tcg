@@ -57,6 +57,14 @@ toast = function () {}; renderSelect = function () {}; backToSelect = function (
       const pool = poolCards();
       ok(pool.length > 0 && !pool.some(no => /_r\d+$/.test(no)), 'poolCards: パラレル(_rN)を一覧に含まない（重複表示防止）');
       ok(pool.includes('ST14-017') && !pool.includes('ST14-017_r1'), 'poolCards: 黒サウザンド・サニー号は本体のみ（パラレル除外）'); }
+    // ★イム(OP13-079): コスト2以上のイベントはデッキに入れられない
+    { const im = Object.keys(C).find(no => C[no] && C[no].name === 'イム' && C[no].leader);
+      if (im) {
+        const ev2 = Object.keys(C).find(no => C[no] && C[no].type === 'EVENT' && (C[no].cost || 0) >= 2);
+        const ev1 = Object.keys(C).find(no => C[no] && C[no].type === 'EVENT' && (C[no].cost || 0) < 2);
+        ok(builderValidate({ leaderNo: im, list: { [ev2]: 1 } }).errors.some(e => /イム/.test(e)), 'イム: コスト2以上イベントは構築不可');
+        ok(!builderValidate({ leaderNo: im, list: { [ev1]: 1 } }).errors.some(e => /イムのデッキ/.test(e)), 'イム: コスト1以下イベントはOK');
+      } else ok(true, 'イムリーダー未検出'); }
   } catch (e) { console.log('EXCEPTION:', e.message); fail++; }
   console.log('デッキビルダー検証: pass=' + pass + ' fail=' + fail);
   process.exit(fail ? 1 : 0);

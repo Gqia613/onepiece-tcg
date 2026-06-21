@@ -1545,6 +1545,30 @@ humanPick=function(c){return Promise.resolve((c||[])[0]||null);};
     { const me=LP('OP13-002');
       const sh=I('OP14-020','me'); // 斬属性のカード(リーダーだが属性付き)
       ok(matchFilter(sh,{attr:'斬'}) && !matchFilter(sh,{attr:'打'}), 'matchFilter attr: 属性(斬)を持つ判定'); }
+
+    // === OP13 精度仕上げ（エース被ダメ/KO・モモの助並替・119相手の登場） ===
+    // OP13-002 エース: 【ドン×1】元々6000以上のKOで1ドロー(被ダメと共有のターン1回)
+    { const me=LP('OP13-002'); me.leader.attachedDon=1; me.deck=[I('OP15-067','me')]; me._aceDrawTurn=undefined;
+      C['__big6__']={no:'__big6__',name:'Big6',type:'CHAR',color:[],cost:6,power:7000,counter:1000,traits:[]};
+      const b=mkSyn('__big6__',C['__big6__']); b.owner='me'; me.chars=[b]; const h0=me.hand.length;
+      await koCard(b,'battle');
+      ok(me.hand.length===h0+1 && me._aceDrawTurn===G.turnSeq, 'OP13-002: 元々6000以上KOで1ドロー(ドン×1)');
+      const me2=LP('OP13-002'); me2.leader.attachedDon=0; me2.deck=[I('OP15-067','me')];
+      const b2=mkSyn('__big6__',C['__big6__']); b2.owner='me'; me2.chars=[b2]; const h1=me2.hand.length;
+      await koCard(b2,'battle');
+      ok(me2.hand.length===h1, 'OP13-002: ドン×1なしではドローしない'); delete C['__big6__']; }
+    // OP13-105 モモの助: ライフ並べ替え(枚数不変・フリーズしない)
+    { const me=LP('OP13-002'); me.life=[I('OP15-067','me'),I('OP15-067','me')];
+      const mm=I('OP13-105','me'); await runFx(mm.base.fx.onPlay,{self:mm,side:'me'});
+      ok(me.life.length===2, 'OP13-105: ライフ並べ替え(reorderLife・枚数不変)'); }
+    // OP13-119 エース: バウンス→相手がコスト4以下を登場(oppPlayAfter)
+    { const me=LP('OP13-002'); me.don={active:0,rested:2};
+      C['__o5b__']={no:'__o5b__',name:'O5',type:'CHAR',color:[],cost:5,power:6000,counter:1000,traits:[]};
+      const v=mkSyn('__o5b__',C['__o5b__']); v.owner='cpu'; G.players.cpu.chars=[v]; G.players.cpu.isCPU=true;
+      C['__o4h__']={no:'__o4h__',name:'O4',type:'CHAR',color:[],cost:4,power:5000,counter:1000,traits:[]};
+      const o4=mkSyn('__o4h__',C['__o4h__']); o4.owner='cpu'; G.players.cpu.hand=[o4];
+      const ac=I('OP13-119','me'); await runFx(ac.base.fx.onPlay,{self:ac,side:'me'});
+      ok(!G.players.cpu.chars.includes(v) && G.players.cpu.chars.some(x=>x.no==='__o4h__'), 'OP13-119: バウンス→相手がコスト4以下を登場(oppPlayAfter)'); delete C['__o5b__']; delete C['__o4h__']; }
   }catch(e){ console.log('EXCEPTION:', e.message); fail++; }
   console.log('Phase3 fxテスト: pass='+pass+' fail='+fail);
   process.exit(fail?1:0);

@@ -142,6 +142,8 @@
             const cands = op.side === 'any' ? [...P.chars.filter(c => matchFilter(c, opFilter(op))), ...oppChars(side, opFilter(op))] : oppChars(side, opFilter(op));
             const t = await chooseCard(side, cands, progText('手札に戻すキャラを選択', i, op.count || 1), 'oppBig', op.optional);
             if (!t) break; if (await protectFromEffect(t, 'bounce')) continue; bounceCard(t); flog(side, `「${t.base.name}」を手札に戻した`); await checkAllyLeave(t.owner, t, t.owner === side ? 'selfEffect' : 'oppEffect');
+            // バウンスした場合、その持ち主(相手)が手札からコストN以下のキャラを登場できる（OP13-119エース「そうした場合、相手は…登場」）
+            if (op.oppPlayAfter != null) { const O = G.players[t.owner]; const cc = O.hand.filter(c => c.base.type === 'CHAR' && (c.base.cost || 0) <= op.oppPlayAfter); if (cc.length && O.chars.length < 5) { const pc = O.isCPU ? cc.slice().sort((a, b) => (b.base.power || 0) - (a.base.power || 0))[0] : await chooseFromHand(t.owner, cc, '登場させるキャラを選択（任意）', null, true); if (pc) { O.hand.splice(O.hand.indexOf(pc), 1); await summon(t.owner, pc, false); } } }
           }
           break;
         }
@@ -750,8 +752,20 @@
           if (c) { P.trash.splice(P.trash.indexOf(c), 1); await summon(side, c, false, 'trash'); if (op.grantKw && P.chars.includes(c)) c.kwGrant.push({ kw: op.grantKw, dur: durTag(op.grantDuration, 'turn') }); }
           break;
         }
-        // 自分のライフをすべて見て好きな順に並べ替え（OP13-105モモの助）。並べ替えUIは無いため確認のみ＝合法性に影響なし。
-        case 'reorderLife': { if (P.life.length) flog(side, `自分のライフ${P.life.length}枚を確認した`); break; }
+        // 自分のライフをすべて見て好きな順に並べ替え（OP13-105モモの助）。人間は上から順にプロンプトで選択、CPUは現状維持。
+        case 'reorderLife': {
+          if (P.life.length <= 1) { if (P.life.length) flog(side, '自分のライフを確認'); break; }
+          if (P.isCPU) { flog(side, `自分のライフ${P.life.length}枚を確認した`); break; }
+          const remaining = P.life.slice(); const ordered = [];
+          while (remaining.length > 1) {
+            const opts = remaining.map((c, i) => ({ t: '上から' + (ordered.length + 1) + '番目: ' + c.base.name, v: 'pick:' + i }));
+            const v = await showPrompt({ title: 'ライフの並べ替え', text: '自分のライフを確認。上から' + (ordered.length + 1) + '番目に置くカードを選択', opts });
+            const idx = (typeof v === 'string' && v.indexOf('pick:') === 0) ? +v.slice(5) : 0;
+            ordered.push(remaining[idx]); remaining.splice(idx, 1);
+          }
+          ordered.push(remaining[0]); P.life = ordered; flog(side, 'ライフを並べ替えた'); render();
+          break;
+        }
         // トラッシュから filter一致のステージ1枚を登場（OP13-092ミョスガルド）
         case 'reviveStage': {
           const cands = P.trash.filter(c => c.base.type === 'STAGE' && matchFilter(c, op.filter || {}));

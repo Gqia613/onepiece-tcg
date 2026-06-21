@@ -69,6 +69,8 @@
       log('sys', '先攻は <b>' + sideName(G.firstPlayer) + '</b>');
       await mulliganPhase();
       for (const s of ['me', 'cpu']) { const P = G.players[s]; const n = P.leader.base.life || 5; for (let i = 0; i < n; i++)if (P.deck.length) P.life.push(P.deck.shift()); }
+      // イム(OP13-079): ゲーム開始時、デッキから《聖地マリージョア》ステージ1枚までを登場
+      for (const s of ['me', 'cpu']) { const P = G.players[s]; if (P.leader.base.name === 'イム') { const i = P.deck.findIndex(c => c.base.type === 'STAGE' && (c.base.traits || []).some(t => t.includes('聖地マリージョア'))); if (i >= 0) { const st = P.deck.splice(i, 1)[0]; st.owner = s; st.rested = false; P.stage = st; flog(s, '【イム】ゲーム開始時に「' + st.base.name + '」を登場'); } } }
       render(); await sleep(300);
       banner((G.firstPlayer === 'me' ? 'あなたが先攻' : 'CPUが先攻'), { cls: G.firstPlayer === 'me' ? 'mine' : 'opp', hold: 1300 });
       await sleep(200);

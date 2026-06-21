@@ -808,8 +808,8 @@ window.CARD_FX = {
   "OP13-106": {"onTrigger":{"when":"oppTurn","fx":[{"op":"giveKeyword","target":"self","kw":"blocker","duration":"turn"}]}},
   // OP13-109 ジュエリー・ボニー: このキャラが相手効果で場を離れる代わりに、自分のライフ上1枚を表向きにする
   "OP13-109": {"static":[{"op":"leaveProtect","targetSelf":true,"pay":"flipLifeUp"}]},
-  // OP13-119 ポートガス・Ｄ・エース: ライフ3以下で【速攻】 ／【登場時】リーダーにレストのドン1付与→相手コスト5以下1枚を手札に戻す（※相手の登場は未実装）
-  "OP13-119": {"static":[{"op":"staticKeyword","kw":"rush","cond":{"lifeAtMost":3}}],"onPlay":[{"op":"donAttach","target":"leader","n":1},{"op":"bounce","side":"opp","maxCost":5,"count":1,"optional":true}]},
+  // OP13-119 ポートガス・Ｄ・エース: ライフ3以下で【速攻】 ／【登場時】リーダーにレストのドン1付与→相手コスト5以下1枚を手札に戻す→戻したら相手はコスト4以下を登場(oppPlayAfter)
+  "OP13-119": {"static":[{"op":"staticKeyword","kw":"rush","cond":{"lifeAtMost":3}}],"onPlay":[{"op":"donAttach","target":"leader","n":1},{"op":"bounce","side":"opp","maxCost":5,"count":1,"optional":true,"oppPlayAfter":4}]},
   // OP13-079 イム LEADER: 【起動メイン】【ターン1回】《天竜人》キャラか手札1枚をトラッシュ：1ドロー（※デッキ構築制約「コスト2以上イベント不可」とゲーム開始時の聖地マリージョア登場は特殊ルールのため未実装）
   "OP13-079": {"act":{"label":"天竜人キャラか手札1枚をトラッシュ:1ドロー","cost":{},"fx":[{"op":"chooseOption","options":[{"label":"天竜人キャラをトラッシュ","fx":[{"op":"trashOwnCharCost","filter":{"traitIncludes":"天竜人"},"then":[{"op":"draw","n":1}]}]},{"label":"手札1枚を捨てる","fx":[{"op":"discardCost","count":1,"then":[{"op":"draw","n":1}]}]}]}]}}
 };
