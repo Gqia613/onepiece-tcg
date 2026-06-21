@@ -1015,5 +1015,38 @@ window.CARD_FX = {
   // OP11-019 粘土の巣: 【カウンター】リーダーかキャラ+2000→相手にパワー6000以上がいればさらに+1000
   "OP11-019": {"counter":{"cost":0,"fx":[{"op":"powerMod","side":"self","leader":true,"amount":2000,"battle":true,"count":1,"optional":true},{"op":"cond","check":{"oppChar":{"minEffPower":6000}},"then":[{"op":"powerMod","side":"self","leader":true,"amount":1000,"duration":"turn","count":1,"optional":true}]}]}},
   // OP11-020 X狩場: 【メイン】相手2枚-2000→海軍1枚+1000
-  "OP11-020": {"main":{"fx":[{"op":"powerMod","side":"opp","amount":-2000,"count":2,"optional":true,"duration":"turn"},{"op":"powerMod","side":"self","amount":1000,"count":1,"optional":true,"duration":"turn","filter":{"traitIncludes":"海軍"}}]}}
+  "OP11-020": {"main":{"fx":[{"op":"powerMod","side":"opp","amount":-2000,"count":2,"optional":true,"duration":"turn"},{"op":"powerMod","side":"self","amount":1000,"count":1,"optional":true,"duration":"turn","filter":{"traitIncludes":"海軍"}}]}},
+  /* ===== OP11 バッチ2（緑・魚人/しらほし。oppRestedCardsAtLeast・maxCostFrom:'don'） ===== */
+  // OP11-021 ジンベエ LEADER: 【自分のターン終了時】手札6枚以下なら《魚人族》か《人魚族》1枚とドン1をアクティブに
+  "OP11-021": {"onTurnEnd":[{"op":"cond","check":{"selfHandAtMost":6},"then":[{"op":"activateOwnChar","count":1,"filter":{"or":[{"traitIncludes":"魚人族"},{"traitIncludes":"人魚族"}]}},{"op":"donActivate","n":1}]}]},
+  // OP11-022 しらほし LEADER: アタックできない ／【起動メイン】ドン1+ライフ裏向き：場のドン枚数以下のコストの《海王類》か「メガロ」を登場
+  "OP11-022": {"static":[{"op":"cantAttack"}],"act":{"label":"ドン1+ライフ裏向き:海王類/メガロ登場","cost":{"don":1},"fx":[{"op":"lifeFlipDownCost","then":[{"op":"playCharFromHand","filter":{"or":[{"traitIncludes":"海王類"},{"name":"メガロ"}],"maxCostFrom":"don"},"count":1,"optional":true}]}]}},
+  // OP11-023 アーロン: 手札のこのカードは、魚人族リーダー＋ライフ3以下＋相手レスト5枚以上でコスト-3
+  "OP11-023": {"costMod":{"cond":{"and":[{"leaderTraitIncludes":"魚人族"},{"lifeAtMost":3},{"oppRestedCardsAtLeast":5}]},"amount":-3}},
+  // OP11-024 アラディン: 相手効果でKOされた時、手札1捨て＋ドン1レスト：コスト6以下の《魚人族》か《人魚族》を登場
+  "OP11-024": {"onKO":[{"op":"discardCost","count":1,"then":[{"op":"restDonCost","n":1,"then":[{"op":"playCharFromHand","filter":{"or":[{"traitIncludes":"魚人族"},{"traitIncludes":"人魚族"}],"maxCost":6},"count":1,"optional":true}]}]}]},
+  // OP11-025 イシリー: 【相手のアタック時】ドン1+このキャラをレスト：リーダーかキャラ+1000
+  "OP11-025": {"onOppAttack":[{"op":"restDonCost","n":1,"then":[{"op":"restOwnAsCost","count":1,"then":[{"op":"powerMod","side":"self","leader":true,"amount":1000,"battle":true,"count":1,"optional":true}]}]}]},
+  // OP11-027 ギョロ目: リーダーが「しらほし」なら登場ターンにキャラへアタック可
+  "OP11-027": {"static":[{"op":"staticKeyword","kw":"rushChar","cond":{"leaderNameIncludes":"しらほし"}}]},
+  // OP11-028 近海の主: 【登場時】相手レスト1枚を次リフレッシュでアクティブにしない
+  "OP11-028": {"onPlay":[{"op":"lock","side":"opp","filter":{"restedOnly":true},"count":1,"optional":true}]},
+  // OP11-029 シャーロット・プラリネ: 【ブロッカー】 ／【登場時】相手コスト1以下1枚をレスト
+  "OP11-029": {"onPlay":[{"op":"restChar","side":"opp","filter":{"maxCost":1},"count":1,"optional":true}]},
+  // OP11-030 しらほし(c1): 【起動メイン】ドン1+このキャラをレスト：デッキ上5枚から《海王類》か《魚人島》1枚を手札へ
+  "OP11-030": {"act":{"label":"ドン1+レスト:海王類/魚人島サーチ","cost":{"don":1,"restSelf":true},"fx":[{"op":"search","look":5,"count":1,"filter":{"or":[{"traitIncludes":"海王類"},{"traitIncludes":"魚人島"}]},"optional":true}]}},
+  // OP11-031 ジンベエ(c6): 【登場時】魚人/人魚リーダーなら相手コスト5以下1枚レスト ／【起動メイン】魚人/人魚1枚は登場ターンにキャラへアタック可
+  "OP11-031": {"onPlay":[{"op":"cond","check":{"or":[{"leaderTraitIncludes":"魚人族"},{"leaderTraitIncludes":"人魚族"}]},"then":[{"op":"restChar","side":"opp","filter":{"maxCost":5},"count":1,"optional":true}]}],"act":{"label":"魚人/人魚1枚に速攻:キャラ","cost":{},"fx":[{"op":"giveKeyword","target":"chooseOwn","kw":"rushChar","duration":"turn","filter":{"or":[{"traitIncludes":"魚人族"},{"traitIncludes":"人魚族"}]}}]}},
+  // OP11-034 はっちゃん: 【起動メイン】レスト：魚人/人魚リーダーなら相手コスト3以下1枚を次相手ターン終了までレスト不可
+  "OP11-034": {"act":{"label":"レスト:魚人リーダーなら相手3以下レスト不可","cost":{"restSelf":true},"fx":[{"op":"cond","check":{"or":[{"leaderTraitIncludes":"魚人族"},{"leaderTraitIncludes":"人魚族"}]},"then":[{"op":"restImmune","side":"opp","maxCost":3,"count":1,"duration":"untilNextEnd","optional":true}]}]}},
+  // OP11-035 フィッシャー・タイガー: 相手効果でKOされた時 ドン1レスト：コスト4以下の魚人/人魚を登場 ／【登場時】相手1枚レスト
+  "OP11-035": {"onKO":[{"op":"restDonCost","n":1,"then":[{"op":"playCharFromHand","filter":{"or":[{"traitIncludes":"魚人族"},{"traitIncludes":"人魚族"}],"maxCost":4},"count":1,"optional":true}]}],"onPlay":[{"op":"restChar","side":"opp","count":1,"optional":true}]},
+  // OP11-036 マダラ: 【登場時】「しらほし」リーダーならデッキ上5枚から《海王類》か「しらほし」1枚を手札へ
+  "OP11-036": {"onPlay":[{"op":"cond","check":{"leaderNameIncludes":"しらほし"},"then":[{"op":"search","look":5,"count":1,"filter":{"or":[{"traitIncludes":"海王類"},{"name":"しらほし"}]},"optional":true}]}]},
+  // OP11-037 “古代兵器”「ポセイドン」: 【メイン】デッキ上4枚から《海王類》か《魚人島》のキャラ1枚を手札へ
+  "OP11-037": {"main":{"fx":[{"op":"search","look":4,"count":1,"filter":{"type":"CHAR","or":[{"traitIncludes":"海王類"},{"traitIncludes":"魚人島"}]},"optional":true}]}},
+  // OP11-038 ゴムゴムの象銃乱打: 【メイン】ドン1レスト：相手コスト5以下1枚レスト ／【カウンター】リーダー+3000
+  "OP11-038": {"main":{"fx":[{"op":"restDonCost","n":1,"then":[{"op":"restChar","side":"opp","filter":{"maxCost":5},"count":1,"optional":true}]}]},"counter":{"cost":0,"fx":[{"op":"leaderBuff","amount":3000,"duration":"battle"}]}},
+  // OP11-039 武頼貫: 【カウンター】魚人/人魚のリーダーかキャラ+3000→相手コスト3以下1枚レスト
+  "OP11-039": {"counter":{"cost":0,"fx":[{"op":"powerMod","side":"self","leader":true,"amount":3000,"battle":true,"count":1,"optional":true,"filter":{"or":[{"traitIncludes":"魚人族"},{"traitIncludes":"人魚族"},{"type":"LEADER"}]}},{"op":"restChar","side":"opp","filter":{"maxCost":3},"count":1,"optional":true}]}}
 };
