@@ -294,7 +294,14 @@ puct自己対戦の【ターン境界の盤面特徴＋最終勝敗】で value 
 - gating結果: lucy/ace が自己対戦で更に微増(lucy +50pt)→採用。nami/hancock/teach は高いベースライン維持。enel は全モデル退行で **Stage B に復元**（puctがフォールバックするので enel policy は npolicy 用のみ）。
 - 出荷: `src/ai-policy.js` = lucy/ace(part4自己対戦改善)+teach(part2)+nami/hancock/enel(Stage B)。**既定CPU=heuristicは不変**、puctはopt-in（enelは内部でheuristic）。
 
-### 9.7 到達点と ⏭ part5 候補
-- **到達点**: **puct は5/6リーダーで heuristic を有意に +20〜45pt 上回る強いCPU**（enelのみ探索が機構を壊すため heuristic フォールバック）。AlphaZeroの全要素（本物の探索＋自己対戦＋per-leader gating＋replay buffer）が結実。value学習は今の規模では効かず（手作りeval優位）。
-- ⏭ **part5候補**: ①**enelの探索を直す**（ランプ機構をcandidateActions/rolloutが正しく扱えるよう改良＝フォールバック解除）②**多手先のPUCT木**（現状1手再探索）＋方策ターゲット=訪問数分布 ③大データ・深ネットで value 再挑戦。
+### 9.7 Phase2 part5：enel探索修正の試み（✗）＋ UIトグル追加（✅）
+- **enel修正の試み（✗ 容易には直らず・フォールバック維持）**:
+  - 仮説①「ランプを過小評価」→ **探索前にenelランプを確定実行**を試す → enelミラー -23pt（変化なし）。
+  - 仮説②「look=1が近視眼でenelの長期計画を見ない」→ **look=3**を試す → enelミラー -29pt（変化なし）。
+  - **結論＝enelの弱さは ramp/look ではなく「手作りvalueがenelのランプ/コントロール局面を正しく評価できない」根本**（part3で学習valueも手作り未満と判明済＝valueを直す道も塞がっている）。
+    enelを直すには **enel特化の盤面評価 or 戦略知識** が要る（研究タスク）。**現状は heuristicフォールバック(`PUCT_SKIP={enel:1}`)が正しい安全解**（enel退行ゼロ）。試した変更は撤回。
+- **✅ UIトグル追加**: デッキ選択画面に「CPU強さ: 標準 / 強い(AI探索)」（`src/60-screens-init.js` `setCpuStrength`/`doStart`）。
+  「強い」＝`G.players.cpu.agent='puct'`（enelは内部でheuristicにフォールバック）。**これで part1-4 の強いCPUが実プレイで使える**。
+- **到達点（確定）**: **puct は5/6リーダーで heuristic を有意に +20〜45pt 上回る強いCPU**（enelのみフォールバック）。UIから「強い(AI探索)」で有効化。
+- ⏭ **part6候補**: ①**多手先のPUCT木**（現状1手再探索）＋方策ターゲット=訪問数分布 ②enel専用の盤面評価（フォールバック解除）③大データ・深ネット・2ヘッドで value 再挑戦。
 - 限界（正直に）: 16GB/8コア/MPS単機は数百万局に届かない。それでも part1-4 で「探索＋自己対戦＋gating」が **5リーダー +20〜45pt(有意)** を達成＝**正しい構造なら天井(≈heuristic)を明確に超える**ことを実証。残りは規模拡大と enel 個別対応。

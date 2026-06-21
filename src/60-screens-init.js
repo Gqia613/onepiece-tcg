@@ -45,6 +45,11 @@
         [['random', 'ランダム'], ['me', 'あなた'], ['cpu', 'CPU']].map(([v, t]) =>
           '<button class="seg-btn' + (G.firstPref === v ? ' on' : '') + '" onclick="setFirstPref(\'' + v + '\')">' + t + '</button>').join('') +
         '</div></div>' +
+        '<div class="first-pick"><span class="fp-label">CPU強さ</span><div class="seg">' +
+        [['normal', '標準'], ['strong', '強い(AI探索)']].map(([v, t]) =>
+          '<button class="seg-btn' + ((G.cpuStrength || 'normal') === v ? ' on' : '') + '" onclick="setCpuStrength(\'' + v + '\')">' + t + '</button>').join('') +
+        '</div></div>' +
+        ((G.cpuStrength === 'strong') ? '<div class="tip">「強い」＝AI先読み探索(puct)。1手に少し時間がかかります（エネルは仕様上ヒューリスティックで対戦）。</div>' : '') +
         '<div class="pick-info">' + pickInfo() + '</div>' +
         '<button class="btn-primary" ' + ((G.sel.me && G.sel.cpu) ? '' : 'disabled') + ' onclick="doStart()">BATTLE START</button>' +
         (!(G.sel.me && G.sel.cpu) ? '<div class="tip warn">' + (!G.sel.me ? '① あなたのデッキを選んでください' : '② 対戦相手のデッキを選んでください') + '</div>' : '') +
@@ -57,7 +62,13 @@
     function selMy(id) { G.sel.me = id; if (!G.sel.cpu) { const o = DECKS.filter(d => d.id !== id); G.sel.cpu = o[Math.random() * o.length | 0].id; } renderSelect(); }
     function selCpu(id) { G.sel.cpu = id; renderSelect(); }
     function setFirstPref(v) { G.firstPref = v; renderSelect(); } // 先攻の希望を設定（常時設置のセグメント）
-    function doStart() { if (!G.sel.me || !G.sel.cpu) return; startGame(G.sel.me, G.sel.cpu); }
+    function setCpuStrength(v) { G.cpuStrength = v; renderSelect(); } // CPU強さ: normal=heuristic / strong=puct(AI探索)
+    function doStart() {
+      if (!G.sel.me || !G.sel.cpu) return;
+      startGame(G.sel.me, G.sel.cpu);
+      // 「強い」CPU＝AI探索エージェント(puct)。startGame直後（CPUの初手前）に設定。enelは内部で素heuristicにフォールバック。
+      if (G.cpuStrength === 'strong' && G.players && G.players.cpu) G.players.cpu.agent = 'puct';
+    }
 
     /* =========================================================================
        ===============  モーダル / ルール  =====================================
