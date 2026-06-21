@@ -286,6 +286,33 @@ window.CARD_FX = {
   "OP14-067": {"onKO":[{"op":"donFromDeck","n":1,"mode":"rest"},{"op":"search","look":5,"filter":{"traitIncludes":"ドンキホーテ海賊団"},"count":1}]},
   // OP14-072: 【登場時】ドンデッキからアクティブ追加 ／【KO時】ドン-1→デッキ上1枚をライフ上に
   "OP14-072": {"onPlay":[{"op":"donFromDeck","n":1,"mode":"active"}],"onKO":[{"op":"donMinus","n":1},{"op":"lifeAddFromDeck","n":1}]},
+  /* ===== OP14 バッチ3（既存opのみ・src非干渉。カウンターイベント＋既存opチェーン） ===== */
+  // OP14-018: 【カウンター】自分にパワー8000以上キャラがいれば、リーダーかキャラ1枚を このバトル中+4000
+  "OP14-018": {"counter":{"cost":0,"fx":[{"op":"cond","check":{"selfChar":{"minEffPower":8000}},"then":[{"op":"counterBuff","amount":4000}]}]}},
+  // OP14-036: 【カウンター】自分のカード1枚をレストにできる：リーダーかキャラ1枚を このバトル中+4000
+  "OP14-036": {"counter":{"cost":0,"fx":[{"op":"restOwnAsCost","then":[{"op":"counterBuff","amount":4000}]}]}},
+  // OP14-077: 【カウンター】リーダーかキャラ1枚+4000→相手にパワー6000以上いればドンデッキからレスト追加
+  "OP14-077": {"counter":{"cost":0,"fx":[{"op":"counterBuff","amount":4000},{"op":"cond","check":{"oppChar":{"minEffPower":6000}},"then":[{"op":"donFromDeck","n":1,"mode":"rest"}]}]}},
+  // OP14-010: 【KO時】デッキ上5枚から「ホーキンス」以外のパワー2000以下の《超新星》1枚を登場
+  "OP14-010": {"onKO":[{"op":"playCharFromDeck","look":5,"filter":{"maxPower":2000,"traitIncludes":"超新星","nameExcludes":"バジル・ホーキンス"},"count":1}]},
+  // OP14-011: 【ドン‼×2】このキャラは【ブロッカー】を得る
+  "OP14-011": {"condBlocker":"donX2"},
+  // OP14-016: 【相手ターン中】【ターン1回】超新星が相手効果で場を離れる場合、代わりにリーダー-2000 ／【ドン‼×1】【アタック時】相手1枚-2000
+  "OP14-016": {"static":[{"op":"leaveProtect","pay":"leaderPowerMinus","amount":2000,"targetFilter":{"traitIncludes":"超新星"},"once":"turn"}],"onAttack":[{"op":"cond","check":"donX1Self","then":[{"op":"powerMod","side":"opp","amount":-2000,"count":1,"optional":true}]}]},
+  // OP14-025: 【登場時】リーダーが「クロ」なら手札のコスト6以下《東の海》1枚を登場
+  "OP14-025": {"onPlay":[{"op":"cond","check":{"leaderNameIncludes":"クロ"},"then":[{"op":"playCharFromHand","maxCost":6,"filter":{"traitIncludes":"東の海"},"count":1,"optional":true}]}]},
+  // OP14-033: 【登場時】相手コスト5以下2枚を次相手エンド終了までレスト不可 ／【KO時】自カード1枚レスト：手札のコスト5以下の緑キャラ登場
+  "OP14-033": {"onPlay":[{"op":"restImmune","side":"opp","maxCost":5,"count":2,"duration":"untilNextEnd","optional":true}],"onKO":[{"op":"restOwnAsCost","then":[{"op":"playCharFromHand","maxCost":5,"filter":{"color":"緑"},"count":1,"optional":true}]}]},
+  // OP14-046: 【起動メイン】自身をトラッシュ：魚人/人魚のリーダーかキャラ1枚を このターン中+2000
+  "OP14-046": {"act":{"label":"自身トラッシュ:魚人/人魚に+2000","cost":{},"fx":[{"op":"trashSelfCost","then":[{"op":"powerMod","side":"self","leader":true,"amount":2000,"count":1,"filter":{"or":[{"traitIncludes":"魚人族"},{"traitIncludes":"人魚族"}]},"optional":true}]}]}},
+  // OP14-052: 【ブロッカー】(text) 【登場時】手札3枚捨て：手札のコスト6以下《インペルダウン》1枚を登場
+  "OP14-052": {"onPlay":[{"op":"discardCost","count":3,"then":[{"op":"playCharFromHand","maxCost":6,"filter":{"traitIncludes":"インペルダウン"},"count":1,"optional":true}]}]},
+  // OP14-062: 【KO時】ドン‼-1：相手の元々パワー6000以下1枚をKOかレスト（二択）
+  "OP14-062": {"onKO":[{"op":"donMinus","n":1},{"op":"chooseOption","options":[{"label":"KOする","fx":[{"op":"ko","side":"opp","filter":{"maxPower":6000},"count":1,"optional":true}]},{"label":"レストにする","fx":[{"op":"restChar","side":"opp","maxPower":6000,"count":1,"optional":true}]}]}]},
+  // OP14-065: 【KO時】相手は自身のドン‼1枚をドンデッキに戻す
+  "OP14-065": {"onKO":[{"op":"oppDonMinus","n":1}]},
+  // OP14-074: 【登場時】リーダー《ドンキ》ならドンデッキからアクティブ追加 ／【KO時】2ドロー＋1捨て→ドンデッキからレスト2追加
+  "OP14-074": {"onPlay":[{"op":"cond","check":{"leaderTrait":"ドンキホーテ海賊団"},"then":[{"op":"donFromDeck","n":1,"mode":"active"}]}],"onKO":[{"op":"draw","n":2},{"op":"discardOwn","n":1},{"op":"donFromDeck","n":2,"mode":"rest"}]},
   "OP09-093": {"onPlay":[{"op":"cond","check":"leaderBH","then":[{"op":"negateEffect"}]}]},
   "OP16-104": {"onAttack":[{"op":"powerCopy"}],"trigger":[{"op":"draw","n":1},{"op":"reviveFromTrash","filter":{"cost":1,"traitIncludes":"黒ひげ海賊団"}}]},
   "OP16-109": {"onKO":[{"op":"cond","check":"leaderBH","then":[{"op":"draw","n":1},{"op":"ko","side":"opp","maxCost":1,"count":2,"optional":true}]}],"trigger":[{"op":"cond","check":"leaderBH","then":[{"op":"draw","n":1},{"op":"ko","side":"opp","maxCost":1,"count":2,"optional":true}]}]},

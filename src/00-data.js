@@ -470,7 +470,8 @@
           const fxe = FX[cd.no];
           if (fxe.costMod && base.costMod == null) base.costMod = fxe.costMod;   // 手札にある間の条件付きコスト増減（effCostが参照）。defのメタは上書きしない
           if (fxe.condRush && base.condRush == null) base.condRush = fxe.condRush; // 条件付き【速攻】
-          if (fxe.condBlocker && base.condBlocker == null) base.condBlocker = fxe.condBlocker; // 条件付き【ブロッカー】
+          if (fxe.condBlocker && base.condBlocker == null) { base.condBlocker = fxe.condBlocker; base.blocker = false; } // 条件付き【ブロッカー】（テキスト由来の無条件blockerを打ち消す）
+          if (fxe.condRush) base.rush = false;  // 条件付き【速攻】も同様にテキスト由来の無条件rushを打ち消す
           const timed = {}; for (const k in fxe) if (k !== 'costMod' && k !== 'condRush' && k !== 'condBlocker') timed[k] = fxe[k];
           if (Object.keys(timed).length) base.fx = timed;
           delete base.dataOnly;

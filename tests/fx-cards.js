@@ -890,6 +890,26 @@ humanPick=function(c){return Promise.resolve((c||[])[0]||null);};
       G.players.cpu.life=[I('ST01-006','cpu'),I('ST01-006','cpu')]; G.players.me.life=[I('ST01-006','me')]; G.players.me.hand=[];
       await declareAttack(atk, G.players.cpu.leader);
       ok(v.rested===true, 'OP14-032 onSelfRested: アタックでレスト→相手コスト4以下をレスト'); }
+
+    // === OP14 バッチ3 ===
+    ok(['OP14-018','OP14-036','OP14-077','OP14-010','OP14-011','OP14-016','OP14-025','OP14-033','OP14-046','OP14-052','OP14-062','OP14-065','OP14-074'].every(no=>C[no]&&(C[no].fx||C[no].condBlocker)), 'OP14バッチ3: 13枚にfx/condBlocker統合');
+    { const me=LP('OP13-002'); G.players.cpu.don.active=3; G.players.cpu.don.rested=0;
+      const c=I('OP14-065','me'); await runFx(c.base.fx.onKO,{self:c,side:'me'});
+      ok(donTotal('cpu')===2, 'OP14-065 onKO: 相手のドン-1'); }
+    { const me=LP('OP13-002'); const cc=I('OP14-046','me');
+      C['__fm2__']={no:'__fm2__',name:'魚人',type:'CHAR',color:[],cost:3,power:4000,counter:1000,traits:['魚人族']};
+      const f=mkSyn('__fm2__',C['__fm2__']); me.chars=[cc,f]; const p0=power(f);
+      await runFx(cc.base.fx.act.fx,{self:cc,side:'me'});
+      ok(!me.chars.includes(cc) && power(f)===p0+2000, 'OP14-046 act: 自身トラッシュ→魚人に+2000'); delete C['__fm2__']; }
+    { const me=LP('OP13-002'); const c=I('OP14-011','me'); c.attachedDon=2; me.chars=[c];
+      ok(hasKw(c,'blocker')===true, 'OP14-011 condBlocker: ドン×2でブロッカー');
+      c.attachedDon=1; ok(hasKw(c,'blocker')===false, 'OP14-011 condBlocker: ドン×2未満では無し'); }
+    { const me=LP('OP13-002'); me.don.active=1; const v=I('OP15-067','cpu'); G.players.cpu.chars=[v];
+      const c=I('OP14-062','me'); await runFx(c.base.fx.onKO,{self:c,side:'me'});
+      ok(!G.players.cpu.chars.includes(v) && donTotal('me')===0, 'OP14-062 onKO: ドン-1→二択先頭(KO)'); }
+    { const me=LP('OP13-002'); const tgt=me.leader; const cc=I('OP14-036','me'); me.chars=[I('OP15-067','me')]; // レスト元
+      const p0=power(tgt); await runFx(cc.base.fx.counter.fx,{self:cc,side:'me',target:tgt});
+      ok(power(tgt)===p0+4000, 'OP14-036 counter: カード1枚レスト→対象+4000'); }
   }catch(e){ console.log('EXCEPTION:', e.message); fail++; }
   console.log('Phase3 fxテスト: pass='+pass+' fail='+fail);
   process.exit(fail?1:0);
