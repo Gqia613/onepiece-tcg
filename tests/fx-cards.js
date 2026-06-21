@@ -51,6 +51,8 @@ humanPick=function(c){return Promise.resolve((c||[])[0]||null);};
     // 統合: cards-fx.js が C にfxを付与している
     ok(C['OP16-090'] && C['OP16-090'].fx && !C['OP16-090'].dataOnly, '統合: OP16群にfx付与・dataOnly解除');
     ok(Object.keys(C).length>3000, '全カードデータ統合(C='+Object.keys(C).length+')');
+    // パラレル(_rN=別イラストの同一カード)は本体noのfxを共有する（OP09-099_r1ハチノス等が効果を失っていた回帰）
+    ok(C['OP09-099_r1'] && C['OP09-099_r1'].fx && C['OP09-099_r1'].fx.act && !C['OP09-099_r1'].dataOnly && C['OP09-099_r1'].fx.act.label===C['OP09-099'].fx.act.label, 'パラレル(_rN)が本体noのfxを継承（OP09-099_r1ハチノス）');
 
     // OP16-027: 【ドン!!×1】このキャラのパワー+2000 (static)
     G.active='me';G.turnSeq=5;G.winner=null; G.players={me:mkP('OP13-002',false),cpu:mkP('OP11-041',true)};

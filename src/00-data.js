@@ -465,9 +465,11 @@
           if (/【バニッシュ】/.test(t)) base.banish = true;
           if (cd.type === 'LEADER') { base.leader = '_' + cd.no; base.life = cd.life != null ? cd.life : 5; base.donDeck = 10; }
         }
-        // 効果fxは CARD_FX を正とし、def済み/データのみ問わず一律に付与（効果定義を cards-fx.js に一元化）
-        if (FX && FX[cd.no]) {
-          const fxe = FX[cd.no];
+        // 効果fxは CARD_FX を正とし、def済み/データのみ問わず一律に付与（効果定義を cards-fx.js に一元化）。
+        // ★パラレル(_rN=別イラストの同一カード)は本体noのfxを共有する（CARD_FXは本体noのみキー。例: OP09-099_r1ハチノスが効果を失っていた）
+        const fxKey = (FX && FX[cd.no]) ? cd.no : cd.no.replace(/_r\d+$/, '');
+        if (FX && FX[fxKey]) {
+          const fxe = FX[fxKey];
           if (fxe.costMod && base.costMod == null) base.costMod = fxe.costMod;   // 手札にある間の条件付きコスト増減（effCostが参照）。defのメタは上書きしない
           if (fxe.condRush && base.condRush == null) base.condRush = fxe.condRush; // 条件付き【速攻】
           if (fxe.condBlocker && base.condBlocker == null) { base.condBlocker = fxe.condBlocker; base.blocker = false; } // 条件付き【ブロッカー】（テキスト由来の無条件blockerを打ち消す）
