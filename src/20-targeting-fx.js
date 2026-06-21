@@ -99,6 +99,7 @@
       switch (op.op) {
         case 'draw': draw(side, op.n); flog(side, `${op.n}ドロー`); break;
         case 'oppDraw': { draw(o, op.n || 1); flog(side, `相手が${op.n || 1}ドロー`); break; } // 相手にN枚引かせる（OP07-090モルガンズ）
+        case 'drawDiscardByCount': { const n = countFor(op, side, self); if (n > 0) { draw(side, n); flog(side, `${n}ドロー`); for (let i = 0; i < n && P.hand.length; i++) { const c = P.isCPU ? P.hand.slice().sort((a, b) => (a.base.counter || 0) - (b.base.counter || 0))[0] : await chooseFromHand(side, P.hand.slice(), `捨てる手札（${i + 1}/${n}）`); if (!c) break; P.hand.splice(P.hand.indexOf(c), 1); P.trash.push(reset(c)); } } render(); break; } // 数えた枚数だけ引いて同数捨てる（EB04-011ウロコ）
         case 'drawToSize': { const tgt = op.n || 3; let k = 0; while (P.hand.length < tgt) { if (!draw(side, 1)) break; k++; } if (k) flog(side, `手札が${tgt}枚になるよう${k}ドロー`); break; } // 手札N枚になるよう引く（OP02-051イワンコフ）
         case 'nextPlayCostReduce': { P._turnPlayCostReduce = { minCost: op.minCost || 0, amount: op.amount || 1, filter: op.filter || {}, turn: G.turnSeq }; flog(side, 'このターン、対象キャラのプレイコストが軽減される'); break; } // OP02-025錦えもんL（近似:ターン中の対象すべて）
         case 'oppHandToDeckDraw': { const O5 = G.players[o]; const hn = O5.hand.length; O5.deck.push(...O5.hand.splice(0)); shuffle(O5.deck); draw(o, op.n || hn); flog(side, `相手は手札を山に戻しシャッフル→${op.n || hn}ドロー`); render(); break; } // 相手の手札を山に戻しシャッフル→N枚引く（OP06-047プリン）
