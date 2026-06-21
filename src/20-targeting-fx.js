@@ -403,6 +403,14 @@
         case 'delayedDonActivate': { P._endDonActTurn = G.turnSeq; P._endDonActN = (P._endDonActN || 0) + (op.n || 1); flog(side, `このターン終了時にドン${op.n || 1}枚までをアクティブにする`); break; }
         // このターン、手札からカードをプレイできない（OP13-028シャンクス。キャラ/イベント/ステージ全て）
         case 'setPlayBan': { P._noPlayTurn = G.turnSeq; flog(side, 'このターン、手札からカードをプレイできない'); break; }
+        // 自分のトラッシュから1枚をデッキの下に置くコスト（OP13-081コアラ）。任意。
+        case 'trashToBottomCost': {
+          if (!P.trash.length) break;
+          if (!(await confirmUse(side, 'トラッシュをデッキ下', 'トラッシュ1枚をデッキの下に置いて効果を使いますか？', '置いて使う', '使わない'))) break;
+          let tc = P.isCPU ? P.trash[0] : await chooseCard(side, P.trash, 'デッキ下に置くトラッシュを選択', 'ownSmall', false);
+          if (!tc) break; P.trash.splice(P.trash.indexOf(tc), 1); P.deck.push(reset(tc)); flog(side, 'トラッシュ1枚をデッキ下へ'); render();
+          await runFx(op.then, ctx); break;
+        }
         // 相手のステージ1枚までをKO（OP14-088ドロフィー。filterでコスト制限、isImmuneは除く）
         case 'koStage': { const O = G.players[o]; if (O.stage && matchFilter(O.stage, opFilter(op)) && !isImmune(O.stage)) { const s = O.stage; O.stage = null; O.trash.push(reset(s)); flog(side, `相手のステージ「${s.base.name}」をKO`); render(); await sleep(120); } break; }
         // 自分がNダメージを受ける（OP14-115リンドウ。ライフ1枚を失う＝トリガーも誘発し得る）

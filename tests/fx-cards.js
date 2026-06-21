@@ -1382,6 +1382,50 @@ humanPick=function(c){return Promise.resolve((c||[])[0]||null);};
       const rj=mkSyn('__rj__',C['__rj__']); rj.owner='me'; const before=donTotal('me');
       await checkAllyLeave('me', rj, 'oppEffect');
       ok(donTotal('me')===before+1, 'OP13-078: ロジャーが相手効果で離脱→ドン1追加(ステージonAllyLeave)'); G.active='me'; delete C['__rj__']; }
+
+    // === OP13 バッチ5（黒・五老星/天竜人/トラッシュ） ===
+    ok(['OP13-080','OP13-081','OP13-083','OP13-089','OP13-091','OP13-094','OP13-095','OP13-098'].every(no=>C[no]&&C[no].fx), 'OP13バッチ5: 黒13枚にfx統合');
+    // OP13-080 ナス寿郎聖: トラッシュ7以上で速攻＋場を離れない
+    { const me=LP('OP13-002'); const ns=I('OP13-080','me'); ns.owner='me'; me.chars=[ns]; ns.summonedTurn=G.turnSeq; G.active='me';
+      me.trash=[]; ok(!hasKw(ns,'rush') && !isLeaveImmune(ns), 'OP13-080: トラッシュ7未満では無し');
+      me.trash=[]; for(let i=0;i<7;i++) me.trash.push(I('OP15-067','me'));
+      ok(hasKw(ns,'rush') && isLeaveImmune(ns), 'OP13-080: トラッシュ7以上で速攻＋場を離れない'); }
+    // OP13-081 コアラ: リーダー革命軍でコスト+3(staticCost) ／ act トラッシュ→デッキ下＋付与ドン
+    { const me=LP('OP13-002'); me.leader.base={...me.leader.base,traits:['革命軍']};
+      const ko=I('OP13-081','me'); ko.owner='me'; me.chars=[ko];
+      ok(matchFilter(ko,{minCost:8}), 'OP13-081: リーダー革命軍でコスト+3(5→8)');
+      me.leader.base={...me.leader.base,traits:[]}; ok(matchFilter(ko,{maxCost:5})&&!matchFilter(ko,{minCost:8}), 'OP13-081: 革命軍以外ではコスト5');
+      me.trash=[I('OP15-067','me')]; me.don={active:0,rested:2};
+      await runFx(ko.base.fx.act.fx,{self:ko,side:'me'});
+      ok((me.leader.attachedDon||0)+(ko.attachedDon||0)>=1, 'OP13-081 act: トラッシュ→デッキ下＋付与ドン1(trashToBottomCost)'); }
+    // OP13-083 サターン聖: デッキ上5枚から《五老星》を手札へ
+    { const me=LP('OP13-002');
+      C['__gr__']={no:'__gr__',name:'五A',type:'CHAR',color:[],cost:4,power:5000,counter:1000,traits:['五老星']};
+      me.deck=[mkSyn('__gr__',C['__gr__']),I('OP15-067','me'),I('OP15-067','me'),I('OP15-067','me'),I('OP15-067','me')];
+      const c=I('OP13-083','me'); await runFx(c.base.fx.onPlay,{self:c,side:'me'});
+      ok(me.hand.some(x=>x.no==='__gr__'), 'OP13-083: 《五老星》を手札へ'); delete C['__gr__']; }
+    // OP13-089 ウォーキュリー聖: トラッシュ7以上でブロッカー＋場離れない ／ onKO 1ドロー
+    { const me=LP('OP13-002'); const wk=I('OP13-089','me'); wk.owner='me'; me.chars=[wk];
+      me.trash=[]; ok(!hasKw(wk,'blocker'), 'OP13-089: トラッシュ7未満ではブロッカー無し');
+      for(let i=0;i<7;i++) me.trash.push(I('OP15-067','me'));
+      ok(hasKw(wk,'blocker') && isLeaveImmune(wk), 'OP13-089: トラッシュ7以上でブロッカー＋場離れない');
+      me.deck=[I('OP15-067','me')]; const h0=me.hand.length; await runFx(wk.base.fx.onKO,{self:wk,side:'me'});
+      ok(me.hand.length===h0+1, 'OP13-089 onKO: 1ドロー'); }
+    // OP13-095 ロズワード聖: 天竜人のみで相手コスト3以下2枚KO
+    { const me=LP('OP13-002'); me.hand=[I('OP15-067','me')];
+      C['__tr__']={no:'__tr__',name:'天A',type:'CHAR',color:[],cost:2,power:3000,counter:1000,traits:['天竜人']};
+      const tr=mkSyn('__tr__',C['__tr__']); tr.owner='me'; me.chars=[tr];
+      C['__o3a__']={no:'__o3a__',name:'O3a',type:'CHAR',color:[],cost:3,power:4000,counter:1000,traits:[]};
+      C['__o3b__']={no:'__o3b__',name:'O3b',type:'CHAR',color:[],cost:3,power:4000,counter:1000,traits:[]};
+      const v1=mkSyn('__o3a__',C['__o3a__']),v2=mkSyn('__o3b__',C['__o3b__']); v1.owner='cpu';v2.owner='cpu'; G.players.cpu.chars=[v1,v2];
+      const rz=I('OP13-095','me'); await runFx(rz.base.fx.onPlay,{self:rz,side:'me'});
+      ok(!G.players.cpu.chars.includes(v1) && !G.players.cpu.chars.includes(v2), 'OP13-095: 天竜人のみで相手コスト3以下2枚KO(allSelfChar)'); delete C['__tr__']; delete C['__o3a__']; delete C['__o3b__']; }
+    // OP13-098 元々…ないではないか: イムで相手コスト7ステージKO
+    { const me=LP('OP13-002'); me.leader.base={...me.leader.base,name:'イム'}; me.don={active:1,rested:0};
+      C['__st7__']={no:'__st7__',name:'St7',type:'STAGE',color:[],cost:7,traits:[]};
+      const st=mkSyn('__st7__',C['__st7__']); st.owner='cpu'; G.players.cpu.stage=st;
+      const ev=I('OP13-098','me'); await runFx(ev.base.fx.main.fx,{self:ev,side:'me'});
+      ok(!G.players.cpu.stage, 'OP13-098 main: リーダーイムで相手コスト7ステージKO'); delete C['__st7__']; }
   }catch(e){ console.log('EXCEPTION:', e.message); fail++; }
   console.log('Phase3 fxテスト: pass='+pass+' fail='+fail);
   process.exit(fail?1:0);

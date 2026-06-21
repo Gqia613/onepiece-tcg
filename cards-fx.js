@@ -730,5 +730,32 @@ window.CARD_FX = {
   // OP13-077 頂点まで行って来い!!!: 【メイン】ドン3レスト→付与ドンあれば相手の元々パワー4000以下1枚と3000以下1枚をKO ／【カウンター】リーダー+3000
   "OP13-077": {"main":{"fx":[{"op":"restDonCost","n":3,"then":[{"op":"cond","check":{"selfAttachedDon":true},"then":[{"op":"ko","side":"opp","filter":{"maxPower":4000},"count":1,"optional":true},{"op":"ko","side":"opp","filter":{"maxPower":3000},"count":1,"optional":true}]}]}]},"counter":{"cost":0,"fx":[{"op":"leaderBuff","amount":3000,"duration":"battle"}]}},
   // OP13-078 オーロ・ジャクソン号 STAGE: 【ターン1回】ロジャー海賊団が相手効果で場を離れた時、ドンデッキからドン1レスト追加
-  "OP13-078": {"onAllyLeave":{"cause":"oppEffect","filter":{"traitIncludes":"ロジャー海賊団"},"once":"turn","fx":[{"op":"donFromDeck","n":1,"mode":"rested"}]}}
+  "OP13-078": {"onAllyLeave":{"cause":"oppEffect","filter":{"traitIncludes":"ロジャー海賊団"},"once":"turn","fx":[{"op":"donFromDeck","n":1,"mode":"rested"}]}},
+  /* ===== OP13 バッチ5（黒・五老星/天竜人/トラッシュ。新op trashToBottomCost。079/082/084/092/099は最終バッチ） ===== */
+  // OP13-080 ナス寿郎聖: トラッシュ7以上で 場を離れず・【速攻】 ／【アタック時】トラッシュ10以上で相手1枚-2000
+  "OP13-080": {"static":[{"op":"condBuff","cond":{"trashAtLeast":7},"immune":true},{"op":"staticKeyword","kw":"rush","cond":{"trashAtLeast":7}}],"onAttack":[{"op":"cond","check":{"trashAtLeast":10},"then":[{"op":"powerMod","side":"opp","amount":-2000,"count":1,"optional":true,"duration":"turn"}]}]},
+  // OP13-081 コアラ: リーダー《革命軍》でコスト+3 ／【起動メイン】トラッシュ1枚デッキ下：リーダーかキャラにレストのドン1付与
+  "OP13-081": {"static":[{"op":"staticCost","cond":{"leaderTraitIncludes":"革命軍"},"amount":3}],"act":{"label":"トラッシュ1枚デッキ下:付与ドン1","cost":{},"fx":[{"op":"trashToBottomCost","then":[{"op":"donAttach","target":"chooseOwn","n":1}]}]}},
+  // OP13-083 ジェイガルシア・サターン聖: トラッシュ7以上で場を離れない ／【登場時】デッキ上5枚から《五老星》1枚を手札へ
+  "OP13-083": {"static":[{"op":"condBuff","cond":{"trashAtLeast":7},"immune":true}],"onPlay":[{"op":"search","look":5,"count":1,"filter":{"trait":"五老星"},"optional":true}]},
+  // OP13-086 シャルリア宮: 【登場時】デッキ上3枚から「シャルリア宮」以外の《天竜人》1枚を手札へ(残りトラッシュ)→手札1捨て
+  "OP13-086": {"onPlay":[{"op":"search","look":3,"count":1,"filter":{"traitIncludes":"天竜人","nameExcludes":"シャルリア宮"},"rest":"trash","optional":true},{"op":"discardOwn","n":1}]},
+  // OP13-087 チャルロス聖: 【ブロッカー】 ／【登場時】デッキ上1枚をトラッシュ
+  "OP13-087": {"onPlay":[{"op":"deckToTrash","n":1}]},
+  // OP13-089 トップマン・ウォーキュリー聖: トラッシュ7以上で 場を離れず・【ブロッカー】 ／【KO時】1ドロー
+  "OP13-089": {"static":[{"op":"condBuff","cond":{"trashAtLeast":7},"immune":true},{"op":"staticKeyword","kw":"blocker","cond":{"trashAtLeast":7}}],"onKO":[{"op":"draw","n":1}]},
+  // OP13-091 マーカス・マーズ聖: トラッシュ7以上で 場を離れず・【ブロッカー】 ／【登場時】手札1捨て：相手の元々コスト5以下1枚をKO
+  "OP13-091": {"static":[{"op":"condBuff","cond":{"trashAtLeast":7},"immune":true},{"op":"staticKeyword","kw":"blocker","cond":{"trashAtLeast":7}}],"onPlay":[{"op":"discardCost","count":1,"then":[{"op":"ko","side":"opp","filter":{"maxBaseCost":5},"count":1,"optional":true}]}]},
+  // OP13-093 モルガンズ: 【ブロッカー】 ／【登場時】2ドロー2捨て
+  "OP13-093": {"onPlay":[{"op":"draw","n":2},{"op":"discardOwn","n":2}]},
+  // OP13-094 ヨーク: 【登場時】自分の《天竜人》1枚を+2000
+  "OP13-094": {"onPlay":[{"op":"powerMod","side":"self","amount":2000,"count":1,"optional":true,"duration":"turn","filter":{"traitIncludes":"天竜人"}}]},
+  // OP13-095 ロズワード聖: 【登場時】手札1捨て：自キャラが《天竜人》のみなら相手の元々コスト3以下2枚をKO
+  "OP13-095": {"onPlay":[{"op":"discardCost","count":1,"then":[{"op":"cond","check":{"allSelfChar":{"trait":"天竜人"}},"then":[{"op":"ko","side":"opp","filter":{"maxBaseCost":3},"count":2,"optional":true}]}]}]},
+  // OP13-096 “五老星”ここに!!!: 【メイン】デッキ上3枚から自身以外の《天竜人》1枚を手札へ(残りトラッシュ)
+  "OP13-096": {"main":{"fx":[{"op":"search","look":3,"count":1,"filter":{"traitIncludes":"天竜人","nameExcludes":"ここに"},"rest":"trash","optional":true}]}},
+  // OP13-097 世界の均衡など…: 【メイン】ドン5レスト→自キャラが《天竜人》のみなら相手の元々コスト6以下1枚をKO ／【カウンター】リーダー+3000
+  "OP13-097": {"main":{"fx":[{"op":"restDonCost","n":5,"then":[{"op":"cond","check":{"allSelfChar":{"trait":"天竜人"}},"then":[{"op":"ko","side":"opp","filter":{"maxBaseCost":6},"count":1,"optional":true}]}]}]},"counter":{"cost":0,"fx":[{"op":"leaderBuff","amount":3000,"duration":"battle"}]}},
+  // OP13-098 元々…ないではないか…: 【メイン】ドン1レスト→リーダー「イム」なら相手のコスト7ステージKO ／【カウンター】リーダー「イム」ならリーダーかキャラ+4000
+  "OP13-098": {"main":{"fx":[{"op":"restDonCost","n":1,"then":[{"op":"cond","check":{"leaderNameIncludes":"イム"},"then":[{"op":"koStage","filter":{"cost":7}}]}]}]},"counter":{"cost":0,"fx":[{"op":"cond","check":{"leaderNameIncludes":"イム"},"then":[{"op":"powerMod","side":"self","leader":true,"amount":4000,"battle":true,"count":1,"optional":true}]}]}}
 };
