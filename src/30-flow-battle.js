@@ -26,7 +26,10 @@
       flog(side, `「${card.base.name}」が登場`);
       // トラッシュから登場した時のリーダー誘発（onReviveFromTrash）— 登場時効果より先に付与
       if (source === 'trash') checkReviveTrigger(side, card);
-      const hasEnter = !noEnter && card.base.fx && card.base.fx.onPlay && !isNegated(card);
+      // 【登場時】効果の無効化（OP09-081ティーチL: 自分の登場時は無効／起動メインで相手の登場時を一定期間無効）
+      const onPlayNeg = (() => { const L = P.leader; if (L && !isNegated(L) && L.base.fx && L.base.fx.static && L.base.fx.static.some(o => o.op === 'negateOwnOnPlay')) return true; if ((P._onPlayNegatedUntil || 0) >= G.turnSeq) return true; return false; })();
+      const hasEnter = !noEnter && !onPlayNeg && card.base.fx && card.base.fx.onPlay && !isNegated(card);
+      if (onPlayNeg && card.base.fx && card.base.fx.onPlay) flog(side, `「${card.base.name}」の登場時効果は無効になった`);
       if (hasEnter) await fxNote(side, '登場時効果', card.base.name);
       else if (G.players[side].isCPU) await fxNote(side, '登場', card.base.name);
       if (hasEnter) await runFx(card.base.fx.onPlay, { self: card, side });
@@ -96,8 +99,8 @@
     // 「自分の場のドン‼がドン‼デッキに戻された時」誘発（OP14-068トレーボル）。ターン1回ガード付き。
     async function fireDonReturned(side) {
       const P = G.players[side];
-      for (const c of P.chars.slice()) {
-        if (c.base.fx && c.base.fx.onDonReturned && P.chars.includes(c) && !isNegated(c)) {
+      for (const c of [...P.chars.slice(), P.leader]) { // リーダーのonDonReturnedも誘発（OP09-061ルフィL）
+        if (c && c.base.fx && c.base.fx.onDonReturned && (c === P.leader || P.chars.includes(c)) && !isNegated(c)) {
           if (c.base.fx.onDonReturned.some(o => o.once === 'turn') && c._donRetTurn === G.turnSeq) continue;
           c._donRetTurn = G.turnSeq;
           await runFx(c.base.fx.onDonReturned, { self: c, side });

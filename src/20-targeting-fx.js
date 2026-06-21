@@ -323,6 +323,17 @@
           if (!(await confirmUse(side, '自身をレスト', `「${self.base.name}」をレストにして効果を使いますか？`, 'レストして使う', '使わない'))) break;
           self.rested = true; flog(side, `「${self.base.name}」をレストにした`); render(); await runFx(op.then, ctx); break;
         }
+        // このキャラを持ち主のデッキの下に置く（強制・OP09-051バギー）
+        case 'selfToDeckBottom': { if (self && P.chars.includes(self)) { P.don.active += self.attachedDon || 0; removeChar(self); P.deck.push(reset(self)); flog(side, `「${self.base.name}」をデッキの下に置いた`); await checkAllyLeave(side, self, 'ownEffect'); render(); } break; }
+        // このキャラ自身をトラッシュからレストで登場（OP09-052マルコ＝KO時の自己蘇生）
+        case 'reviveSelfRested': { const i = P.trash.indexOf(self); if (i < 0) break; P.trash.splice(i, 1); await summon(side, self, false, 'trash'); if (P.chars.includes(self)) self.rested = true; render(); break; }
+        // 手札N枚をデッキの下に置くコスト（OP09-060カライ・バリ島）。払えたら then。
+        case 'handToBottomCost': {
+          const n = op.n || 1; if (P.hand.length < n) break;
+          if (!(await confirmUse(side, '手札をデッキ下', `手札${n}枚をデッキの下に置いて効果を使いますか？`, '置いて使う'))) break;
+          for (let i = 0; i < n; i++) { const c = P.isCPU ? P.hand.slice().sort((a, b) => (a.base.counter || 0) - (b.base.counter || 0))[0] : await chooseFromHand(side, P.hand.slice(), `デッキの下に置く手札（${i + 1}/${n}）`); if (!c) break; P.hand.splice(P.hand.indexOf(c), 1); P.deck.push(c); }
+          flog(side, `手札${n}枚をデッキの下へ`); await runFx(op.then, ctx); break;
+        }
         case 'handToBottom': {
           for (let i = 0; i < (op.n || 1); i++) {
             if (!P.hand.length) break;
@@ -362,6 +373,8 @@
         case 'grantWeakKoImmune': { P._weakKoImmune = { until: durSeq(op.duration || 'untilNextEnd'), maxBasePower: op.maxBasePower || 1000 }; flog(side, `元々パワー${op.maxBasePower || 1000}以下の自キャラは相手の効果でKOされない`); break; }
         // filter一致の自キャラを、durationの間、効果でKOされないようにする（OP09-033ロビン＝ODYSSEY/麦わら）
         case 'grantTraitKoImmune': { P._traitKoImmune = { until: durSeq(op.duration || 'untilNextEnd'), filter: op.filter || {} }; flog(side, 'フィルタ一致の自キャラは効果でKOされない'); break; }
+        // 相手の【登場時】効果を duration の間 無効にする（OP09-081ティーチLの起動メイン）
+        case 'negateOppOnPlay': { G.players[o]._onPlayNegatedUntil = durSeq(op.duration || 'untilNextEnd'); flog(side, '次の相手のターン終了時まで、相手の登場時効果を無効にした'); break; }
         // このキャラを持ち主のデッキの下に置くコスト（OP10-026/027錦えもん）。払えたら then 実行。
         case 'selfToBottomCost': {
           if (!P.chars.includes(self)) break;

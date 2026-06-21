@@ -1470,5 +1470,73 @@ window.CARD_FX = {
   // OP09-040 雷光槍フリップ煩悩鳳ショット: 【メイン】レストのキャラ2枚以上なら相手コスト4以下1枚KO
   "OP09-040": {"main":{"fx":[{"op":"cond","check":{"selfRestedCharsAtLeast":2},"then":[{"op":"ko","side":"opp","filter":{"maxCost":4},"count":1,"optional":true}]}]}},
   // OP09-041 魂のフランキー風速計BOXING喪剣: 【カウンター】リーダーかキャラ+2000→ODYSSEYリーダー＋レストのキャラ2枚以上なら自キャラ2枚をアクティブ
-  "OP09-041": {"counter":{"cost":0,"fx":[{"op":"powerMod","side":"self","leader":true,"amount":2000,"battle":true,"count":1,"optional":true},{"op":"cond","check":{"and":[{"leaderTraitIncludes":"ODYSSEY"},{"selfRestedCharsAtLeast":2}]},"then":[{"op":"activateOwnChar","count":2,"filter":{"restedOnly":true}}]}]}}
+  "OP09-041": {"counter":{"cost":0,"fx":[{"op":"powerMod","side":"self","leader":true,"amount":2000,"battle":true,"count":1,"optional":true},{"op":"cond","check":{"and":[{"leaderTraitIncludes":"ODYSSEY"},{"selfRestedCharsAtLeast":2}]},"then":[{"op":"activateOwnChar","count":2,"filter":{"restedOnly":true}}]}]}},
+  /* ===== OP09 バッチ3（青・042-061＝クロスギルド/白ひげ） ===== */
+  // OP09-043 アルビダ: 【KO時】クロスギルドリーダーなら手札から「アルビダ」以外のコスト5以下を登場
+  "OP09-043": {"onKO":[{"op":"cond","check":{"leaderTraitIncludes":"クロスギルド"},"then":[{"op":"playCharFromHand","filter":{"maxCost":5,"nameExcludes":"アルビダ"},"count":1,"optional":true}]}]},
+  // OP09-044 イゾウ: 【アタック時】デッキ上5枚からワノ国か白ひげ海賊団1枚を手札に＋手札1枚捨て
+  "OP09-044": {"onAttack":[{"op":"search","look":5,"count":1,"filter":{"or":[{"traitIncludes":"ワノ国"},{"traitIncludes":"白ひげ海賊団"}]},"optional":true},{"op":"discardCost","count":1}]},
+  // OP09-045 カバジ: 自分の「バギー」か「モージ」がいるとバトルでKOされない
+  "OP09-045": {"static":[{"op":"condBuff","battleImmune":true,"cond":{"or":[{"selfChar":{"nameIncludes":"バギー"}},{"selfChar":{"nameIncludes":"モージ"}}]}}]},
+  // OP09-046 クロコダイル(c7): 【登場時】手札からコスト5以下のクロスギルドかB・W1枚を登場
+  "OP09-046": {"onPlay":[{"op":"playCharFromHand","filter":{"maxCost":5,"or":[{"traitIncludes":"クロスギルド"},{"traitIncludes":"B・W"}]},"count":1,"optional":true}]},
+  // OP09-047 光月おでん: 【ダブルアタック】 ／【KO時】2ドロー＋手札1枚捨て
+  "OP09-047": {"onKO":[{"op":"draw","n":2},{"op":"discardCost","count":1}]},
+  // OP09-048 ジュラキュール・ミホーク(c6): 【ブロッカー】 ／【登場時】2ドロー＋手札1枚捨て
+  "OP09-048": {"onPlay":[{"op":"draw","n":2},{"op":"discardCost","count":1}]},
+  // OP09-050 ナミ(c1): 【アタック時】デッキ上5枚から青のイベント1枚を手札に
+  "OP09-050": {"onAttack":[{"op":"search","look":5,"count":1,"filter":{"color":"青","type":"EVENT"},"optional":true}]},
+  // OP09-051 バギー(c10): 【登場時】相手キャラ1枚をデッキ下→自分のコスト5以上が5枚いなければこのキャラをデッキ下
+  "OP09-051": {"onPlay":[{"op":"deckBottom","side":"opp","count":1,"optional":true},{"op":"cond","check":{"not":{"selfCharCount":{"filter":{"minCost":5},"min":5}}},"then":[{"op":"selfToDeckBottom"}]}]},
+  // OP09-052 マルコ(c3): 【相手のターン中】手札1枚を捨てる：このキャラが相手効果でKOされた時、トラッシュからレストで登場
+  "OP09-052": {"onKO":[{"op":"cond","check":{"oppTurn":true},"then":[{"op":"discardCost","count":1,"optional":true,"then":[{"op":"reviveSelfRested"}]}]}]},
+  // OP09-053 モージ: 【登場時】デッキ上5枚から「リッチー」1枚を手札に→手札から「リッチー」1枚を登場
+  "OP09-053": {"onPlay":[{"op":"search","look":5,"count":1,"filter":{"nameIncludes":"リッチー"},"optional":true},{"op":"playSpecificFromHand","nameIncludes":"リッチー","optional":true}]},
+  // OP09-056 Mr.3(ギャルディーノ): 【登場時】デッキ上4枚から「自身」以外のクロスギルドかB・W1枚を手札に
+  "OP09-056": {"onPlay":[{"op":"search","look":4,"count":1,"filter":{"or":[{"traitIncludes":"クロスギルド"},{"traitIncludes":"B・W"}]},"exclude":"Mr.3(ギャルディーノ)","optional":true}]},
+  // OP09-057 クロスギルド: 【メイン】デッキ上4枚からクロスギルド1枚を手札に
+  "OP09-057": {"main":{"fx":[{"op":"search","look":4,"count":1,"filter":{"traitIncludes":"クロスギルド"},"optional":true}]}},
+  // OP09-058 特製マギー玉: 【メイン】相手のコスト6以下1枚を手札に戻す
+  "OP09-058": {"main":{"fx":[{"op":"bounce","side":"opp","maxCost":6,"count":1,"optional":true}]}},
+  // OP09-059 湯けむり殺人事件: 【カウンター】リーダーかキャラ+3000→手札2枚まで捨て、捨てた枚数だけデッキ上トラッシュ(近似:各2枚)
+  "OP09-059": {"counter":{"cost":0,"fx":[{"op":"powerMod","side":"self","leader":true,"amount":3000,"battle":true,"count":1,"optional":true},{"op":"discardCost","count":2,"optional":true,"then":[{"op":"deckToTrash","n":2}]}]}},
+  // OP09-060 カライ・バリ島(STAGE): 【起動メイン】手札2枚をデッキ下＋このステージをレスト：クロスギルドリーダーなら2ドロー
+  "OP09-060": {"act":{"label":"手札2枚デッキ下+レスト:クロスギルドなら2ドロー","cost":{"restSelf":true},"fx":[{"op":"handToBottomCost","n":2,"then":[{"op":"cond","check":{"leaderTraitIncludes":"クロスギルド"},"then":[{"op":"draw","n":2}]}]}]}},
+  // OP09-061 モンキー・D・ルフィ LEADER: 【ドン×1】自分のキャラ全コスト+1 ／【ターン1回】自分のドンが2枚以上戻された時、ドン1アクティブ＋ドン1レスト追加(近似:返却ごと)
+  "OP09-061": {"static":[{"op":"allyCost","cond":{"donX1":true},"amount":1}],"onDonReturned":[{"op":"cond","once":"turn","check":{"selfTurn":true},"then":[{"op":"donFromDeck","n":1,"mode":"active"},{"op":"donFromDeck","n":1,"mode":"rested"}]}]},
+  /* ===== OP09 バッチ4（紫・062-081＝麦わら/ドン循環） ===== */
+  // OP09-062 ニコ・ロビン LEADER: 【バニッシュ】 ／【アタック時】手札の【トリガー】1枚を捨てる：ドンデッキからドン1レスト追加
+  "OP09-062": {"onAttack":[{"op":"discardCost","count":1,"optional":true,"filter":{"hasTrigger":true},"then":[{"op":"donFromDeck","n":1,"mode":"rested"}]}]},
+  // OP09-064 キラー: 【登場時】ドン-1：キッド海賊団リーダー1枚をアクティブに
+  "OP09-064": {"onPlay":[{"op":"donMinus","n":1},{"op":"cond","check":{"leaderTraitIncludes":"キッド海賊団"},"then":[{"op":"activateOwnChar","incLeader":true,"count":0}]}]},
+  // OP09-065 サンジ(c7): 【登場時】ドン-1：このターン【速攻】→相手コスト6以下1枚をレスト
+  "OP09-065": {"onPlay":[{"op":"donMinus","n":1},{"op":"giveKeyword","target":"self","kw":"rush","duration":"turn"},{"op":"restChar","side":"opp","filter":{"maxCost":6},"count":1,"optional":true}]},
+  // OP09-066 ジャンバール: 【登場時】相手のドンが自分より多いなら相手コスト3以下1枚KO
+  "OP09-066": {"onPlay":[{"op":"cond","check":{"oppDonGreater":true},"then":[{"op":"ko","side":"opp","filter":{"maxCost":3},"count":1,"optional":true}]}]},
+  // OP09-068 トニートニー・チョッパー(c5): 【自分のターン終了時】ドン-1：このキャラをアクティブ→次相手ターン終了まで【ブロッカー】
+  "OP09-068": {"onTurnEnd":[{"op":"donMinus","n":1},{"op":"activateSelf"},{"op":"giveKeyword","target":"self","kw":"blocker","duration":"untilNextEnd"}]},
+  // OP09-069 トラファルガー・ロー(c1): 【登場時】デッキ上4枚からコスト2以上の麦わらかハート1枚を手札に
+  "OP09-069": {"onPlay":[{"op":"search","look":4,"count":1,"filter":{"minCost":2,"or":[{"traitIncludes":"麦わらの一味"},{"traitIncludes":"ハートの海賊団"}]},"optional":true}]},
+  // OP09-070 ナミ(c3): 【登場時】ドン-1：リーダーかキャラ1枚にレストのドン2付与
+  "OP09-070": {"onPlay":[{"op":"donMinus","n":1},{"op":"donAttach","target":"chooseOwn","n":2}]},
+  // OP09-072 フランキー(c4): 【ブロッカー】 ／【登場時】ドン-2＋手札1枚捨て：2ドロー
+  "OP09-072": {"onPlay":[{"op":"donMinus","n":2},{"op":"discardCost","count":1,"optional":true,"then":[{"op":"draw","n":2}]}]},
+  // OP09-073 ブルック(c6): 【アタック時】ドン-1：相手キャラ2枚を-2000
+  "OP09-073": {"onAttack":[{"op":"donMinus","n":1},{"op":"powerMod","side":"opp","amount":-2000,"duration":"turn","count":2,"optional":true}]},
+  // OP09-074 ベポ: 【自分のターン中】【ターン1回】ドンが戻された時、リーダーかキャラ1枚を+1000
+  "OP09-074": {"onDonReturned":[{"op":"cond","once":"turn","check":{"selfTurn":true},"then":[{"op":"powerMod","side":"self","leader":true,"amount":1000,"duration":"turn","count":1,"optional":true}]}]},
+  // OP09-075 ユースタス・キッド(c3): 【登場時】ライフ上1枚を手札に：キッド海賊団リーダーならドンデッキからドン1アクティブ追加
+  "OP09-075": {"onPlay":[{"op":"lifeCost","then":[{"op":"cond","check":{"leaderTraitIncludes":"キッド海賊団"},"then":[{"op":"donFromDeck","n":1,"mode":"active"}]}]}]},
+  // OP09-076 ロロノア・ゾロ(c3): 【登場時】ドン-1：ドンデッキからドン1アクティブ追加
+  "OP09-076": {"onPlay":[{"op":"donMinus","n":1},{"op":"donFromDeck","n":1,"mode":"active"}]},
+  // OP09-077 ゴムゴムの雷: 【メイン】ドン-2：相手のパワー6000以下1枚KO
+  "OP09-077": {"main":{"fx":[{"op":"donMinus","n":2},{"op":"ko","side":"opp","filter":{"maxEffPower":6000},"count":1,"optional":true}]}},
+  // OP09-078 ゴムゴムの巨人: 【カウンター】ドン-2＋手札1枚捨て：麦わらリーダーならリーダーかキャラ+4000→2ドロー
+  "OP09-078": {"counter":{"cost":0,"fx":[{"op":"donMinus","n":2},{"op":"discardCost","count":1,"optional":true,"then":[{"op":"cond","check":{"leaderTraitIncludes":"麦わらの一味"},"then":[{"op":"powerMod","side":"self","leader":true,"amount":4000,"battle":true,"count":1,"optional":true},{"op":"draw","n":2}]}]}]}},
+  // OP09-079 ゴムゴムの縄跳び: 【メイン】ドン-2：相手コスト5以下1枚をレスト→1ドロー
+  "OP09-079": {"main":{"fx":[{"op":"donMinus","n":2},{"op":"restChar","side":"opp","filter":{"maxCost":5},"count":1,"optional":true},{"op":"draw","n":1}]}},
+  // OP09-080 サウザンド・サニー号(STAGE): 【相手のターン中】このステージをレスト：麦わらキャラが相手効果で離れた時、ドンデッキからドン1レスト追加
+  "OP09-080": {"onAllyLeave":{"when":"oppTurn","cause":"oppEffect","filter":{"traitIncludes":"麦わらの一味"},"fx":[{"op":"restSelfCost","then":[{"op":"donFromDeck","n":1,"mode":"rested"}]}]}},
+  // OP09-081 マーシャル・Ｄ・ティーチ LEADER: 自分の登場時効果は無効 ／【起動メイン】手札1枚を捨てる：次相手ターン終了まで相手の登場時効果を無効
+  "OP09-081": {"static":[{"op":"negateOwnOnPlay"}],"act":{"label":"手札1捨て:相手の登場時効果を無効","cost":{},"fx":[{"op":"discardCost","count":1,"optional":true,"then":[{"op":"negateOppOnPlay","duration":"untilNextEnd"}]}]}}
 };

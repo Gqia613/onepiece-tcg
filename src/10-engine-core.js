@@ -194,6 +194,7 @@
       if (c.leaderEffPowerAtLeast != null && power(P.leader) < c.leaderEffPowerAtLeast) return false; // 自分のリーダーの現在パワーN以上（OP09-017ワイヤー）
       if (c.selfAttachedDonAtLeast != null && [P.leader, ...P.chars].reduce((s, x) => s + (x ? (x.attachedDon || 0) : 0), 0) < c.selfAttachedDonAtLeast) return false; // 自分の付与ドン合計N以上（OP12-015/024等）
       if (c.donLEOpp && donTotal(side) > donTotal(opp(side))) return false; // 自分の場のドンが相手の場のドン枚数以下（OP12-041/073/078等）
+      if (c.oppDonGreater && donTotal(opp(side)) <= donTotal(side)) return false; // 相手の場のドンが自分より多い（OP09-066ジャンバール）
       if (c.activeDonAtMost != null && (P.don.active || 0) > c.activeDonAtMost) return false; // アクティブのドンN枚以下
       if (c.activeDonAtLeast != null && (P.don.active || 0) < c.activeDonAtLeast) return false;
       if (c.oppHandAtLeast != null && O.hand.length < c.oppHandAtLeast) return false;
@@ -494,6 +495,7 @@
       if (f.power != null && (b.power || 0) !== f.power) return false; // 厳密パワー一致
       if (f.maxPower != null && (b.power || 0) > f.maxPower) return false;
       if (f.minPower != null && (b.power || 0) < f.minPower) return false;
+      if (f.hasTrigger && !(b.fx && b.fx.trigger)) return false; // 【トリガー】を持つカード（OP09-062ロビンLの捨てコスト）
       if (f.nameIncludes && !normName(b.name).includes(normName(f.nameIncludes))) return false;
       if (f.traitNot && (b.traits || []).some(t => t.includes(f.traitNot))) return false; // 指定特徴(部分一致)を持つものを除外
       if (f.nameExcludes && normName(b.name).includes(normName(f.nameExcludes))) return false; // 指定名を含むものを除外
