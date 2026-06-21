@@ -136,10 +136,11 @@
       const toN = target.base.type === 'LEADER' ? (opp ? 'あなたのリーダー' : '相手のリーダー') : target.base.name;
       const ap = power(attacker), dp = power(target);
       const el = document.createElement('div'); el.id = 'atkAnnounce'; if (opp) el.className = 'opp';
+      const aaImg = no => '<img class="aa-card" src="' + IMG(no) + '" referrerpolicy="no-referrer" decoding="async" onerror="this.style.display=\'none\'">';
       el.innerHTML = (opp ? '<span class="aa-side">相手</span>' : '') +
-        '<span class="aa-from">' + escapeHTML(attacker.base.name) + '<b class="aa-pw">P' + ap + '</b></span>' +
+        '<span class="aa-from">' + aaImg(attacker.base.no) + '<span class="aa-nm">' + escapeHTML(attacker.base.name) + '</span><b class="aa-pw">P' + ap + '</b></span>' +
         '<span class="aa-arrow">▶</span>' +
-        '<span class="aa-to">' + escapeHTML(toN) + '<b class="aa-pw def">P' + dp + '</b></span>';
+        '<span class="aa-to">' + aaImg(target.base.no) + '<span class="aa-nm">' + escapeHTML(toN) + '</span><b class="aa-pw def">P' + dp + '</b></span>';
       document.body.appendChild(el);
     }
     function _esMotes() { let s = ''; for (let i = 0; i < 9; i++) { const l = (4 + Math.random() * 90).toFixed(1), d = (Math.random() * 2).toFixed(2), dur = (4.6 + Math.random() * 4.2).toFixed(2), sz = (5 + Math.random() * 6).toFixed(1); s += '<i style="left:' + l + '%;width:' + sz + 'px;height:' + sz + 'px;animation-duration:' + dur + 's;animation-delay:' + d + 's"></i>'; } return s; }
@@ -219,31 +220,32 @@
       let cards = '';
       for (let i = 0; i < P.life.length; i++) {
         const c = P.life[i];
+        const z = P.life.length - i; // 上(次に取られる=index0)を前面、下に行くほど背面（下から上に積み上がる見え方）
         if (c && c._faceUp) {
-          cards += '<div class="lifecard up" data-no="' + c.base.no + '" title="' + escapeHTML(c.base.name) + '（表向き）">' +
+          cards += '<div class="lifecard up" style="z-index:' + z + '" data-no="' + c.base.no + '" title="' + escapeHTML(c.base.name) + '（表向き）">' +
             '<img src="' + IMG_ROT(c.base.no) + '" referrerpolicy="no-referrer" decoding="async" onerror="this.style.display=\'none\'">' +
             '<span class="lf-fb">' + escapeHTML(c.base.name) + '</span></div>';
-        } else cards += '<div class="lifecard"></div>';
+        } else cards += '<div class="lifecard" style="z-index:' + z + '"></div>';
       }
       const lifeStack = '<div class="lifestack">' + (cards || '<span class="zero">0</span>') + '</div>';
-      return '<div class="zone-side ga-life"><span class="zlabel">LIFE ' + P.life.length + '</span>' + lifeStack + '</div>';
+      return '<div class="zone-side ga-life">' + lifeStack + '</div>';
     }
     /* ドンデッキ（ライフの下・残りドン山） */
     function donDeckBlock(P) {
       const donLeft = P.donMax - (P.don.active + P.don.rested + attachedSum(P));
-      return '<div class="zone-side ga-dondeck"><span class="zlabel">ドンデッキ ' + donLeft + '</span>' + pileHTML(donLeft, 'donp') + '</div>';
+      return '<div class="zone-side ga-dondeck">' + pileHTML(donLeft, 'donp') + '</div>';
     }
     /* デッキ（リーダーの右） */
-    function deckBlock(P) { return '<div class="zone-side ga-deck"><span class="zlabel">DECK ' + P.deck.length + '</span>' + pileHTML(P.deck.length, 'cardback') + '</div>'; }
+    function deckBlock(P) { return '<div class="zone-side ga-deck">' + pileHTML(P.deck.length, 'cardback') + '</div>'; }
     /* トラッシュ（デッキの下） */
     function trashBlock(P) {
       const n = P.trash.length;
-      if (n === 0) return '<div class="zone-side ga-trash"><span class="zlabel">TRASH 0</span><div class="pile trashp"><span class="pc">0</span></div></div>';
+      if (n === 0) return '<div class="zone-side ga-trash"><div class="pile trashp"><span class="pc">0</span></div></div>';
       const top = P.trash[n - 1];
       const side = (P === G.players.me) ? 'me' : 'cpu';
       const fan = P.trash.slice().reverse().map(c =>
         '<div class="tf-card" title="' + escapeHTML(c.base.name) + '"><img src="' + IMG(c.base.no) + '" referrerpolicy="no-referrer" decoding="async" onerror="this.style.display=\'none\'"><span class="tf-fb">' + escapeHTML(c.base.name) + '</span></div>').join('');
-      return '<div class="zone-side ga-trash"><span class="zlabel">TRASH ' + n + '</span>' +
+      return '<div class="zone-side ga-trash">' +
         '<div class="trashtop" data-no="' + top.base.no + '" onclick="showTrashModal(\'' + side + '\')" title="最新: ' + escapeHTML(top.base.name) + '（クリック/ホバーで全表示）">' +
         '<img class="tt-img" src="' + IMG(top.base.no) + '" referrerpolicy="no-referrer" decoding="async" onerror="this.style.display=\'none\'">' +
         '<span class="tt-fb">' + escapeHTML(top.base.name) + '</span>' +
@@ -253,19 +255,15 @@
     }
     /* コストエリア（リーダーの下・固定幅で確保）: アクティブ=立て / レスト=横 */
     function donCostBlock(P) {
-      const inplay = P.don.active + P.don.rested + attachedSum(P);
       const mine = P === G.players.me;
       const usable = mine && G.active === 'me' && G.myActable && !G.busy && !G.attackSel;
       let d = '';
       for (let i = 0; i < P.don.active; i++)d += '<div class="doncard' + (usable ? ' usable' : '') + '">D</div>';
       for (let i = 0; i < P.don.rested; i++)d += '<div class="doncard rest">D</div>';
       if (!d) d = '<div class="doncard ghost"></div>';
-      const label = mine
-        ? '<span class="dc-use">使用可 <b>' + P.don.active + '</b></span><small>/' + inplay + '</small>'
-        : 'コストエリア ' + P.don.active + '<small>/' + inplay + '</small>';
-      return '<div class="zone-side doncost ga-cost"><span class="zlabel">' + label + '</span><div class="donrow">' + d + '</div></div>';
+      return '<div class="zone-side doncost ga-cost"><div class="donrow">' + d + '</div></div>';
     }
-    function handCountHTML(P) { return '<div class="zone-side ga-hand"><span class="zlabel">HAND ' + P.hand.length + '</span>' + pileHTML(P.hand.length, 'cardback') + '</div>'; }
+    function handCountHTML(P) { return '<div class="zone-side ga-hand">' + pileHTML(P.hand.length, 'cardback') + '</div>'; }
 
     // 自分の盤面カードで「今このカードにできる行動があるか」（openOwnMenu の選択肢有無と一致させる）
     function ownActable(card) {

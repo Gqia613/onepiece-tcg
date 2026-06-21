@@ -56,6 +56,17 @@
       --elev-1: 0 2px 8px rgba(0, 0, 0, .35);
       --elev-2: 0 8px 24px rgba(0, 0, 0, .45);
       --elev-3: 0 20px 60px rgba(0, 0, 0, .6);
+      /* 情報パネル幅。盤面(.felt)実幅=100vw-rail。狭幅(@media)では0に上書き */
+      --rail: 286px;
+      /* 公式カード背面/ドン画像（weserv 経由・play-guide の合成画像を切り抜き。透過PNGのため正確な札枠で切る） */
+      /* デッキ背面(紺・縦) */
+      --img-back: url("https://images.weserv.nl/?url=ssl:www.onepiece-cardgame.com/renewal/images/play-guide/img_deck01.png&cx=329&cy=0&cw=210&ch=328&output=webp&q=82");
+      /* ライフ用＝紺背面を横向き(回転後座標で切り抜き。左=元の上) */
+      --img-back-life: url("https://images.weserv.nl/?url=ssl:www.onepiece-cardgame.com/renewal/images/play-guide/img_deck01.png&ro=270&cx=0&cy=327&cw=328&ch=210&output=webp&q=82");
+      /* ドン!!デッキ背面(緑)。透過の角を白で平坦化して上の余白を解消 */
+      --img-don-deck: url("https://images.weserv.nl/?url=ssl:www.onepiece-cardgame.com/renewal/images/play-guide/img_deck01.png&cx=656&cy=21&cw=210&ch=307&bg=white&output=webp&q=82");
+      /* ドン!!カード */
+      --img-don: url("https://images.weserv.nl/?url=ssl:www.onepiece-cardgame.com/renewal/images/play-guide/card_don.webp&output=webp&q=82");
     }
 
     * {
@@ -604,7 +615,7 @@
       overflow: hidden;
       display: flex;
       flex-direction: column;
-      --cu: clamp(36px, min(calc(8.5vh - 6px), calc((100vw - 16px)/8.5)), 58px);
+      --cu: clamp(36px, min(calc(8.5vh - 6px), calc((100vw - 16px - var(--rail))/9)), 58px);
       background:
         radial-gradient(900px 520px at 50% 50%, #15405e2e 0%, transparent 70%),
         linear-gradient(180deg, var(--opp-tint) 0%, transparent 34%, transparent 66%, var(--self-tint) 100%);
@@ -623,28 +634,33 @@
       display: grid;
       justify-content: center;
       align-content: center;
-      gap: 2px 14px;
-      padding: 3px 12px;
+      gap: 8px 14px;
+      padding: 6px 12px;
       position: relative;
       min-height: 0;
-      grid-template-columns: auto minmax(calc(var(--cu)*5.5), max-content) auto;
+      grid-template-columns: minmax(0, auto) minmax(calc(var(--cu)*5), max-content) minmax(0, auto);
       grid-auto-rows: min-content
     }
 
     .side.opp {
       background: linear-gradient(180deg, var(--opp-tint), transparent 78%);
       box-shadow: inset 0 2px 0 -1px var(--opp-line);
-      grid-template-areas: "dondeck cost trash" "life leader deck" "lhand chars rhand"
+      /* life を play-area 隣の2行に拡張＝左列で縦いっぱい（空きだった lhand 領域を併合） */
+      grid-template-areas: "dondeck cost trash" "life leader deck" "life chars rhand"
     }
 
     .side.me {
       background: linear-gradient(0deg, var(--self-tint), transparent 78%);
       box-shadow: inset 0 -2px 0 -1px var(--self-line);
-      grid-template-areas: "lhand chars rhand" "life leader deck" "dondeck cost trash"
+      grid-template-areas: "life chars rhand" "life leader deck" "dondeck cost trash"
     }
 
     .ga-chars {
-      grid-area: chars
+      grid-area: chars;
+      min-width: 0;
+      /* 万一はみ出しても列境界でクリップ＝隣のライフ/デッキに被らない。グロー/影/hover浮きは余白で残す */
+      overflow: clip;
+      overflow-clip-margin: 36px
     }
 
     .ga-leader {
@@ -659,7 +675,9 @@
     }
 
     .ga-life {
-      grid-area: life
+      grid-area: life;
+      align-self: stretch;
+      justify-content: flex-start
     }
 
     .ga-dondeck {
@@ -2404,6 +2422,11 @@
         grid-template-columns: 1fr
       }
 
+      /* パネルがオーバーレイ化＝feltは全幅。rail分の補正を外す */
+      .felt {
+        --rail: 0px
+      }
+
       #side {
         position: absolute;
         right: 0;
@@ -2479,8 +2502,8 @@
       }
 
       .side {
-        gap: 3px 6px;
-        padding: 2px 5px
+        gap: 6px 6px;
+        padding: 4px 5px
       }
 
       .handzone {
@@ -2675,28 +2698,40 @@
       }
     }
 
-    /* life as face-down SIDEWAYS cards, stacked/overlapping upward */
+    /* life: 横向きカードを上から順（先頭=次に取られる）に並べ、左列の縦いっぱいに均等配置 */
     .lifestack {
       display: flex;
-      flex-direction: column-reverse;
-      align-items: center
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      flex: 1 1 auto;
+      width: 100%;
+      gap: 0;
+      min-height: var(--cu)
     }
 
     .lifecard {
+      /* 通常カードと同サイズ（横向き＝カードを90°回した寸法: 幅 cu*1.4 × 高さ cu） */
       width: calc(var(--cu)*1.4);
-      height: calc(var(--cu)*0.62);
-      border-radius: 5px;
-      border: 1px solid var(--gold-dim);
-      background: linear-gradient(135deg, #34202c, #170d15);
-      box-shadow: 0 -2px 5px #0009;
-      position: relative;
+      height: var(--cu);
       flex: 0 0 auto;
-      margin-top: calc(var(--cu)*-0.30);
-      overflow: hidden
+      border-radius: var(--r-card);
+      border: 1px solid var(--gold-dim);
+      /* 公式カード背面を横向き(左=上)で表示。読込失敗時はグラデにフォールバック */
+      background: var(--img-back-life) center/cover no-repeat, linear-gradient(135deg, #34202c, #170d15);
+      box-shadow: 0 -1px 4px #0007;
+      position: relative;
+      overflow: hidden;
+      /* 重ねて縦に収める（上=次に取られる） */
+      margin-top: calc(var(--cu)*-0.58)
     }
 
-    .lifestack .lifecard:last-child {
-      margin-top: 0
+    /* 一番上＝次に取られるライフ：重ねず最前面・枠/発光で強調 */
+    .lifestack .lifecard:first-child {
+      margin-top: 0;
+      border-color: var(--gold);
+      box-shadow: 0 0 0 1px var(--gold-soft), 0 2px 6px #0007;
+      z-index: 2
     }
 
     .lifecard::after {
@@ -2720,7 +2755,7 @@
       width: 100%;
       height: 100%;
       object-fit: cover;
-      object-position: center 18%
+      object-position: center
     }
 
     .lifecard.up .lf-fb {
@@ -2762,14 +2797,15 @@
       height: calc(var(--cu)*1.4);
       border-radius: 5px;
       border: 1px solid #00000055;
-      background: radial-gradient(circle at 36% 26%, var(--gold-soft), var(--gold-dim));
+      /* 公式ドン!!カード画像（読込失敗時は金グラデにフォールバック）。"D"文字は透明化 */
+      background: var(--img-don) center/cover no-repeat, radial-gradient(circle at 36% 26%, var(--gold-soft), var(--gold-dim));
       box-shadow: 0 1px 3px #0007;
       display: flex;
       align-items: center;
       justify-content: center;
       font-family: "Bebas Neue";
       font-size: 14px;
-      color: #5a4410;
+      color: transparent;
       transition: .18s;
       flex: 0 0 auto;
       margin-left: calc(var(--cu)*-0.62)
@@ -2782,7 +2818,7 @@
     .doncard.rest {
       filter: grayscale(.5) brightness(.74);
       transform: rotate(90deg);
-      margin-left: calc(var(--cu)*-0.55)
+      margin-left: calc(var(--cu)*-0.62)
     }
 
     /* 自分のメイン中、使えるアクティブなドンを発光（リソース可用性の可視化） */
@@ -2806,9 +2842,9 @@
       margin-left: 0
     }
 
-    /* card-back piles (deck / trash / don deck) */
+    /* card-back piles (deck / trash / don deck) — 公式カード背面画像（失敗時はパターンにフォールバック） */
     .pile.cardback {
-      background: repeating-linear-gradient(135deg, #0f2c43 0 6px, #0b1d2c 6px 12px);
+      background: var(--img-back) center/cover no-repeat, repeating-linear-gradient(135deg, #0f2c43 0 6px, #0b1d2c 6px 12px);
       border: 1px solid var(--gold-dim)
     }
 
@@ -2818,12 +2854,15 @@
     }
 
     .pile.donp {
-      background: radial-gradient(circle at 38% 28%, #caa24e, #7a5e22);
+      background: var(--img-don-deck) center/cover no-repeat, radial-gradient(circle at 38% 28%, #caa24e, #7a5e22);
       border: 1px solid #00000050
     }
 
-    .pile.donp .pc {
-      color: #3a2c08
+    /* 背面画像上でも枚数が読めるよう、白＋影に */
+    .pile.donp .pc,
+    .pile.cardback .pc {
+      color: #fff;
+      text-shadow: 0 1px 3px #000, 0 0 4px #000
     }
 
     .doncost {
@@ -2834,7 +2873,8 @@
 
     .doncost .donrow {
       justify-content: flex-start;
-      max-width: calc(var(--cu)*5.3)
+      flex-wrap: nowrap;
+      max-width: calc(var(--cu)*5.2)
     }
 
     .zone-side .zero {
@@ -3050,6 +3090,25 @@
       flex-direction: column;
       align-items: center;
       gap: 2px
+    }
+
+    /* アタックアナウンス内のカード画像サムネ */
+    #atkAnnounce .aa-card {
+      width: 40px;
+      height: 56px;
+      object-fit: cover;
+      object-position: center top;
+      border-radius: 5px;
+      border: 1px solid #ffffff35;
+      box-shadow: 0 2px 7px #0009;
+      background: #0c1a25
+    }
+
+    #atkAnnounce .aa-nm {
+      max-width: 96px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap
     }
 
     #atkAnnounce.opp .aa-from {
