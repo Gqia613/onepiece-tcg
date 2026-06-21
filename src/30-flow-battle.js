@@ -148,6 +148,8 @@
       (G._koedThisTurn = G._koedThisTurn || {})[card.owner] = G.turnSeq; // このターンKOされた側を記録（oppCharKOedThisTurn条件用）
       flog(card.owner, `「${card.base.name}」がKO`);
       if (card.base.fx && card.base.fx.onKO && !isNegated(card)) { await fxNote(card.owner, 'KO時効果', card.base.name); await runFx(card.base.fx.onKO, { self: card, side: card.owner }); }
+      // エース(OP13-002): 【ドン‼×1】自分の元々パワー6000以上のキャラがKOされた時ターン1回ドロー（被ダメドローと _aceDrawTurn を共有＝合計ターン1回）
+      { const oL = ow.leader; if (card.base.type === 'CHAR' && (card.base.power || 0) >= 6000 && oL.base.leader === 'ace' && !isNegated(oL) && oL.attachedDon >= 1 && ow._aceDrawTurn !== G.turnSeq) { ow._aceDrawTurn = G.turnSeq; if (draw(card.owner, 1)) { floatOn(oL.uid, 'DRAW', 'heal'); flog(card.owner, '【エース】元々パワー6000以上のKOで1ドロー'); } } }
       await checkAllyLeave(card.owner, card, source === 'battle' ? 'battle' : 'oppEffect'); // 自分のキャラが場を離れた時のリーダー誘発（KOはバトル/相手効果）
       render();
     }
@@ -162,6 +164,7 @@
     function draw(side, n) { const P = G.players[side]; for (let i = 0; i < n; i++) { if (P.deck.length === 0) { if (hasDeckOutWin(side)) { lose(opp(side), 'デッキ0で勝利'); return false; } if (hasDeckOutDelay(side)) return false; lose(side, 'デッキ切れ'); return false; } P.hand.push(P.deck.shift()); } return true; }
     function lose(side, reason) {
       if (G.winner) return; G.winner = opp(side);
+      if (G._sim) return;   // ★AI探索の内部シミュレーションでは勝敗UI(ログ/演出/勝利画面)を出さない。winnerだけ確定。
       const win = G.winner === 'me';
       log('sys', `${reason ? reason + ' — ' : ''}<b>${win ? 'あなたの勝ち！' : 'CPUの勝ち'}</b>`);
       setPhase('終了'); G.myActable = false; render();
