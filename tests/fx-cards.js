@@ -30,7 +30,9 @@ const { runHarness } = require('./_load-app');  // stubs+CARD_DB+CARD_FX+本体J
         let text = (c && (c.text || '').replace(/\s+/g, ' ').trim()) || '効果なし';
         if (/^[-‐―ー–—\s]*$/.test(text)) text = '効果なし'; // バニラのtext「-」を正規化（official-opNN.jsの生成と同じ規則）
         if (text !== off[no]) mismatch.push(no);
-        const vanilla = off[no] === '効果なし' || (!FX[no] && /ブロッカー/.test(off[no]) && !/【(?!ブロッカー)/.test(off[no]));
+        // キーワード/ルールのみ（fx不要）の判定: 【ブロッカー】【速攻】【ダブルアタック】【バニッシュ】の注釈と「ルール上…」文を剥がして空ならvanilla
+        const stripped = off[no].replace(/ルール上[^。]*。/g, '').replace(/（[^）]*）/g, '').replace(/\([^)]*\)/g, '').replace(/【(ブロッカー|速攻|ダブルアタック|バニッシュ)】/g, '').replace(/[\s　]/g, '');
+        const vanilla = off[no] === '効果なし' || (!FX[no] && stripped === '');
         if (!FX[no] && !vanilla) missing.push(no);
       }
       if (mismatch.length) { console.log('  NG: ' + tag + ' 正本とCARD_DB.text不一致: ' + mismatch.join(', ')); process.exit(1); }

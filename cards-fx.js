@@ -1055,6 +1055,8 @@ window.CARD_FX = {
   "OP11-043": {"onOppAttack":[{"op":"cond","check":{"allSelfChar":{"traitIncludes":"ジェルマ"}},"once":"turn","then":[{"op":"powerMod","side":"self","leader":true,"amount":1000,"battle":true,"count":1,"optional":true},{"op":"deckToTrash","n":2}]}]},
   // OP11-044 ヴィンスモーク・ジャッジ: 【起動メイン】手札1捨て：《ジェルマ66》全を+1000
   "OP11-044": {"act":{"label":"手札1捨て:ジェルマ66全+1000","cost":{},"fx":[{"op":"discardCost","count":1,"then":[{"op":"powerMod","side":"self","all":true,"amount":1000,"duration":"turn","filter":{"traitIncludes":"ジェルマ66"}}]}]}},
+  // OP11-046 ヴィンスモーク・ジャッジ: 【ブロッカー】 ／自分のキャラが『ジェルマ』のみなら相手の効果でKOされずレストにされない
+  "OP11-046": {"static":[{"op":"condBuff","koImmune":true,"cond":{"allSelfChar":{"traitIncludes":"ジェルマ"}}},{"op":"staticOppRestImmune","cond":{"allSelfChar":{"traitIncludes":"ジェルマ"}}}]},
   // OP11-047 ヴィンスモーク・レイジュ: 【登場時】《ヴィンスモーク家》リーダーならデッキ上5枚から『ジェルマ』1枚を手札へ(残りトラッシュ)
   "OP11-047": {"onPlay":[{"op":"cond","check":{"leaderTraitIncludes":"ヴィンスモーク家"},"then":[{"op":"search","look":5,"count":1,"filter":{"traitIncludes":"ジェルマ"},"rest":"trash","optional":true}]}]},
   // OP11-048 カポネ・ベッジ(青): 【登場時】デッキ上4枚からコスト2以上の《ファイアタンク海賊団》か《麦わら》1枚を手札へ
