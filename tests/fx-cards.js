@@ -1426,6 +1426,44 @@ humanPick=function(c){return Promise.resolve((c||[])[0]||null);};
       const st=mkSyn('__st7__',C['__st7__']); st.owner='cpu'; G.players.cpu.stage=st;
       const ev=I('OP13-098','me'); await runFx(ev.base.fx.main.fx,{self:ev,side:'me'});
       ok(!G.players.cpu.stage, 'OP13-098 main: リーダーイムで相手コスト7ステージKO'); delete C['__st7__']; }
+
+    // === OP13 バッチ6（黄・トリガー/エッグヘッド/ライフ） ===
+    ok(['OP13-100','OP13-102','OP13-108','OP13-110','OP13-113','OP13-114','OP13-115','OP13-117','OP13-118','OP13-120'].every(no=>C[no]&&C[no].fx), 'OP13バッチ6: 黄12枚にfx統合');
+    // OP13-100 ボニーL: トリガー持ちキャラ登場で付与ドン(onAllyEnter)
+    { const me=LP('OP13-100'); me.donMax=10; me.don={active:0,rested:2}; G.active='me';
+      C['__tg__']={no:'__tg__',name:'T',type:'CHAR',color:[],cost:2,power:3000,counter:1000,traits:[],fx:{trigger:[{op:'draw',n:1}]}};
+      const tg=mkSyn('__tg__',C['__tg__']); tg.owner='me'; me.chars=[tg];
+      await checkAllyEnter('me', tg);
+      ok((me.leader.attachedDon||0)+(tg.attachedDon||0)>=1, 'OP13-100: トリガー持ち登場で付与ドン(onAllyEnter+hasTrigger)'); delete C['__tg__']; }
+    // OP13-102 エジソン: 自身トラッシュ→自ライフ<=相手で1ドロー＋相手レスト
+    { const me=LP('OP13-002'); me.life=[I('OP15-067','me')]; G.players.cpu.life=[I('OP15-067','cpu'),I('OP15-067','cpu')];
+      me.deck=[I('OP15-067','me')]; const ed=I('OP13-102','me'); ed.owner='me'; me.chars=[ed];
+      C['__o3e__']={no:'__o3e__',name:'O3',type:'CHAR',color:[],cost:3,power:4000,counter:1000,traits:[]};
+      const v=mkSyn('__o3e__',C['__o3e__']); v.owner='cpu'; v.rested=false; G.players.cpu.chars=[v]; const h0=me.hand.length;
+      await runFx(ed.base.fx.act.fx,{self:ed,side:'me'});
+      ok(me.hand.length===h0+1 && v.rested, 'OP13-102 act: ライフ自<=相手で1ドロー＋相手レスト(selfLifeLEOpp)'); delete C['__o3e__']; }
+    // OP13-108 ボニー: エッグヘッドで速攻＋相手ライフ1枚を相手手札へ
+    { const me=LP('OP13-002'); me.leader.base={...me.leader.base,traits:['エッグヘッド']};
+      G.players.cpu.life=[I('OP15-067','cpu')]; const ch0=G.players.cpu.hand.length;
+      const bn=I('OP13-108','me'); bn.owner='me'; me.chars=[bn];
+      await runFx(bn.base.fx.onPlay,{self:bn,side:'me'});
+      ok(hasKw(bn,'rush') && G.players.cpu.hand.length===ch0+1, 'OP13-108: エッグヘッドで速攻＋相手ライフ→相手手札(oppLifeToHand)'); }
+    // OP13-114 S-スネーク: ライフ表向き→相手-2000
+    { const me=LP('OP13-002'); me.life=[I('OP15-067','me')];
+      C['__v4f__']={no:'__v4f__',name:'V4',type:'CHAR',color:[],cost:3,power:4000,counter:1000,traits:[]};
+      const v=mkSyn('__v4f__',C['__v4f__']); v.owner='cpu'; G.players.cpu.chars=[v];
+      const sn=I('OP13-114','me'); await runFx(sn.base.fx.onPlay,{self:sn,side:'me'});
+      ok(power(v)===2000 && me.life[0]._faceUp, 'OP13-114: ライフ表向き(flipLifeCost)→相手-2000'); delete C['__v4f__']; }
+    // OP13-117 白いスタンプ: ライフ表向き→相手コスト6以下KO
+    { const me=LP('OP13-002'); me.life=[I('OP15-067','me')];
+      C['__o6f__']={no:'__o6f__',name:'O6',type:'CHAR',color:[],cost:6,power:7000,counter:1000,traits:[]};
+      const v=mkSyn('__o6f__',C['__o6f__']); v.owner='cpu'; G.players.cpu.chars=[v];
+      const ev=I('OP13-117','me'); await runFx(ev.base.fx.main.fx,{self:ev,side:'me'});
+      ok(!G.players.cpu.chars.includes(v) && me.life[0]._faceUp, 'OP13-117 main: ライフ表向き→相手コスト6以下KO'); delete C['__o6f__']; }
+    // OP13-118 ルフィ: 多色でドン4アクティブ＋元々コスト5以上登場不可
+    { const me=LP('OP13-002'); me.don={active:0,rested:4};
+      const lf=I('OP13-118','me'); await runFx(lf.base.fx.onPlay,{self:lf,side:'me'});
+      ok(me.don.active===4 && me._noSummonMinCostTurn===G.turnSeq, 'OP13-118: 多色でドン4アクティブ＋元々コスト5以上登場不可'); }
   }catch(e){ console.log('EXCEPTION:', e.message); fail++; }
   console.log('Phase3 fxテスト: pass='+pass+' fail='+fail);
   process.exit(fail?1:0);

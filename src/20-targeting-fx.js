@@ -403,6 +403,13 @@
         case 'delayedDonActivate': { P._endDonActTurn = G.turnSeq; P._endDonActN = (P._endDonActN || 0) + (op.n || 1); flog(side, `このターン終了時にドン${op.n || 1}枚までをアクティブにする`); break; }
         // このターン、手札からカードをプレイできない（OP13-028シャンクス。キャラ/イベント/ステージ全て）
         case 'setPlayBan': { P._noPlayTurn = G.turnSeq; flog(side, 'このターン、手札からカードをプレイできない'); break; }
+        // 自分のライフの上から1枚を表向きにするコスト（OP13-114/117）。任意。
+        case 'flipLifeCost': {
+          if (!P.life.length) break;
+          if (!(await confirmUse(side, 'ライフを表向き', 'ライフの上から1枚を表向きにして効果を使いますか？', '表向きにして使う', '使わない'))) break;
+          P.life[0]._faceUp = true; flog(side, 'ライフの上から1枚を表向きにした'); render();
+          await runFx(op.then, ctx); break;
+        }
         // 自分のトラッシュから1枚をデッキの下に置くコスト（OP13-081コアラ）。任意。
         case 'trashToBottomCost': {
           if (!P.trash.length) break;

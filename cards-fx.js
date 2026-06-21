@@ -757,5 +757,30 @@ window.CARD_FX = {
   // OP13-097 世界の均衡など…: 【メイン】ドン5レスト→自キャラが《天竜人》のみなら相手の元々コスト6以下1枚をKO ／【カウンター】リーダー+3000
   "OP13-097": {"main":{"fx":[{"op":"restDonCost","n":5,"then":[{"op":"cond","check":{"allSelfChar":{"trait":"天竜人"}},"then":[{"op":"ko","side":"opp","filter":{"maxBaseCost":6},"count":1,"optional":true}]}]}]},"counter":{"cost":0,"fx":[{"op":"leaderBuff","amount":3000,"duration":"battle"}]}},
   // OP13-098 元々…ないではないか…: 【メイン】ドン1レスト→リーダー「イム」なら相手のコスト7ステージKO ／【カウンター】リーダー「イム」ならリーダーかキャラ+4000
-  "OP13-098": {"main":{"fx":[{"op":"restDonCost","n":1,"then":[{"op":"cond","check":{"leaderNameIncludes":"イム"},"then":[{"op":"koStage","filter":{"cost":7}}]}]}]},"counter":{"cost":0,"fx":[{"op":"cond","check":{"leaderNameIncludes":"イム"},"then":[{"op":"powerMod","side":"self","leader":true,"amount":4000,"battle":true,"count":1,"optional":true}]}]}}
+  "OP13-098": {"main":{"fx":[{"op":"restDonCost","n":1,"then":[{"op":"cond","check":{"leaderNameIncludes":"イム"},"then":[{"op":"koStage","filter":{"cost":7}}]}]}]},"counter":{"cost":0,"fx":[{"op":"cond","check":{"leaderNameIncludes":"イム"},"then":[{"op":"powerMod","side":"self","leader":true,"amount":4000,"battle":true,"count":1,"optional":true}]}]}},
+  /* ===== OP13 バッチ6（黄・トリガー/エッグヘッド/ライフ。新op flipLifeCost・新cond selfLifeLEOpp。105/106/109/119は最終バッチ） ===== */
+  // OP13-100 ジュエリー・ボニー LEADER: 【自分のターン中】トリガー持ちキャラ登場時、リーダーかキャラにレストのドン2付与
+  "OP13-100": {"onAllyEnter":{"when":"selfTurn","filter":{"hasTrigger":true},"fx":[{"op":"donAttach","target":"chooseOwn","n":2}]}},
+  // OP13-102 エジソン: 【起動メイン】自身トラッシュ：自分のライフが相手以下なら1ドロー＋相手コスト3以下1枚レスト
+  "OP13-102": {"act":{"label":"自身トラッシュ:ライフ条件で1ドロー＋相手レスト","cost":{},"fx":[{"op":"trashSelfCost","then":[{"op":"cond","check":{"selfLifeLEOpp":true},"then":[{"op":"draw","n":1},{"op":"restChar","side":"opp","filter":{"maxBaseCost":3},"count":1,"optional":true}]}]}]}},
+  // OP13-104 光月日和: 【ブロッカー】 ／【KO時】手札1捨て：リーダーが多色ならデッキ上1枚をライフに加える
+  "OP13-104": {"onKO":[{"op":"discardCost","count":1,"then":[{"op":"cond","check":{"leaderMulticolor":true},"then":[{"op":"lifeAddFromDeck","n":1}]}]}]},
+  // OP13-108 ジュエリー・ボニー: 【登場時】リーダーが《エッグヘッド》なら速攻を得る→相手は自身のライフ上1枚を手札に加える
+  "OP13-108": {"onPlay":[{"op":"cond","check":{"leaderTraitIncludes":"エッグヘッド"},"then":[{"op":"giveKeyword","target":"self","kw":"rush"},{"op":"oppLifeToHand","n":1}]}]},
+  // OP13-110 ステューシー: 【ブロッカー】 ／【登場時】リーダーが《エッグヘッド》なら手札からコスト5以下のトリガー持ちキャラを登場
+  "OP13-110": {"onPlay":[{"op":"cond","check":{"leaderTraitIncludes":"エッグヘッド"},"then":[{"op":"playCharFromHand","maxCost":5,"filter":{"hasTrigger":true},"count":1,"optional":true}]}]},
+  // OP13-113 リリス: 【登場時】デッキ上4枚から「リリス」以外のトリガー持ち1枚を手札へ
+  "OP13-113": {"onPlay":[{"op":"search","look":4,"count":1,"filter":{"hasTrigger":true,"nameExcludes":"リリス"},"optional":true}]},
+  // OP13-114 S-スネーク: 【登場時】/【アタック時】ライフ上1枚を表向き：相手1枚を-2000
+  "OP13-114": {"onPlay":[{"op":"flipLifeCost","then":[{"op":"powerMod","side":"opp","amount":-2000,"count":1,"optional":true,"duration":"turn"}]}],"onAttack":[{"op":"flipLifeCost","then":[{"op":"powerMod","side":"opp","amount":-2000,"count":1,"optional":true,"duration":"turn"}]}]},
+  // OP13-115 「紙絵」“残身”: 【カウンター】リーダーかキャラ+3000→相手ライフ2以下ならさらに+1000
+  "OP13-115": {"counter":{"cost":0,"fx":[{"op":"powerMod","side":"self","leader":true,"amount":3000,"battle":true,"count":1,"optional":true},{"op":"cond","check":{"oppLifeAtMost":2},"then":[{"op":"powerMod","side":"self","leader":true,"amount":1000,"battle":true,"count":1,"optional":true}]}]}},
+  // OP13-116 この海で一番自由な奴が海賊王だ!!!: 【メイン】デッキ上5枚から《超新星》キャラ1枚を手札へ
+  "OP13-116": {"main":{"fx":[{"op":"search","look":5,"count":1,"filter":{"traitIncludes":"超新星","type":"CHAR"},"optional":true}]}},
+  // OP13-117 ゴムゴムの白いスタンプ: 【メイン】ライフ上1枚を表向き：相手の元々コスト6以下1枚をKO
+  "OP13-117": {"main":{"fx":[{"op":"flipLifeCost","then":[{"op":"ko","side":"opp","filter":{"maxBaseCost":6},"count":1,"optional":true}]}]}},
+  // OP13-118 モンキー・Ｄ・ルフィ: 【ダブルアタック】 ／【登場時】リーダー多色ならドン4アクティブ→元々コスト5以上を登場不可
+  "OP13-118": {"onPlay":[{"op":"cond","check":{"leaderMulticolor":true},"then":[{"op":"donActivate","n":4},{"op":"setSummonBan","minBaseCost":5}]}]},
+  // OP13-120 サボ: 【ブロッカー】 ／【起動メイン】自分のキャラ1枚を次相手ターン終了までコスト+2→リーダーにレストのドン1付与
+  "OP13-120": {"act":{"label":"自キャラ1枚コスト+2→リーダーに付与ドン1","cost":{},"fx":[{"op":"addCostBuff","side":"self","count":1,"amount":2,"duration":"untilNextEnd","optional":true},{"op":"donAttach","target":"leader","n":1}]}}
 };
