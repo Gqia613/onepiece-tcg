@@ -1249,6 +1249,58 @@ humanPick=function(c){return Promise.resolve((c||[])[0]||null);};
       const s=mkSyn('__sm__',C['__sm__']); s.owner='me'; me.chars=[s];
       await runFx(fv.base.fx.act.fx,{self:fv,side:'me'});
       ok(power(s)===3000, 'OP13-022 act: 元々パワー2000以下を+1000'); delete C['__sm__']; }
+
+    // === OP13 バッチ2（緑・新基盤） ===
+    ok(['OP13-023','OP13-024','OP13-026','OP13-028','OP13-031','OP13-032','OP13-033','OP13-035','OP13-037','OP13-038','OP13-039','OP13-040'].every(no=>C[no]&&C[no].fx), 'OP13バッチ2: 緑16枚にfx統合');
+    // OP13-023 ウタ: ドン2アクティブ＋元々コスト5以上を登場不可
+    { const me=LP('OP13-002'); me.don={active:0,rested:3}; const c=I('OP13-023','me');
+      await runFx(c.base.fx.onPlay,{self:c,side:'me'});
+      C['__c5__']={no:'__c5__',name:'C5',type:'CHAR',color:[],cost:5,power:6000,counter:1000,traits:[]};
+      C['__c4__']={no:'__c4__',name:'C4',type:'CHAR',color:[],cost:4,power:5000,counter:1000,traits:[]};
+      ok(me.don.active===2 && summonBanned('me',mkSyn('__c5__',C['__c5__'])) && !summonBanned('me',mkSyn('__c4__',C['__c4__'])), 'OP13-023: ドン2アクティブ＋元々コスト5以上登場不可(4以下は可)'); delete C['__c5__']; delete C['__c4__']; }
+    // OP13-024 ゴードン: 《FILM》公開→このターン終了時ドン2アクティブ予約
+    { const me=LP('OP13-002');
+      C['__fm__']={no:'__fm__',name:'F',type:'CHAR',color:[],cost:2,power:3000,counter:1000,traits:['FILM']};
+      me.hand=[mkSyn('__fm__',C['__fm__'])]; const c=I('OP13-024','me');
+      await runFx(c.base.fx.onPlay,{self:c,side:'me'});
+      ok(me._endDonActTurn===G.turnSeq && me._endDonActN===2, 'OP13-024: このターン終了時ドン2アクティブを予約(delayedDonActivate)'); delete C['__fm__']; }
+    // OP13-026 サニーくん: act 自身+2000
+    { const me=LP('OP13-002'); me.don={active:1,rested:0}; const sn=I('OP13-026','me');
+      await runFx(sn.base.fx.act.fx,{self:sn,side:'me'});
+      ok(power(sn)===4000, 'OP13-026 act: 自身+2000'); }
+    // OP13-028 シャンクス: ドン全アクティブ＋このターンプレイ不可
+    { const me=LP('OP13-002'); me.don={active:0,rested:5}; const c=I('OP13-028','me');
+      await runFx(c.base.fx.onPlay,{self:c,side:'me'});
+      ok(me.don.active===5 && me.don.rested===0 && me._noPlayTurn===G.turnSeq, 'OP13-028: ドン全アクティブ＋プレイban(setPlayBan)'); }
+    // OP13-031 ロー: ライフ1以下で【ブロッカー】
+    { const me=LP('OP13-002'); const lo=I('OP13-031','me'); lo.owner='me'; me.chars=[lo];
+      me.life=[I('OP15-067','me')]; ok(hasKw(lo,'blocker'), 'OP13-031: ライフ1以下で【ブロッカー】');
+      me.life=[I('OP15-067','me'),I('OP15-067','me')]; ok(!hasKw(lo,'blocker'), 'OP13-031: ライフ2以上では無し'); }
+    // OP13-032 ロビン: 相手コスト8以下をレスト不可
+    { const me=LP('OP13-002');
+      C['__o6__']={no:'__o6__',name:'O6',type:'CHAR',color:[],cost:6,power:7000,counter:1000,traits:[]};
+      const v=mkSyn('__o6__',C['__o6__']); v.owner='cpu'; G.players.cpu.chars=[v];
+      const c=I('OP13-032','me'); await runFx(c.base.fx.onPlay,{self:c,side:'me'});
+      ok(isRestImmune(v), 'OP13-032: 相手コスト8以下を次相手エンドまでレスト不可'); delete C['__o6__']; }
+    // OP13-033 フランキー: 相手2枚レスト
+    { const me=LP('OP13-002');
+      const v1=I('OP15-067','cpu'),v2=I('OP15-067','cpu'); v1.owner='cpu';v2.owner='cpu';v1.rested=false;v2.rested=false; G.players.cpu.chars=[v1,v2]; G.players.cpu.leader.rested=true; // リーダーを候補外に
+      const c=I('OP13-033','me'); await runFx(c.base.fx.onKO,{self:c,side:'me'});
+      ok(v1.rested && v2.rested, 'OP13-033 onKO: 相手キャラ2枚レスト'); }
+    // OP13-035 ベポ: chooseOption(CPUはidx0=ドン1アクティブ)
+    { const me=LP('OP13-002'); me.isCPU=true; me.don={active:0,rested:2}; const bp=I('OP13-035','me'); bp.owner='me'; me.chars=[bp];
+      await runFx(bp.base.fx.onTurnEnd,{self:bp,side:'me'});
+      ok(me.don.active===1, 'OP13-035 onTurnEnd: chooseOption→ドン1アクティブ'); }
+    // OP13-037 ゾロ: onTurnEnd 自身アクティブ
+    { const me=LP('OP13-002'); const zo=I('OP13-037','me'); zo.owner='me'; zo.rested=true; me.chars=[zo];
+      await runFx(zo.base.fx.onTurnEnd,{self:zo,side:'me'});
+      ok(!zo.rested, 'OP13-037 onTurnEnd: 自身をアクティブ'); }
+    // OP13-039 ゴムゴムの蛇銃: 相手レストのコスト4以下をKO
+    { const me=LP('OP13-002');
+      C['__r4__']={no:'__r4__',name:'R4',type:'CHAR',color:[],cost:4,power:5000,counter:1000,traits:[]};
+      const v=mkSyn('__r4__',C['__r4__']); v.owner='cpu'; v.rested=true; G.players.cpu.chars=[v];
+      const ev=I('OP13-039','me'); await runFx(ev.base.fx.counter.fx,{self:ev,side:'me'});
+      ok(!G.players.cpu.chars.includes(v), 'OP13-039 counter: 相手レストのコスト4以下KO'); delete C['__r4__']; }
   }catch(e){ console.log('EXCEPTION:', e.message); fail++; }
   console.log('Phase3 fxテスト: pass='+pass+' fail='+fail);
   process.exit(fail?1:0);

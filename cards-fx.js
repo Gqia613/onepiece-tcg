@@ -637,5 +637,38 @@ window.CARD_FX = {
   // OP13-021 ゴムゴムの銃乱打: 【メイン】「モンキー・Ｄ・ルフィ」1枚にレストのドン1付与→相手1枚-2000
   "OP13-021": {"main":{"fx":[{"op":"donAttach","target":"chooseOwn","n":1,"filter":{"name":"モンキー・Ｄ・ルフィ"}},{"op":"powerMod","side":"opp","amount":-2000,"count":1,"optional":true,"duration":"turn"}]}},
   // OP13-022 フーシャ村 STAGE: 【起動メイン】このステージをレスト：元々パワー2000以下のキャラ1枚を+1000
-  "OP13-022": {"act":{"label":"レスト:元々P2000以下を+1000","cost":{"restSelf":true},"fx":[{"op":"powerMod","side":"self","amount":1000,"count":1,"optional":true,"duration":"turn","filter":{"maxPower":2000}}]}}
+  "OP13-022": {"act":{"label":"レスト:元々P2000以下を+1000","cost":{"restSelf":true},"fx":[{"op":"powerMod","side":"self","amount":1000,"count":1,"optional":true,"duration":"turn","filter":{"maxPower":2000}}]}},
+  /* ===== OP13 バッチ2（緑・新基盤: 登場ban(コスト条件)/setPlayBan/delayedDonActivate/donActivate all/playCharFromHand rested） ===== */
+  // OP13-023 ウタ: 【登場時】ドン2アクティブ→元々コスト5以上を登場不可 ／【KO時】手札からコスト5以下を1枚レストで登場
+  "OP13-023": {"onPlay":[{"op":"donActivate","n":2},{"op":"setSummonBan","minBaseCost":5}],"onKO":[{"op":"playCharFromHand","maxCost":5,"count":1,"optional":true,"rested":true}]},
+  // OP13-024 ゴードン: 【登場時】手札の《音楽》か《FILM》1枚公開：このターン終了時ドン2アクティブ
+  "OP13-024": {"onPlay":[{"op":"revealCost","filter":{"or":[{"traitIncludes":"音楽"},{"traitIncludes":"FILM"}]},"then":[{"op":"delayedDonActivate","n":2}]}]},
+  // OP13-025 コビー: 【ブロッカー】 ／【登場時】リーダーが《FILM》ならドン1アクティブ（※属性(打)条件は属性データ未保持で未実装）
+  "OP13-025": {"onPlay":[{"op":"cond","check":{"leaderTraitIncludes":"FILM"},"then":[{"op":"donActivate","n":1}]}]},
+  // OP13-026 サニーくん: 【起動メイン】ドン1レスト：自身を次の相手ターン終了まで+2000
+  "OP13-026": {"act":{"label":"ドン1レスト:自身+2000","cost":{"don":1},"fx":[{"op":"powerMod","target":"self","amount":2000,"duration":"untilNextEnd"}]}},
+  // OP13-027 サンジ: 【登場時】ドン2アクティブ ／【自分のターン終了時】リーダー《FILM》か《麦わら》ならドン1アクティブ
+  "OP13-027": {"onPlay":[{"op":"donActivate","n":2}],"onTurnEnd":[{"op":"cond","check":{"or":[{"leaderTraitIncludes":"FILM"},{"leaderTraitIncludes":"麦わらの一味"}]},"then":[{"op":"donActivate","n":1}]}]},
+  // OP13-028 シャンクス: 【登場時】ドンすべてアクティブ→このターン手札からプレイ不可
+  "OP13-028": {"onPlay":[{"op":"donActivate","all":true},{"op":"setPlayBan"}]},
+  // OP13-030 チョッパー: 【登場時】ドン2アクティブ
+  "OP13-030": {"onPlay":[{"op":"donActivate","n":2}]},
+  // OP13-031 ロー: ライフ1以下で【ブロッカー】 ／【登場時】自キャラ1枚を手札に戻す：コスト5以下を1枚レストで登場
+  "OP13-031": {"static":[{"op":"staticKeyword","kw":"blocker","cond":"life<=1"}],"onPlay":[{"op":"bounceOwnCharCost","then":[{"op":"playCharFromHand","maxCost":5,"count":1,"optional":true,"rested":true}]}]},
+  // OP13-032 ニコ・ロビン: 【登場時】相手コスト8以下1枚を次相手エンドまでレスト不可
+  "OP13-032": {"onPlay":[{"op":"restImmune","side":"opp","maxCost":8,"duration":"untilNextEnd","count":1,"optional":true}]},
+  // OP13-033 フランキー: 【KO時】相手のカード2枚までをレスト
+  "OP13-033": {"onKO":[{"op":"restChar","side":"opp","count":2,"optional":true,"includeLeader":true}]},
+  // OP13-034 ブルック: 【登場時】リーダー《FILM》か《麦わら》ならドン1アクティブ
+  "OP13-034": {"onPlay":[{"op":"cond","check":{"or":[{"leaderTraitIncludes":"FILM"},{"leaderTraitIncludes":"麦わらの一味"}]},"then":[{"op":"donActivate","n":1}]}]},
+  // OP13-035 ベポ: 【自分のターン終了時】このキャラか自分のドン1枚までをアクティブにする
+  "OP13-035": {"onTurnEnd":[{"op":"chooseOption","options":[{"label":"ドン1アクティブ","fx":[{"op":"donActivate","n":1}]},{"label":"このキャラをアクティブ","fx":[{"op":"activateOwnChar","target":"self"}]}]}]},
+  // OP13-037 ロロノア・ゾロ: 【登場時】リーダー《FILM》か《麦わら》ならドン2アクティブ ／【自分のターン終了時】このキャラをアクティブ
+  "OP13-037": {"onPlay":[{"op":"cond","check":{"or":[{"leaderTraitIncludes":"FILM"},{"leaderTraitIncludes":"麦わらの一味"}]},"then":[{"op":"donActivate","n":2}]}],"onTurnEnd":[{"op":"activateOwnChar","target":"self"}]},
+  // OP13-038 ゴムゴムの象銃: 【メイン】相手コスト5以下1枚をレスト→このターン終了時ドン2アクティブ
+  "OP13-038": {"main":{"fx":[{"op":"restChar","side":"opp","filter":{"maxCost":5},"count":1,"optional":true},{"op":"delayedDonActivate","n":2}]}},
+  // OP13-039 ゴムゴムの蛇銃: 【カウンター】相手のレストのコスト4以下1枚をKO
+  "OP13-039": {"counter":{"cost":0,"fx":[{"op":"ko","side":"opp","filter":{"maxCost":4,"restedOnly":true},"count":1,"optional":true}]}},
+  // OP13-040 強ェとわかってんだから…: 【メイン】ドン2レスト→相手レストのコスト7以下2枚を次リフレッシュでアクティブにしない ／【カウンター】リーダー+3000
+  "OP13-040": {"main":{"fx":[{"op":"restDonCost","n":2,"then":[{"op":"lock","side":"opp","filter":{"maxCost":7,"restedOnly":true},"count":2,"optional":true}]}]},"counter":{"cost":0,"fx":[{"op":"leaderBuff","amount":3000,"duration":"battle"}]}}
 };

@@ -313,7 +313,8 @@
     }
     function handPlayable(c) {
       const P = G.players.me; const b = c.base;
-      if (b.type === 'CHAR') return P._noSummonTurn !== G.turnSeq && effCost('me', c) <= P.don.active; // 5体でも出せる（登場時に1体トラッシュ）。登場ban中は不可
+      if (P._noPlayTurn === G.turnSeq) return false; // このターン手札からプレイ不可（OP13-028）
+      if (b.type === 'CHAR') return !summonBanned('me', c) && effCost('me', c) <= P.don.active; // 5体でも出せる（登場時に1体トラッシュ）。登場ban中は不可
       if (b.type === 'STAGE') return (b.cost || 0) <= P.don.active;
       if (b.type === 'EVENT') return !!(b.fx && b.fx.main) && effCost('me', c) <= P.don.active; // イベントもcostMod(条件付きコスト減)を反映
       return false;

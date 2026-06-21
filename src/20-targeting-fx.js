@@ -398,7 +398,11 @@
           break;
         }
         // レストのドン!!を n枚 アクティブに戻す（リソース加速）
-        case 'donActivate': { const k = Math.min(op.n || 1, P.don.rested); P.don.rested -= k; P.don.active += k; if (k) flog(side, `ドン${k}枚をアクティブにした`); render(); break; }
+        case 'donActivate': { const k = op.all ? P.don.rested : Math.min(op.n || 1, P.don.rested); P.don.rested -= k; P.don.active += k; if (k) flog(side, `ドン${k}枚をアクティブにした`); render(); break; }
+        // このターン終了時に donActivate（OP13-024/038）。endTurn で消化。
+        case 'delayedDonActivate': { P._endDonActTurn = G.turnSeq; P._endDonActN = (P._endDonActN || 0) + (op.n || 1); flog(side, `このターン終了時にドン${op.n || 1}枚までをアクティブにする`); break; }
+        // このターン、手札からカードをプレイできない（OP13-028シャンクス。キャラ/イベント/ステージ全て）
+        case 'setPlayBan': { P._noPlayTurn = G.turnSeq; flog(side, 'このターン、手札からカードをプレイできない'); break; }
         // 相手のステージ1枚までをKO（OP14-088ドロフィー。filterでコスト制限、isImmuneは除く）
         case 'koStage': { const O = G.players[o]; if (O.stage && matchFilter(O.stage, opFilter(op)) && !isImmune(O.stage)) { const s = O.stage; O.stage = null; O.trash.push(reset(s)); flog(side, `相手のステージ「${s.base.name}」をKO`); render(); await sleep(120); } break; }
         // 自分がNダメージを受ける（OP14-115リンドウ。ライフ1枚を失う＝トリガーも誘発し得る）
@@ -406,7 +410,7 @@
         // このキャラ(ctx.self)自身の効果を無効化（OP14-056ワダツミ。durationでこのターン中/次相手ターン終了まで）
         case 'negateSelf': { if (self) { self.negSeq = durSeq(op.duration); flog(side, `「${self.base.name}」は効果が無効になった`); floatOn(self.uid, '無効', 'dmg'); render(); } break; }
         // このターン、自分はキャラを登場できない（OP14-024錦えもん/OP14-020ミホークのランプ後）
-        case 'setSummonBan': { P._noSummonTurn = G.turnSeq; flog(side, 'このターン、キャラを登場できない'); break; }
+        case 'setSummonBan': { if (op.minBaseCost != null) { P._noSummonMinCostTurn = G.turnSeq; P._noSummonMinCost = op.minBaseCost; flog(side, `このターン、元々コスト${op.minBaseCost}以上のキャラを登場できない`); } else { P._noSummonTurn = G.turnSeq; flog(side, 'このターン、キャラを登場できない'); } break; }
         // 自分のアクティブのドンを任意の枚数レスト→1枚ごとに「リーダー or filter一致キャラ」1枚までを このバトル中 +amount（OP13-001ルフィ等の【相手のアタック時】）
         case 'restDonForBuff': {
           const amount = op.amount || 2000; const maxN = op.maxN || 99;
@@ -695,7 +699,7 @@
             if (op.needsTrigger) cands = cands.filter(c => c.base.fx && c.base.fx.trigger);
             if (op.distinctName) cands = cands.filter(c => !usedNames.includes(normName(c.base.name))); // 「カード名の異なる」
             const c = await chooseFromHand(side, cands, cnt > 1 ? `登場させるキャラを選択（${k + 1}/${cnt}・任意）` : '登場させるキャラを選択（任意）', null, op.optional || cnt > 1);
-            if (!c) break; usedNames.push(normName(c.base.name)); P.hand.splice(P.hand.indexOf(c), 1); await summon(side, c, false);
+            if (!c) break; usedNames.push(normName(c.base.name)); P.hand.splice(P.hand.indexOf(c), 1); await summon(side, c, false); if (op.rested && P.chars.includes(c)) c.rested = true; // レストで登場（OP13-023/031）
           }
           break;
         }

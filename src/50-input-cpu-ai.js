@@ -300,7 +300,7 @@
       // 1) キャラ展開
       let g = 0;
       while (g++ < 12) {
-        const pl = P._noSummonTurn === G.turnSeq ? [] : P.hand.filter(c => c.base.type === 'CHAR' && effCost(side, c) <= P.don.active).sort((a, b) => scoreChar(b) - scoreChar(a));
+        const pl = P._noPlayTurn === G.turnSeq ? [] : P.hand.filter(c => c.base.type === 'CHAR' && !summonBanned(side, c) && effCost(side, c) <= P.don.active).sort((a, b) => scoreChar(b) - scoreChar(a));
         if (!pl.length) break;
         const c = pl[0];
         if (P.chars.length >= 5) {
@@ -317,7 +317,7 @@
       // 2) イベント
       g = 0;
       while (g++ < 8) {
-        const evs = P.hand.filter(c => c.base.type === 'EVENT' && c.base.fx && c.base.fx.main && effCost(side, c) <= P.don.active && cpuShouldPlayEvent(side, c, plan));
+        const evs = P._noPlayTurn === G.turnSeq ? [] : P.hand.filter(c => c.base.type === 'EVENT' && c.base.fx && c.base.fx.main && effCost(side, c) <= P.don.active && cpuShouldPlayEvent(side, c, plan));
         if (!evs.length) break;
         const c = evs.sort((a, b) => (b.base.cost || 0) - (a.base.cost || 0))[0];
         payDon(side, effCost(side, c)); P.hand.splice(P.hand.indexOf(c), 1);
@@ -378,7 +378,8 @@
         const acts = [];
         for (const c of P.hand) {
           const b = c.base;
-          if (b.type === 'CHAR' && P._noSummonTurn !== G.turnSeq && effCost(side, c) <= P.don.active && P.chars.length < 5) acts.push({ k: 'char', c });
+          if (P._noPlayTurn === G.turnSeq) break; // このターン手札からプレイ不可（OP13-028）
+          if (b.type === 'CHAR' && !summonBanned(side, c) && effCost(side, c) <= P.don.active && P.chars.length < 5) acts.push({ k: 'char', c });
           else if (b.type === 'STAGE' && (b.cost || 0) <= P.don.active) acts.push({ k: 'stage', c });
           else if (b.type === 'EVENT' && b.fx && b.fx.main && effCost(side, c) <= P.don.active) acts.push({ k: 'event', c });
         }

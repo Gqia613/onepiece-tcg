@@ -17,7 +17,7 @@
     }
     async function summon(side, card, noEnter, source) {
       const P = G.players[side];
-      if (P._noSummonTurn === G.turnSeq && source !== 'trash') { flog(side, 'このターンはキャラを登場できない'); return; } // 登場ban（OP14-024/020）。トラッシュからの蘇生など特殊経路は対象外
+      if (summonBanned(side, card) && source !== 'trash') { flog(side, 'このターンはこのキャラを登場できない'); return; } // 登場ban（全面=OP14-024/020 / 元々コストN以上=OP13-023/118）。トラッシュからの蘇生など特殊経路は対象外
       if (P.chars.length >= 5) { if (!(await trashCharForRoom(side, false))) return; } // 5体なら枠を空ける（効果による登場でも適用）
       card.owner = side; card.rested = false; card.summonedTurn = G.turnSeq; card.attachedDon = 0; card.buffs = []; card.kwGrant = [];
       P.chars.push(card);
@@ -200,6 +200,8 @@
       for (const c of [...G.players[side].chars, G.players[side].leader, G.players[side].stage]) {
         if (c && c.base.fx && c.base.fx.onTurnEnd && !isNegated(c)) { await fxNote(side, 'ターン終了時', c.base.name); await runFx(c.base.fx.onTurnEnd, { self: c, side }); }
       }
+      // このターン終了時の donActivate（delayedDonActivate＝OP13-024/038）の消化
+      { const P = G.players[side]; if (P._endDonActTurn === G.turnSeq && P._endDonActN) { const k = Math.min(P._endDonActN, P.don.rested); P.don.rested -= k; P.don.active += k; P._endDonActN = 0; if (k) { flog(side, `ターン終了時にドン${k}枚をアクティブにした`); render(); } } }
       // スケジュールされた「このターン終了時」効果（scheduleTurnEnd）
       if (G._pendingTurnEnd && G._pendingTurnEnd.length) { const pend = G._pendingTurnEnd; G._pendingTurnEnd = []; for (const pe of pend) { try { await runFx(pe.fx, { self: pe.self, side: pe.side }); } catch (e) { console.warn('pendingTurnEnd失敗', e); } } }
       // ブルック: デッキが0枚のままターン終了で敗北

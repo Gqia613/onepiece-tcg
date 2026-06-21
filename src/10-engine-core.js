@@ -305,6 +305,14 @@
       if (!card || isNegated(card)) return false; const st = card.base.fx && card.base.fx.static;
       return !!(st && st.some(o => o.op === 'condBuff' && o.immune && (!o.cond || checkCond(o.cond, card.owner, card))));
     }
+    // このターン、side が card を「登場」できないか（効果による登場も含む）。_noSummonTurn=全面 / _noSummonMinCost=元々コストN以上（OP13-023/118・OP14-024/020）。
+    // ※「手札からプレイできない」_noPlayTurn は通常プレイのみの制約なのでここには含めない（プレイ層で別途判定）。
+    function summonBanned(side, card) {
+      const P = G.players[side]; if (!P) return false;
+      if (P._noSummonTurn === G.turnSeq) return true;
+      if (P._noSummonMinCostTurn === G.turnSeq && card && (card.base.cost || 0) >= (P._noSummonMinCost || 99)) return true;
+      return false;
+    }
     // 「相手の効果ではKOされない」= 効果KOを無効（effectImmune＝KO限定／「場を離れない」＝KO含む）。選択・パワー減少・レスト等は通す。バトルKOも通す
     function isKoImmune(card) {
       if (!card || isNegated(card)) return false; const st = card.base.fx && card.base.fx.static;
