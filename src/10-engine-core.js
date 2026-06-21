@@ -182,6 +182,9 @@
       if (c.trashHas != null && !P.trash.some(x => matchFilter(x, c.trashHas))) return false; // 自分のトラッシュに条件一致のカードがある
       if (c.leaderPowerAtMost != null && power(P.leader) > c.leaderPowerAtMost) return false; // 自リーダーの実効パワーがN以下
       if (c.leaderPowerAtLeast != null && power(P.leader) < c.leaderPowerAtLeast) return false;
+      if (c.selfPowerAtLeast != null && (!card || power(card) < c.selfPowerAtLeast)) return false; // このキャラ(ctx.self)の実効パワーがN以上
+      if (c.selfPowerAtMost != null && (!card || power(card) > c.selfPowerAtMost)) return false;
+      if (c.selfRested != null && (!card || (!!card.rested !== !!c.selfRested))) return false; // このキャラがレスト(true)/アクティブ(false)の状態
       if (c.oppHasAttachedDon && !O.chars.some(ch => (ch.attachedDon || 0) >= 1)) return false; // 相手にドン付与済みキャラがいる
       if (c.selfLifeLessThanOpp && !(P.life.length < O.life.length)) return false; // 自分のライフが相手より少ない
       if (c.selfLifeAtMost != null && P.life.length > c.selfLifeAtMost) return false;

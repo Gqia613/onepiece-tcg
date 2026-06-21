@@ -227,6 +227,8 @@
       G.busy = true; G.pendingChoice = null; G.attackSel = null;
       attacker.rested = true;
       const aSide = attacker.owner, dSide = opp(aSide);
+      // 【自分のターン中】このキャラがレストになった時（アタックでレスト）の誘発
+      if (attacker.base.fx && attacker.base.fx.onSelfRested && !isNegated(attacker) && aSide === G.active) { await fxNote(aSide, 'レスト時', attacker.base.name); await runFx(attacker.base.fx.onSelfRested, { self: attacker, side: aSide }); }
       flog(aSide, `「${attacker.base.name}」が${target.base.type === 'LEADER' ? 'リーダー' : '「' + target.base.name + '」'}にアタック`);
       showAtkAnnounce(aSide, attacker, target);
       render(); animClass(attacker.uid, 'lunge' + (aSide === 'me' ? '' : ' up')); sfx('attack'); await sleep(aSide === 'me' ? 280 : 780);

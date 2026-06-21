@@ -250,6 +250,42 @@ window.CARD_FX = {
   "OP14-081": {"onPlay":[{"op":"deckToTrash","n":3}],"onKO":[{"op":"ko","side":"opp","filter":{"minBaseCost":1,"maxBaseCost":1},"count":1,"optional":true}]},
   // OP14-083: 【起動メイン】自身をトラッシュ：相手のコスト0キャラ1枚を このターン中 -3000
   "OP14-083": {"act":{"label":"自身トラッシュ:相手コスト0を-3000","cost":{},"fx":[{"op":"trashSelfCost","then":[{"op":"powerMod","side":"opp","amount":-3000,"count":1,"filter":{"maxCost":0},"optional":true}]}]}},
+  /* ===== OP14 バッチ2（新cond selfPowerAtLeast/selfRested・新hook onSelfRested を使用） ===== */
+  // OP14-002: 【アタック時】自パワー5000以上なら1ドロー＋相手の元々パワー3000以下1枚KO
+  "OP14-002": {"onAttack":[{"op":"cond","check":{"selfPowerAtLeast":5000},"then":[{"op":"draw","n":1},{"op":"ko","side":"opp","filter":{"maxPower":3000},"count":1,"optional":true}]}]},
+  // OP14-004: 自パワー5000以上なら【速攻】
+  "OP14-004": {"condRush":{"selfPowerAtLeast":5000}},
+  // OP14-006: 【アタック時】自パワー5000以上なら相手キャラ1枚を このターン中 -2000
+  "OP14-006": {"onAttack":[{"op":"cond","check":{"selfPowerAtLeast":5000},"then":[{"op":"powerMod","side":"opp","amount":-2000,"count":1,"optional":true}]}]},
+  // OP14-012: 【アタック時】自パワー5000以上ならリーダーか自キャラにレストのドン2付与
+  "OP14-012": {"onAttack":[{"op":"cond","check":{"selfPowerAtLeast":5000},"then":[{"op":"donAttach","target":"chooseOwn","n":2}]}]},
+  // OP14-026: 【相手のターン中】このキャラがレストの場合、パワー+2000（常在）
+  "OP14-026": {"static":[{"op":"condBuff","cond":{"and":["oppTurn",{"selfRested":true}]},"power":2000}]},
+  // OP14-028: 【自分のターン中】このキャラがレストになった時、相手のレストのコスト2以下1枚KO
+  "OP14-028": {"onSelfRested":[{"op":"ko","side":"opp","filter":{"maxCost":2,"restedOnly":true},"count":1,"optional":true}]},
+  // OP14-032: 【自分のターン中】このキャラがレストになった時、相手のコスト4以下1枚レスト
+  "OP14-032": {"onSelfRested":[{"op":"restChar","side":"opp","maxCost":4,"count":1,"optional":true}]},
+  // OP14-035: 【自分のターン中】このキャラがレストになった時、相手のレストのコスト4以下1枚を次リフレッシュでアクティブにしない
+  "OP14-035": {"onSelfRested":[{"op":"lock","side":"opp","restedOnly":true,"filter":{"maxCost":4},"count":1,"optional":true}]},
+  /* ----- OP14 既存opのみ ----- */
+  // OP14-013: 【登場時】デッキ上5枚から「ルフィ」以外の《超新星》1枚を手札へ ／【アタック時】相手1枚-1000
+  "OP14-013": {"onPlay":[{"op":"search","look":5,"filter":{"traitIncludes":"超新星","nameExcludes":"モンキー・Ｄ・ルフィ"},"count":1}],"onAttack":[{"op":"powerMod","side":"opp","amount":-1000,"count":1,"optional":true}]},
+  // OP14-014: 【ブロッカー】(text) 【登場時】リーダー《超新星》なら手札のパワー2000以下の赤キャラ1枚を登場
+  "OP14-014": {"onPlay":[{"op":"cond","check":{"leaderTrait":"超新星"},"then":[{"op":"playCharFromHand","filter":{"maxPower":2000,"color":"赤"},"count":1,"optional":true}]}]},
+  // OP14-031: 【登場時】相手コスト8以下2枚レスト→このターン終了時ドン5アクティブ
+  "OP14-031": {"onPlay":[{"op":"restChar","side":"opp","maxCost":8,"count":2,"optional":true},{"op":"scheduleTurnEnd","fx":[{"op":"donActivate","n":5}]}]},
+  // OP14-042: 【登場時】リーダー《魚人族》ならデッキ上4枚からコスト2以上1枚を手札へ
+  "OP14-042": {"onPlay":[{"op":"cond","check":{"leaderTrait":"魚人族"},"then":[{"op":"search","look":4,"filter":{"minCost":2},"count":1}]}]},
+  // OP14-044: 【ブロッカー】(text) 【登場時】デッキ上1枚公開、白ひげ海賊団なら2ドロー＋手札1捨て
+  "OP14-044": {"onPlay":[{"op":"revealTop","filter":{"traitIncludes":"白ひげ海賊団"},"then":[{"op":"draw","n":2},{"op":"discardOwn","n":1}]}]},
+  // OP14-047: 【ブロッカー】(text) 【登場時】1ドロー＋手札のコスト3以下の魚人/人魚1枚を登場
+  "OP14-047": {"onPlay":[{"op":"draw","n":1},{"op":"playCharFromHand","maxCost":3,"filter":{"or":[{"traitIncludes":"魚人族"},{"traitIncludes":"人魚族"}]},"count":1,"optional":true}]},
+  // OP14-051: 【ドン‼×2】【KO時】1ドロー
+  "OP14-051": {"onKO":[{"op":"cond","check":"donX2","then":[{"op":"draw","n":1}]}]},
+  // OP14-067: 【KO時】ドンデッキからレスト追加→デッキ上5枚から《ドンキホーテ海賊団》1枚を手札へ
+  "OP14-067": {"onKO":[{"op":"donFromDeck","n":1,"mode":"rest"},{"op":"search","look":5,"filter":{"traitIncludes":"ドンキホーテ海賊団"},"count":1}]},
+  // OP14-072: 【登場時】ドンデッキからアクティブ追加 ／【KO時】ドン-1→デッキ上1枚をライフ上に
+  "OP14-072": {"onPlay":[{"op":"donFromDeck","n":1,"mode":"active"}],"onKO":[{"op":"donMinus","n":1},{"op":"lifeAddFromDeck","n":1}]},
   "OP09-093": {"onPlay":[{"op":"cond","check":"leaderBH","then":[{"op":"negateEffect"}]}]},
   "OP16-104": {"onAttack":[{"op":"powerCopy"}],"trigger":[{"op":"draw","n":1},{"op":"reviveFromTrash","filter":{"cost":1,"traitIncludes":"黒ひげ海賊団"}}]},
   "OP16-109": {"onKO":[{"op":"cond","check":"leaderBH","then":[{"op":"draw","n":1},{"op":"ko","side":"opp","maxCost":1,"count":2,"optional":true}]}],"trigger":[{"op":"cond","check":"leaderBH","then":[{"op":"draw","n":1},{"op":"ko","side":"opp","maxCost":1,"count":2,"optional":true}]}]},

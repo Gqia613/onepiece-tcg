@@ -868,6 +868,28 @@ humanPick=function(c){return Promise.resolve((c||[])[0]||null);};
     { const me=LP('OP13-002'); me.don.rested=1; me.don.active=0; me.chars=[I('OP15-067','me')];
       const c=I('OP14-005','me'); await runFx(c.base.fx.act.fx,{self:c,side:'me'});
       ok((me.leader.attachedDon+me.chars.reduce((s,x)=>s+x.attachedDon,0))===1, 'OP14-005 act: リーダー/キャラにレストのドン1付与'); }
+
+    // === OP14 バッチ2（新cond/hook） ===
+    ok(['OP14-002','OP14-004','OP14-006','OP14-012','OP14-026','OP14-028','OP14-032','OP14-035','OP14-013','OP14-014','OP14-031','OP14-042','OP14-044','OP14-047','OP14-051','OP14-067','OP14-072'].every(no=>C[no]&&(C[no].fx||C[no].condRush)), 'OP14バッチ2: 17枚にfx/condRush統合');
+    // selfPowerAtLeast / selfRested cond
+    { C['__p5k__']={no:'__p5k__',name:'P5000',type:'CHAR',color:[],cost:5,power:5000,counter:0,traits:[]};
+      const c=mkSyn('__p5k__',C['__p5k__']); c.owner='me'; G.players={me:mkP('OP13-002',false),cpu:mkP('OP11-041',true)}; G.active='me';
+      ok(checkCond({selfPowerAtLeast:5000},'me',c)===true && checkCond({selfPowerAtLeast:6000},'me',c)===false, 'selfPowerAtLeast cond: 5000境界');
+      c.rested=true; G.active='cpu';
+      ok(checkCond({and:['oppTurn',{selfRested:true}]},'me',c)===true && checkCond({selfRested:false},'me',c)===false, 'selfRested cond: レスト＆相手ターン');
+      delete C['__p5k__']; }
+    // OP14-004 condRush（自パワー5000以上で速攻）
+    { G.players={me:mkP('OP13-002',false),cpu:mkP('OP11-041',true)}; G.active='me';
+      const c=I('OP14-004','me'); G.players.me.chars=[c];
+      const need=Math.max(0,Math.ceil((5000-(C['OP14-004'].power||0))/1000)); c.attachedDon=need;
+      ok(hasKw(c,'rush')===true, 'OP14-004 condRush: パワー5000以上で速攻'); }
+    // OP14-032 onSelfRested（アタックでレスト→相手コスト4以下レスト）
+    { G.players={me:mkP('OP13-002',false),cpu:mkP('OP11-041',true)}; G.active='me'; G.turnSeq=5; G.winner=null; G.busy=false; G.myActable=true; G.firstPlayer='me';
+      const atk=I('OP14-032','me'); atk.summonedTurn=1; atk.rested=false; G.players.me.chars=[atk];
+      const v=I('OP15-067','cpu'); v.rested=false; G.players.cpu.chars=[v];
+      G.players.cpu.life=[I('ST01-006','cpu'),I('ST01-006','cpu')]; G.players.me.life=[I('ST01-006','me')]; G.players.me.hand=[];
+      await declareAttack(atk, G.players.cpu.leader);
+      ok(v.rested===true, 'OP14-032 onSelfRested: アタックでレスト→相手コスト4以下をレスト'); }
   }catch(e){ console.log('EXCEPTION:', e.message); fail++; }
   console.log('Phase3 fxテスト: pass='+pass+' fail='+fail);
   process.exit(fail?1:0);
