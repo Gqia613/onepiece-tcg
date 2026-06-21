@@ -832,5 +832,73 @@ window.CARD_FX = {
   // OP12-014 ボア・ハンコック: 【登場時】デッキ上5枚から「ルフィ」か赤イベント1枚 ／【起動メイン】自身トラッシュ：付与ドン2
   "OP12-014": {"onPlay":[{"op":"search","look":5,"count":1,"filter":{"or":[{"name":"モンキー・Ｄ・ルフィ"},{"color":"赤","type":"EVENT"}]},"optional":true}],"act":{"label":"自身トラッシュ:付与ドン2","cost":{},"fx":[{"op":"trashSelfCost","then":[{"op":"donAttach","target":"chooseOwn","n":2}]}]}},
   // OP12-015 モンキー・Ｄ・ルフィ: 付与ドン合計2以上で+2000 ／【登場時】イベント2枚公開：パワー3000以下の赤キャラ登場→付与ドン1
-  "OP12-015": {"static":[{"op":"condBuff","cond":{"selfAttachedDonAtLeast":2},"power":2000}],"onPlay":[{"op":"revealCost","count":2,"filter":{"type":"EVENT"},"then":[{"op":"playCharFromHand","filter":{"color":"赤","maxPower":3000},"count":1,"optional":true},{"op":"donAttach","target":"chooseOwn","n":1}]}]}
+  "OP12-015": {"static":[{"op":"condBuff","cond":{"selfAttachedDonAtLeast":2},"power":2000}],"onPlay":[{"op":"revealCost","count":2,"filter":{"type":"EVENT"},"then":[{"op":"playCharFromHand","filter":{"color":"赤","maxPower":3000},"count":1,"optional":true},{"op":"donAttach","target":"chooseOwn","n":1}]}]},
+  // OP12-016 “疑わない事”それが“強さ”だ: 【メイン】レイリーにアクティブのドン2付与→そのカードにブロック不可 ／【カウンター】キャラ1枚+2000
+  "OP12-016": {"main":{"fx":[{"op":"donAttach","target":"chooseOwn","n":2,"fromAny":true,"filter":{"name":"シルバーズ・レイリー"}},{"op":"giveKeyword","target":"chooseOwn","kw":"unblockable","duration":"turn","filter":{"name":"シルバーズ・レイリー"}}]},"counter":{"cost":0,"fx":[{"op":"powerMod","side":"self","amount":2000,"battle":true,"count":1,"optional":true}]}},
+  // OP12-017 見聞色の覇気: 【メイン】レイリーにアクティブのドン1付与→デッキ上4枚から赤イベントかコスト3以上キャラ1枚を手札へ
+  "OP12-017": {"main":{"fx":[{"op":"donAttach","target":"chooseOwn","n":1,"fromAny":true,"filter":{"name":"シルバーズ・レイリー"}},{"op":"search","look":4,"count":1,"filter":{"or":[{"color":"赤","type":"EVENT"},{"minCost":3,"type":"CHAR"}]},"optional":true}]}},
+  // OP12-018 覇王色の覇気: 【カウンター】キャラ1枚+2000→ドン1レストできれば相手リーダーとキャラ全-1000
+  "OP12-018": {"counter":{"cost":0,"fx":[{"op":"powerMod","side":"self","amount":2000,"battle":true,"count":1,"optional":true},{"op":"restDonCost","n":1,"then":[{"op":"powerMod","side":"opp","all":true,"includeLeader":true,"amount":-1000,"duration":"turn"}]}]}},
+  // OP12-019 武装色の覇気: 【メイン】レイリーにアクティブのドン1付与→リーダーかキャラ1枚+1000 ／【カウンター】キャラ1枚+2000
+  "OP12-019": {"main":{"fx":[{"op":"donAttach","target":"chooseOwn","n":1,"fromAny":true,"filter":{"name":"シルバーズ・レイリー"}},{"op":"powerMod","side":"self","leader":true,"amount":1000,"duration":"turn","count":1,"optional":true}]},"counter":{"cost":0,"fx":[{"op":"powerMod","side":"self","amount":2000,"battle":true,"count":1,"optional":true}]}},
+  /* ===== OP12 バッチ2（緑・ゾロ/斬。新cond donX3/selfActive/leaderBattledChar/restedCardsAtLeast） ===== */
+  // OP12-020 ロロノア・ゾロ LEADER: 【ドン×3】【起動メイン】相手キャラとバトル済ならリーダーをアクティブ（※その後「コスト7以下にアタック不可」は近似で省略）
+  "OP12-020": {"act":{"label":"ドン3:相手キャラとバトル済ならリーダーをアクティブ","cost":{},"fx":[{"op":"cond","check":{"and":[{"donX3":true},{"leaderBattledChar":true}]},"then":[{"op":"activateOwnChar","incLeader":true,"all":true,"filter":{"type":"LEADER"}}]}]}},
+  // OP12-022 イヌアラシ: 【起動メイン】レスト：相手レストのコスト5以下1枚を次リフレッシュでアクティブにしない
+  "OP12-022": {"act":{"label":"レスト:相手レスト5以下をアクティブにしない","cost":{"restSelf":true},"fx":[{"op":"lock","side":"opp","filter":{"maxCost":5,"restedOnly":true},"count":1,"optional":true}]}},
+  // OP12-024 牛鬼丸: アクティブの間は相手効果でKOされない ／【アタック時】付与ドン合計3以上で相手の元々コスト6以下1枚レスト
+  "OP12-024": {"static":[{"op":"condBuff","cond":{"selfActive":true},"immune":true}],"onAttack":[{"op":"cond","check":{"selfAttachedDonAtLeast":3},"then":[{"op":"restChar","side":"opp","filter":{"maxBaseCost":6},"count":1,"optional":true}]}]},
+  // OP12-026 くいな: 【起動メイン】レスト：相手の元々コスト4以下1枚レスト→ゾロ(リーダー)にレストのドン3付与
+  "OP12-026": {"act":{"label":"レスト:相手4以下レスト→ゾロに付与ドン3","cost":{"restSelf":true},"fx":[{"op":"restChar","side":"opp","filter":{"maxBaseCost":4},"count":1,"optional":true},{"op":"donAttach","target":"leader","n":3}]}},
+  // OP12-028 光月日和: 【起動メイン】ドン1+レスト：ゾロなら斬属性か緑イベント1枚をサーチ
+  "OP12-028": {"act":{"label":"ドン1+レスト:ゾロなら斬/緑イベントサーチ","cost":{"don":1,"restSelf":true},"fx":[{"op":"cond","check":{"leaderNameIncludes":"ロロノア・ゾロ"},"then":[{"op":"search","look":5,"count":1,"filter":{"or":[{"attr":"斬"},{"color":"緑","type":"EVENT"}]},"optional":true}]}]}},
+  // OP12-029 霜月コウ三郎: 【登場時】相手コスト2以下1枚レスト→相手レストの元々コスト1以下1枚KO
+  "OP12-029": {"onPlay":[{"op":"restChar","side":"opp","filter":{"maxCost":2},"count":1,"optional":true},{"op":"ko","side":"opp","filter":{"maxBaseCost":1,"restedOnly":true},"count":1,"optional":true}]},
+  // OP12-030 ジュラキュール・ミホーク: 【ブロッカー】 ／【登場時】ドン4アクティブ→元々コスト7以上を登場不可
+  "OP12-030": {"onPlay":[{"op":"donActivate","n":4},{"op":"setSummonBan","minBaseCost":7}]},
+  // OP12-031 たしぎ: 【登場時】相手の元々コスト6以下1枚レスト→ゾロ(リーダー)にレストのドン3付与
+  "OP12-031": {"onPlay":[{"op":"restChar","side":"opp","filter":{"maxBaseCost":6},"count":1,"optional":true},{"op":"donAttach","target":"leader","n":3}]},
+  // OP12-034 ペローナ: 【登場時】リーダーが属性(斬)なら斬属性か緑イベント1枚をサーチ
+  "OP12-034": {"onPlay":[{"op":"cond","check":{"leaderAttr":"斬"},"then":[{"op":"search","look":5,"count":1,"filter":{"or":[{"attr":"斬"},{"color":"緑","type":"EVENT"}]},"optional":true}]}]},
+  // OP12-036 ロロノア・ゾロ(c4): リーダーが属性(斬)なら+1000（※「効果で登場できない」「斬とのバトルでKOされない」は近似で省略）
+  "OP12-036": {"static":[{"op":"condBuff","cond":{"leaderAttr":"斬"},"power":1000}]},
+  // OP12-037 鬼気九刀流阿修羅: 【メイン】ドン3レスト：相手キャラ2枚までレスト（※「キャラかドン」のドン側は省略） ／【カウンター】リーダー+3000
+  "OP12-037": {"main":{"fx":[{"op":"restDonCost","n":3,"then":[{"op":"restChar","side":"opp","count":2,"optional":true}]}]},"counter":{"cost":0,"fx":[{"op":"leaderBuff","amount":3000,"duration":"battle"}]}},
+  // OP12-038 二刀流居合羅生門: 【メイン】ドン2レスト：相手レストの元々コスト4以下2枚KO ／【カウンター】リーダー+3000
+  "OP12-038": {"main":{"fx":[{"op":"restDonCost","n":2,"then":[{"op":"ko","side":"opp","filter":{"maxBaseCost":4,"restedOnly":true},"count":2,"optional":true}]}]},"counter":{"cost":0,"fx":[{"op":"leaderBuff","amount":3000,"duration":"battle"}]}},
+  // OP12-039 ルフィは海賊王になる男だ: 【メイン】ゾロ(リーダー)をアクティブにする
+  "OP12-039": {"main":{"fx":[{"op":"activateOwnChar","incLeader":true,"all":true,"filter":{"type":"LEADER"}}]}},
+  // OP12-118 ジュエリー・ボニー(緑): 【ブロッカー】 ／【登場時】レストのカード8枚以上で2ドロー1捨て→ドン1アクティブ
+  "OP12-118": {"onPlay":[{"op":"cond","check":{"restedCardsAtLeast":8},"then":[{"op":"draw","n":2},{"op":"discardOwn","n":1},{"op":"donActivate","n":1}]}]},
+  /* ===== OP12 バッチ3（青・海軍/麦わら。新cond selfHandAtLeast/trashEventAtLeast・drawDiscarded） ===== */
+  // OP12-040 クザン LEADER: 海軍の効果で手札が捨てられた時、捨てた枚数分ドロー（drawDiscarded）
+  "OP12-040": {"onSelfHandDiscarded":[{"op":"drawDiscarded"}]},
+  // OP12-041 サンジ LEADER: 【起動メイン】ドン-1：手札から元々コスト3以下の麦わらイベント1枚を発動 ／【アタック時】自ドン≤相手ドンでドン1レスト追加
+  "OP12-041": {"act":{"label":"ドン-1:麦わらイベント発動","cost":{},"fx":[{"op":"donMinus","n":1},{"op":"playEventFromHand","filter":{"maxBaseCost":3,"traitIncludes":"麦わらの一味"},"optional":true}]},"onAttack":[{"op":"cond","check":{"donLEOpp":true},"then":[{"op":"donFromDeck","n":1,"mode":"rested"}]}]},
+  // OP12-042 アルビダ: 元々コスト5以上のキャラが2枚以上でコスト+1 ／【登場時】相手の元々コスト1以下1枚をデッキ下
+  "OP12-042": {"static":[{"op":"staticCost","cond":{"selfCharCount":{"filter":{"minBaseCost":5},"min":2}},"amount":1}],"onPlay":[{"op":"deckBottom","side":"opp","filter":{"maxBaseCost":1},"count":1,"optional":true}]},
+  // OP12-043 クザン(c6): 手札5枚以上でコスト+1 ／【登場時】手札1捨て：相手1枚を次相手エンドまでアタック不可
+  "OP12-043": {"static":[{"op":"staticCost","cond":{"selfHandAtLeast":5},"amount":1}],"onPlay":[{"op":"discardCost","count":1,"then":[{"op":"setAttackBan","side":"opp","count":1,"duration":"untilNextEnd","optional":true}]}]},
+  // OP12-044 サカズキ: 【登場時】リーダー海軍なら2ドロー ／【起動メイン】手札1捨て：リーダーかキャラにレストのドン1付与
+  "OP12-044": {"onPlay":[{"op":"cond","check":{"leaderTrait":"海軍"},"then":[{"op":"draw","n":2}]}],"act":{"label":"手札1捨て:付与ドン1","cost":{},"fx":[{"op":"discardCost","count":1,"then":[{"op":"donAttach","target":"chooseOwn","n":1}]}]}},
+  // OP12-046 ゼファー: 【登場時】手札2枚を捨てる ／【起動メイン】自身トラッシュ：コスト5以下を手札に戻す
+  "OP12-046": {"onPlay":[{"op":"discardOwn","n":2}],"act":{"label":"自身トラッシュ:コスト5以下を手札に戻す","cost":{},"fx":[{"op":"trashSelfCost","then":[{"op":"bounce","side":"any","maxCost":5,"count":1,"optional":true}]}]}},
+  // OP12-047 センゴク: 【登場時】手札1捨て：デッキ上5枚から「センゴク」以外の海軍2枚を手札へ
+  "OP12-047": {"onPlay":[{"op":"discardCost","count":1,"then":[{"op":"search","look":5,"count":2,"filter":{"trait":"海軍","nameExcludes":"センゴク"},"optional":true}]}]},
+  // OP12-048 ドンキホーテ・ロシナンテ(青): 青海軍が相手効果で場を離れる代わりに自カード1枚レスト（※「手札1捨て」併用は近似で省略）
+  "OP12-048": {"static":[{"op":"leaveProtect","targetFilter":{"color":"青","traitIncludes":"海軍"},"pay":"restOwnCards","n":1}]},
+  // OP12-051 ヒナ: 【起動メイン】レスト＋手札1捨て：相手の元々コスト4以下1枚はこのターン【ブロッカー】不可
+  "OP12-051": {"act":{"label":"レスト+手札1捨て:相手4以下をブロッカー不可","cost":{"restSelf":true},"fx":[{"op":"discardCost","count":1,"then":[{"op":"denyBlocker","side":"opp","filter":{"maxBaseCost":4},"count":1,"optional":true}]}]}},
+  // OP12-053 ボルサリーノ: 【ターン1回】場を離れる代わりに手札1捨て ／【相手のターン中】リーダー海軍なら【ブロッカー】＋1000
+  "OP12-053": {"static":[{"op":"leaveProtect","targetSelf":true,"once":"turn","pay":"discardFromHand"},{"op":"staticKeyword","kw":"blocker","cond":{"and":[{"oppTurn":true},{"leaderTrait":"海軍"}]}},{"op":"condBuff","cond":{"and":[{"oppTurn":true},{"leaderTrait":"海軍"}]},"power":1000}]},
+  // OP12-054 マーシャル・Ｄ・ティーチ: 【登場時】リーダー王下七武海なら相手コスト1以下1枚を手札に戻す
+  "OP12-054": {"onPlay":[{"op":"cond","check":{"leaderTrait":"王下七武海"},"then":[{"op":"bounce","side":"opp","maxCost":1,"count":1,"optional":true}]}]},
+  // OP12-056 モンキー・Ｄ・ガープ: 【登場時】手札1捨て：手札から「ガープ」以外のパワー8000以下の青海軍を登場
+  "OP12-056": {"onPlay":[{"op":"discardCost","count":1,"then":[{"op":"playCharFromHand","filter":{"color":"青","traitIncludes":"海軍","maxPower":8000,"nameExcludes":"モンキー・Ｄ・ガープ"},"count":1,"optional":true}]}]},
+  // OP12-057 アイス塊暴雉嘴: 【カウンター】リーダー1枚+4000→手札1捨て
+  "OP12-057": {"counter":{"cost":0,"fx":[{"op":"powerMod","side":"self","leader":true,"amount":4000,"battle":true,"count":1,"filter":{"type":"LEADER"}},{"op":"discardOwn","n":1}]}},
+  // OP12-059 粗砕: 【メイン】リーダー「サンジ」なら1ドロー ／【カウンター】トラッシュにイベント4枚以上でリーダー1枚+4000
+  "OP12-059": {"main":{"fx":[{"op":"cond","check":{"leaderNameIncludes":"サンジ"},"then":[{"op":"draw","n":1}]}]},"counter":{"cost":0,"fx":[{"op":"cond","check":{"trashEventAtLeast":4},"then":[{"op":"powerMod","side":"self","leader":true,"amount":4000,"battle":true,"count":1,"filter":{"type":"LEADER"}}]}]}},
+  // OP12-060 牛肉バースト: 【メイン】リーダー多色なら二択（相手コスト4以下を手札へ／手札6以下なら2ドロー）
+  "OP12-060": {"main":{"fx":[{"op":"cond","check":{"leaderMulticolor":true},"then":[{"op":"chooseOption","options":[{"label":"相手コスト4以下を手札に戻す","fx":[{"op":"bounce","side":"opp","maxCost":4,"count":1,"optional":true}]},{"label":"手札6以下なら2ドロー","fx":[{"op":"cond","check":{"selfHandAtMost":6},"then":[{"op":"draw","n":2}]}]}]}]}]}}
 };

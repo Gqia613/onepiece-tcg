@@ -181,6 +181,10 @@
       if (c.donAtLeast != null && donTotal(side) < c.donAtLeast) return false;
       if (c.donX1 && !(card && (card.attachedDon || 0) >= 1)) return false; // 【ドン‼×1】= このカードに付与ドン1以上（オブジェクト条件形。OP13-004サボのboardBuff等）
       if (c.donX2 && !(card && (card.attachedDon || 0) >= 2)) return false;
+      if (c.donX3 && !(card && (card.attachedDon || 0) >= 3)) return false; // 【ドン‼×3】（OP12-020ゾロL）
+      if (c.selfActive && card && card.rested) return false; // このカードがアクティブ（OP12-024牛鬼丸）
+      if (c.leaderBattledChar && P._leaderBattledTurn !== G.turnSeq) return false; // このターン、リーダーが相手キャラとバトルした（OP12-020ゾロL）
+      if (c.restedCardsAtLeast != null && ([P.leader, ...P.chars, P.stage].filter(x => x && x.rested).length + (P.don.rested || 0)) < c.restedCardsAtLeast) return false; // 自分のレストのカード(キャラ/リーダー/ステージ＋レストドン)がN枚以上（OP12-118ボニー）
       if (c.selfAttachedDon && !([P.leader, ...P.chars].some(x => x && (x.attachedDon || 0) > 0))) return false; // 自分の付与されているドンがある（OP13紫の付与シナジー）
       if (c.selfLifeLEOpp && P.life.length > O.life.length) return false; // 自分のライフ枚数が相手以下（OP13-102エジソン）
       if (c.selfAttachedDonAtLeast != null && [P.leader, ...P.chars].reduce((s, x) => s + (x ? (x.attachedDon || 0) : 0), 0) < c.selfAttachedDonAtLeast) return false; // 自分の付与ドン合計N以上（OP12-015/024等）
@@ -189,7 +193,9 @@
       if (c.activeDonAtLeast != null && (P.don.active || 0) < c.activeDonAtLeast) return false;
       if (c.oppHandAtLeast != null && O.hand.length < c.oppHandAtLeast) return false;
       if (c.selfHandAtMost != null && P.hand.length > c.selfHandAtMost) return false;
+      if (c.selfHandAtLeast != null && P.hand.length < c.selfHandAtLeast) return false; // 自分の手札N枚以上（OP12-043クザン/087ロビン等）
       if (c.trashAtLeast != null && P.trash.length < c.trashAtLeast) return false;
+      if (c.trashEventAtLeast != null && P.trash.filter(x => x.base.type === 'EVENT').length < c.trashEventAtLeast) return false; // トラッシュにイベントN枚以上（OP12-059/065等）
       if (c.trashAtMost != null && P.trash.length > c.trashAtMost) return false;
       if (c.trashCount != null) { const f = c.trashCount; const n = P.trash.filter(x => matchFilter(x, f.filter || {})).length; if (f.min != null && n < f.min) return false; if (f.max != null && n > f.max) return false; } // タイプ等で絞ったトラッシュ枚数
       if (c.trashHas != null && !P.trash.some(x => matchFilter(x, c.trashHas))) return false; // 自分のトラッシュに条件一致のカードがある

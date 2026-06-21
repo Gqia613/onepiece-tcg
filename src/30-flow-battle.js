@@ -35,11 +35,11 @@
     }
     // 「効果で自分の手札が捨てられた時」誘発（OP14-045クロオビ/049ジンベエ→速攻, 056ワダツミ→自身無効）。
     // 手札を捨てる各op（discardOwn/discardCost/oppDiscard）から、捨てられた側を指定して呼ぶ。
-    async function fireHandDiscarded(side) {
-      const P = G.players[side];
-      for (const c of P.chars.slice()) {
-        if (c.base.fx && c.base.fx.onSelfHandDiscarded && P.chars.includes(c) && !isNegated(c)) {
-          await runFx(c.base.fx.onSelfHandDiscarded, { self: c, side });
+    async function fireHandDiscarded(side, n) {
+      const P = G.players[side]; n = n || 1;
+      for (const c of [...P.chars.slice(), P.leader]) {
+        if (c && c.base.fx && c.base.fx.onSelfHandDiscarded && (c === P.leader || P.chars.includes(c)) && !isNegated(c)) {
+          await runFx(c.base.fx.onSelfHandDiscarded, { self: c, side, discarded: n }); // ctx.discarded=捨てた枚数（OP12-040クザンが参照）
         }
       }
     }
@@ -270,6 +270,7 @@
       G.busy = true; G.pendingChoice = null; G.attackSel = null;
       attacker.rested = true;
       const aSide = attacker.owner, dSide = opp(aSide);
+      if (attacker.base.type === 'LEADER' && target && target.base.type === 'CHAR') G.players[aSide]._leaderBattledTurn = G.turnSeq; // リーダーが相手キャラとバトル（OP12-020ゾロLの起動メイン条件）
       // 【自分のターン中】このキャラがレストになった時（アタックでレスト）の誘発
       if (attacker.base.fx && attacker.base.fx.onSelfRested && !isNegated(attacker) && aSide === G.active) { await fxNote(aSide, 'レスト時', attacker.base.name); await runFx(attacker.base.fx.onSelfRested, { self: attacker, side: aSide }); }
       flog(aSide, `「${attacker.base.name}」が${target.base.type === 'LEADER' ? 'リーダー' : '「' + target.base.name + '」'}にアタック`);
