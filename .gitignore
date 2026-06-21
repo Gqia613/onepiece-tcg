@@ -15,3 +15,9 @@ node_modules/
 
 # Claude Code (machine-local config / session data)
 .claude/
+
+# Python/GPU(AlphaZero)学習: venv・自己対戦データ・学習中間出力はコミットしない
+pytorch/.venv/
+pytorch/data/
+pytorch/out/
+__pycache__/
