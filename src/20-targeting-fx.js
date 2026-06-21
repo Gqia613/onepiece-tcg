@@ -159,7 +159,7 @@
             const cands = restPool();
             const t = await chooseCard(side, cands, progText('レストにする相手キャラを選択', i, op.count || 1), 'oppBig', op.optional);
             if (!t) break; t.rested = true; flog(side, `「${t.base.name}」をレスト`);
-            if (t.base.fx && t.base.fx.onOppRested && !isNegated(t) && t.owner !== side) { await runFx(t.base.fx.onOppRested, { self: t, side: t.owner }); } // 「相手のキャラの効果でレストになった時」(OP14-070バッファロー)
+            if (t.base.fx && t.base.fx.onOppRested && !isNegated(t) && t.owner !== side && self && self.base && self.base.type === 'CHAR') { await runFx(t.base.fx.onOppRested, { self: t, side: t.owner }); } // 「相手のキャラの効果でレストになった時」(OP14-070バッファロー。効果源=ctx.self がキャラの時のみ)
           }
           break;
         }
@@ -168,7 +168,7 @@
           if (donTotal(side) < 1) break;
           if (!(await confirmUse(side, 'ドン‼-1', 'ドン‼1枚をドンデッキに戻してこのキャラをアクティブにしますか？', '戻す（アクティブ化）', 'しない'))) break;
           const okk = await returnDonChoose(side, 1, false);
-          if (okk && self) { self.rested = false; floatOn(self.uid, 'アクティブ', 'buff'); flog(side, `「${self.base.name}」をアクティブにした`); render(); }
+          if (okk) { await fireDonReturned(side); if (self) { self.rested = false; floatOn(self.uid, 'アクティブ', 'buff'); flog(side, `「${self.base.name}」をアクティブにした`); render(); } } // ドン返却で onDonReturned(トレーボル等)も誘発
           break;
         }
         case 'lock': {
@@ -671,7 +671,7 @@
         // 自分のトラッシュから filter一致のカードを count枚 手札に加える
         case 'trashToHand': { for (let i = 0; i < (op.count || 1); i++) { const cands = P.trash.filter(c => matchFilter(c, op.filter || {})); if (!cands.length) break; const t = P.isCPU ? cands[0] : await chooseCard(side, cands, 'トラッシュから手札に加えるカード', 'ownBig', op.optional); if (!t) break; P.trash.splice(P.trash.indexOf(t), 1); P.hand.push(t); flog(side, `「${t.base.name}」を手札に加えた`); } render(); break; }
         // 自分のデッキの上 n枚をトラッシュに置く（ミル）
-        case 'deckToTrash': { const k = Math.min(op.n || 1, P.deck.length); for (let i = 0; i < k; i++) P.trash.push(reset(P.deck.shift())); if (k) flog(side, `デッキ上${k}枚をトラッシュ`); render(); break; }
+        case 'deckToTrash': { if (op.optional && !(await confirmUse(side, 'デッキをトラッシュ', `デッキの上から${op.n || 1}枚をトラッシュに置きますか？`, '置く', '置かない'))) break; const k = Math.min(op.n || 1, P.deck.length); for (let i = 0; i < k; i++) P.trash.push(reset(P.deck.shift())); if (k) flog(side, `デッキ上${k}枚をトラッシュ`); render(); break; }
         // 自分の手札またはトラッシュから filter一致のキャラ1枚を登場
         case 'playFromHandOrTrash': {
           const cands = [...P.hand, ...P.trash].filter(c => c.base.type === 'CHAR' && matchFilter(c, op.filter));
@@ -783,7 +783,7 @@
           flog(target.owner, `【${p.base.name}】リーダーのパワーを下げて「${target.base.name}」を守った`); return true;
         }
         if (prot.pay === 'restOwnCards') {
-          const n = prot.n || 2; const pool = [ow.leader, ...ow.chars].filter(c => c && c !== target && !c.rested);
+          const n = prot.n || 2; const pool = [ow.leader, ...ow.chars].filter(c => c && c !== target && !c.rested && !(prot.excludeLeader && c === ow.leader)); // excludeLeader=「自分のキャラ」限定（リーダー除外。OP14-034）
           if (pool.length < n) continue;
           if (!(await confirmUse(target.owner, `【${p.base.name}】身代わり`, `自分のカード${n}枚をレストにして「${target.base.name}」を守りますか？`, `守る（${n}枚レスト）`, '守らない'))) continue;
           let picks;

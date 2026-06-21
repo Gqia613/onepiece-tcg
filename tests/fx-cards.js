@@ -1090,8 +1090,12 @@ humanPick=function(c){return Promise.resolve((c||[])[0]||null);};
       ok(donTotal('me')===a1, 'OP14-068: ターン1回(2回目不発)'); G.active='me'; }
     // OP14-070 バッファロー: 相手効果でレスト→ドン1戻して自身アクティブ
     { const me=LP('OP13-002'); me.isCPU=true; const bf=I('OP14-070','me'); bf.owner='me'; bf.rested=false; me.chars=[bf]; me.don={active:2,rested:0};
-      await doOp({op:'restChar',count:1},{side:'cpu',self:null});
-      ok(!bf.rested && donTotal('me')===1, 'OP14-070 onOppRested: 相手レストでドン1戻し自身アクティブ'); }
+      const src=I('OP15-067','cpu'); src.owner='cpu';
+      await doOp({op:'restChar',count:1},{side:'cpu',self:src});
+      ok(!bf.rested && donTotal('me')===1, 'OP14-070 onOppRested: 相手のキャラ効果でレスト→ドン1戻し自身アクティブ');
+      const me2=LP('OP13-002'); me2.isCPU=true; const bf2=I('OP14-070','me'); bf2.owner='me'; bf2.rested=false; me2.chars=[bf2]; me2.don={active:2,rested:0};
+      await doOp({op:'restChar',count:1},{side:'cpu',self:null}); // 源がキャラでない→発火しない
+      ok(bf2.rested && donTotal('me')===2, 'OP14-070: 源がキャラでないレストでは誘発しない'); }
     // OP14-079 クロコダイル: 相手キャラは自分の効果で場を離れない＋起動メイン
     { const me=LP('OP14-079'); const v=I('OP15-067','cpu'); v.owner='cpu'; G.players.cpu.chars=[v];
       ok(await protectFromEffect(v,'ko',null)===true, 'OP14-079 static: 自分の効果で相手キャラはKOされない');
@@ -1110,6 +1114,42 @@ humanPick=function(c){return Promise.resolve((c||[])[0]||null);};
       ok(power(za)===7000, 'OP14-086 condBuff: トラッシュ7枚以上で自身+1000');
       ok(!matchFilter(bwc,{maxCost:3}) && matchFilter(bwc,{maxCost:5}), 'OP14-086 allyCost: B・W実効コスト+2(maxCost3外/5内)');
       me.trash=[]; ok(power(za)===6000 && matchFilter(bwc,{maxCost:3}), 'OP14-086: トラッシュ7未満で無効'); delete C['__bwc__']; }
+
+    // === OP14 公式照合で見つかった不具合の修正 回帰 ===
+    // OP14-120: 引きの条件は「相手の」コスト0か8以上（selfChar→oppChar）
+    { const me=LP('OP13-002'); me.deck=[I('OP15-067','me')]; const c=I('OP14-120','me');
+      C['__o8__']={no:'__o8__',name:'O8',type:'CHAR',color:[],cost:8,power:8000,counter:1000,traits:[]};
+      const o8=mkSyn('__o8__',C['__o8__']); o8.owner='cpu'; G.players.cpu.chars=[o8]; const h0=me.hand.length;
+      await runFx(c.base.fx.onPlay,{self:c,side:'me'});
+      ok(me.hand.length===h0+1, 'OP14-120: 相手にコスト8以上→1ドロー(oppChar)');
+      const me2=LP('OP13-002'); me2.deck=[I('OP15-067','me')]; const c2=I('OP14-120','me'); G.players.cpu.chars=[]; const h1=me2.hand.length;
+      await runFx(c2.base.fx.onPlay,{self:c2,side:'me'});
+      ok(me2.hand.length===h1, 'OP14-120: 相手にコスト0/8+不在→ドローしない'); delete C['__o8__']; }
+    // OP14-098: 「コスト0か8以上のキャラがいる場合」は場全体（相手のみでも発動）
+    { const me=LP('OP13-002'); const c=I('OP14-098','me'); me.chars=[];
+      C['__bwx__']={no:'__bwx__',name:'BWX',type:'CHAR',color:[],cost:4,power:5000,counter:1000,traits:['B・W']};
+      const bwx=mkSyn('__bwx__',C['__bwx__']); bwx.owner='me'; me.chars=[bwx];
+      C['__o0__']={no:'__o0__',name:'O0',type:'CHAR',color:[],cost:0,power:1000,counter:1000,traits:[]};
+      const o0=mkSyn('__o0__',C['__o0__']); o0.owner='cpu'; G.players.cpu.chars=[o0];
+      await runFx(c.base.fx.main.fx,{self:c,side:'me'});
+      ok(!matchFilter(bwx,{maxCost:6}), 'OP14-098: 相手のコスト0キャラで発動→B・Wコスト+3(7)'); delete C['__bwx__']; delete C['__o0__']; }
+    // OP14-090: rushChar条件も場全体（相手のコスト0/8+でも付与）
+    { const me=LP('OP13-002'); const dz=I('OP14-090','me'); dz.owner='me'; me.chars=[dz]; dz.summonedTurn=G.turnSeq;
+      C['__o0b__']={no:'__o0b__',name:'O0b',type:'CHAR',color:[],cost:0,power:1000,counter:1000,traits:[]};
+      const o0=mkSyn('__o0b__',C['__o0b__']); o0.owner='cpu'; G.players.cpu.chars=[o0]; G.active='me';
+      ok(hasKw(dz,'rushChar'), 'OP14-090: 相手のコスト0キャラでもrushChar(場全体)'); delete C['__o0b__']; }
+    // OP14-063: コスト5以下フィルタが効く（コスト6のドンキは登場不可）
+    { const me=LP('OP13-002'); me.leader.base={...me.leader.base}; const c=I('OP14-063','me'); G.players.cpu.don={active:0,rested:6}; G.players.cpu.donMax=10;
+      C['__dk6__']={no:'__dk6__',name:'DK6',type:'CHAR',color:[],cost:6,power:7000,counter:1000,traits:['ドンキホーテ海賊団']};
+      const dk6=mkSyn('__dk6__',C['__dk6__']); dk6.owner='me'; me.hand=[dk6];
+      await runFx(c.base.fx.onKO,{self:c,side:'me'});
+      ok(!me.chars.includes(dk6), 'OP14-063: コスト6のドンキは「コスト5以下」フィルタで登場不可(maxCost filter内)'); delete C['__dk6__']; }
+    // OP14-034: 肩代わりレストにリーダーを含めない（excludeLeader）
+    { const me=LP('OP13-002'); me.isCPU=true; const lf=I('OP14-034','me'); lf.owner='me';
+      C['__sw__']={no:'__sw__',name:'SW',type:'CHAR',color:['緑'],cost:4,power:5000,counter:1000,traits:['麦わらの一味']};
+      const sw=mkSyn('__sw__',C['__sw__']); sw.owner='me'; me.chars=[lf,sw]; me.leader.rested=false; lf.rested=false;
+      await protectFromEffect(sw,'ko',null);
+      ok(!me.leader.rested, 'OP14-034: 肩代わりレストでリーダーは選ばれない(excludeLeader)'); delete C['__sw__']; }
   }catch(e){ console.log('EXCEPTION:', e.message); fail++; }
   console.log('Phase3 fxテスト: pass='+pass+' fail='+fail);
   process.exit(fail?1:0);

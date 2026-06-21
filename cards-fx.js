@@ -362,9 +362,9 @@ window.CARD_FX = {
   // OP14-087: 【登場時】リーダーが『B・W』含むなら、デッキ上4枚から「ミキータ」以外の『B・W』1枚を手札へ、残りトラッシュ
   "OP14-087": {"onPlay":[{"op":"cond","check":{"leaderTraitIncludes":"B・W"},"then":[{"op":"search","look":4,"filter":{"traitIncludes":"B・W","nameExcludes":"ミキータ"},"count":1,"rest":"trash"}]}]},
   // OP14-098: 【メイン】コスト0か8以上のキャラがいれば自『B・W』全コスト+3(次相手エンドまで) ／【カウンター】リーダー+3000
-  "OP14-098": {"main":{"fx":[{"op":"cond","check":{"or":[{"selfChar":{"maxCost":0}},{"selfChar":{"minCost":8}}]},"then":[{"op":"addCostBuff","side":"self","all":true,"amount":3,"duration":"untilNextEnd","filter":{"traitIncludes":"B・W"}}]}]},"counter":{"cost":0,"fx":[{"op":"leaderBuff","amount":3000,"duration":"battle"}]}},
+  "OP14-098": {"main":{"fx":[{"op":"cond","check":{"or":[{"selfChar":{"maxCost":0}},{"selfChar":{"minCost":8}},{"oppChar":{"maxCost":0}},{"oppChar":{"minCost":8}}]},"then":[{"op":"addCostBuff","side":"self","all":true,"amount":3,"duration":"untilNextEnd","filter":{"traitIncludes":"B・W"}}]}]},"counter":{"cost":0,"fx":[{"op":"leaderBuff","amount":3000,"duration":"battle"}]}},
   // OP14-063: 【登場時】ドンデッキからアクティブ追加 ／【KO時】相手の場のドンが6枚以上なら手札のコスト5以下《ドンキ》1枚を登場
-  "OP14-063": {"onPlay":[{"op":"donFromDeck","n":1,"mode":"active"}],"onKO":[{"op":"cond","check":{"oppDonAtLeast":6},"then":[{"op":"playCharFromHand","maxCost":5,"filter":{"traitIncludes":"ドンキホーテ海賊団"},"count":1,"optional":true}]}]},
+  "OP14-063": {"onPlay":[{"op":"donFromDeck","n":1,"mode":"active"}],"onKO":[{"op":"cond","check":{"oppDonAtLeast":6},"then":[{"op":"playCharFromHand","filter":{"traitIncludes":"ドンキホーテ海賊団","maxCost":5},"count":1,"optional":true}]}]},
   // OP14-110: 【KO時】トラッシュから「ホグバック」以外のコスト4以下の【トリガー】持ちキャラ1枚を登場
   "OP14-110": {"onKO":[{"op":"reviveFromTrash","maxCost":4,"needsTrigger":true,"filter":{"nameExcludes":"ホグバック"}}]},
   // OP14-092: 【相手のターン中】【ターン1回】このキャラがKOされる場合、代わりにトラッシュ3枚をデッキ下に置きKO回避
@@ -382,7 +382,7 @@ window.CARD_FX = {
   // OP14-119: 【自ターン中】レストになった時、相手コスト9以下1枚を次相手エンドまでレスト不可 ／【相手アタック時】【ターン1回】手札1捨て：リーダーかキャラ1枚を このバトル中+2000
   "OP14-119": {"onSelfRested":[{"op":"restImmune","side":"opp","maxCost":9,"duration":"untilNextEnd","count":1,"optional":true}],"onOppAttack":[{"op":"discardCost","count":1,"once":"turn","then":[{"op":"powerMod","side":"self","leader":true,"amount":2000,"battle":true,"count":1,"optional":true}]}]},
   // OP14-120: 【登場時】相手コスト9以下1枚を次相手エンドまでアタック不可→コスト0か8以上いれば1ドロー ／【KO時】手札1捨て：このキャラをトラッシュから登場
-  "OP14-120": {"onPlay":[{"op":"setAttackBan","side":"opp","maxCost":9,"duration":"untilNextEnd","count":1,"optional":true},{"op":"cond","check":{"or":[{"selfChar":{"maxCost":0}},{"selfChar":{"minCost":8}}]},"then":[{"op":"draw","n":1}]}],"onKO":[{"op":"discardCost","count":1,"then":[{"op":"reviveSelf"}]}]},
+  "OP14-120": {"onPlay":[{"op":"setAttackBan","side":"opp","maxCost":9,"duration":"untilNextEnd","count":1,"optional":true},{"op":"cond","check":{"or":[{"oppChar":{"maxCost":0}},{"oppChar":{"minCost":8}}]},"then":[{"op":"draw","n":1}]}],"onKO":[{"op":"discardCost","count":1,"then":[{"op":"reviveSelf"}]}]},
   // OP14-029: 【相手ターン中】このキャラが相手効果で場を離れる場合、代わりに自カード1枚レスト ／【起動メイン】自カード2枚レスト：このキャラを次相手エンドまで+2000
   "OP14-029": {"static":[{"op":"leaveProtect","targetSelf":true,"pay":"restOwnCards","n":1}],"act":{"label":"自カード2枚レスト:自身+2000","cost":{},"fx":[{"op":"restOwnAsCost","count":2,"then":[{"op":"powerMod","target":"self","amount":2000,"duration":"untilNextEnd"}]}]}},
   /* ===== OP14 バッチ7（新op koStage/selfDamage/negateSelf/setSummonBan/basePower・新hook onSelfHandDiscarded・汎用リダイレクトリーダー） ===== */
@@ -401,7 +401,7 @@ window.CARD_FX = {
   // OP14-115 リンドウ: 【相手のターン中】【KO時】デッキ上1枚までをライフに加える→自分は1ダメージを受ける
   "OP14-115": {"onKO":[{"op":"cond","check":{"oppTurn":true},"then":[{"op":"lifeAddFromDeck","n":1},{"op":"selfDamage","n":1}]}]},
   // OP14-090 ダズ: コスト0か8以上のキャラがいれば登場ターンにキャラへアタック可(rushChar) ／【登場時】相手コスト0キャラ1枚までレスト
-  "OP14-090": {"static":[{"op":"staticKeyword","kw":"rushChar","cond":{"or":[{"selfChar":{"maxCost":0}},{"selfChar":{"minCost":8}}]}}],"onPlay":[{"op":"restChar","side":"opp","filter":{"cost":0},"count":1,"optional":true}]},
+  "OP14-090": {"static":[{"op":"staticKeyword","kw":"rushChar","cond":{"or":[{"selfChar":{"maxCost":0}},{"selfChar":{"minCost":8}},{"oppChar":{"maxCost":0}},{"oppChar":{"minCost":8}}]}}],"onPlay":[{"op":"restChar","side":"opp","filter":{"cost":0},"count":1,"optional":true}]},
   // OP14-024 錦えもん: 【登場時】ドン3アクティブ→このターン登場不可 ／【KO時】相手のカード1枚までレスト
   "OP14-024": {"onPlay":[{"op":"donActivate","n":3},{"op":"setSummonBan"}],"onKO":[{"op":"restChar","side":"opp","count":1,"optional":true,"includeLeader":true}]},
   // OP14-020 ミホーク LEADER: 【起動メイン】自カード1枚レスト：コスト5以上キャラがいればドン3アクティブ→このターン登場不可（※相手リーダーが属性(斬)時+1000は属性データ未保持のため未実装）
@@ -416,7 +416,7 @@ window.CARD_FX = {
   // OP14-003 カポネ・ベッジ: 相手の元々パワー5000以下のキャラの効果でKOされない(koImmuneFromWeakSource)
   "OP14-003": {"static":[{"op":"koImmuneFromWeakSource","maxBasePower":5000}]},
   // OP14-034 ルフィ: 【自分のターン中】自分の元々コスト4以上の緑《麦わらの一味》全+1000(allyPower) ／【ターン1回】麦わらが相手効果でKO→代わりに自分カード1枚レスト(leaveProtect)
-  "OP14-034": {"static":[{"op":"allyPower","power":1000,"cond":{"selfTurn":true},"filter":{"minBaseCost":4,"color":"緑","traitIncludes":"麦わらの一味"}},{"op":"leaveProtect","targetFilter":{"traitIncludes":"麦わらの一味"},"onlyKO":true,"once":"turn","pay":"restOwnCards","n":1}]},
+  "OP14-034": {"static":[{"op":"allyPower","power":1000,"cond":{"selfTurn":true},"filter":{"minBaseCost":4,"color":"緑","traitIncludes":"麦わらの一味"}},{"op":"leaveProtect","targetFilter":{"traitIncludes":"麦わらの一味"},"onlyKO":true,"once":"turn","pay":"restOwnCards","n":1,"excludeLeader":true}]},
   // OP14-053 ビスタ: 【ブロッカー】 ／【相手のターン中】手札7枚以下なら元々のパワーが自分のリーダーの元々パワーと同じになる(staticSetBaseToLeader)
   "OP14-053": {"static":[{"op":"staticKeyword","kw":"blocker"},{"op":"staticSetBaseToLeader","cond":{"and":[{"oppTurn":true},{"selfHandAtMost":7}]}}]},
   // OP14-068 トレーボル: 【相手のターン中】【ターン1回】自分の場のドンがドンデッキに戻された時、ドンキホーテリーダーならドンデッキからドン1レスト追加(onDonReturned)
@@ -424,7 +424,7 @@ window.CARD_FX = {
   // OP14-070 バッファロー: 【ブロッカー】 ／相手のキャラ効果でレストになった時、ドン1をドンデッキに戻して自身アクティブ(onOppRested→donMinusActivateSelf)
   "OP14-070": {"static":[{"op":"staticKeyword","kw":"blocker"}],"onOppRested":[{"op":"donMinusActivateSelf"}]},
   // OP14-079 クロコダイル LEADER: 相手キャラすべては自分の効果で場を離れない(oppLeaveImmuneFromSelf) ／【起動メイン】B・WをKO：相手キャラ1枚コスト-10→デッキ上2枚トラッシュ
-  "OP14-079": {"static":[{"op":"oppLeaveImmuneFromSelf"}],"act":{"label":"B・WをKO:相手キャラ1枚コスト-10","cost":{},"fx":[{"op":"trashOwnCharCost","filter":{"traitIncludes":"B・W"},"then":[{"op":"addCostBuff","side":"opp","count":1,"amount":-10,"duration":"turn","optional":true},{"op":"deckToTrash","n":2}]}]}},
+  "OP14-079": {"static":[{"op":"oppLeaveImmuneFromSelf"}],"act":{"label":"B・WをKO:相手キャラ1枚コスト-10","cost":{},"fx":[{"op":"trashOwnCharCost","filter":{"traitIncludes":"B・W"},"then":[{"op":"addCostBuff","side":"opp","count":1,"amount":-10,"duration":"turn","optional":true},{"op":"deckToTrash","n":2,"optional":true}]}]}},
   // OP14-086 ザラ: 自分のトラッシュ7枚以上なら自身+1000(condBuff)＋自分の『B・W』含む特徴のキャラ全コスト+2(allyCost)
   "OP14-086": {"static":[{"op":"condBuff","cond":{"trashAtLeast":7},"power":1000},{"op":"allyCost","cond":{"trashAtLeast":7},"amount":2,"filter":{"traitIncludes":"B・W"}}]},
   "OP09-093": {"onPlay":[{"op":"cond","check":"leaderBH","then":[{"op":"negateEffect"}]}]},
