@@ -148,6 +148,18 @@
           }
           break;
         }
+        // 相手キャラを最大count枚、現在パワーの合計がmaxTotal以下になるようKO（OP09-018失せろ）
+        case 'koByTotalPower': {
+          const limit = op.maxTotal || 0; const max = op.count || 2; let budget = limit;
+          for (let i = 0; i < max; i++) {
+            const cands = oppChars(side, opFilter(op)).filter(c => !isKoImmune(c) && power(c) <= budget);
+            if (!cands.length) break;
+            const t = P.isCPU ? cands.slice().sort((a, b) => power(a) - power(b))[0] : await chooseCard(side, cands, `合計パワー${limit}以下になるようにKO（残り${budget}）`, 'oppBig', true);
+            if (!t) break; if (await protectFromEffect(t, 'ko', self)) continue;
+            budget -= power(t); await koCard(t, 'oppEffect');
+          }
+          break;
+        }
         case 'koZero': {
           const dead = G.players[o].chars.filter(c => power(c) <= 0 && !isImmune(c) && !isKoImmune(c));
           for (const c of dead.slice()) { if (!G.players[o].chars.includes(c)) continue; if (await protectFromEffect(c, 'ko', self)) continue; await koCard(c, 'oppEffect'); }
@@ -348,6 +360,8 @@
         case 'donRefreshLock': { const O3 = G.players[o]; const n = Math.min(op.n || 1, O3.don.rested); O3._donRefreshLock = (O3._donRefreshLock || 0) + n; if (n) flog(side, `相手のレストのドン${n}枚は次のリフレッシュでアクティブにならない`); break; }
         // 自分の元々パワーN以下のキャラを、durationの間、相手の効果でKOされないようにする（OP10-070トレーボル）
         case 'grantWeakKoImmune': { P._weakKoImmune = { until: durSeq(op.duration || 'untilNextEnd'), maxBasePower: op.maxBasePower || 1000 }; flog(side, `元々パワー${op.maxBasePower || 1000}以下の自キャラは相手の効果でKOされない`); break; }
+        // filter一致の自キャラを、durationの間、効果でKOされないようにする（OP09-033ロビン＝ODYSSEY/麦わら）
+        case 'grantTraitKoImmune': { P._traitKoImmune = { until: durSeq(op.duration || 'untilNextEnd'), filter: op.filter || {} }; flog(side, 'フィルタ一致の自キャラは効果でKOされない'); break; }
         // このキャラを持ち主のデッキの下に置くコスト（OP10-026/027錦えもん）。払えたら then 実行。
         case 'selfToBottomCost': {
           if (!P.chars.includes(self)) break;
@@ -887,6 +901,7 @@
       if (cause === 'ko' && isKoImmune(target)) { flog(target.owner, `「${target.base.name}」は相手の効果ではKOされない`); return true; }
       // 一時的な「自分の元々パワーN以下のキャラは相手の効果でKOされない」（OP10-070トレーボル＝次相手ターン終了まで）
       if (cause === 'ko') { const wk = G.players[target.owner] && G.players[target.owner]._weakKoImmune; if (wk && G.turnSeq <= wk.until && (target.base.power || 0) <= wk.maxBasePower) { flog(target.owner, `「${target.base.name}」は元々パワー${wk.maxBasePower}以下なので相手の効果でKOされない`); return true; } }
+      if (cause === 'ko') { const tk = G.players[target.owner] && G.players[target.owner]._traitKoImmune; if (tk && G.turnSeq <= tk.until && matchFilter(target, tk.filter)) { flog(target.owner, `「${target.base.name}」は効果でKOされない`); return true; } } // 一時的なfilter一致KO耐性（OP09-033ロビン）
       // 「このキャラはバトルでKOされない」常在（condBuff battleImmune・cond対応。OP10-104カリブー）
       if (cause === 'battle' && !isNegated(target)) { const st = target.base.fx && target.base.fx.static; if (st) for (const o of st) { if (o.op === 'condBuff' && o.battleImmune && (!o.cond || checkCond(o.cond, target.owner, target))) { flog(target.owner, `「${target.base.name}」はバトルではKOされない`); return true; } } }
       // 「相手の元々パワーN以下のキャラの効果でKOされない」(OP14-003ベッジ。source=KO元のキャラ)

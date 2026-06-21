@@ -1394,5 +1394,81 @@ window.CARD_FX = {
   // OP10-118 モンキー・D・ルフィ(c6): ターン1回相手効果でKOされない ／【アタック時】トラッシュ3枚をデッキ下：相手手札5以上なら相手1枚捨て
   "OP10-118": {"static":[{"op":"leaveProtect","targetSelf":true,"onlyKO":true,"once":"turn","pay":"free"}],"onAttack":[{"op":"trashToDeckCost","n":3,"then":[{"op":"cond","check":{"oppHandAtLeast":5},"then":[{"op":"oppDiscard","n":1}]}]}]},
   // OP10-119 トラファルガー・ロー(c7): 【登場時】手札から超新星キャラ1枚をライフ上に裏向きで加える→超新星リーダーにレストのドン1付与
-  "OP10-119": {"onPlay":[{"op":"handCharToLife","filter":{"traitIncludes":"超新星"}},{"op":"donAttach","target":"leader","n":1}]}
+  "OP10-119": {"onPlay":[{"op":"handCharToLife","filter":{"traitIncludes":"超新星"}},{"op":"donAttach","target":"leader","n":1}]},
+  /* ===== OP09（エモーショナルメモリーズ）バッチ1（赤・001-021＝赤髪海賊団） ===== */
+  // OP09-002 ウタ: 【登場時】デッキ上5枚から赤髪海賊団1枚を手札に
+  "OP09-002": {"onPlay":[{"op":"search","look":5,"count":1,"filter":{"traitIncludes":"赤髪海賊団"},"optional":true}]},
+  // OP09-003 シャチ＆ペンギン: 【アタック時】相手キャラ1枚を-2000
+  "OP09-003": {"onAttack":[{"op":"powerMod","side":"opp","amount":-2000,"duration":"turn","count":1,"optional":true}]},
+  // OP09-004 シャンクス(c10): 相手キャラ全-1000 ／【速攻】
+  "OP09-004": {"static":[{"op":"oppStaticPowerMod","power":-1000}]},
+  // OP09-005 シルバーズ・レイリー: 【ブロッカー】 ／【登場時】相手の元々パワー5000以上が2枚以上なら2ドロー＋手札1枚捨て
+  "OP09-005": {"onPlay":[{"op":"cond","check":{"oppChar":{"minPower":5000,"min":2}},"then":[{"op":"draw","n":2},{"op":"discardCost","count":1}]}]},
+  // OP09-007 ヒート: 【ブロッカー】 ／【登場時】パワー4000以下のリーダー1枚を+1000
+  "OP09-007": {"onPlay":[{"op":"cond","check":{"leaderEffPowerAtMost":4000},"then":[{"op":"leaderBuff","amount":1000,"duration":"turn"}]}]},
+  // OP09-008 ビルディング・スネイク: 【起動メイン】このキャラをデッキ下：相手キャラ1枚を-3000
+  "OP09-008": {"act":{"label":"自身をデッキ下:相手-3000","cost":{},"fx":[{"op":"selfToBottomCost","then":[{"op":"powerMod","side":"opp","amount":-3000,"duration":"turn","count":1,"optional":true}]}]}},
+  // OP09-009 ベン・ベックマン: 【登場時】相手のパワー6000以下1枚をトラッシュ(KO)
+  "OP09-009": {"onPlay":[{"op":"ko","side":"opp","filter":{"maxEffPower":6000},"count":1,"optional":true}]},
+  // OP09-010 ボンク・パンチ: 【登場時】手札から「モンスター」1枚を登場 ／【ドン×1】【アタック時】+2000
+  "OP09-010": {"onPlay":[{"op":"playSpecificFromHand","name":"モンスター","optional":true}],"onAttack":[{"op":"cond","check":{"donX1":true},"then":[{"op":"powerMod","side":"self","target":"self","amount":2000,"duration":"turn"}]}]},
+  // OP09-011 ホンゴウ: 【起動メイン】レスト：赤髪リーダーなら相手キャラ1枚を-2000
+  "OP09-011": {"act":{"label":"レスト:赤髪なら相手-2000","cost":{"restSelf":true},"fx":[{"op":"cond","check":{"leaderTraitIncludes":"赤髪海賊団"},"then":[{"op":"powerMod","side":"opp","amount":-2000,"duration":"turn","count":1,"optional":true}]}]}},
+  // OP09-012 モンスター: 自分の「ボンク・パンチ」が効果でKOされる場合、代わりにこのキャラをトラッシュ
+  "OP09-012": {"static":[{"op":"leaveProtect","onlyKO":true,"pay":"koSelf","targetFilter":{"nameIncludes":"ボンク・パンチ"}}]},
+  // OP09-013 ヤソップ: 【登場時】リーダー1枚を次相手ターン終了まで+1000 ／【ドン×1】【アタック時】相手キャラ1枚を-1000
+  "OP09-013": {"onPlay":[{"op":"leaderBuff","amount":1000,"duration":"untilNextEnd"}],"onAttack":[{"op":"cond","check":{"donX1":true},"then":[{"op":"powerMod","side":"opp","amount":-1000,"duration":"turn","count":1,"optional":true}]}]},
+  // OP09-014 ライムジュース: 【登場時】相手のパワー4000以下1枚はこのターン【ブロッカー】発動不可
+  "OP09-014": {"onPlay":[{"op":"denyBlocker","filter":{"maxEffPower":4000},"count":1,"optional":true}]},
+  // OP09-015 ラッキー・ルウ: 【ブロッカー】 ／【KO時】赤髪リーダーなら相手の元々パワー6000以下1枚KO
+  "OP09-015": {"onKO":[{"op":"cond","check":{"leaderTraitIncludes":"赤髪海賊団"},"then":[{"op":"ko","side":"opp","filter":{"maxPower":6000},"count":1,"optional":true}]}]},
+  // OP09-017 ワイヤー: 【ドン×1】リーダーがパワー7000以上かつキッド海賊団で【速攻】
+  "OP09-017": {"static":[{"op":"staticKeyword","kw":"rush","cond":{"and":[{"donX1":true},{"leaderEffPowerAtLeast":7000},{"leaderTraitIncludes":"キッド海賊団"}]}}]},
+  // OP09-018 失せろ: 【メイン】相手キャラ2枚までをパワー合計4000以下になるようKO
+  "OP09-018": {"main":{"fx":[{"op":"koByTotalPower","count":2,"maxTotal":4000}]}},
+  // OP09-019 おれは友達を傷つける奴は許さない!!!!: 【メイン】赤髪リーダーなら相手キャラ1枚を-3000→相手にパワー5000以上がいれば1ドロー
+  "OP09-019": {"main":{"fx":[{"op":"cond","check":{"leaderTraitIncludes":"赤髪海賊団"},"then":[{"op":"powerMod","side":"opp","amount":-3000,"duration":"turn","count":1,"optional":true},{"op":"cond","check":{"oppChar":{"minEffPower":5000}},"then":[{"op":"draw","n":1}]}]}]}},
+  // OP09-020 来い…!!!おれ達が相手をしてやる!!!: 【メイン】デッキ上5枚から「自身」以外の赤髪海賊団1枚を手札に
+  "OP09-020": {"main":{"fx":[{"op":"search","look":5,"count":1,"filter":{"traitIncludes":"赤髪海賊団"},"exclude":"来い…!!!おれ達が相手をしてやる!!!","optional":true}]}},
+  // OP09-021 レッド・フォース号(STAGE): 【起動メイン】レスト：赤髪リーダーなら相手キャラ1枚を-1000
+  "OP09-021": {"act":{"label":"レスト:赤髪なら相手-1000","cost":{"restSelf":true},"fx":[{"op":"cond","check":{"leaderTraitIncludes":"赤髪海賊団"},"then":[{"op":"powerMod","side":"opp","amount":-1000,"duration":"turn","count":1,"optional":true}]}]}},
+  /* ===== OP09 バッチ2（緑・022-041＝ODYSSEY レスト軸） ===== */
+  // OP09-022 リム LEADER: 自分のキャラはレストで登場 ／【起動メイン】【ターン1回】ドン3レスト：ドンデッキからドン1レスト追加＋手札からコスト5以下ODYSSEY1枚を登場
+  "OP09-022": {"static":[{"op":"summonRested"}],"act":{"label":"ドン3レスト:ドン追加＋ODYSSEY登場","cost":{},"fx":[{"op":"restDonCost","n":3,"then":[{"op":"donFromDeck","n":1,"mode":"rested"},{"op":"playCharFromHand","filter":{"traitIncludes":"ODYSSEY","maxCost":5},"count":1,"optional":true}]}]}},
+  // OP09-023 アディオ: 【登場時】ODYSSEYリーダーならドン3アクティブ ／【相手のアタック時】【ターン1回】ドン1レスト：リーダーかキャラ+2000
+  "OP09-023": {"onPlay":[{"op":"cond","check":{"leaderTraitIncludes":"ODYSSEY"},"then":[{"op":"donActivate","n":3}]}],"onOppAttack":[{"op":"restDonCost","n":1,"once":"turn","then":[{"op":"powerMod","side":"self","leader":true,"amount":2000,"battle":true,"count":1,"optional":true}]}]},
+  // OP09-024 ウソップ: 【登場時】レストのキャラ2枚以上なら2ドロー＋手札2枚捨て
+  "OP09-024": {"onPlay":[{"op":"cond","check":{"selfRestedCharsAtLeast":2},"then":[{"op":"draw","n":2},{"op":"discardCost","count":2}]}]},
+  // OP09-025 クロコダイル: ODYSSEYリーダーなら リーダーとのバトルでKOされない（近似:バトルKO耐性）
+  "OP09-025": {"static":[{"op":"condBuff","battleImmune":true,"cond":{"leaderTraitIncludes":"ODYSSEY"}}]},
+  // OP09-026 サカズキ: 【登場時】レストのキャラ2枚以上なら相手コスト5以下1枚KO
+  "OP09-026": {"onPlay":[{"op":"cond","check":{"selfRestedCharsAtLeast":2},"then":[{"op":"ko","side":"opp","filter":{"maxCost":5},"count":1,"optional":true}]}]},
+  // OP09-027 サボ: 【アタック時】【ターン1回】レストのキャラ3枚以上なら1ドロー
+  "OP09-027": {"onAttack":[{"op":"cond","check":{"selfRestedCharsAtLeast":3},"once":"turn","then":[{"op":"draw","n":1}]}]},
+  // OP09-028 サンジ: 【KO時】ライフ上か下1枚を手札に：トラッシュからコスト4以下のODYSSEY/麦わらをレストで登場
+  "OP09-028": {"onKO":[{"op":"lifeCost","pos":"choose","then":[{"op":"reviveFromTrash","maxCost":4,"rested":true,"filter":{"or":[{"traitIncludes":"ODYSSEY"},{"traitIncludes":"麦わらの一味"}]}}]}]},
+  // OP09-029 トニートニー・チョッパー: 【自分のターン終了時】コスト4以下のODYSSEY1枚をアクティブ
+  "OP09-029": {"onTurnEnd":[{"op":"activateOwnChar","count":1,"filter":{"restedOnly":true,"maxCost":4,"traitIncludes":"ODYSSEY"}}]},
+  // OP09-030 トラファルガー・ロー(c3): 【登場時】自キャラ1枚を手札に戻す：手札から「ロー」以外のコスト3以下ODYSSEY1枚を登場
+  "OP09-030": {"onPlay":[{"op":"bounceOwnCharCost","excludeSelf":true,"then":[{"op":"playCharFromHand","filter":{"traitIncludes":"ODYSSEY","maxCost":3,"nameExcludes":"トラファルガー・ロー"},"count":1,"optional":true}]}]},
+  // OP09-031 ドンキホーテ・ドフラミンゴ(c5): 【ブロッカー】 ／【自分のターン終了時】レストのキャラ2枚以上ならこのキャラをアクティブ
+  "OP09-031": {"onTurnEnd":[{"op":"cond","check":{"selfRestedCharsAtLeast":2},"then":[{"op":"activateSelf"}]}]},
+  // OP09-032 ドンキホーテ・ロシナンテ(c3): 【ブロッカー】 ／【相手のアタック時】【ターン1回】このキャラをアクティブ
+  "OP09-032": {"onOppAttack":[{"op":"activateSelf","once":"turn"}]},
+  // OP09-033 ニコ・ロビン: 【登場時】レストのキャラ2枚以上なら 自分のODYSSEY/麦わら全ては次相手ターン終了まで効果でKOされない
+  "OP09-033": {"onPlay":[{"op":"cond","check":{"selfRestedCharsAtLeast":2},"then":[{"op":"grantTraitKoImmune","duration":"untilNextEnd","filter":{"or":[{"traitIncludes":"ODYSSEY"},{"traitIncludes":"麦わらの一味"}]}}]}]},
+  // OP09-034 ペローナ: 【登場時】デッキ上5枚からスリラーバークか「ミホーク」1枚を手札に＋手札1枚捨て
+  "OP09-034": {"onPlay":[{"op":"search","look":5,"count":1,"filter":{"or":[{"traitIncludes":"スリラーバーク海賊団"},{"nameIncludes":"ジュラキュール・ミホーク"}]},"optional":true},{"op":"discardCost","count":1}]},
+  // OP09-035 ポートガス・D・エース: 【登場時】レストのキャラ2枚以上なら相手コスト5以下1枚レスト
+  "OP09-035": {"onPlay":[{"op":"cond","check":{"selfRestedCharsAtLeast":2},"then":[{"op":"restChar","side":"opp","filter":{"maxCost":5},"count":1,"optional":true}]}]},
+  // OP09-036 モンキー・D・ルフィ(c5): 【登場時】レストのキャラ2枚以上なら相手コスト6以下1枚をレスト（ドン選択は簡略）
+  "OP09-036": {"onPlay":[{"op":"cond","check":{"selfRestedCharsAtLeast":2},"then":[{"op":"restChar","side":"opp","filter":{"maxCost":6},"count":1,"optional":true}]}]},
+  // OP09-037 リム(c3): 【登場時】デッキ上5枚から「リム」以外のODYSSEY1枚を手札に ／【自分のターン終了時】レストのキャラ3枚以上ならこのキャラをアクティブ
+  "OP09-037": {"onPlay":[{"op":"search","look":5,"count":1,"filter":{"traitIncludes":"ODYSSEY"},"exclude":"リム","optional":true}],"onTurnEnd":[{"op":"cond","check":{"selfRestedCharsAtLeast":3},"then":[{"op":"activateSelf"}]}]},
+  // OP09-039 ゴムゴムの「四本樹」JET十字架ショックバズーカ: 【カウンター】ODYSSEYリーダー＋レストのキャラ2枚以上なら リーダーかキャラ+2000
+  "OP09-039": {"counter":{"cost":0,"fx":[{"op":"cond","check":{"and":[{"leaderTraitIncludes":"ODYSSEY"},{"selfRestedCharsAtLeast":2}]},"then":[{"op":"powerMod","side":"self","leader":true,"amount":2000,"battle":true,"count":1,"optional":true}]}]}},
+  // OP09-040 雷光槍フリップ煩悩鳳ショット: 【メイン】レストのキャラ2枚以上なら相手コスト4以下1枚KO
+  "OP09-040": {"main":{"fx":[{"op":"cond","check":{"selfRestedCharsAtLeast":2},"then":[{"op":"ko","side":"opp","filter":{"maxCost":4},"count":1,"optional":true}]}]}},
+  // OP09-041 魂のフランキー風速計BOXING喪剣: 【カウンター】リーダーかキャラ+2000→ODYSSEYリーダー＋レストのキャラ2枚以上なら自キャラ2枚をアクティブ
+  "OP09-041": {"counter":{"cost":0,"fx":[{"op":"powerMod","side":"self","leader":true,"amount":2000,"battle":true,"count":1,"optional":true},{"op":"cond","check":{"and":[{"leaderTraitIncludes":"ODYSSEY"},{"selfRestedCharsAtLeast":2}]},"then":[{"op":"activateOwnChar","count":2,"filter":{"restedOnly":true}}]}]}}
 };

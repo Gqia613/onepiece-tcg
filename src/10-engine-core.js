@@ -190,6 +190,8 @@
       if (c.selfAttachedDon && !([P.leader, ...P.chars].some(x => x && (x.attachedDon || 0) > 0))) return false; // 自分の付与されているドンがある（OP13紫の付与シナジー）
       if (c.selfLifeLEOpp && P.life.length > O.life.length) return false; // 自分のライフ枚数が相手以下（OP13-102エジソン）
       if (c.selfLifeLessThanOpp && P.life.length >= O.life.length) return false; // 自分のライフ枚数が相手より少ない（OP10-113ゾロ）
+      if (c.leaderEffPowerAtMost != null && power(P.leader) > c.leaderEffPowerAtMost) return false; // 自分のリーダーの現在パワーN以下（OP09-007ヒート）
+      if (c.leaderEffPowerAtLeast != null && power(P.leader) < c.leaderEffPowerAtLeast) return false; // 自分のリーダーの現在パワーN以上（OP09-017ワイヤー）
       if (c.selfAttachedDonAtLeast != null && [P.leader, ...P.chars].reduce((s, x) => s + (x ? (x.attachedDon || 0) : 0), 0) < c.selfAttachedDonAtLeast) return false; // 自分の付与ドン合計N以上（OP12-015/024等）
       if (c.donLEOpp && donTotal(side) > donTotal(opp(side))) return false; // 自分の場のドンが相手の場のドン枚数以下（OP12-041/073/078等）
       if (c.activeDonAtMost != null && (P.don.active || 0) > c.activeDonAtMost) return false; // アクティブのドンN枚以下
