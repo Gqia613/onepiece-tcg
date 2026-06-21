@@ -213,7 +213,13 @@
     /* ---------- ドロー / 敗北 ---------- */
     // ブルック等「デッキ0でも即敗北せず、0枚になったターン終了時に敗北」
     function hasDeckOutDelay(side) { const L = G.players[side].leader; return !!(L && !isNegated(L) && L.base.fx && L.base.fx.static && L.base.fx.static.some(o => o.op === 'deckOutDelay')); }
-    function draw(side, n) { const P = G.players[side]; for (let i = 0; i < n; i++) { if (P.deck.length === 0) { if (hasDeckOutWin(side)) { lose(opp(side), 'デッキ0で勝利'); return false; } if (hasDeckOutDelay(side)) return false; lose(side, 'デッキ切れ'); return false; } P.hand.push(P.deck.shift()); } return true; }
+    function draw(side, n) { const P = G.players[side]; for (let i = 0; i < n; i++) { if (P.deck.length === 0) { if (hasDeckOutWin(side)) { lose(opp(side), 'デッキ0で勝利'); return false; } if (hasDeckOutDelay(side)) return false; lose(side, 'デッキ切れ'); return false; } P.hand.push(P.deck.shift()); } if (n > 0 && G.phase && G.phase !== 'ドロー' && !G._inDrawHook) fireSimpleReact(side, 'onExtraDraw'); return true; } // ドローフェイズ以外で引いた時の誘発（OP05-053モザンビア）
+    // 軽量な「〜した時」誘発（detached・ターン1回/when対応。powerMod等の即時buff用。OP05-053/107）
+    function fireSimpleReact(side, key) {
+      if (G.active !== side) return; G._inDrawHook = true;
+      for (const c of G.players[side].chars) { const cfg = c.base.fx && c.base.fx[key]; if (!cfg || isNegated(c)) continue; if (cfg.once === 'turn') { const fk = '_react_' + key; if (c[fk] === G.turnSeq) continue; c[fk] = G.turnSeq; } try { runFx(cfg.fx, { self: c, side }); } catch (e) {} }
+      G._inDrawHook = false;
+    }
     function lose(side, reason) {
       if (G.winner) return; G.winner = opp(side);
       if (G._sim) return;   // ★AI探索の内部シミュレーションでは勝敗UI(ログ/演出/勝利画面)を出さない。winnerだけ確定。
@@ -282,6 +288,7 @@
       render(); await sleep(180);
       if (G.winner) { G.busy = false; return; }
       if (G._noChain) return;          // MCTSロールアウト中はターン連鎖を呼び出し側(playout)が制御（投げっぱなし連鎖の残留タスクを防ぐ）
+      if (G._extraTurn === side) { G._extraTurn = null; flog(side, '追加のターンを開始'); beginTurn(side); return; } // 追加ターン（OP05-119ルフィ）
       beginTurn(opp(side));
     }
     function canAttackThisTurn(side) { return G.players[side].turnsTaken >= 2; } // 公式: 先攻・後攻とも最初の(自分の)1ターン目はアタック不可。2ターン目以降から可能

@@ -333,7 +333,13 @@
           break;
         }
         case 'playSelf': { if (self) { await summon(side, self, false); flog(side, `「${self.base.name}」を登場させた`); } break; }
-        case 'lifeToHand': { if (P._noLifeToHandTurn === G.turnSeq) { flog(side, 'このターンは効果でライフを手札に加えられない'); break; } const ln = op.n || 1; let moved = 0; for (let i = 0; i < ln; i++) { const c = P.life.shift(); if (!c) break; P.hand.push(c); moved++; } if (moved) { flog(side, `自ライフ${moved}枚を手札に`); render(); if (op.then) await runFx(op.then, ctx); } break; }
+        case 'lifeToHand': { if (P._noLifeToHandTurn === G.turnSeq) { flog(side, 'このターンは効果でライフを手札に加えられない'); break; } const ln = op.n || 1; let moved = 0; for (let i = 0; i < ln; i++) { const c = P.life.shift(); if (!c) break; P.hand.push(c); moved++; } if (moved) { flog(side, `自ライフ${moved}枚を手札に`); render(); fireSimpleReact(side, 'onLifeToHand'); if (op.then) await runFx(op.then, ctx); } break; }
+        // 自分のライフをトラッシュに置く（OP05-100エネルの代わり）
+        case 'lifeTrashSelf': { for (let i = 0; i < (op.n || 1); i++) { const c = P.life.shift(); if (!c) break; P.trash.push(c); } flog(side, '自分のライフをトラッシュに置いた'); render(); break; }
+        // このターンの後に自分のターンを追加で得る（OP05-119ルフィ）
+        case 'extraTurn': { G._extraTurn = side; flog(side, 'このターンの後、追加のターンを得る'); break; }
+        case 'oppDiscardToSize': { const O6 = G.players[o]; const tgt = op.n || 5; while (O6.hand.length > tgt) { const c = O6.isCPU ? O6.hand.slice().sort((a, b) => (a.base.counter || 0) - (b.base.counter || 0))[0] : await chooseFromHand(o, O6.hand.slice(), `手札を${tgt}枚にする`); if (!c) break; O6.hand.splice(O6.hand.indexOf(c), 1); O6.trash.push(reset(c)); } flog(side, `相手は手札を${tgt}枚に`); render(); break; } // 相手が手札N枚になるよう捨てる（OP05-058）
+        case 'bottomOwnCharsExceptSelf': { for (const c of P.chars.slice()) { if (c === self) continue; P.don.active += c.attachedDon || 0; removeChar(c); P.deck.push(reset(c)); } flog(side, 'このキャラ以外の自キャラをデッキ下へ'); render(); break; } // OP05-119ルフィ
         // 場のキャラ1枚を持ち主のライフ上に裏向きで加える（OP12-117破壊弦。side:'any'=自分/相手両方が対象）
         case 'charToLife': { const cands = op.side === 'self' ? P.chars.filter(c => matchFilter(c, opFilter(op))) : op.side === 'any' ? [...oppChars(side, opFilter(op)), ...P.chars.filter(c => matchFilter(c, opFilter(op)))] : oppChars(side, opFilter(op)); const t = await chooseCard(side, cands, 'ライフに加えるキャラを選択', op.side === 'self' ? 'ownBig' : 'oppBig', op.optional); if (t) { const ow2 = G.players[t.owner]; removeChar(t); const card2 = reset(t); if (op.faceUp) card2._faceUp = true; const bottom = op.pos === 'bottom'; if (bottom) ow2.life.push(card2); else ow2.life.unshift(card2); flog(side, `「${t.base.name}」を${t.owner === side ? '自分' : '相手'}のライフ${bottom ? '下' : '上'}に${op.faceUp ? '表向きで' : ''}加えた`); render(); } break; } // faceUp=表向き / pos:'bottom'（OP11-116人魚柔術）
         case 'handToLife': { if (P.hand.length) { const c = P.hand.slice().sort((a, b) => (a.base.counter || 0) - (b.base.counter || 0))[0]; P.hand.splice(P.hand.indexOf(c), 1); P.life.unshift(faceDown(c)); flog(side, '手札1枚をライフの上に置いた'); } break; }
@@ -686,7 +692,7 @@
           if (act === 'toHand') {
             let fromBottom = false;
             if (pick2 && P.life.length >= 2 && !P.isCPU) fromBottom = (await showPrompt({ title: 'ライフを手札に', text: 'ライフの上か下、どちらの1枚を手札に加えますか？', opts: [{ t: 'ライフ上', v: 'top', primary: true }, { t: 'ライフ下', v: 'bot' }] })) === 'bot';
-            P.hand.push(fromBottom ? P.life.pop() : P.life.shift()); flog(side, `ライフ${fromBottom ? '下' : '上'}1枚を手札に加えた`);
+            P.hand.push(fromBottom ? P.life.pop() : P.life.shift()); flog(side, `ライフ${fromBottom ? '下' : '上'}1枚を手札に加えた`); fireSimpleReact(side, 'onLifeToHand'); // OP05-107スペーシー
           }
           else if (act === 'trash') { P.trash.push(P.life.shift()); flog(side, 'ライフ上1枚をトラッシュ'); }
           else if (act === 'faceUp') { P.life[0]._faceUp = true; flog(side, 'ライフ上を表向きにした'); }
@@ -998,6 +1004,7 @@
         const st = p.base.fx && p.base.fx.static; if (!st) continue;
         const prot = st.find(o => o.op === 'leaveProtect'); if (!prot) continue;
         if (prot.cond && !checkCond(prot.cond, p.owner, p)) continue; // 発動条件（リーダー特徴等。OP07-042モリア＝王下七武海リーダー）
+        if (prot.when === 'oppTurn' && G.active === p.owner) continue; // 相手のターン中のみ（OP05-030ロシナンテ）
         if (cause === 'battle') { if (!prot.includeBattle) continue; } // バトルKOは includeBattle 指定時のみ肩代わり（既定の身代わりは効果除去のみ）
         else if (prot.onlyKO && cause && cause !== 'ko') continue; // KO限定の置換は bounce/deckBottom では発動しない
         // 守る対象の制限: targetSelf=このキャラ自身のみ / targetFilter / 無ければ従来の「元々パワー7000以下」
@@ -1046,6 +1053,17 @@
           if (!(await confirmUse(target.owner, `【${p.base.name}】身代わり`, `自分のキャラ1枚をデッキ下に置いて「${target.base.name}」を場に残しますか？`, '残す（他キャラをデッキ下）', '残さない'))) continue;
           const dt = ow.isCPU ? cands.slice().sort((a, b) => scoreChar(a) - scoreChar(b))[0] : await chooseCard(target.owner, cands, 'デッキ下に置く自分のキャラを選択', 'ownSmall', false); if (!dt) continue;
           removeCharTo(dt, ow.deck); flog(target.owner, `【${p.base.name}】「${dt.base.name}」をデッキ下に置いて「${target.base.name}」を場に残した`); await checkAllyLeave(target.owner, dt, 'ownEffect'); render(); return true;
+        } else if (prot.pay === 'selfLifeTrash') {
+          // 場を離れる代わりに自分のライフ上1枚をトラッシュ（OP05-100エネル）。ライフが無ければ守れない。除外条件(prot.unless)が満たされると無効。
+          if (prot.unless && G.players[target.owner].chars.some(ch => matchFilter(ch, prot.unless))) continue;
+          if (!ow.life.length) continue;
+          if (!(await confirmUse(target.owner, `【${p.base.name}】身代わり`, `自分のライフ上1枚をトラッシュして「${target.base.name}」を場に残しますか？`, '残す（ライフ→トラッシュ）', '残さない'))) continue;
+          ow.trash.push(ow.life.shift()); flog(target.owner, `【${p.base.name}】ライフ1枚をトラッシュして「${target.base.name}」を場に残した`); render(); return true;
+        } else if (prot.pay === 'targetMinus') {
+          // KOの代わりに対象のパワーを-Nにして場に残す（OP05-001サボL）。KO限定。
+          if (cause !== 'ko') continue;
+          addBuff(target, -(prot.amount || 1000), 'turn'); floatOn(target.uid, `-${prot.amount || 1000}`, 'dmg');
+          flog(target.owner, `【${p.base.name}】KOの代わりに「${target.base.name}」をパワー-${prot.amount || 1000}にした`); return true;
         } else if (prot.pay === 'restOpp') {
           // 代わりに相手のキャラ1枚をレストにして target を場に残す（OP07-029ホーキンス）
           const cands = G.players[opp(target.owner)].chars.filter(c => !c.rested && !isRestImmune(c) && !isOppRestImmune(c));

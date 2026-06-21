@@ -14,7 +14,7 @@
     }
     function promptPick(i) { const ps = G.promptState; if (!ps) return; const o = ps.opts[i]; if (o) ps.pick(o.v); }
 
-    function effCost(side, c) { let cost = c.base.cost || 0; const m = c.base.costMod; if (m && checkCond(m.cond, side, G.players[side].leader)) cost += m.amount; return Math.max(0, cost); }
+    function effCost(side, c) { let cost = c.base.cost || 0; const m = c.base.costMod; if (m && checkCond(m.cond, side, G.players[side].leader)) cost += m.amount; const stg = G.players[side].stage; if (stg && !isNegated(stg) && stg.base.fx && stg.base.fx.static) for (const o of stg.base.fx.static) { if (o.op === 'playCostReduce' && G.active === side && (c.base.cost || 0) >= (o.minCost || 0) && matchFilter(c, o.filter || {})) cost -= o.amount || 0; } return Math.max(0, cost); } // ステージ提供の手札プレイコスト軽減（OP05-097マリージョア=天竜人）
 
     function findCard(uid) {
       for (const s of ['me', 'cpu']) {
