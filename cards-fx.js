@@ -330,6 +330,32 @@ window.CARD_FX = {
   "OP14-076": {"main":{"fx":[{"op":"restDonCost","n":2,"then":[{"op":"cond","check":{"leaderTrait":"ドンキホーテ海賊団"},"then":[{"op":"donFromDeck","n":1,"mode":"rest"}]}]}]},"counter":{"cost":0,"fx":[{"op":"leaderBuff","amount":3000,"duration":"battle"}]}},
   // OP14-078: 【カウンター】ドン‼-1：ドンキならリーダーかキャラ1枚をこのバトル中+4000（+2000→+2000）
   "OP14-078": {"counter":{"cost":0,"fx":[{"op":"donMinus","n":1},{"op":"cond","check":{"leaderTrait":"ドンキホーテ海賊団"},"then":[{"op":"counterBuff","amount":4000}]}]}},
+  /* ===== OP14 バッチ5（既存opのみ・src非干渉） ===== */
+  // OP14-085 / 089: 【KO時】2ドロー＋手札2枚捨て
+  "OP14-085": {"onKO":[{"op":"draw","n":2},{"op":"discardOwn","n":2}]},
+  "OP14-089": {"onKO":[{"op":"draw","n":2},{"op":"discardOwn","n":2}]},
+  // OP14-091: 【KO時】手札orトラッシュから「ベンサム」以外のコスト5以下《B・W》1枚を登場
+  "OP14-091": {"onKO":[{"op":"playFromHandOrTrash","filter":{"maxCost":5,"traitIncludes":"B・W","nameExcludes":"ボン・クレー"}}]},
+  // OP14-093: 【ブロッカー】(text) 【KO時】トラッシュからコスト8以下《B・W》1枚を手札へ
+  "OP14-093": {"onKO":[{"op":"trashToHand","filter":{"maxCost":8,"traitIncludes":"B・W"},"count":1,"optional":true}]},
+  // OP14-097: 【メイン】デッキ上3枚から《スリラーバーク》1枚を手札へ、残りトラッシュ
+  "OP14-097": {"main":{"fx":[{"op":"search","look":3,"filter":{"traitIncludes":"スリラーバーク海賊団","nameExcludes":"早くおれを"},"count":1,"rest":"trash"}]}},
+  // OP14-099: 【メイン】デッキ上3枚から《B・W》1枚を手札へ、残りトラッシュ
+  "OP14-099": {"main":{"fx":[{"op":"search","look":3,"filter":{"traitIncludes":"B・W","nameExcludes":"不服か"},"count":1,"rest":"trash"}]}},
+  // OP14-100: 【KO時】デッキ上3枚から《スリラーバーク》1枚を手札へ
+  "OP14-100": {"onKO":[{"op":"search","look":3,"filter":{"traitIncludes":"スリラーバーク海賊団"},"count":1}]},
+  // OP14-111: 【登場時】/【KO時】相手コスト6以下1枚を次相手エンド終了までアタック不可
+  "OP14-111": {"onPlay":[{"op":"setAttackBan","side":"opp","maxCost":6,"duration":"untilNextEnd","count":1,"optional":true}],"onKO":[{"op":"setAttackBan","side":"opp","maxCost":6,"duration":"untilNextEnd","count":1,"optional":true}]},
+  // OP14-116: 【カウンター】リーダーかキャラ1枚+2000→手札のコスト4以下《アマゾン・リリー》/《九蛇》1枚を登場
+  "OP14-116": {"counter":{"cost":0,"fx":[{"op":"counterBuff","amount":2000},{"op":"playCharFromHand","maxCost":4,"filter":{"or":[{"traitIncludes":"アマゾン・リリー"},{"traitIncludes":"九蛇海賊団"}]},"count":1,"optional":true}]}},
+  // OP14-117: 【カウンター】自《スリラーバーク》のリーダーかキャラ1枚を このバトル中+3000
+  "OP14-117": {"counter":{"cost":0,"fx":[{"op":"counterBuff","amount":3000}]}},
+  // OP14-118: 【カウンター】自ライフ2枚以下なら相手のアクティブキャラ1枚を このターン アタック不可
+  "OP14-118": {"counter":{"cost":0,"fx":[{"op":"cond","check":"life<=2","then":[{"op":"setAttackBan","side":"opp","filter":{"activeOnly":true},"count":1,"optional":true}]}]}},
+  // OP14-096: 【メイン】ドン2レスト：相手コスト5以下1枚を効果無効 ／【カウンター】トラッシュ10以上ならリーダーかキャラ1枚+4000
+  "OP14-096": {"main":{"fx":[{"op":"restDonCost","n":2,"then":[{"op":"negateChoose","maxCost":5,"optional":true}]}]},"counter":{"cost":0,"fx":[{"op":"cond","check":{"trashAtLeast":10},"then":[{"op":"counterBuff","amount":4000}]}]}},
+  // OP14-094: 【ブロッカー】(text) 【登場時】コスト0か8以上のキャラがいれば2ドロー＋手札1捨て
+  "OP14-094": {"onPlay":[{"op":"cond","check":{"or":[{"selfChar":{"maxCost":0}},{"selfChar":{"minCost":8}}]},"then":[{"op":"draw","n":2},{"op":"discardOwn","n":1}]}]},
   "OP09-093": {"onPlay":[{"op":"cond","check":"leaderBH","then":[{"op":"negateEffect"}]}]},
   "OP16-104": {"onAttack":[{"op":"powerCopy"}],"trigger":[{"op":"draw","n":1},{"op":"reviveFromTrash","filter":{"cost":1,"traitIncludes":"黒ひげ海賊団"}}]},
   "OP16-109": {"onKO":[{"op":"cond","check":"leaderBH","then":[{"op":"draw","n":1},{"op":"ko","side":"opp","maxCost":1,"count":2,"optional":true}]}],"trigger":[{"op":"cond","check":"leaderBH","then":[{"op":"draw","n":1},{"op":"ko","side":"opp","maxCost":1,"count":2,"optional":true}]}]},

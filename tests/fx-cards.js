@@ -927,6 +927,18 @@ humanPick=function(c){return Promise.resolve((c||[])[0]||null);};
     { const me=LP('OP13-002'); const p0=power(me.leader);
       const ev=I('OP14-076','me'); await runFx(ev.base.fx.counter.fx,{self:ev,side:'me',target:me.leader});
       ok(power(me.leader)===p0+3000, 'OP14-076 counter: リーダー+3000(battle)'); }
+
+    // === OP14 バッチ5 ===
+    ok(['OP14-085','OP14-089','OP14-091','OP14-093','OP14-097','OP14-099','OP14-100','OP14-111','OP14-116','OP14-117','OP14-118','OP14-096','OP14-094'].every(no=>C[no]&&C[no].fx), 'OP14バッチ5: 14枚にfx統合');
+    { const me=LP('OP13-002'); me.deck=[I('OP15-067','me'),I('OP15-067','me')]; me.hand=[I('OP15-067','me'),I('OP15-067','me')];
+      const c=I('OP14-085','me'); const t0=me.trash.length; await runFx(c.base.fx.onKO,{self:c,side:'me'});
+      ok(me.deck.length===0 && me.trash.length===t0+2, 'OP14-085 onKO: 2ドロー＋2捨て'); }
+    { const me=LP('OP13-002'); const v=I('OP15-067','cpu'); G.players.cpu.chars=[v];
+      const c=I('OP14-111','me'); await runFx(c.base.fx.onPlay,{self:c,side:'me'});
+      ok(v.noAtkSeq!=null, 'OP14-111 onPlay: 相手コスト6以下をアタック不可'); }
+    { const me=LP('OP13-002'); const tgt=me.leader; const p0=power(tgt);
+      const ev=I('OP14-117','me'); await runFx(ev.base.fx.counter.fx,{self:ev,side:'me',target:tgt});
+      ok(power(tgt)===p0+3000, 'OP14-117 counter: 対象+3000'); }
   }catch(e){ console.log('EXCEPTION:', e.message); fail++; }
   console.log('Phase3 fxテスト: pass='+pass+' fail='+fail);
   process.exit(fail?1:0);
