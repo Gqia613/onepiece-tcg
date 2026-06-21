@@ -1171,5 +1171,16 @@ window.CARD_FX = {
   // OP11-118 モンキー・Ｄ・ルフィ(青8): 【速攻】 ／【アタック時】手札1捨て：コスト4以下1枚を手札に戻す→リーダーかキャラ1枚にレストのドン1付与
   "OP11-118": {"onAttack":[{"op":"discardCost","count":1,"optional":true,"then":[{"op":"bounce","side":"opp","maxCost":4,"count":1,"optional":true},{"op":"donAttach","target":"chooseOwn","n":1}]}]},
   // OP11-119 コビー(黒8): 【登場時】自分のキャラ1枚がアクティブにもアタック可 ／【アタック時】トラッシュ2枚をデッキ下：リーダーかキャラ1枚を次相手ターン終了まで+1000
-  "OP11-119": {"onPlay":[{"op":"giveKeyword","target":"chooseOwn","kw":"attackActive","duration":"turn"}],"onAttack":[{"op":"trashToDeckCost","n":2,"then":[{"op":"powerMod","side":"self","leader":true,"amount":1000,"duration":"untilNextEnd","count":1,"optional":true}]}]}
+  "OP11-119": {"onPlay":[{"op":"giveKeyword","target":"chooseOwn","kw":"attackActive","duration":"turn"}],"onAttack":[{"op":"trashToDeckCost","n":2,"then":[{"op":"powerMod","side":"self","leader":true,"amount":1000,"duration":"untilNextEnd","count":1,"optional":true}]}]},
+  /* ===== 既完成弾(OP12/13)の条件付き常在カードの補完 ===== */
+  // OP12-021 いっぽんマツ: 属性(斬)リーダー＋レストのドン6以上で相手の効果でレストされない／【ブロッカー】
+  "OP12-021": {"static":[{"op":"staticOppRestImmune","cond":{"and":[{"leaderAttr":"斬"},{"restedDonAtLeast":6}]}}]},
+  // OP12-027 コウシロウ: このキャラ以外のコスト5以下・属性(斬)キャラが相手効果でKOされる場合、代わりにこのキャラをレスト／【ブロッカー】
+  "OP12-027": {"static":[{"op":"leaveProtect","onlyKO":true,"pay":"restSelf","targetFilter":{"attr":"斬","maxCost":5}}]},
+  // OP12-063 ヴィンスモーク・レイジュ: トラッシュにイベント4枚以上で+2000しコスト+5／【ブロッカー】
+  "OP12-063": {"static":[{"op":"condBuff","cond":{"trashEventAtLeast":4},"power":2000},{"op":"staticCost","cond":{"trashEventAtLeast":4},"amount":5}]},
+  // OP12-066 カルネ: トラッシュにイベント4枚以上で【ブロッカー】を得る
+  "OP12-066": {"static":[{"op":"staticKeyword","kw":"blocker","cond":{"trashEventAtLeast":4}}]},
+  // OP13-112 ベガパンク: 付与ドン合計2枚以上で【ブロッカー】を得る
+  "OP13-112": {"static":[{"op":"staticKeyword","kw":"blocker","cond":{"selfAttachedDonAtLeast":2}}]}
 };

@@ -220,6 +220,7 @@
       if (c.oppLifeAtMost != null && O.life.length > c.oppLifeAtMost) return false;
       if (c.oppLifeAtLeast != null && O.life.length < c.oppLifeAtLeast) return false; // 相手のライフN枚以上（OP11-102ケイミー）
       if (c.totalLifeAtLeast != null && (P.life.length + O.life.length) < c.totalLifeAtLeast) return false; // お互いのライフ合計N枚以上（OP11-114ゴムゴムの火拳銃）
+      if (c.restedDonAtLeast != null && (P.don.rested || 0) < c.restedDonAtLeast) return false; // 自分のレストのドンN枚以上（OP12-021いっぽんマツ）
       if (c.selfTurn && G.active !== side) return false;
       if (c.oppTurn && G.active === side) return false;
       return true;
@@ -267,6 +268,13 @@
       if (card.restImmuneUntil != null && G.turnSeq <= card.restImmuneUntil) return true;
       const st = !isNegated(card) && card.base.fx && card.base.fx.static; // 常在版「このキャラはレストにされない」（条件付き可）
       if (st) for (const o of st) { if (o.op === 'staticRestImmune' && checkCond(o.cond, card.owner, card)) return true; }
+      return false;
+    }
+    // 「相手の効果でレストにされない」（攻撃/ブロックは可。レスト系効果の対象からのみ除外。OP12-021いっぽんマツ）。isRestImmuneと違いアタック/ブロックは妨げない。
+    function isOppRestImmune(card) {
+      if (!card || isNegated(card)) return false;
+      const st = card.base.fx && card.base.fx.static;
+      if (st) for (const o of st) { if (o.op === 'staticOppRestImmune' && checkCond(o.cond, card.owner, card)) return true; }
       return false;
     }
     const _pwEval = new Set();

@@ -173,7 +173,7 @@
           break;
         }
         case 'restChar': {
-          const restPool = () => { let arr = oppChars(side, opFilter(op)).filter(c => !c.rested && !isRestImmune(c)); if (op.includeLeader && !G.players[o].leader.rested) arr = [G.players[o].leader, ...arr]; if (op.includeStage && G.players[o].stage && !G.players[o].stage.rested) arr = [...arr, G.players[o].stage]; return arr; };
+          const restPool = () => { let arr = oppChars(side, opFilter(op)).filter(c => !c.rested && !isRestImmune(c) && !isOppRestImmune(c)); if (op.includeLeader && !G.players[o].leader.rested) arr = [G.players[o].leader, ...arr]; if (op.includeStage && G.players[o].stage && !G.players[o].stage.rested) arr = [...arr, G.players[o].stage]; return arr; };
           if (op.all) { for (const t of restPool()) { t.rested = true; flog(side, `「${t.base.name === undefined ? '相手リーダー' : t.base.name}」をレスト`); } break; } // 条件一致を全てレスト
           for (let i = 0; i < (op.count || 1); i++) {
             const cands = restPool();
@@ -192,7 +192,7 @@
           break;
         }
         case 'lock': {
-          const lockPool = () => { let arr = oppChars(side, opFilter(op)).filter(c => (op.restedOnly ? c.rested : true) && !isRestImmune(c) && !c.frozen); if (op.includeLeader && G.players[o].leader.rested && !G.players[o].leader.frozen) arr = [G.players[o].leader, ...arr]; if (op.includeStage && G.players[o].stage && G.players[o].stage.rested && !G.players[o].stage.frozen) arr = [...arr, G.players[o].stage]; return arr; };
+          const lockPool = () => { let arr = oppChars(side, opFilter(op)).filter(c => (op.restedOnly ? c.rested : true) && !isRestImmune(c) && !isOppRestImmune(c) && !c.frozen); if (op.includeLeader && G.players[o].leader.rested && !G.players[o].leader.frozen) arr = [G.players[o].leader, ...arr]; if (op.includeStage && G.players[o].stage && G.players[o].stage.rested && !G.players[o].stage.frozen) arr = [...arr, G.players[o].stage]; return arr; };
           for (let i = 0; i < (op.count || 1); i++) {
             const cands = lockPool();
             const t = P.isCPU ? cands[0] : await chooseCard(side, cands, progText('次のリフレッシュでアクティブにしない相手のカード', i, op.count || 1), 'oppBig', op.optional);
@@ -901,6 +901,11 @@
           else { picks = []; for (let i = 0; i < n; i++) { const pk = await chooseCard(target.owner, pool.filter(c => !picks.includes(c)), `レストにするカード（${i + 1}/${n}）`, 'ownSmall', false); if (!pk) break; picks.push(pk); } if (picks.length < n) continue; }
           for (const c of picks) c.rested = true;
           flog(target.owner, `【${p.base.name}】カード${n}枚をレストにして「${target.base.name}」を守った`); return true;
+        } else if (prot.pay === 'restSelf') {
+          // 代わりにこのキャラ(p=身代わり元)をレストにして target を場に残す（OP12-027コウシロウ）。p===target/既にレストなら不可
+          if (p === target || p.rested) continue;
+          if (!(await confirmUse(target.owner, `【${p.base.name}】身代わり`, `「${p.base.name}」をレストにして「${target.base.name}」を場に残しますか？`, '残す（このキャラをレスト）', '残さない'))) continue;
+          p.rested = true; flog(target.owner, `【${p.base.name}】自身をレストにして「${target.base.name}」を場に残した`); render(); return true;
         } else if (prot.pay === 'koSelf') {
           // このキャラ(p)自身をKO(代わりにトラッシュへ)して target を守る。p===target は不可
           if (p === target) continue;
