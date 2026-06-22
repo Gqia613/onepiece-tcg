@@ -474,6 +474,8 @@
       if (f.minBaseCost != null && (b.cost || 0) < f.minBaseCost) return false;
       if (f.maxBaseCost != null && (b.cost || 0) > f.maxBaseCost) return false;
       if (f.basePower != null && (b.power || 0) !== f.basePower) return false;
+      if (f.maxPower != null && (b.power || 0) > f.maxPower) return false; // 元々のパワーN以下（allyPower/allyCostの基本パワー判定。ST21-011フランキー等）
+      if (f.minPower != null && (b.power || 0) < f.minPower) return false;
       return true;
     }
     function matchFilter(card, f) {

@@ -312,6 +312,15 @@
           for (const c of sources) { if (c === target) continue; while ((c.attachedDon || 0) > 0 && moved < max) { c.attachedDon--; target.attachedDon = (target.attachedDon || 0) + 1; moved++; } if (moved >= max) break; }
           if (moved) { floatOn(target.uid, `ドン+${moved}`, 'buff'); flog(side, `付与ドン${moved}枚を「${target.base.name}」へ移した`); } render(); break;
         }
+        // 自分の付与ドン合計N枚をコストエリアにレストで戻すコスト（ST28-004モモの助）。任意。払えた時 then を実行
+        case 'attachedDonToCost': {
+          const need = op.n || 2; const srcs = [P.leader, ...P.chars].filter(c => (c.attachedDon || 0) > 0);
+          if (srcs.reduce((s, c) => s + (c.attachedDon || 0), 0) < need) break;
+          if (!(await confirmUse(side, ' 付与ドンを戻す', `付与ドン${need}枚をコストエリアにレストで戻して効果を使いますか？`, '使う', '使わない'))) break;
+          let moved = 0; for (const c of srcs) { while ((c.attachedDon || 0) > 0 && moved < need) { c.attachedDon--; P.don.rested++; moved++; } if (moved >= need) break; }
+          flog(side, `付与ドン${moved}枚をコストエリアにレストで戻した`); render();
+          await runFx(op.then, ctx); break;
+        }
         // 自分のアクティブのリーダーをこのターン中パワー-Nにするコスト（OP07-006ステリー）。任意。then実行。
         case 'leaderMinusCost': {
           if (P.leader.rested) break; // アクティブのリーダーが条件
@@ -1116,15 +1125,15 @@
           if (!(await confirmUse(target.owner, `【${p.base.name}】身代わり`, `ライフの上から1枚を表向きにして「${target.base.name}」を場に残しますか？`, '残す（ライフ表向き）', '残さない'))) continue;
           ow.life[0]._faceUp = true; flog(target.owner, `【${p.base.name}】ライフ1枚を表向きにして「${target.base.name}」を場に残した`); render(); return true;
         } else if (prot.pay === 'discardFromHand') {
-          const f = prot.discardFilter || {};
+          const f = prot.discardFilter || {}; const dn = prot.n || 1; // prot.n枚を捨てて守る（ST22-005おでん=2枚）
           const cands = ow.hand.filter(h => matchFilter(h, f));
-          if (!cands.length) continue;
-          if (!(await confirmUse(target.owner, `【${p.base.name}】身代わり`, `手札1枚を捨てて「${target.base.name}」を守りますか？`, '守る（手札を捨てる）', '守らない'))) continue;
-          let d;
-          if (ow.isCPU) d = cands.slice().sort((a, b) => (a.base.cost || 0) - (b.base.cost || 0))[0];
-          else { d = await chooseFromHand(target.owner, cands, `「${target.base.name}」を守るため捨てるカードを選択`); if (!d) continue; }
-          ow.hand.splice(ow.hand.indexOf(d), 1); ow.trash.push(reset(d));
-          flog(target.owner, `【${p.base.name}】「${d.base.name}」を捨てて「${target.base.name}」を守った`); return true;
+          if (cands.length < dn) continue;
+          if (!(await confirmUse(target.owner, `【${p.base.name}】身代わり`, `手札${dn}枚を捨てて「${target.base.name}」を守りますか？`, '守る（手札を捨てる）', '守らない'))) continue;
+          const picks = [];
+          if (ow.isCPU) picks.push(...cands.slice().sort((a, b) => (a.base.cost || 0) - (b.base.cost || 0)).slice(0, dn));
+          else { for (let i = 0; i < dn; i++) { const d = await chooseFromHand(target.owner, cands.filter(c => !picks.includes(c)), `「${target.base.name}」を守るため捨てるカードを選択（${i + 1}/${dn}）`); if (!d) break; picks.push(d); } if (picks.length < dn) continue; }
+          for (const d of picks) { ow.hand.splice(ow.hand.indexOf(d), 1); ow.trash.push(reset(d)); }
+          flog(target.owner, `【${p.base.name}】手札${picks.length}枚を捨てて「${target.base.name}」を守った`); return true;
         } else if (prot.pay === 'donToDeck') {
           const P = G.players[target.owner];
           if (P.don.active <= 0 && P.don.rested <= 0) continue; // 戻せるドンが無ければこの供給元では守れない
