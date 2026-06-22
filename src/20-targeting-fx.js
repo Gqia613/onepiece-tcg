@@ -354,11 +354,11 @@
         // このターンの後に自分のターンを追加で得る（OP05-119ルフィ）
         case 'extraTurn': { G._extraTurn = side; flog(side, 'このターンの後、追加のターンを得る'); break; }
         case 'oppDiscardToSize': { const O6 = G.players[o]; const tgt = op.n || 5; while (O6.hand.length > tgt) { const c = O6.isCPU ? O6.hand.slice().sort((a, b) => (a.base.counter || 0) - (b.base.counter || 0))[0] : await chooseFromHand(o, O6.hand.slice(), `手札を${tgt}枚にする`); if (!c) break; O6.hand.splice(O6.hand.indexOf(c), 1); O6.trash.push(reset(c)); } flog(side, `相手は手札を${tgt}枚に`); render(); break; } // 相手が手札N枚になるよう捨てる（OP05-058）
-        case 'bottomOwnCharsExceptSelf': { for (const c of P.chars.slice()) { if (c === self) continue; P.don.active += c.attachedDon || 0; removeChar(c); P.deck.push(reset(c)); } flog(side, 'このキャラ以外の自キャラをデッキ下へ'); render(); break; } // OP05-119ルフィ
+        case 'bottomOwnCharsExceptSelf': { for (const c of P.chars.slice()) { if (c === self) continue; P.don.rested += c.attachedDon || 0; removeChar(c); P.deck.push(reset(c)); } flog(side, 'このキャラ以外の自キャラをデッキ下へ'); render(); break; } // OP05-119ルフィ（付与ドンはレストで戻る）
         case 'deckTopToBottom': { if (P.deck.length) { P.deck.push(P.deck.shift()); flog(side, 'デッキの上1枚をデッキ下へ'); } break; } // OP04-011ナミ
         case 'millSelf': { const k = Math.min(op.n || 1, P.deck.length); for (let i = 0; i < k; i++) P.trash.push(P.deck.shift()); if (k) flog(side, `自分のデッキの上${k}枚をトラッシュ`); render(); break; } // 自分のデッキ上N枚をトラッシュ（P-121ブルック）
         case 'selfHandToDeckDraw': { const hn = P.hand.length; P.deck.push(...P.hand.splice(0)); shuffle(P.deck); draw(side, hn); flog(side, `手札${hn}枚を山に戻しシャッフル→${hn}ドロー`); render(); break; } // OP04-048ササキ
-        case 'bounceAttackerToBottom': { const a = ctx.attacker; if (a && a.base.type === 'CHAR' && (a.base.cost || 0) <= (op.maxCost != null ? op.maxCost : 5)) { const ow = G.players[a.owner]; ow.don.active += a.attachedDon || 0; removeChar(a); ow.deck.push(reset(a)); flog(side, `バトルした「${a.base.name}」を持ち主のデッキ下へ`); render(); } break; } // OP04-047氷鬼（ブロック時に近似）
+        case 'bounceAttackerToBottom': { const a = ctx.attacker; if (a && a.base.type === 'CHAR' && (a.base.cost || 0) <= (op.maxCost != null ? op.maxCost : 5)) { const ow = G.players[a.owner]; ow.don.rested += a.attachedDon || 0; removeChar(a); ow.deck.push(reset(a)); flog(side, `バトルした「${a.base.name}」を持ち主のデッキ下へ`); render(); } break; } // OP04-047氷鬼（ブロック時に近似。付与ドンはレストで戻る）
         // 場のキャラ1枚を持ち主のライフ上に裏向きで加える（OP12-117破壊弦。side:'any'=自分/相手両方が対象）
         case 'charToLife': { const cands = op.side === 'self' ? P.chars.filter(c => matchFilter(c, opFilter(op))) : op.side === 'any' ? [...oppChars(side, opFilter(op)), ...P.chars.filter(c => matchFilter(c, opFilter(op)))] : oppChars(side, opFilter(op)); const t = await chooseCard(side, cands, 'ライフに加えるキャラを選択', op.side === 'self' ? 'ownBig' : 'oppBig', op.optional); if (t) { const ow2 = G.players[t.owner]; removeChar(t); const card2 = reset(t); if (op.faceUp) card2._faceUp = true; const bottom = op.pos === 'bottom'; if (bottom) ow2.life.push(card2); else ow2.life.unshift(card2); flog(side, `「${t.base.name}」を${t.owner === side ? '自分' : '相手'}のライフ${bottom ? '下' : '上'}に${op.faceUp ? '表向きで' : ''}加えた`); render(); } break; } // faceUp=表向き / pos:'bottom'（OP11-116人魚柔術）
         case 'handToLife': { if (P.hand.length) { const c = P.hand.slice().sort((a, b) => (a.base.counter || 0) - (b.base.counter || 0))[0]; P.hand.splice(P.hand.indexOf(c), 1); P.life.unshift(faceDown(c)); flog(side, '手札1枚をライフの上に置いた'); } break; }
@@ -376,7 +376,7 @@
           self.rested = true; flog(side, `「${self.base.name}」をレストにした`); render(); await runFx(op.then, ctx); break;
         }
         // このキャラを持ち主のデッキの下に置く（強制・OP09-051バギー）
-        case 'selfToDeckBottom': { if (self && P.chars.includes(self)) { P.don.active += self.attachedDon || 0; removeChar(self); P.deck.push(reset(self)); flog(side, `「${self.base.name}」をデッキの下に置いた`); await checkAllyLeave(side, self, 'ownEffect'); render(); } break; }
+        case 'selfToDeckBottom': { if (self && P.chars.includes(self)) { P.don.rested += self.attachedDon || 0; removeChar(self); P.deck.push(reset(self)); flog(side, `「${self.base.name}」をデッキの下に置いた`); await checkAllyLeave(side, self, 'ownEffect'); render(); } break; }
         // このキャラ自身をトラッシュからレストで登場（OP09-052マルコ＝KO時の自己蘇生）
         case 'reviveSelfRested': { const i = P.trash.indexOf(self); if (i < 0) break; P.trash.splice(i, 1); await summon(side, self, false, 'trash'); if (P.chars.includes(self)) self.rested = true; render(); break; }
         // 手札N枚をデッキの下に置くコスト（OP09-060カライ・バリ島）。払えたら then。
@@ -454,7 +454,7 @@
         case 'selfToBottomCost': {
           if (!P.chars.includes(self)) break;
           if (!(await confirmUse(side, '自身をデッキ下', `「${self.base.name}」をデッキの下に置いて効果を使いますか？`, '置いて使う'))) break;
-          P.don.active += self.attachedDon || 0; removeChar(self); P.deck.push(reset(self)); flog(side, `「${self.base.name}」をデッキの下に置いた`);
+          P.don.rested += self.attachedDon || 0; removeChar(self); P.deck.push(reset(self)); flog(side, `「${self.base.name}」をデッキの下に置いた`);
           await checkAllyLeave(side, self, 'ownEffect'); await runFx(op.then, ctx); break;
         }
         case 'lifeSwap': {
@@ -642,7 +642,7 @@
           const inChars = P.chars.includes(self), isStage = P.stage === self;
           if (!inChars && !isStage) break;
           if (!(await confirmUse(side, '自身をトラッシュ', `「${self.base.name}」をトラッシュに置いて効果を使いますか？`, '置いて使う'))) break;
-          P.don.active += self.attachedDon || 0;
+          P.don.rested += self.attachedDon || 0;
           if (inChars) removeChar(self); if (isStage) P.stage = null;
           P.trash.push(reset(self)); flog(side, `「${self.base.name}」をトラッシュに置いた`);
           if (inChars) await checkAllyLeave(side, self, 'ownEffect'); // 自身（キャラ）が自分の効果で場を離れた

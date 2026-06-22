@@ -1890,6 +1890,17 @@ humanPick=function(c){return Promise.resolve((c||[])[0]||null);};
       ok(C['OP09-093'].fx.act && !C['OP09-093'].fx.onPlay, 'OP09-093: 起動メイン化(登場時誤実装の修正)');
       await runFx(C['OP09-093'].fx.act.fx,{self:tc,side:'me'});
       ok(G.players.cpu.leader.negSeq===G.turnSeq && ev.negSeq===G.turnSeq+1 && ev.noAtkSeq===G.turnSeq+1, 'OP09-093: 相手リーダー(当ターン)＆キャラ(無効＋アタック不可)'); delete C['__t__']; }
+    // 付与ドンは場を離れたらコストエリアに「レスト」で戻る（公式ルール。active化バグの回帰）
+    { const me=LP('OP13-002'); me.isCPU=true; G.active='me'; C['__ad__']={no:'__ad__',name:'AD',type:'CHAR',color:[],cost:2,power:3000,counter:0,traits:[]};
+      me.don={active:0,rested:0}; const k=mkSyn('__ad__',C['__ad__']); k.owner='me'; k.attachedDon=2; me.chars=[k];
+      await koCard(k,'effect');
+      ok(me.don.rested===2 && me.don.active===0, '付与ドン: KO時はコストエリアにレストで戻る');
+      me.don={active:0,rested:0}; const d=mkSyn('__ad__',C['__ad__']); d.owner='me'; d.attachedDon=3; me.chars=[d];
+      await runFx([{op:'selfToDeckBottom'}],{self:d,side:'me'});
+      ok(me.don.rested===3 && me.don.active===0, '付与ドン: 効果で自己デッキ下もレストで戻る');
+      me.don={active:0,rested:0}; const b=mkSyn('__ad__',C['__ad__']); b.owner='me'; b.attachedDon=1; me.chars=[b];
+      bounceCard(b);
+      ok(me.don.rested===1 && me.don.active===0, '付与ドン: バウンスもレストで戻る'); delete C['__ad__']; }
   }catch(e){ console.log('EXCEPTION:', e.message); fail++; }
   console.log('Phase3 fxテスト: pass='+pass+' fail='+fail);
   process.exit(fail?1:0);
