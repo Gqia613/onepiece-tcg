@@ -566,6 +566,84 @@
     AGENTS.hybrid = { takeTurn: hybridTurn };   // P.agent='hybrid'（live Claude戦略×puct戦術）
     if (typeof window !== 'undefined') { window.loadLLMCache = loadLLMCache; window.LLM_CACHE_REF = function () { return LLM_CACHE; }; }  // 測定/ウォーム用にキャッシュを公開
 
+    /* ===== Phase5: 多手先PUCT木（puct2）＝ターン内の手順を“木”で探索【opt-in実験・既定で使わない】 =====
+       ★測定結果(2026-06・teachミラー同一seedN=40): puct2 対h -25.0pt(p=0.041★退行) / 同条件 puct +27.5pt。
+         SIMS増(32→120)でも -16.7pt と退行のまま。＝薄い木が第1手の訪問数を分散させ「最多訪問」が不安定で、
+         puctの「各候補手をK回ロールアウトで集中評価」に構造的に劣る(vlook/StageC退行と同根)。
+         ＝JSの探索天井は依然puct。木が勝つには「価値NNの葉＋桁違いのsims」(=PyTorch part6)が要る。
+         本コードは将来value-netの葉を載せる足場として残置(opt-in)。既定CPU/出荷は不変。
+       現行puctは「最良の第1手を1手ずつ貪欲に選び直す」＝手順の組み合わせを見ない(近似的に近視眼)。
+       puct2は自分のターン内の手順(play/attack/...→stop)をUCT木で探索し、最多訪問の第1手を打つ。
+       ・各シミュレーション: ①rootを決定化(PIMC) ②木をPUCTで降りて自分の手を適用 ③葉=残りターンをheuristicで
+         打ち切り→endTurn→look相手ターン→境界価値 evalWinProb ④backup。決定化を毎回サンプルし統計を木に蓄積。
+       ・自分の手はほぼ決定化非依存(自手札/相手盤面は可視)。手の効果でドローした世界差は applyAction前に合法性確認して吸収。
+       ・状態復元/ rng隔離/ _noChain は puct と同じ作法。決定的測定可(LLM不要)。opt-in(agent='puct2')。 */
+    function actKey2(a) { return a.k + '|' + (a.uid || '') + '|' + (a.auid || '') + '|' + (a.tuid || ''); }
+    // 葉評価[0,1]: finish=trueなら残りターンをheuristicで打ち切ってから、endTurn→look相手ターン→境界価値。
+    async function leafEval2(side, look, finish) {
+      if (finish && !G.winner && G.active === side) await heuristicTurn(side);
+      return await rolloutAfterTurn(side, look);
+    }
+    async function puct2Sim(node, side, opt, depth) {
+      if (G.winner) return G.winner === side ? 1 : 0;
+      if (G.active !== side) return await rolloutAfterTurn(side, opt.look);
+      if (depth >= opt.maxDepth) return await leafEval2(side, opt.look, true);
+      if (!node.edges) {                                   // 展開＋葉評価(ここまでの手＋heuristic補完)
+        const cands = candidateActions(side);
+        const scored = cands.filter(a => a.k !== 'stop').map(a => ({ a, P: priorScore(side, a) })).sort((x, y) => y.P - x.P).slice(0, opt.width);
+        scored.push({ a: { k: 'stop' }, P: 0.3 });          // stopは常に候補（ここで打ち切る）
+        node.edges = scored.map(e => ({ a: e.a, P: e.P, N: 0, Wsum: 0, child: null }));
+        return await leafEval2(side, opt.look, true);
+      }
+      const totalN = node.edges.reduce((s, e) => s + e.N, 0);
+      let best = null;                                      // PUCT選択: Q + c·P·√ΣN/(1+N)
+      for (const e of node.edges) { const q = e.N ? e.Wsum / e.N : 0.5; const u = opt.c * e.P * Math.sqrt(totalN + 1) / (1 + e.N); const sc = q + u; if (!best || sc > best.sc) best = { e, sc }; }
+      const edge = best.e; let val;
+      if (edge.a.k === 'stop') { val = await leafEval2(side, opt.look, false); }   // ここでターンを終える(補完なし)
+      else {
+        const legal = (!edge.a.uid || findCard(edge.a.uid)) && (edge.a.k !== 'attack' || (findCard(edge.a.auid) && findCard(edge.a.tuid)));
+        if (!legal) { val = await leafEval2(side, opt.look, true); }               // この世界では非合法→heuristic補完で評価
+        else {
+          await applyAction(side, edge.a);
+          if (G.winner) val = G.winner === side ? 1 : 0;
+          else if (G.active !== side) val = await rolloutAfterTurn(side, opt.look); // applyで自ターン終了(稀)
+          else { if (!edge.child) edge.child = { edges: null }; val = await puct2Sim(edge.child, side, opt, depth + 1); }
+        }
+      }
+      edge.N++; edge.Wsum += val; return val;
+    }
+    async function puct2Search(side, opt) {
+      const root = { edges: null };
+      const rootClone = cloneGameState(G), saved = Object.assign({}, G), rngSave = rngState();
+      for (let s = 0; s < opt.sims; s++) {
+        loadGameState(determinize(rootClone, side));
+        G.players.me.isCPU = true; G.players.cpu.isCPU = true; G._sim = true; G._noChain = true;
+        try { await puct2Sim(root, side, opt, 0); } finally { G._sim = false; G._noChain = false; }
+      }
+      for (const k of Object.keys(G)) delete G[k]; Object.assign(G, saved); rngState(rngSave);
+      if (!root.edges || !root.edges.length) return { k: 'stop' };
+      let best = null; for (const e of root.edges) { if (!best || e.N > best.N) best = e; } // 最多訪問の第1手
+      return best ? best.a : { k: 'stop' };
+    }
+    async function puct2Turn(side) {
+      if (G._sim) return heuristicTurn(side);
+      if (PUCT_SKIP[leaderKeyOf(side)] && !G._puctNoSkip) return heuristicTurn(side);
+      const dp = PUCT_DEPTH[leaderKeyOf(side)] || {};
+      const opt = { sims: G._puct2Sims || 40, width: G._puctWidth || dp.width || 5, look: G._puctLook != null ? G._puctLook : (dp.look != null ? dp.look : 1), c: G._puct2C || 1.4, maxDepth: G._puct2Depth || 10 };
+      if (typeof showThinking === 'function') showThinking(true);
+      try {
+        let guard = 0;
+        while (guard++ < 16 && !G.winner) {
+          const a = await puct2Search(side, opt);
+          if (!a || a.k === 'stop') break;
+          if (a.uid && !findCard(a.uid)) break;            // 念のため合法性確認
+          await applyAction(side, a);
+          if (G.winner) return;
+        }
+      } finally { if (typeof showThinking === 'function') showThinking(false); render(); }
+    }
+    AGENTS.puct2 = { takeTurn: puct2Turn };   // P.agent='puct2'（多手先UCT木・LLM不要・決定的測定可）
+
     if (typeof window !== 'undefined') { window.polFeatures = polFeatures; window.legalActions = legalActions; window.POL_FEAT = POL_FEAT; window.improvedAttack = improvedAttack; }
 
     // 外部（テスト/将来のMCTS）から使えるよう公開（ブラウザ・Node両対応）。

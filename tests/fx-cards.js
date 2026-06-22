@@ -1901,6 +1901,15 @@ humanPick=function(c){return Promise.resolve((c||[])[0]||null);};
       me.don={active:0,rested:0}; const b=mkSyn('__ad__',C['__ad__']); b.owner='me'; b.attachedDon=1; me.chars=[b];
       bounceCard(b);
       ok(me.don.rested===1 && me.don.active===0, '付与ドン: バウンスもレストで戻る'); delete C['__ad__']; }
+    // OP16-103 ヴァン・オーガ: 【トリガー】=【KO時】効果（黒ひげなら1ドロー＋相手-3000）。登場ではない（スクレイプで欠落していたトリガーの補完）
+    { const me=LP('OP09-081'); me.isCPU=true; G.active='cpu'; G.players.cpu=mkP('OP11-041',true);
+      C['__vo__']={no:'__vo__',name:'VO',type:'CHAR',color:[],cost:1,power:2000,counter:1000,traits:['黒ひげ海賊団']};
+      const ec=mkSyn('__vo__',C['__vo__']); ec.owner='cpu'; G.players.cpu.chars=[ec];
+      me.deck=[I('OP11-041','me'),I('OP11-041','me')]; // ドロー用にデッキを用意
+      const hb=me.hand.length, cc=me.chars.length;
+      ok(!!(C['OP16-103'].fx && C['OP16-103'].fx.trigger), 'OP16-103: 【トリガー】が実装されている');
+      await runFx(C['OP16-103'].fx.trigger,{self:I('OP16-103','me'),side:'me'});
+      ok(me.hand.length===hb+1 && me.chars.length===cc, 'OP16-103: トリガーはドロー＋弱体化のみ（キャラエリアに登場しない）'); delete C['__vo__']; }
   }catch(e){ console.log('EXCEPTION:', e.message); fail++; }
   console.log('Phase3 fxテスト: pass='+pass+' fail='+fail);
   process.exit(fail?1:0);
