@@ -107,6 +107,7 @@
     // 「ライフが離れた時」誘発（OP12-099カルガラ＝自分のターン中ライフ離脱で1ドロー）。side=ライフが離れた側。
     async function fireLifeLeft(side) {
       const P = G.players[side];
+      P._lifeLeftTurn = G.turnSeq; // このターンに side のライフが離れた（P-120サンジ「相手のライフが離れているターン中」コスト判定用）
       for (const c of P.chars.slice()) {
         const cfg = c.base.fx && c.base.fx.onLifeLeave;
         if (!cfg || isNegated(c) || !P.chars.includes(c)) continue;
@@ -335,6 +336,9 @@
       const D = G.players[opp(side)]; const arr = (attacker && !canTargetLeader(attacker)) ? [] : [D.leader];
       const canActive = attacker && hasKw(attacker, 'attackActive'); // 「アクティブのキャラにもアタックできる」(OP11海軍/SWORD)
       for (const c of D.chars) if (c.rested || canActive) arr.push(c);
+      // タウント: レストのタウント持ちキャラがいる場合、キャラ対象はそのキャラのみ（リーダーは通常通り。P-067キッド「このキャラがレストの場合、相手はキッド以外にアタックできない」）
+      const taunts = D.chars.filter(c => c.rested && !isNegated(c) && c.base.fx && c.base.fx.static && c.base.fx.static.some(o => o.op === 'taunt'));
+      if (taunts.length) return arr.filter(t => t === D.leader || taunts.includes(t));
       return arr;
     }
 
@@ -428,7 +432,7 @@
           const banish = hasKw(attacker, 'banish');
           await dealLeaderDamage(dSide, attacker, dbl, banish);
         } else {
-          if (!(await protectFromEffect(blkTarget, 'battle'))) { animClass(blkTarget.uid, 'shake'); await sleep(180); await koCard(blkTarget, 'battle'); } // includeBattle の身代わりがあればバトルKOを肩代わり
+          if (!(await protectFromEffect(blkTarget, 'battle', attacker))) { animClass(blkTarget.uid, 'shake'); await sleep(180); await koCard(blkTarget, 'battle'); } // includeBattle の身代わりがあればバトルKOを肩代わり（attacker=属性条件バトル耐性のsource）
         }
       } else {
         flog(aSide, `アタック失敗`); floatOn(blkTarget.uid, 'GUARD', 'buff');

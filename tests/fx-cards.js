@@ -1822,6 +1822,51 @@ humanPick=function(c){return Promise.resolve((c||[])[0]||null);};
       me.don={active:1,rested:0}; G.players.cpu.don={active:4,rested:0};
       ok(checkCond({selfDonFewerBy:2},'me',null), 'OP07-064: ドン3枚差で成立');
       me.don={active:3,rested:0}; ok(!checkCond({selfDonFewerBy:2},'me',null), 'OP07-064: 1枚差では不成立'); }
+
+    /* ===== 今セッション追加機構の回帰（ST/P/PRB） ===== */
+    // P-052 battleImmuneVsAttr: 属性(斬)を持つアタッカーとのバトルでKOされない（ドン×1時）
+    { const me=LP('OP13-002'); G.players.cpu=mkP('OP11-041',true); G.active='cpu';
+      C['__zan__']={no:'__zan__',name:'Zan',type:'CHAR',color:[],cost:5,power:6000,counter:0,traits:[],attribute:'斬'};
+      C['__uchi__']={no:'__uchi__',name:'Uchi',type:'CHAR',color:[],cost:5,power:6000,counter:0,traits:[],attribute:'打'};
+      const mh=I('P-052','me'); mh.attachedDon=1; me.chars=[mh];
+      const za=mkSyn('__zan__',C['__zan__']); za.owner='cpu'; const uc=mkSyn('__uchi__',C['__uchi__']); uc.owner='cpu';
+      ok(await protectFromEffect(mh,'battle',za)===true, 'P-052: 斬アタッカーとのバトルでKO耐性(ドン×1)');
+      ok(await protectFromEffect(mh,'battle',uc)===false, 'P-052: 打アタッカーには耐性なし');
+      mh.attachedDon=0; ok(await protectFromEffect(mh,'battle',za)===false, 'P-052: ドン×1未満では耐性なし');
+      delete C['__zan__']; delete C['__uchi__']; }
+    // P-067 taunt: レストのキッドがいると相手はキッド以外のキャラにアタック不可（リーダーは可）
+    { const me=LP('OP13-002'); G.players.cpu=mkP('OP11-041',true);
+      const kid=I('P-067','me'); kid.rested=true; C['__oth__']={no:'__oth__',name:'Oth',type:'CHAR',color:[],cost:3,power:4000,counter:0,traits:[]};
+      const oth=mkSyn('__oth__',C['__oth__']); oth.owner='me'; oth.rested=true; me.chars=[kid,oth];
+      const atk=mkSyn('__oth__',C['__oth__']); atk.owner='cpu';
+      const tg=legalTargets('cpu',atk);
+      ok(tg.includes(me.leader) && tg.includes(kid) && !tg.includes(oth), 'P-067: タウントでキャラ対象はキッドのみ(リーダーは可)');
+      kid.rested=false; ok(legalTargets('cpu',atk).includes(oth), 'P-067: キッドがアクティブならタウント無効'); delete C['__oth__']; }
+    // PRB02-014 handCostCond: トラッシュ15枚以上で手札コスト-3
+    { const me=LP('OP13-002'); const sabo=I('PRB02-014','me');
+      me.trash=[]; ok(effCost('me',sabo)===(C['PRB02-014'].cost), 'PRB02-014: 通常コスト');
+      for(let i=0;i<15;i++) me.trash.push(I('OP11-041','me'));
+      ok(effCost('me',sabo)===Math.max(0,(C['PRB02-014'].cost-3)), 'PRB02-014: トラッシュ15枚でコスト-3'); }
+    // P-024 leaderBuffPerChar: 自分のキャラ枚数×1000をリーダーに
+    { const me=LP('OP13-002'); C['__c__']={no:'__c__',name:'C',type:'CHAR',color:[],cost:1,power:1000,counter:0,traits:[]};
+      me.chars=[mkSyn('__c__',C['__c__']),mkSyn('__c__',C['__c__']),mkSyn('__c__',C['__c__'])];
+      const base=power(me.leader); await runFx([{op:'leaderBuffPerChar',amount:1000,duration:'turn'}],{self:me.leader,side:'me'});
+      ok(power(me.leader)===base+3000, 'P-024: キャラ3枚でリーダー+3000'); delete C['__c__']; }
+    // P-100 negateEffect all: 相手リーダー＋キャラ全ての効果無効
+    { const me=LP('OP13-002'); me.isCPU=true; G.active='me'; G.players.cpu=mkP('OP11-041',true);
+      C['__e__']={no:'__e__',name:'E',type:'CHAR',color:[],cost:3,power:4000,counter:0,traits:[]};
+      const e1=mkSyn('__e__',C['__e__']); e1.owner='cpu'; const e2=mkSyn('__e__',C['__e__']); e2.owner='cpu'; G.players.cpu.chars=[e1,e2];
+      await runFx([{op:'negateEffect',all:true}],{self:me.leader,side:'me'});
+      ok(e1.negSeq===G.turnSeq && e2.negSeq===G.turnSeq && G.players.cpu.leader.negSeq===G.turnSeq, 'P-100: 相手リーダー＋全キャラ効果無効'); delete C['__e__']; }
+    // ST28-004 attachedDonToCost: 付与ドン2枚をコストエリアにレストで戻す→速攻付与
+    { const me=LP('OP13-002'); me.isCPU=true; G.active='me'; const momo=I('ST28-004','me'); momo.attachedDon=2; me.chars=[momo]; me.don={active:0,rested:0};
+      await runFx([{op:'attachedDonToCost',n:2,then:[{op:'giveKeyword',target:'self',kw:'rush',duration:'turn'}]}],{self:momo,side:'me'});
+      ok(momo.attachedDon===0 && me.don.rested===2 && hasKw(momo,'rush'), 'ST28-004: 付与ドン2→コストレスト＆速攻'); }
+    // P-121 millSelf: 自デッキ上3枚をトラッシュ
+    { const me=LP('OP13-002'); C['__d__']={no:'__d__',name:'D',type:'CHAR',color:[],cost:1,power:1000,counter:0,traits:[]};
+      me.deck=[]; for(let i=0;i<5;i++) me.deck.push(mkSyn('__d__',C['__d__'])); me.trash=[];
+      await runFx([{op:'millSelf',n:3}],{self:me.leader,side:'me'});
+      ok(me.deck.length===2 && me.trash.length===3, 'P-121: デッキ上3枚をトラッシュ'); delete C['__d__']; }
   }catch(e){ console.log('EXCEPTION:', e.message); fail++; }
   console.log('Phase3 fxテスト: pass='+pass+' fail='+fail);
   process.exit(fail?1:0);
