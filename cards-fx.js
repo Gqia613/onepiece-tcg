@@ -3994,3 +3994,8 @@ window.CARD_FX = {
   "PRB02-017": {"onPlay":[{"op":"discardCost","count":1,"filter":{"hasTrigger":true},"optional":true,"then":[{"op":"setAttackBan","side":"opp","includeLeader":true,"filter":{"restedOnly":true,"nameExcludes":"モンキー・Ｄ・ルフィ"},"count":1,"duration":"untilNextEnd","optional":true}]}]},
   "PRB02-018": {"onPlay":[{"op":"cond","check":{"faceUpLifeAtLeast":1},"then":[{"op":"playCharFromHand","filter":{"cost":2,"or":[{"nameIncludes":"サボ"},{"nameIncludes":"ポートガス・Ｄ・エース"},{"nameIncludes":"モンキー・Ｄ・ルフィ"}]},"count":1,"optional":true}]}]}
 });})();
+/* ===== 既存パックの取りこぼし補完 ===== */
+(function () { Object.assign(window.CARD_FX, {
+  // OP15-119 ルフィ: ドン6以上で速攻（常在）。相手イベ/ブロッカー時のライフ公開バフは近似省略。
+  "OP15-119": {"static":[{"op":"staticKeyword","kw":"rush","cond":{"donAtLeast":6}}]}
+});})();
