@@ -467,19 +467,44 @@
     /* =========================================================================
        ===============  AI 連携 (Anthropic API)  ===============================
        ========================================================================= */
-    async function callClaude(system, user) {
+    // ローカル中継(tools/llm-proxy.js)経由でClaudeを呼ぶ。鍵はproxy側のenvに保持（ブラウザ/リポジトリに出さない）、
+    // CORSもproxyが解放するので file:// から叩ける。proxy未起動なら即nullでheuristicへフォールバック（ハングしない）。
+    var LLM_PROXY = 'http://127.0.0.1:8787';   // tools/llm-proxy.js の待受。未起動＝接続拒否で即失敗→heuristic
+    var LLM_MODEL = 'claude-opus-4-8';         // 戦略コーチ＝高性能モデル（advisory呼び出しも兼用）。opts.modelで上書き可
+    async function callClaude(system, user, opts) {
+      opts = opts || {};
+      if (G._proxyUp === false) return null;   // このセッションでproxyダウン確認済→9s待たず即フォールバック
       const ctrl = new AbortController();
-      const tid = setTimeout(() => ctrl.abort(), 9000); // 応答ハングでCPUターンが固まらないようタイムアウト
+      const tid = setTimeout(() => ctrl.abort(), opts.timeout || 9000); // 応答ハングでCPUターンが固まらないようタイムアウト
       try {
-        const res = await fetch("https://api.anthropic.com/v1/messages", {
+        const body = { model: opts.model || LLM_MODEL, max_tokens: opts.max_tokens || 1024, system, messages: [{ role: "user", content: user }] };
+        if (opts.tools) { body.tools = opts.tools; body.tool_choice = opts.tool_choice; } // 構造化出力(tool-use)用。Phase2で使用
+        const res = await fetch(LLM_PROXY + "/v1/messages", {
           method: "POST", headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ model: "claude-sonnet-4-6", max_tokens: 1000, system, messages: [{ role: "user", content: user }] }),
-          signal: ctrl.signal
+          body: JSON.stringify(body), signal: ctrl.signal
         });
         if (!res.ok) throw new Error('API ' + res.status);
         const d = await res.json();
+        G._proxyUp = true;
+        if (opts.tools) { const tu = (d.content || []).find(b => b.type === 'tool_use'); return tu ? tu.input : null; } // tool-use=構造化オブジェクト
         return (d.content || []).filter(b => b.type === 'text').map(b => b.text).join("\n");
+      } catch (e) {
+        // タイムアウト(abort)とHTTPエラー(API NNN)は一時的＝無効化しない。それ以外(接続不可/fetch不在/CORS)は
+        // proxyダウン扱いでこのセッション中スキップ（次ターン以降9s待たず即heuristic）。
+        const msg = (e && (e.message || e.name)) || '';
+        if (!/abort/i.test(msg) && !/^API \d/.test(msg)) G._proxyUp = false;
+        return null;
       } finally { clearTimeout(tid); }
+    }
+    // proxy生存確認（任意・先読み用）。G._proxyUp に結果をキャッシュ。
+    async function llmHealth() {
+      if (G._proxyUp != null) return G._proxyUp;
+      try {
+        const ctrl = new AbortController(); const tid = setTimeout(() => ctrl.abort(), 1500);
+        const res = await fetch(LLM_PROXY + '/healthz', { signal: ctrl.signal }); clearTimeout(tid);
+        G._proxyUp = !!(res && res.ok);
+      } catch (e) { G._proxyUp = false; }
+      return G._proxyUp;
     }
     function parseJSON(txt) {
       if (!txt) return null; let s = txt.replace(/```json/g, '').replace(/```/g, '').trim();
