@@ -3259,8 +3259,6 @@
     .bd-fb { position: absolute; inset: 0; z-index: 0; display: flex; align-items: center; justify-content: center; text-align: center; padding: 4px; font-size: 9.5px; line-height: 1.2; color: var(--muted) }
     .bd-cost { position: absolute; z-index: 2; top: 3px; left: 3px; width: 19px; height: 19px; border-radius: 50%; background: #0c1622d8; color: var(--gold-soft); font-family: "Bebas Neue"; font-size: 13px; display: flex; align-items: center; justify-content: center; border: 1px solid var(--line) }
     .bd-novfx { position: absolute; z-index: 2; top: 3px; right: 3px; font-size: 9px; padding: 1px 4px; border-radius: 4px; background: #00000099; color: #d9a }
-    /* デッキ内の枚数バッジ（カード画像右下）＝スマホでパネルが見えなくても一目で枚数が分かる */
-    .bd-qty { position: absolute; z-index: 3; right: 3px; bottom: 3px; min-width: 26px; height: 24px; padding: 0 6px; border-radius: 6px; background: linear-gradient(180deg, #f5d98a, #c79a3a); color: #2a1f06; font-family: "Bebas Neue"; font-size: 17px; letter-spacing: .02em; display: flex; align-items: center; justify-content: center; box-shadow: 0 1px 5px rgba(0,0,0,.55); border: 1px solid #00000040 }
     .bd-nm { font-size: 10.5px; color: var(--ink); margin-top: 3px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
     .bd-sub { font-size: 9.5px; color: var(--muted) }
     .bd-ctl { display: flex; align-items: center; justify-content: space-between; gap: 4px; margin-top: 4px }
@@ -3272,7 +3270,16 @@
     .bd-panel-head { font-family: "Bebas Neue"; letter-spacing: .05em; font-size: 15px; color: var(--gold-soft) }
     /* 画面上部に固定するデッキステータスバー（枚数・名前・構築可否・保存）＝下までスクロール不要に */
     .bd-statusbar { display: none }
-    .bd-statusbar.on { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; position: sticky; top: 0; z-index: 30; background: linear-gradient(180deg, #1a130b, #140f0a); border: 1px solid var(--gold-dim); border-radius: 10px; padding: 8px 12px; margin-bottom: 12px; box-shadow: 0 6px 16px rgba(0,0,0,.45) }
+    .bd-statusbar.on { display: flex; flex-direction: column; gap: 0; position: sticky; top: 0; z-index: 30; background: linear-gradient(180deg, #1a130b, #140f0a); border: 1px solid var(--gold-dim); border-radius: 10px; padding: 8px 12px; margin-bottom: 12px; box-shadow: 0 6px 16px rgba(0,0,0,.45) }
+    .bd-st-top { display: flex; align-items: center; gap: 10px; flex-wrap: wrap }
+    /* デッキ内容を上部バー内にも表示（スマホで下のパネルが見えない対策）。PCはサイドパネルがあるので非表示。 */
+    .bd-st-list-head { display: none }
+    .bd-deck-list { display: none }
+    @media (max-width: 760px) {
+      .bd-st-list-head { display: block; font-family: "Bebas Neue"; letter-spacing: .05em; font-size: 13px; color: var(--gold-soft); margin: 7px 0 2px }
+      .bd-deck-list { display: flex; flex-direction: column; gap: 0; max-height: 34vh; overflow: auto; border-top: 1px solid var(--line); padding-top: 2px }
+      .bd-panel { display: none }
+    }
     .bd-st-count { font-family: "Bebas Neue"; font-size: 28px; line-height: 1; color: var(--danger); min-width: 84px; white-space: nowrap }
     .bd-st-count span { font-size: 16px; color: var(--muted); margin-left: 1px }
     .bd-st-count.ok { color: #6fd06f }

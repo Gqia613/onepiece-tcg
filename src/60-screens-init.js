@@ -237,8 +237,7 @@
         const mark = isEffectMissing(c) ? '<span class="bd-novfx">効果未実装</span>' : '';
         return '<div class="bd-tile' + (cnt > 0 ? ' has' : '') + '">' +
           '<div class="bd-art">' + bdImg(no) +
-          '<span class="bd-cost">' + (c.cost != null ? c.cost : '-') + '</span>' + mark +
-          (cnt > 0 ? '<span class="bd-qty">×' + cnt + '</span>' : '') + '</div>' +
+          '<span class="bd-cost">' + (c.cost != null ? c.cost : '-') + '</span>' + mark + '</div>' +
           '<div class="bd-nm" title="' + escapeHTML(c.name) + '">' + escapeHTML(c.name) + '</div>' +
           '<div class="bd-sub">' + typeJa(c.type) + (c.power ? (' P' + c.power) : '') + (c.counter ? (' +' + c.counter) : '') + '</div>' +
           '<div class="bd-ctl"><button class="bd-mn" onclick="builderRemove(\'' + no + '\')">−</button>' +
@@ -248,7 +247,17 @@
       const note = document.getElementById('bd-poolnote');
       if (note) note.textContent = all.length > CAP ? (all.length + '枚中 ' + CAP + '枚を表示（検索・色・種別で絞り込めます）') : (all.length + '枚');
     }
-    // 画面上部の常時表示バー（デッキ名・枚数・構築可否・保存）。リーダー未選択時は非表示。builderAdd/Remove からも更新。
+    // デッキ内容の行HTML（コスト／名前／番号／N枚／±）。パネルと上部バーで共通利用。
+    function deckRowsHTML() {
+      const b = G.builder;
+      return Object.entries(b.list).filter(e => e[1] > 0).sort((x, y) => (C[x[0]].cost || 0) - (C[y[0]].cost || 0)).map(([no, n]) =>
+        '<div class="bd-row"><span class="bd-rcost">' + (C[no].cost != null ? C[no].cost : '-') + '</span>' +
+        '<span class="bd-rn">' + escapeHTML(C[no].name) + '</span><span class="bd-rno">' + no + '</span>' +
+        '<span class="bd-rc">' + n + '枚</span>' +
+        '<span class="bd-rb"><button onclick="builderRemove(\'' + no + '\')">−</button><button onclick="builderAdd(\'' + no + '\')">＋</button></span></div>').join('') || '<div class="bd-empty">＋でカードを追加</div>';
+    }
+    function deckKinds() { return Object.values(G.builder.list).filter(n => n > 0).length; }
+    // 画面上部の常時表示バー（デッキ名・枚数・構築可否・保存）＋デッキ内容（スマホで下パネルが見えない対策）。リーダー未選択時は非表示。
     function renderStatus() {
       const el = document.getElementById('bd-status'); if (!el) return;
       const b = G.builder;
@@ -256,23 +265,19 @@
       const total = deckTotal(); const v = builderValidate();
       el.className = 'bd-statusbar on';
       el.innerHTML =
-        '<div class="bd-st-count' + (total === 50 ? ' ok' : '') + '">' + total + '<span>/50</span></div>' +
-        '<input id="bd-name" class="bd-name" placeholder="デッキ名を入力" value="' + escapeHTML(b.name || '') + '" oninput="G.builder.name=this.value">' +
-        '<div class="bd-st-valid' + (v.ok ? ' ok' : '') + '">' + (v.ok ? '✓ 構築OK' : escapeHTML(v.errors.join(' / '))) + '</div>' +
-        '<button class="bd-save" ' + (v.ok ? '' : 'disabled') + ' onclick="builderSave()">保存して選択へ</button>' +
-        '<button class="bd-exp" onclick="builderExport()">JSON書き出し</button>';
+        '<div class="bd-st-top">' +
+          '<div class="bd-st-count' + (total === 50 ? ' ok' : '') + '">' + total + '<span>/50</span></div>' +
+          '<input id="bd-name" class="bd-name" placeholder="デッキ名を入力" value="' + escapeHTML(b.name || '') + '" oninput="G.builder.name=this.value">' +
+          '<div class="bd-st-valid' + (v.ok ? ' ok' : '') + '">' + (v.ok ? '✓ 構築OK' : escapeHTML(v.errors.join(' / '))) + '</div>' +
+          '<button class="bd-save" ' + (v.ok ? '' : 'disabled') + ' onclick="builderSave()">保存して選択へ</button>' +
+          '<button class="bd-exp" onclick="builderExport()">JSON書き出し</button>' +
+        '</div>' +
+        '<div class="bd-st-list-head">デッキ内容（' + deckKinds() + '種）</div>' +
+        '<div class="bd-deck-list">' + deckRowsHTML() + '</div>';
     }
     function renderPanel() {
       const el = document.getElementById('bd-panel'); if (!el) return;
-      const b = G.builder;
-      const entries = Object.entries(b.list).filter(e => e[1] > 0).sort((x, y) => (C[x[0]].cost || 0) - (C[y[0]].cost || 0));
-      const kinds = entries.length; // 種類数
-      const rows = entries.map(([no, n]) =>
-        '<div class="bd-row"><span class="bd-rcost">' + (C[no].cost != null ? C[no].cost : '-') + '</span>' +
-        '<span class="bd-rn">' + escapeHTML(C[no].name) + '</span><span class="bd-rno">' + no + '</span>' +
-        '<span class="bd-rc">' + n + '枚</span>' +
-        '<span class="bd-rb"><button onclick="builderRemove(\'' + no + '\')">−</button><button onclick="builderAdd(\'' + no + '\')">＋</button></span></div>').join('') || '<div class="bd-empty">＋でカードを追加</div>';
-      el.innerHTML = '<div class="bd-panel-head">デッキ内容（' + kinds + '種）</div><div class="bd-rows">' + rows + '</div>';
+      el.innerHTML = '<div class="bd-panel-head">デッキ内容（' + deckKinds() + '種）</div><div class="bd-rows">' + deckRowsHTML() + '</div>';
     }
     function renderLeaders() {
       const el = document.getElementById('bd-lead-row'); if (!el) return;
