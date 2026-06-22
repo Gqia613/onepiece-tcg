@@ -3283,10 +3283,13 @@
     .bd-total.ok { color: #6fd06f }
     .bd-valid { font-size: 12px; color: var(--danger); text-align: center; min-height: 16px; line-height: 1.4 }
     .bd-valid.ok { color: #6fd06f }
-    .bd-rows { overflow: auto; flex: 1; display: flex; flex-direction: column; gap: 2px; border-top: 1px solid var(--line); padding-top: 6px; min-height: 60px }
-    .bd-row { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--ink) }
-    .bd-rc { color: var(--gold-soft); font-family: "Bebas Neue"; min-width: 22px }
-    .bd-rn { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
+    .bd-rows { overflow: auto; flex: 1; display: flex; flex-direction: column; gap: 0; border-top: 1px solid var(--line); padding-top: 4px; min-height: 60px }
+    .bd-row { display: flex; align-items: center; gap: 7px; font-size: 12.5px; color: var(--ink); padding: 5px 2px; border-bottom: 1px solid rgba(255,255,255,.06) }
+    .bd-rcost { flex: 0 0 auto; min-width: 19px; height: 19px; line-height: 19px; text-align: center; border-radius: 4px; background: #2a1d0c; color: var(--gold-soft); font-family: "Bebas Neue"; font-size: 13px }
+    .bd-rn { flex: 1 1 auto; white-space: normal; word-break: break-word; line-height: 1.3 }
+    .bd-rno { flex: 0 0 auto; color: var(--muted); font-size: 10px; letter-spacing: .02em }
+    .bd-rc { flex: 0 0 auto; color: var(--gold-soft); font-family: "Bebas Neue"; min-width: 30px; text-align: right; font-size: 14px }
+    .bd-rb { flex: 0 0 auto }
     .bd-rb button { width: 22px; height: 22px; border-radius: 5px; border: 1px solid var(--line); background: #160f0a; color: var(--ink); cursor: pointer; font-size: 13px }
     .bd-empty { color: var(--muted); font-size: 12px; text-align: center; padding: 14px 0 }
     .bd-actions { display: flex; flex-direction: column; gap: 6px }

@@ -264,10 +264,14 @@
     function renderPanel() {
       const el = document.getElementById('bd-panel'); if (!el) return;
       const b = G.builder;
-      const rows = Object.entries(b.list).filter(e => e[1] > 0).sort((x, y) => (C[x[0]].cost || 0) - (C[y[0]].cost || 0)).map(([no, n]) =>
-        '<div class="bd-row"><span class="bd-rc">' + n + '×</span><span class="bd-rn">' + escapeHTML(C[no].name) + '</span>' +
+      const entries = Object.entries(b.list).filter(e => e[1] > 0).sort((x, y) => (C[x[0]].cost || 0) - (C[y[0]].cost || 0));
+      const kinds = entries.length; // 種類数
+      const rows = entries.map(([no, n]) =>
+        '<div class="bd-row"><span class="bd-rcost">' + (C[no].cost != null ? C[no].cost : '-') + '</span>' +
+        '<span class="bd-rn">' + escapeHTML(C[no].name) + '</span><span class="bd-rno">' + no + '</span>' +
+        '<span class="bd-rc">' + n + '枚</span>' +
         '<span class="bd-rb"><button onclick="builderRemove(\'' + no + '\')">−</button><button onclick="builderAdd(\'' + no + '\')">＋</button></span></div>').join('') || '<div class="bd-empty">＋でカードを追加</div>';
-      el.innerHTML = '<div class="bd-panel-head">デッキ内容</div><div class="bd-rows">' + rows + '</div>';
+      el.innerHTML = '<div class="bd-panel-head">デッキ内容（' + kinds + '種）</div><div class="bd-rows">' + rows + '</div>';
     }
     function renderLeaders() {
       const el = document.getElementById('bd-lead-row'); if (!el) return;
