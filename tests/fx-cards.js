@@ -22,7 +22,9 @@ const { runHarness } = require('./_load-app');  // stubs+CARD_DB+CARD_FX+本体J
     require(path.join(__dirname, '..', 'cards.js'));
     require(path.join(__dirname, '..', 'cards-fx.js'));
     const DB = global.window.CARD_DB, FX = global.window.CARD_FX;
-    for (const [tag, file] of [['OP14', 'official-op14.js'], ['OP13', 'official-op13.js'], ['OP12', 'official-op12.js'], ['OP11', 'official-op11.js'], ['OP10', 'official-op10.js'], ['OP09', 'official-op09.js'], ['OP08', 'official-op08.js'], ['OP07', 'official-op07.js'], ['OP06', 'official-op06.js'], ['OP05', 'official-op05.js'], ['OP04', 'official-op04.js'], ['OP03', 'official-op03.js'], ['OP02', 'official-op02.js'], ['OP01', 'official-op01.js'], ['EB01', 'official-eb01.js'], ['EB02', 'official-eb02.js'], ['EB03', 'official-eb03.js'], ['EB04', 'official-eb04.js'], ['ST01', 'official-st01.js'], ['ST02', 'official-st02.js'], ['ST03', 'official-st03.js'], ['ST04', 'official-st04.js'], ['ST05', 'official-st05.js'], ['ST06', 'official-st06.js'], ['ST07', 'official-st07.js'], ['ST08', 'official-st08.js'], ['ST09', 'official-st09.js'], ['ST10', 'official-st10.js'], ['ST11', 'official-st11.js'], ['ST12', 'official-st12.js'], ['ST13', 'official-st13.js'], ['ST14', 'official-st14.js'], ['ST15', 'official-st15.js'], ['ST16', 'official-st16.js'], ['ST17', 'official-st17.js'], ['ST18', 'official-st18.js'], ['ST19', 'official-st19.js'], ['ST20', 'official-st20.js'], ['ST21', 'official-st21.js'], ['ST22', 'official-st22.js'], ['ST23', 'official-st23.js'], ['ST24', 'official-st24.js'], ['ST25', 'official-st25.js'], ['ST26', 'official-st26.js'], ['ST27', 'official-st27.js'], ['ST28', 'official-st28.js'], ['ST29', 'official-st29.js'], ['ST30', 'official-st30.js'], ['P', 'official-p.js'], ['PRB01', 'official-prb01.js'], ['PRB02', 'official-prb02.js']]) {
+    // エンジン側でハードコード実装のリーダー（CARD_FXを持たないが実装済み＝lucy/enel/teach のカウンター/起動メイン/常在）。missing判定から除外。
+    const ENGINE_IMPL = new Set(['OP15-002', 'OP15-058', 'OP16-080']);
+    for (const [tag, file] of [['OP16', 'official-op16.js'], ['OP15', 'official-op15.js'], ['OP14', 'official-op14.js'], ['OP13', 'official-op13.js'], ['OP12', 'official-op12.js'], ['OP11', 'official-op11.js'], ['OP10', 'official-op10.js'], ['OP09', 'official-op09.js'], ['OP08', 'official-op08.js'], ['OP07', 'official-op07.js'], ['OP06', 'official-op06.js'], ['OP05', 'official-op05.js'], ['OP04', 'official-op04.js'], ['OP03', 'official-op03.js'], ['OP02', 'official-op02.js'], ['OP01', 'official-op01.js'], ['EB01', 'official-eb01.js'], ['EB02', 'official-eb02.js'], ['EB03', 'official-eb03.js'], ['EB04', 'official-eb04.js'], ['ST01', 'official-st01.js'], ['ST02', 'official-st02.js'], ['ST03', 'official-st03.js'], ['ST04', 'official-st04.js'], ['ST05', 'official-st05.js'], ['ST06', 'official-st06.js'], ['ST07', 'official-st07.js'], ['ST08', 'official-st08.js'], ['ST09', 'official-st09.js'], ['ST10', 'official-st10.js'], ['ST11', 'official-st11.js'], ['ST12', 'official-st12.js'], ['ST13', 'official-st13.js'], ['ST14', 'official-st14.js'], ['ST15', 'official-st15.js'], ['ST16', 'official-st16.js'], ['ST17', 'official-st17.js'], ['ST18', 'official-st18.js'], ['ST19', 'official-st19.js'], ['ST20', 'official-st20.js'], ['ST21', 'official-st21.js'], ['ST22', 'official-st22.js'], ['ST23', 'official-st23.js'], ['ST24', 'official-st24.js'], ['ST25', 'official-st25.js'], ['ST26', 'official-st26.js'], ['ST27', 'official-st27.js'], ['ST28', 'official-st28.js'], ['ST29', 'official-st29.js'], ['ST30', 'official-st30.js'], ['P', 'official-p.js'], ['PRB01', 'official-prb01.js'], ['PRB02', 'official-prb02.js']]) {
       const off = require(path.join(__dirname, '..', 'tools', file));
       const mismatch = [], missing = [];
       for (const no in off) {
@@ -33,7 +35,7 @@ const { runHarness } = require('./_load-app');  // stubs+CARD_DB+CARD_FX+本体J
         // キーワード/ルールのみ（fx不要）の判定: 【ブロッカー】【速攻】【ダブルアタック】【バニッシュ】の注釈と「ルール上…」文を剥がして空ならvanilla
         const stripped = off[no].replace(/ルール上[^。]*。/g, '').replace(/（[^）]*）/g, '').replace(/\([^)]*\)/g, '').replace(/【(ブロッカー|速攻|ダブルアタック|バニッシュ)】/g, '').replace(/[\s　]/g, '');
         const vanilla = off[no] === '効果なし' || (!FX[no] && stripped === '');
-        if (!FX[no] && !vanilla) missing.push(no);
+        if (!FX[no] && !vanilla && !ENGINE_IMPL.has(no)) missing.push(no);
       }
       if (mismatch.length) { console.log('  NG: ' + tag + ' 正本とCARD_DB.text不一致: ' + mismatch.join(', ')); process.exit(1); }
       if (missing.length) { console.log('  NG: ' + tag + ' 実装漏れ（fxもバニラでもない）: ' + missing.join(', ')); process.exit(1); }
@@ -1867,6 +1869,19 @@ humanPick=function(c){return Promise.resolve((c||[])[0]||null);};
       me.deck=[]; for(let i=0;i<5;i++) me.deck.push(mkSyn('__d__',C['__d__'])); me.trash=[];
       await runFx([{op:'millSelf',n:3}],{self:me.leader,side:'me'});
       ok(me.deck.length===2 && me.trash.length===3, 'P-121: デッキ上3枚をトラッシュ'); delete C['__d__']; }
+    // OP16-043 ウソップ: 旧正本切り詰めで隠れていた空thenバグ修正の回帰。KO時ドレスローザのリーダーをレスト→相手コスト5以下を手札に戻す
+    { const me=LP('OP15-002'); me.isCPU=true; G.active='me'; G.players.cpu=mkP('OP11-041',true);
+      C['__c5__']={no:'__c5__',name:'C5',type:'CHAR',color:[],cost:5,power:6000,counter:0,traits:[]};
+      const v=mkSyn('__c5__',C['__c5__']); v.owner='cpu'; G.players.cpu.chars=[v]; me.leader.rested=false;
+      const us=I('OP16-043','me'); await runFx(C['OP16-043'].fx.onKO,{self:us,side:'me'});
+      ok(!G.players.cpu.chars.includes(v) && G.players.cpu.hand.some(x=>x.no==='__c5__') && me.leader.rested, 'OP16-043: KO時リーダーレスト→相手コスト5以下を手札に(空then修正)'); delete C['__c5__']; }
+    // OP16-045 クロコダイル: 登場時 自コスト2以上を手札に戻す→手札からコスト2以下インペルダウン登場（空then修正）
+    { const me=LP('OP13-002'); me.isCPU=true; G.active='me'; G.turnSeq=5;
+      C['__c3__']={no:'__c3__',name:'C3',type:'CHAR',color:[],cost:3,power:4000,counter:0,traits:[]};
+      C['__imp2__']={no:'__imp2__',name:'Imp2',type:'CHAR',color:[],cost:2,power:3000,counter:0,traits:['インペルダウン']};
+      const onb=mkSyn('__c3__',C['__c3__']); onb.owner='me'; me.chars=[onb]; me.hand=[mkSyn('__imp2__',C['__imp2__'])];
+      await runFx(C['OP16-045'].fx.onPlay,{self:mkSyn('__imp2__',C['__imp2__']),side:'me'});
+      ok(me.hand.some(x=>x.no==='__c3__') && me.chars.some(x=>x.no==='__imp2__'), 'OP16-045: 登場時 自キャラ手札戻し→インペルダウン登場(空then修正)'); delete C['__c3__']; delete C['__imp2__']; }
   }catch(e){ console.log('EXCEPTION:', e.message); fail++; }
   console.log('Phase3 fxテスト: pass='+pass+' fail='+fail);
   process.exit(fail?1:0);
