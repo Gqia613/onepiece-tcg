@@ -16,6 +16,8 @@ const N = +(process.env.OPCG_N || 60);
 const AGENT = process.env.OPCG_AGENT || 'mcts';   // 評価するhero方策（mcts / vlook 等）。heuristicと同一seedで比較
 const SEED0 = +(process.env.OPCG_SEED0 || 600000);
 const CHUNK = +(process.env.OPCG_CHUNK || 50);   // 1harnessあたりの試合数（mcts ~8s なので 50×8=400s<590s）
+// AGENT=hybrid のLLM戦略キャッシュ(fixture)。事前ウォーム(tools/llm-warm-cache.js)した戦略を流し込み、live問い合わせ無しで決定的に再生する。
+const LLM_CACHE_JSON = process.env.OPCG_LLM_CACHE ? require('fs').readFileSync(process.env.OPCG_LLM_CACHE, 'utf8') : 'null';
 
 function chunkHarness(hero, villain, s0, n) {
   return String.raw`
@@ -26,6 +28,7 @@ showPrompt = function (cfg) { const t = cfg.title || ''; let v;
   else { const o = cfg.opts || []; const x = o.find(z => z.primary) || o[0]; v = x ? x.v : undefined; }
   if (cfg.onPick) cfg.onPick(v); return Promise.resolve(v); };
 humanPick = function (c) { return Promise.resolve(c[0] || null); };
+if (typeof loadLLMCache === 'function') loadLLMCache(` + LLM_CACHE_JSON + `);  // AGENT=hybrid用のLLM戦略キャッシュ(あれば。無ければnull=liveフォールバック)
 const HERO = ` + JSON.stringify(hero) + `, VILLAIN = ` + JSON.stringify(villain) + `, S0 = ` + s0 + `, N = ` + n + `, AGENT = ` + JSON.stringify(AGENT) + `;
 const SAVED_W = (typeof window !== 'undefined') ? window.AI_WEIGHTS : null;  // ロード済み学習重み（あれば）
 const HAS_LEARNED = !!(SAVED_W && (SAVED_W.byLeader || SAVED_W.w));

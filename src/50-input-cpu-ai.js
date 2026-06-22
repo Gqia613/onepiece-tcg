@@ -567,3 +567,76 @@
     }
     function refreshHints() { if (G.aiOn) predictCPU(); }
 
+    /* =========================================================================
+       ===========  Phase2: ハイブリッド戦略フェッチ（Claude→戦略オブジェクト）  ===========
+       Claudeに「高レベル戦略(評価シェイピング/優先度/方針)」だけを構造化出力で出させ、探索(puct)へ注入する。
+       戦術(リーサル/カウンター/アタック順)はエンジンが担うのでlethal等は要求しない。
+       ・結果は (リーダー|相手|ターン帯|ライフ) でキャッシュ＝再現性(決定的測定)＋コスト償却。
+       ・proxy未起動/失敗時は null（呼び出し側で凍結プロファイル or puct にフォールバック）。 ========= */
+    var LLM_CACHE = {};   // 戦略キャッシュ（モジュール常駐＝局リセット/clone跨ぎで保持。Gには載せない）
+    function loadLLMCache(obj) { if (obj) Object.assign(LLM_CACHE, obj); }  // fixture/事前ウォームを流し込む（測定の決定化）
+    function strategyKey(side) {
+      const P = G.players[side], D = G.players[opp(side)];
+      return leaderKeyOf(side) + '|' + leaderKeyOf(opp(side)) + '|t' + Math.min(G.turnDisp || 1, 8) + '|L' + P.life.length + '-' + D.life.length;
+    }
+    // Claudeの返り値を安全な範囲にクランプ（極端値で探索が壊れるのを防ぐ）。lethalは無視＝戦術はエンジン。
+    function sanitizeShape(o) {
+      if (!o || typeof o !== 'object') return null;
+      const clamp = (x, lo, hi, d) => { x = +x; return isFinite(x) ? Math.max(lo, Math.min(hi, x)) : d; };
+      const sh = o.shape || {}, pb = o.priorBias || {};
+      const out = {
+        aggression: (['high', 'mid', 'low'].indexOf(o.aggression) >= 0) ? o.aggression : 'mid',
+        donReserve: Math.round(clamp(o.donReserve, 0, 6, 0)),
+        intent: typeof o.intent === 'string' ? o.intent.slice(0, 60) : '',
+        removalPriority: Array.isArray(o.removalPriority) ? o.removalPriority.filter(s => typeof s === 'string').slice(0, 6) : [],
+        shape: { ramp: clamp(sh.ramp, -0.5, 0.5, 0), longevity: clamp(sh.longevity, -0.5, 0.5, 0), control: clamp(sh.control, -0.5, 0.5, 0), threatQuality: clamp(sh.threatQuality, -0.5, 0.5, 0), tempo: clamp(sh.tempo, -0.5, 0.5, 0) },
+        priorBias: { playChar: clamp(pb.playChar, 0.5, 2.5, 1), event: clamp(pb.event, 0.5, 2.5, 1), act: clamp(pb.act, 0.5, 2.5, 1), leader: clamp(pb.leader, 0.5, 2.5, 1) }
+      };
+      if (o.constrain && Array.isArray(o.constrain.forbidChars)) out.constrain = { forbidChars: o.constrain.forbidChars.filter(s => typeof s === 'string').slice(0, 6) };
+      return out;
+    }
+    // side視点の盤面要約（自分の手札は見せる＝自エージェントの情報、相手手札は不可視）。
+    function stateForStrategy(side) {
+      const P = G.players[side], D = G.players[opp(side)];
+      const line = c => c.base.name + '(P' + power(c) + (c.rested ? ',レ' : '') + (hasKw(c, 'blocker') ? ',B' : '') + ')';
+      return {
+        turn: G.turnDisp, 先攻: G.firstPlayer === side,
+        自分: { リーダー: P.leader.base.name, デッキ: P.meta && P.meta.name, ライフ: P.life.length, ドン: (P.don.active || 0) + '/' + (donTotal(side) || 0),
+          手札: P.hand.map(c => c.base.name + '(' + (c.base.type === 'EVENT' ? 'イベ' : c.base.type === 'STAGE' ? 'ステ' : 'c' + effCost(side, c)) + ')'), 盤面: P.chars.map(line), ステージ: P.stage ? P.stage.base.name : null },
+        相手: { リーダー: D.leader.base.name, デッキ: D.meta && D.meta.name, ライフ: D.life.length, ドン: (D.don.active || 0) + '/' + (donTotal(opp(side)) || 0), 手札枚数: D.hand.length, 盤面: D.chars.map(line), ステージ: D.stage ? D.stage.base.name : null }
+      };
+    }
+    var STRATEGY_TOOL = {
+      name: 'set_strategy',
+      description: '今の盤面で「自分」のリーダーが取るべき高レベル戦略を設定する。個々の着手やリーサル計算は探索エンジンが行うので、ここでは方針/評価の重みだけを指定する。',
+      input_schema: {
+        type: 'object',
+        properties: {
+          aggression: { type: 'string', enum: ['high', 'mid', 'low'], description: '攻めの強度。詰めれるならhigh/受けて延命ならlow' },
+          donReserve: { type: 'integer', description: '次の攻防に温存するアクティブドン枚数(0-6)。コントロール/受けなら多め' },
+          intent: { type: 'string', description: '40字以内の今ターンの狙い(日本語)' },
+          removalPriority: { type: 'array', items: { type: 'string' }, description: '優先して除去したい相手キャラ名' },
+          shape: {
+            type: 'object', description: '盤面評価への加点重み(各-0.5〜0.5・life≈1.3スケール)。手作り評価が見ない資源/戦略を補う',
+            properties: { ramp: { type: 'number', description: 'ドン総数差(ランプ)の価値' }, longevity: { type: 'number', description: '控え+手札(息の長さ)の価値' }, control: { type: 'number', description: 'ブロッカー/盤面支配の価値' }, threatQuality: { type: 'number', description: '効果持ち/大型の質の価値' }, tempo: { type: 'number', description: '手番/主導権の価値' } }
+          },
+          priorBias: {
+            type: 'object', description: '着手優先度の倍率(各0.5〜2.5)。探索が先に検討する手を寄せる',
+            properties: { playChar: { type: 'number' }, event: { type: 'number' }, act: { type: 'number' }, leader: { type: 'number' } }
+          },
+          constrain: { type: 'object', description: '今出すべきでないキャラ(悪手)を禁止', properties: { forbidChars: { type: 'array', items: { type: 'string' } } } }
+        },
+        required: ['aggression', 'intent', 'shape', 'priorBias']
+      }
+    };
+    // live: Claude(proxy経由)に戦略を1回問い合わせ、sanitizeした戦略オブジェクトを返す。失敗(proxy未起動等)はnull。
+    async function fetchStrategyFromClaude(side) {
+      const P = G.players[side], D = G.players[opp(side)];
+      const sys = 'あなたはワンピースカードゲーム(スタンダード)のトッププレイヤーで、リーダー「' + P.leader.base.name + '」(' + (P.meta && P.meta.name) + ')を操作します。'
+        + 'あなたの役目は“高レベル戦略”の決定だけです。個々の着手・リーサル計算・カウンター読みは別の探索エンジンが正確に行うので、あなたは「何を評価し何を優先するか(方針)」を set_strategy ツールで返してください。'
+        + 'このデッキの勝ち筋と、相手「' + D.leader.base.name + '」(' + (D.meta && D.meta.name) + ')への定石を踏まえること。shapeは手作り評価が見落とす資源/戦略(ランプ/息の長さ/盤面支配/脅威の質/テンポ)を補正する重みです。必ずツールで構造化して返答。';
+      const usr = '現在の盤面(JSON):\n' + JSON.stringify(stateForStrategy(side)) + '\n\nこのターンの戦略を set_strategy で返してください。';
+      const raw = await callClaude(sys, usr, { tools: [STRATEGY_TOOL], tool_choice: { type: 'tool', name: 'set_strategy' }, model: LLM_MODEL, max_tokens: 700 });
+      return sanitizeShape(raw);
+    }
+

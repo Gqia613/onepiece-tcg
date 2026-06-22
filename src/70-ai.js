@@ -549,6 +549,23 @@
     }
     AGENTS.hybridoff = { takeTurn: hybridoffTurn };   // P.agent='hybridoff'（凍結プロファイル×puct・LLM不要・決定的）
 
+    // hybrid = live。毎ターン1回Claude(proxy経由)に戦略を問い合わせ→キャッシュ→puctへ注入。
+    //   キャッシュヒット時はLLMを呼ばない（決定的・コスト償却）。LLM不可時は凍結プロファイル→puctにフォールバック（ハングしない）。
+    async function hybridTurn(side) {
+      if (G._sim) return heuristicTurn(side);
+      let shape = null;
+      try {
+        const key = strategyKey(side);
+        if (Object.prototype.hasOwnProperty.call(LLM_CACHE, key)) shape = LLM_CACHE[key];   // キャッシュヒット＝LLM不要
+        else { shape = await fetchStrategyFromClaude(side); LLM_CACHE[key] = shape; }        // miss＝live問い合わせ（null含めキャッシュ）
+      } catch (e) { shape = null; }
+      if (!shape) shape = shapeForSide(side);   // LLM不可/未設定→凍結プロファイル(現状空=null=puct)
+      if (shape && shape.intent && typeof showAIIntent === 'function' && !G._sim) showAIIntent(shape.intent);  // 説明: 狙いをUIへ
+      await runShapedPuct(side, shape);
+    }
+    AGENTS.hybrid = { takeTurn: hybridTurn };   // P.agent='hybrid'（live Claude戦略×puct戦術）
+    if (typeof window !== 'undefined') { window.loadLLMCache = loadLLMCache; window.LLM_CACHE_REF = function () { return LLM_CACHE; }; }  // 測定/ウォーム用にキャッシュを公開
+
     if (typeof window !== 'undefined') { window.polFeatures = polFeatures; window.legalActions = legalActions; window.POL_FEAT = POL_FEAT; window.improvedAttack = improvedAttack; }
 
     // 外部（テスト/将来のMCTS）から使えるよう公開（ブラウザ・Node両対応）。
