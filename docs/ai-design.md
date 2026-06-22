@@ -335,3 +335,24 @@ puct-enel が弱い原因を **行動集計で診断**（enelミラー me=enel v
 - **実装**: `src/70-ai.js` `PUCT_DEPTH = { enel: { det:6, look:2, width:6 } }`＝**puctTurnでリーダー別の既定深さ**。enelだけ自動で深く読む(他5は det3/look1/w5 のまま高速)。`G._puct*` で上書き可。
 - **ユーザー決定**: 「**AI探索モードではenelもpuct(深さ自動適用)／標準モードはheuristic**」。＝AI探索モードはフォールバック無し(深puctで-10pt)、標準は元々heuristic。
 - 学び: **「各リーダーの強い動き」を価値関数に書いても探索は強くならない**（手作りevalが既にほぼ最適）。効いたのは**探索の深さ**だけ。立ち回り調査は攻略リファレンスとして価値（`docs/deck-strategies.md`）。
+
+## 10. ハイブリッド（Claude戦略 × PUCT戦術）— 「劇的に強く」への新ルート
+ユーザー要望「ClaudeなどのAIを導入してワンピを知り尽くした最強AIを」を受け、**LLM(Claude)を“戦略コーチ”に、探索(puct)を“戦術エンジン”に**するハイブリッドを実装。狙い＝LLM固有の強み（戦略判断・新カードのテキスト理解・言語化）を、探索が持たない層として注入する。**戦術(リーサル/カウンター/アタック順)はエンジンに委ね、LLMにはやらせない**（lethalは渡さない）。既定CPUはheuristicのまま・全フェーズopt-in。
+
+### 10.1 構成（Phase0-2＝出荷済・基盤完成）
+- **Phase0 ローカルproxy**（`tools/llm-proxy.js`）: ブラウザ(file://)から `api.anthropic.com` を叩く際の **CORS遮断＋鍵秘匿** を解決。鍵は proxy の env のみ（リポジトリ/ブラウザに出さない）。`callClaude`(src/50)を localhost へ向け替え・`G._proxyUp` でダウン時は即heuristicフォールバック（ハングしない）。
+- **Phase1 評価シェイピング機構**（`src/70-ai.js` `shapeTerm`/`G._shape`）: 手作りevalが見ない **ランプ/longevity/コントロール/脅威の質/テンポ** を、与えた重みで境界評価(evalWinProb手作りフォールバック)に加点。`priorScore` にバイアス、`candidateActions` に `forbidChars` 制約も注入。**全て `G._shape` nullガード＝既定の探索(puct/mcts)はバイト不変**（hybridoff≡puct を同一seed9/9一致で確認＝決定的測定/既定CPUに無影響）。`src/ai-strategy.js`(per-leader凍結プロファイル)＋`AGENTS.hybridoff`(LLM不要・決定的にシェイピングを測る代理)。
+- **Phase2 live**（`AGENTS.hybrid`）: 毎ターン1回 Claude(proxy経由・構造化出力tool `set_strategy`)に戦略を問い合わせ→`(リーダー\|相手\|ターン帯\|ライフ)`でキャッシュ→`runShapedPuct`で注入。`sanitizeShape`で極端値クランプ。`intent`をUIへ(説明)。proxy不可は凍結プロファイル→puctにフォールバック。`tools/llm-warm-cache.js`(事前ウォーム→fixture)＋`measure-matchup.js OPCG_LLM_CACHE`(決定的再生)で **非決定なliveを決定的に採否判定**できる導線。
+
+### 10.2 測定結果（鍵不要の決定的範囲）
+- **enel静的プロファイル: ✗ 有意に直らず**。enelミラー hybridoff 対h **-8.3pt**(差動特徴が対称で相殺＝シェイプほぼ無効＝depth6 puct相当)。enel vs teach(非対称)は band1 +16.7pt/band2 -4.2pt＝**N=24ノイズ域で再現せず**。→ **静的1ベクトルでは不掲載**。ただし**マッチアップ依存で効く兆候**あり＝静的でなく **liveのper-matchup Claude(Phase2)が本筋**（鍵を入れて実測する価値あり）。
+- **liveの実強度は未測定**（環境にAPIキーが無いため）。配管(キャッシュ適用/フォールバック/決定的再生)は鍵不要で全て検証済み。**ユーザーが鍵付きproxyでウォーム→measureすれば決定的に採否できる**。
+
+### 10.3 Phase5：JS探索の更なる強化 → 多手先木は✗・天井は依然puct
+- **多手先PUCT木 `puct2`（agent='puct2'）を実装→測定で退行確定**: teachミラー同一seed N=40で **puct2 -25.0pt(p=0.041★) / 同条件 puct +27.5pt(p=0.013★)**。SIMS増(32→120)でも-16.7pt。薄い木が第1手の訪問数を分散させ「最多訪問」が不安定で、puctの「各候補をK回ロールアウトで集中評価」に**構造的に劣る**(vlook/StageC退行と同根)。→ **opt-in実験として残置**（将来value-netの葉を載せる足場）。
+- **結論（JSの天井確定）**: 純JSの探索改善は **puct が天井**。木が勝つには **価値NNの葉＋桁違いのsims(=AlphaZero規模)** が要る。単機MPSの value学習は §9.5/part3 で既に✗（手作りeval優位）。
+
+### 10.4 「劇的に強く」の残レバー（どちらもユーザー資源が必要）
+1. **Claudeハイブリッドの実測（本命・新規）**: 基盤は出荷済。`ANTHROPIC_API_KEY=... node tools/llm-proxy.js` を起動→ブラウザで `G.players.cpu.agent='hybrid'`、または `OPCG_HERO=… OPCG_N=20 node tools/llm-warm-cache.js`(ウォーム)→`OPCG_AGENT=hybrid OPCG_LLM_CACHE=fixtures/strategy-cache.json node tools/measure-matchup.js`(決定的採否)。**per-matchup戦略が puct を超えるかを測る**。
+2. **AlphaZero規模の自己対戦学習**: `pytorch/`(MPS)で policy をさらに大データ自己対戦（§9・README手順）。単機では+は限定的（docsの既往結果）。真の飛躍は多GPU/百万局規模。
+- **正直な現状**: 純JS・無資源のレバーは puct で尽きた。**dramaticな伸びは①Claudeハイブリッド(鍵)②大規模学習(GPU/時間) のどちらかにユーザーが資源を投じて初めて測れる**。既定CPU=heuristic／出荷=puct は全フェーズ通じて不変。
