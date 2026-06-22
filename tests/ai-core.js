@@ -140,6 +140,40 @@ function chk(name, cond) { if (cond) pass++; else { fail++; console.log('  ✗ '
   const wp2 = await playPuct(31);
   chk('puct 1局完走（勝者確定・フリーズ無し）', wp2 === 'me' || wp2 === 'cpu');
 
+  // 10) ★ハイブリッド基盤(Phase0-2)＋puct2(Phase5)の回帰
+  chk('エージェント登録: hybrid/hybridoff/puct2', !!(AGENTS.hybrid && AGENTS.hybridoff && AGENTS.puct2));
+  // G._shape の評価シェイピングが evalWinProb(手作りフォールバック)を動かす／null時は不変
+  G.players = {}; seedRng(9); startGame('enel', 'teach');
+  if (typeof window !== 'undefined') window.AI_WEIGHTS = null;            // 手作りフォールバック経路を保証
+  G.players.me.chars = [inst('OP15-067', 'me')];                          // 盤面/ドンに非対称を作る（差動特徴を非ゼロに）
+  G.players.me.don.active = 4; G.players.cpu.don.active = 0;
+  G._shape = null; const hfBase = evalWinProb('me');
+  G._shape = { shape: { ramp: 0.5, longevity: 0.5, control: 0.5, threatQuality: 0.5, tempo: 0.5 } };
+  const hfShaped = evalWinProb('me'); G._shape = null;
+  chk('G._shape: 評価シェイピングがevalWinProbを変える', hfShaped !== hfBase);
+  chk('G._shape=null: evalWinProb不変(決定的測定に無影響)', evalWinProb('me') === hfBase);
+  // forbidChars 制約が候補からcharを除外（新カードzero-shotの土台）
+  const hfCands = candidateActions('me').filter(a => a.k === 'char').map(a => { const c = findCard(a.uid); return c && c.base.name; }).filter(Boolean);
+  if (hfCands.length) {
+    G._shape = { constrain: { forbidChars: [hfCands[0]] } };
+    const hfAfter = candidateActions('me').filter(a => a.k === 'char').map(a => { const c = findCard(a.uid); return c && c.base.name; });
+    chk('forbidChars: 指定charを候補から除外', !hfAfter.includes(hfCands[0]));
+    G._shape = null;
+  } else chk('forbidChars: (charプレイ候補なし→スキップ)', true);
+  // proxy未設定でも callClaude は即null・hybrid系は puct にフォールバック（ハングしない）
+  G._proxyUp = undefined; const hfCc = await callClaude('s', 'u');
+  chk('callClaude: proxy無しで即null＋セッションスキップ', hfCc === null && G._proxyUp === false);
+  async function playHoff(seed) {
+    G._puctDet = 1; G._puctLook = 1; G._puctWidth = 3;
+    G.players = {}; G.winner = null; G.inGame = false; seedRng(seed);
+    startGame('teach', 'enel'); G.players.me.isCPU = true; G.players.me.agent = 'hybridoff'; G.players.cpu.agent = 'heuristic';
+    let it = 0; while (!(G.winner && !G._sim) && it < 3000000) { await new Promise(r => setImmediate(r)); it++; }
+    G._puctDet = null; G._puctLook = null; G._puctWidth = null;
+    return G.winner;
+  }
+  const wh = await playHoff(33);
+  chk('hybridoff 1局完走（勝者確定・フリーズ無し）', wh === 'me' || wh === 'cpu');
+
   console.log('  AI基盤テスト: pass=' + pass + ' fail=' + fail);
   process.exit(fail ? 1 : 0);
 })();
