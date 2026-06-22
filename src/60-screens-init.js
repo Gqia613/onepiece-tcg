@@ -133,11 +133,11 @@
       if (!cardLegalForLeader(no, b.leaderNo)) { toast('リーダーの色と合いません'); return; }
       if (!isUnlimitedCard(no) && (b.list[no] || 0) >= 4) { toast('同じカードは4枚まで'); return; }
       if (deckTotal() >= 50) { toast('デッキは50枚まで'); return; }
-      b.list[no] = (b.list[no] || 0) + 1; renderPool(); renderPanel();
+      b.list[no] = (b.list[no] || 0) + 1; renderPool(); renderPanel(); renderStatus();
     }
     function builderRemove(no) {
       const b = G.builder; if (!b.list[no]) return;
-      b.list[no]--; if (b.list[no] <= 0) delete b.list[no]; renderPool(); renderPanel();
+      b.list[no]--; if (b.list[no] <= 0) delete b.list[no]; renderPool(); renderPanel(); renderStatus();
     }
     function builderValidate(b) {
       b = b || G.builder; const errors = []; const total = deckTotal(b.list);
@@ -247,19 +247,27 @@
       const note = document.getElementById('bd-poolnote');
       if (note) note.textContent = all.length > CAP ? (all.length + '枚中 ' + CAP + '枚を表示（検索・色・種別で絞り込めます）') : (all.length + '枚');
     }
+    // 画面上部の常時表示バー（デッキ名・枚数・構築可否・保存）。リーダー未選択時は非表示。builderAdd/Remove からも更新。
+    function renderStatus() {
+      const el = document.getElementById('bd-status'); if (!el) return;
+      const b = G.builder;
+      if (!b.leaderNo) { el.className = 'bd-statusbar'; el.innerHTML = ''; return; }
+      const total = deckTotal(); const v = builderValidate();
+      el.className = 'bd-statusbar on';
+      el.innerHTML =
+        '<div class="bd-st-count' + (total === 50 ? ' ok' : '') + '">' + total + '<span>/50</span></div>' +
+        '<input id="bd-name" class="bd-name" placeholder="デッキ名を入力" value="' + escapeHTML(b.name || '') + '" oninput="G.builder.name=this.value">' +
+        '<div class="bd-st-valid' + (v.ok ? ' ok' : '') + '">' + (v.ok ? '✓ 構築OK' : escapeHTML(v.errors.join(' / '))) + '</div>' +
+        '<button class="bd-save" ' + (v.ok ? '' : 'disabled') + ' onclick="builderSave()">保存して選択へ</button>' +
+        '<button class="bd-exp" onclick="builderExport()">JSON書き出し</button>';
+    }
     function renderPanel() {
       const el = document.getElementById('bd-panel'); if (!el) return;
-      const b = G.builder; const total = deckTotal(); const v = builderValidate();
+      const b = G.builder;
       const rows = Object.entries(b.list).filter(e => e[1] > 0).sort((x, y) => (C[x[0]].cost || 0) - (C[y[0]].cost || 0)).map(([no, n]) =>
         '<div class="bd-row"><span class="bd-rc">' + n + '×</span><span class="bd-rn">' + escapeHTML(C[no].name) + '</span>' +
         '<span class="bd-rb"><button onclick="builderRemove(\'' + no + '\')">−</button><button onclick="builderAdd(\'' + no + '\')">＋</button></span></div>').join('') || '<div class="bd-empty">＋でカードを追加</div>';
-      el.innerHTML =
-        '<input id="bd-name" class="bd-name" placeholder="デッキ名" value="' + escapeHTML(b.name || '') + '" oninput="G.builder.name=this.value">' +
-        '<div class="bd-total' + (total === 50 ? ' ok' : '') + '">' + total + ' / 50 枚</div>' +
-        '<div class="bd-valid' + (v.ok ? ' ok' : '') + '">' + (v.ok ? '✓ 構築OK' : escapeHTML(v.errors.join(' / '))) + '</div>' +
-        '<div class="bd-rows">' + rows + '</div>' +
-        '<div class="bd-actions"><button class="bd-save" ' + (v.ok ? '' : 'disabled') + ' onclick="builderSave()">保存して選択へ</button>' +
-        '<button class="bd-exp" onclick="builderExport()">JSON書き出し</button></div>';
+      el.innerHTML = '<div class="bd-panel-head">デッキ内容</div><div class="bd-rows">' + rows + '</div>';
     }
     function renderLeaders() {
       const el = document.getElementById('bd-lead-row'); if (!el) return;
@@ -288,11 +296,12 @@
       }
       scr.innerHTML = '<div class="bd-wrap"><div class="bd-head"><button class="bd-back" onclick="backToSelect()">← 戻る</button><h1>デッキ作成</h1>' +
         '<span class="bd-note">' + nLeaders + 'リーダー／' + nCards + '枚から構築（色はリーダー準拠。未実装効果はテキスト表示のみ）</span></div>' +
+        '<div class="bd-statusbar" id="bd-status"></div>' +
         '<div class="bd-leadhead">リーダーを選択：</div>' +
         '<input class="bd-search bd-lsearch" placeholder="🔍 リーダーを検索（名前・色）" value="' + escapeHTML(b.leaderSearch || '') + '" oninput="builderLeaderSearch(this.value)">' +
         '<div class="bd-lead-row" id="bd-lead-row"></div>' + controls +
         '<div class="bd-main"><div class="bd-pool" id="bd-pool"></div><div class="bd-panel" id="bd-panel"></div></div></div>';
-      renderLeaders();
+      renderLeaders(); renderStatus();
       if (b.leaderNo) { renderPool(); renderPanel(); }
       else { const p = document.getElementById('bd-panel'); if (p) p.innerHTML = '<div class="bd-empty">まずリーダーを選んでください</div>'; }
     }
