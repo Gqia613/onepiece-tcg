@@ -120,12 +120,13 @@
     function ensureSel() { return (G.sel = G.sel || { me: null, cpu: null }); } // デッキ選択状態を初期化して返す
     function openBuilder() { G.builder = { leaderNo: null, list: {}, name: '', filter: 'all' }; renderDeckBuilder(); }
     function builderPickLeader(no) {
-      const b = G.builder; b.leaderNo = no;
+      const b = G.builder; b.leaderNo = no; b.packFilter = 'all'; // リーダー変更で使える弾が変わるため弾フィルタはリセット
       for (const cn of Object.keys(b.list)) if (!cardLegalForLeader(cn, no)) delete b.list[cn]; // 色が合わなくなった札を除去
       renderDeckBuilder();
     }
     function builderSetType(t) { G.builder.filter = t; renderDeckBuilder(); }
     function builderSetColor(c) { G.builder.colorFilter = c; renderDeckBuilder(); }
+    function builderSetPack(p) { G.builder.packFilter = p; renderPool(); } // 弾フィルタ：プールだけ更新（selectの選択状態を保つ）
     function builderSearch(v) { G.builder.search = v; renderPool(); } // プールだけ更新＝検索ボックスのフォーカス維持
     function builderAdd(no) {
       const b = G.builder; if (!b.leaderNo) { toast('先にリーダーを選択'); return; }
@@ -223,6 +224,7 @@
       cards = cards.filter(no => !/_r\d+$/.test(no) || !C[no.replace(/_r\d+$/, '')]); // パラレル(_rN=別イラストの同一カード)は本体があれば一覧から除外＝重複表示防止（本体が無い孤立パラレルのみ残す）
       if (b.filter && b.filter !== 'all') cards = cards.filter(no => C[no].type === b.filter);
       if (b.colorFilter && b.colorFilter !== 'all') cards = cards.filter(no => (C[no].color || []).includes(b.colorFilter));
+      if (b.packFilter && b.packFilter !== 'all') cards = cards.filter(no => no.split('-')[0] === b.packFilter); // 弾(セット)で絞り込み
       if (b.search && b.search.trim()) { const q = b.search.trim().toLowerCase(); cards = cards.filter(no => (C[no].name || '').toLowerCase().includes(q) || no.toLowerCase().includes(q)); }
       cards.sort((x, y) => y.localeCompare(x, undefined, { numeric: true })); // カード番号の降順（OP00-000、数値対応の自然順）
       return cards;
@@ -278,10 +280,13 @@
         const typeBtns = ['all', 'CHAR', 'EVENT', 'STAGE'].map(t => '<button class="bd-fbtn' + ((b.filter || 'all') === t ? ' on' : '') + '" onclick="builderSetType(\'' + t + '\')">' + (t === 'all' ? '全種別' : typeJa(t)) + '</button>').join('');
         const cols = leaderColors(b.leaderNo);
         const colorBtns = cols.length > 1 ? (['all'].concat(cols)).map(cc => '<button class="bd-fbtn' + ((b.colorFilter || 'all') === cc ? ' on' : '') + '" onclick="builderSetColor(\'' + cc + '\')">' + (cc === 'all' ? '全色' : ('<span class="bd-cdot" style="background:' + COLOR_HEX[cc] + '"></span>' + cc)) + '</button>').join('') : '';
-        controls = '<div class="bd-filters"><input class="bd-search" placeholder="🔍 カード名・番号で検索" value="' + escapeHTML(b.search || '') + '" oninput="builderSearch(this.value)">' + typeBtns + colorBtns + '</div>' +
+        // 弾(セット)で絞り込み：このリーダーで使えるカードに含まれる弾だけを選択肢に
+        const packs = [...new Set(Object.keys(C).filter(no => cardLegalForLeader(no, b.leaderNo) && !/_r\d+$/.test(no)).map(no => no.split('-')[0]))].sort();
+        const packSel = '<select class="bd-fsel" onchange="builderSetPack(this.value)"><option value="all"' + ((b.packFilter || 'all') === 'all' ? ' selected' : '') + '>全弾</option>' + packs.map(p => '<option value="' + p + '"' + (b.packFilter === p ? ' selected' : '') + '>' + p + '</option>').join('') + '</select>';
+        controls = '<div class="bd-filters"><input class="bd-search" placeholder="🔍 カード名・番号で検索" value="' + escapeHTML(b.search || '') + '" oninput="builderSearch(this.value)">' + typeBtns + colorBtns + packSel + '</div>' +
           '<div class="bd-poolnote" id="bd-poolnote"></div>';
       }
-      scr.innerHTML = '<div class="bd-wrap"><div class="bd-head"><button class="bd-back" onclick="backToSelect()">← 戻る</button><h1>デッキビルダー</h1>' +
+      scr.innerHTML = '<div class="bd-wrap"><div class="bd-head"><button class="bd-back" onclick="backToSelect()">← 戻る</button><h1>デッキ作成</h1>' +
         '<span class="bd-note">' + nLeaders + 'リーダー／' + nCards + '枚から構築（色はリーダー準拠。未実装効果はテキスト表示のみ）</span></div>' +
         '<div class="bd-leadhead">リーダーを選択：</div>' +
         '<input class="bd-search bd-lsearch" placeholder="🔍 リーダーを検索（名前・色）" value="' + escapeHTML(b.leaderSearch || '') + '" oninput="builderLeaderSearch(this.value)">' +

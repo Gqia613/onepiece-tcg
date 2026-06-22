@@ -3246,6 +3246,7 @@
     .bd-filters { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-bottom: 10px }
     .bd-fbtn { font-size: 12px; padding: 5px 12px; border-radius: 7px; cursor: pointer; border: 1px solid var(--line); background: #140f0a; color: var(--muted) }
     .bd-fbtn.on { color: var(--gold-soft); border-color: var(--gold-dim) }
+    .bd-fsel { font-size: 12px; padding: 5px 10px; border-radius: 7px; cursor: pointer; border: 1px solid var(--line); background: #140f0a; color: var(--gold-soft) }
     .bd-search { font-size: 13px; padding: 6px 11px; border-radius: 7px; border: 1px solid var(--line); background: #0c0805; color: var(--ink); min-width: 180px; flex: 1 1 200px; max-width: 340px }
     .bd-cdot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 4px; vertical-align: middle }
     .bd-main { display: grid; grid-template-columns: minmax(0, 1fr) minmax(220px, 300px); gap: 14px; align-items: start }
