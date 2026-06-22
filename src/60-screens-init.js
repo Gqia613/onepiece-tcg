@@ -237,7 +237,8 @@
         const mark = isEffectMissing(c) ? '<span class="bd-novfx">効果未実装</span>' : '';
         return '<div class="bd-tile' + (cnt > 0 ? ' has' : '') + '">' +
           '<div class="bd-art">' + bdImg(no) +
-          '<span class="bd-cost">' + (c.cost != null ? c.cost : '-') + '</span>' + mark + '</div>' +
+          '<span class="bd-cost">' + (c.cost != null ? c.cost : '-') + '</span>' + mark +
+          (cnt > 0 ? '<span class="bd-qty">×' + cnt + '</span>' : '') + '</div>' +
           '<div class="bd-nm" title="' + escapeHTML(c.name) + '">' + escapeHTML(c.name) + '</div>' +
           '<div class="bd-sub">' + typeJa(c.type) + (c.power ? (' P' + c.power) : '') + (c.counter ? (' +' + c.counter) : '') + '</div>' +
           '<div class="bd-ctl"><button class="bd-mn" onclick="builderRemove(\'' + no + '\')">−</button>' +
