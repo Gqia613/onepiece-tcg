@@ -227,6 +227,7 @@
           const o2 = opp(side);
           const oppL = G.players[o2].leader;
           oppL.negSeq = G.turnSeq; flog(side, '相手リーダーの効果を無効化(このターン中)'); floatOn(oppL.uid, '無効', 'dmg');
+          if (op.all) { for (const t of oppChars(side, {})) { t.negSeq = G.turnSeq; floatOn(t.uid, '無効', 'dmg'); } flog(side, '相手のキャラすべての効果を無効化(このターン中)'); render(); break; } // 相手のリーダーとキャラすべて（P-100ティーチ）
           const cands = oppChars(side, {});
           const t = await chooseCard(side, cands, '効果無効＆アタック不可にする相手キャラ1枚', 'oppBig', true);
           if (t) { t.negSeq = G.turnSeq + 1; t.noAtkSeq = G.turnSeq + 1; flog(side, `「${t.base.name}」を効果無効＆アタック不可(次の相手ターン終了まで)`); floatOn(t.uid, '無効', 'dmg'); }
@@ -284,6 +285,7 @@
           break;
         }
         case 'leaderBuff': addBuff(P.leader, op.amount, durTag(op.duration, 'turnEnd')); floatOn(P.leader.uid, `+${op.amount}`, 'buff'); break;
+        case 'leaderBuffPerChar': { const n = P.chars.filter(c => matchFilter(c, op.filter || {})).length; const amt = (op.amount || 1000) * n; if (amt) { addBuff(P.leader, amt, durTag(op.duration, 'turnEnd')); floatOn(P.leader.uid, `+${amt}`, 'buff'); flog(side, `リーダーをキャラ${n}枚分パワー+${amt}`); } break; } // 自分のキャラ1枚につきリーダー+amount（P-024海賊王に）
         case 'leaderDoubleAttack': P.leader.kwGrant.push({ kw: 'doubleAttack', dur: 'turn' }); if (op.amount) addBuff(P.leader, op.amount, 'turnEnd'); flog(side, 'リーダーに【ダブルアタック】'); break;
         case 'counterBuff': if (ctx.target) { addBuff(ctx.target, op.amount, 'battle'); floatOn(ctx.target.uid, `+${op.amount}`, 'buff'); } break;
         case 'donMinus': { const ok = await returnDonChoose(side, op.n, op.fromActive); if (!ok) return false; await fireDonReturned(side); break; }
@@ -354,6 +356,7 @@
         case 'oppDiscardToSize': { const O6 = G.players[o]; const tgt = op.n || 5; while (O6.hand.length > tgt) { const c = O6.isCPU ? O6.hand.slice().sort((a, b) => (a.base.counter || 0) - (b.base.counter || 0))[0] : await chooseFromHand(o, O6.hand.slice(), `手札を${tgt}枚にする`); if (!c) break; O6.hand.splice(O6.hand.indexOf(c), 1); O6.trash.push(reset(c)); } flog(side, `相手は手札を${tgt}枚に`); render(); break; } // 相手が手札N枚になるよう捨てる（OP05-058）
         case 'bottomOwnCharsExceptSelf': { for (const c of P.chars.slice()) { if (c === self) continue; P.don.active += c.attachedDon || 0; removeChar(c); P.deck.push(reset(c)); } flog(side, 'このキャラ以外の自キャラをデッキ下へ'); render(); break; } // OP05-119ルフィ
         case 'deckTopToBottom': { if (P.deck.length) { P.deck.push(P.deck.shift()); flog(side, 'デッキの上1枚をデッキ下へ'); } break; } // OP04-011ナミ
+        case 'millSelf': { const k = Math.min(op.n || 1, P.deck.length); for (let i = 0; i < k; i++) P.trash.push(P.deck.shift()); if (k) flog(side, `自分のデッキの上${k}枚をトラッシュ`); render(); break; } // 自分のデッキ上N枚をトラッシュ（P-121ブルック）
         case 'selfHandToDeckDraw': { const hn = P.hand.length; P.deck.push(...P.hand.splice(0)); shuffle(P.deck); draw(side, hn); flog(side, `手札${hn}枚を山に戻しシャッフル→${hn}ドロー`); render(); break; } // OP04-048ササキ
         case 'bounceAttackerToBottom': { const a = ctx.attacker; if (a && a.base.type === 'CHAR' && (a.base.cost || 0) <= (op.maxCost != null ? op.maxCost : 5)) { const ow = G.players[a.owner]; ow.don.active += a.attachedDon || 0; removeChar(a); ow.deck.push(reset(a)); flog(side, `バトルした「${a.base.name}」を持ち主のデッキ下へ`); render(); } break; } // OP04-047氷鬼（ブロック時に近似）
         // 場のキャラ1枚を持ち主のライフ上に裏向きで加える（OP12-117破壊弦。side:'any'=自分/相手両方が対象）

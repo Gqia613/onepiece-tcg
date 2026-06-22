@@ -166,6 +166,8 @@
       if (c.leaderTrait != null && !(P.leader.base.traits || []).includes(c.leaderTrait)) return false;
       if (c.leaderTraitIncludes != null && !(P.leader.base.traits || []).some(t => t.includes(c.leaderTraitIncludes))) return false; // 自リーダーが「〜を含む特徴」を持つ
       if (c.oppDonAtLeast != null && donTotal(opp(side)) < c.oppDonAtLeast) return false; // 相手の場のドンN枚以上
+      if (c.oppDonAtMost != null && donTotal(opp(side)) > c.oppDonAtMost) return false; // 相手の場のドンN枚以下（PRB02-005ルフィ）
+      if (c.faceUpLifeAtLeast != null && P.life.filter(l => l._faceUp).length < c.faceUpLifeAtLeast) return false; // 自分の表向きライフN枚以上（PRB02-018エース）
       if (c.leaderNameIncludes != null && !normName(P.leader.base.name).includes(normName(c.leaderNameIncludes))) return false;
       if (c.leaderColor != null && !(P.leader.base.color || []).includes(c.leaderColor)) return false;
       if (c.leaderMulticolor && (P.leader.base.color || []).length < 2) return false; // リーダーが多色（2色以上）。OP13-051ハンコック等
