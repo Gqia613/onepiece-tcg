@@ -1882,6 +1882,14 @@ humanPick=function(c){return Promise.resolve((c||[])[0]||null);};
       const onb=mkSyn('__c3__',C['__c3__']); onb.owner='me'; me.chars=[onb]; me.hand=[mkSyn('__imp2__',C['__imp2__'])];
       await runFx(C['OP16-045'].fx.onPlay,{self:mkSyn('__imp2__',C['__imp2__']),side:'me'});
       ok(me.hand.some(x=>x.no==='__c3__') && me.chars.some(x=>x.no==='__imp2__'), 'OP16-045: 登場時 自キャラ手札戻し→インペルダウン登場(空then修正)'); delete C['__c3__']; delete C['__imp2__']; }
+    // OP09-093 ティーチ: 【起動メイン】(登場ターン・黒ひげ)→相手リーダー＆キャラを効果無効（onPlay誤実装→act化の回帰）
+    { const me=LP('OP09-081'); me.isCPU=true; G.active='me'; G.players.cpu=mkP('OP11-041',true);
+      C['__t__']={no:'__t__',name:'T',type:'CHAR',color:[],cost:3,power:4000,counter:0,traits:[]};
+      const ev=mkSyn('__t__',C['__t__']); ev.owner='cpu'; G.players.cpu.chars=[ev];
+      const tc=I('OP09-093','me'); tc.summonedTurn=G.turnSeq;
+      ok(C['OP09-093'].fx.act && !C['OP09-093'].fx.onPlay, 'OP09-093: 起動メイン化(登場時誤実装の修正)');
+      await runFx(C['OP09-093'].fx.act.fx,{self:tc,side:'me'});
+      ok(G.players.cpu.leader.negSeq===G.turnSeq && ev.negSeq===G.turnSeq+1 && ev.noAtkSeq===G.turnSeq+1, 'OP09-093: 相手リーダー(当ターン)＆キャラ(無効＋アタック不可)'); delete C['__t__']; }
   }catch(e){ console.log('EXCEPTION:', e.message); fail++; }
   console.log('Phase3 fxテスト: pass='+pass+' fail='+fail);
   process.exit(fail?1:0);
