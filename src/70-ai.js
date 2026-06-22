@@ -132,6 +132,24 @@
       s += (bp(P.chars) - bp(D.chars)) / 3000;
       s += (P.hand.length - D.hand.length) * 0.4;
       s += (P.chars.length - D.chars.length) * 0.5;
+      if (G._shape && G._shape.shape) s += shapeTerm(side, G._shape.shape); // ★ハイブリッド: Claude/プロファイルの戦略シェイピング（G._shape時のみ＝puct/mctsはnullで不変）
+      return s;
+    }
+    // ★評価シェイピング: 手作りevalが持たない「ランプ/longevity/コントロール/脅威の質/テンポ」を、
+    //   Claude(または凍結プロファイル)が与えた重みで加点する。これが value-NN が学べなかった層を埋める核心。
+    //   G._shape が null の時は evalState から呼ばれない＝既定の探索(puct/mcts)はバイト不変＝決定的測定に無影響。
+    function shapeTerm(side, sh) {
+      const P = G.players[side], D = G.players[opp(side)], o = opp(side);
+      const w = k => +sh[k] || 0;
+      const blk = arr => arr.filter(c => !c.rested && hasKw(c, 'blocker')).length;
+      const actc = arr => arr.filter(c => !c.rested).length;
+      const tq = arr => arr.reduce((x, c) => x + (((c.base.fx && (c.base.fx.act || c.base.fx.onKO)) || hasKw(c, 'blocker') || power(c) >= 7000) ? power(c) / 1000 : 0), 0);
+      let s = 0;
+      s += w('ramp') * (((donTotal(side) || 0) - (donTotal(o) || 0)));                                  // ドン総数差（ランプ＝enelの核）
+      s += w('longevity') * (((P.deck.length + P.hand.length) - (D.deck.length + D.hand.length)) / 10);  // 控え＋手札差（息の長さ＝コントロール）
+      s += w('control') * ((blk(P.chars) - blk(D.chars)) + 0.5 * (actc(P.chars) - actc(D.chars)));        // ブロッカー＋アクティブ差（盤面支配/受け）
+      s += w('threatQuality') * (tq(P.chars) - tq(D.chars));                                              // 効果持ち/大型/ブロッカーの質
+      s += w('tempo') * (G.active === side ? 1 : 0);                                                      // 手番（主導権）
       return s;
     }
 
@@ -266,13 +284,20 @@
           if (c && (typeof actWorthUsing !== 'function' || actWorthUsing(side, c))) acts.push(a);
         } else acts.push(a);                                               // 非アタック（プレイ/leader/stop）は全部
       }
+      let cand = acts;
+      // ★ハイブリッド: Claude/プロファイルが「悪手」と判断したcharの登場を候補から除外（新カードのzero-shot対応の着地点）。
+      //   G._shape.constrain が無ければ何もしない＝puct/mctsはバイト不変。
+      if (G._shape && G._shape.constrain && G._shape.constrain.forbidChars && G._shape.constrain.forbidChars.length) {
+        const fb = G._shape.constrain.forbidChars.map(n => normName(n));
+        cand = cand.filter(a => !(a.k === 'char' && (c => c && fb.indexOf(normName(c.base.name)) >= 0)(findCard(a.uid))));
+      }
       // ★黒ヤマト: 8ヤマト/9モモの「素出し(char)」は候補から外す（他に出せるcharがあるなら）。捨ててトラッシュから踏み倒す方が強い＝
       //   heuristicのプレイ抑制(src/50)とAI探索(puct)を揃える。探索が短期の8000ボディに釣られて素出しするのを防ぐ。
       if (typeof isYamatoLeader === 'function' && isYamatoLeader(side)) {
         const isTargetChar = a => a.k === 'char' && (c => !!c && yamatoReviveTarget(c.base.no))(findCard(a.uid));
-        if (acts.some(a => a.k === 'char' && !isTargetChar(a))) return acts.filter(a => !isTargetChar(a));
+        if (cand.some(a => a.k === 'char' && !isTargetChar(a))) return cand.filter(a => !isTargetChar(a));
       }
-      return acts;
+      return cand;
     }
 
     /* 1プラン・ロールアウト: 状態sでこのターンを override方針(null=heuristic自然) で打ち、
@@ -417,9 +442,12 @@
        ★vlook崩壊(mid-state価値をgreedy)を避ける核心＝評価は必ず【ターン境界の価値】（look=1で次の自分手番開始＝価値ネット学習分布）。
        ★Phase2自己対戦の方策ターゲット源（各手の訪問/Qを記録すれば AlphaZero の policy target になる）。pytorch/README.md。 */
     function priorScore(side, a) {
+      const pb = k => (G._shape && G._shape.priorBias && +G._shape.priorBias[k]) || 1; // ★ハイブリッド: 着手優先度バイアス（G._shape時のみ＝nullなら全て×1で不変）
       if (a.k === 'attack') { const m = pickPolicyModel(side); if (m) return mlpLogit(m, polFeatures(side, a)); const D = G.players[opp(side)]; const tg = findCard(a.tuid); return tg ? (tg === D.leader ? 1 : 0.5) : 0; }
-      if (a.k === 'char') { const c = findCard(a.uid); return (typeof scoreChar === 'function' && c) ? scoreChar(c) / 6 : 1; }
-      if (a.k === 'event' || a.k === 'act' || a.k === 'leader' || a.k === 'stage') return 1.2;
+      if (a.k === 'char') { const c = findCard(a.uid); return ((typeof scoreChar === 'function' && c) ? scoreChar(c) / 6 : 1) * pb('playChar'); }
+      if (a.k === 'event') return 1.2 * pb('event');
+      if (a.k === 'act' || a.k === 'stage') return 1.2 * pb('act');
+      if (a.k === 'leader') return 1.2 * pb('leader');
       return 0; // stop
     }
     // side のターンを「今ここで終える」前提でロールアウト: endTurn → 相手/自分 look ターン heuristic → 価値[0,1]
@@ -493,6 +521,33 @@
       } finally { if (typeof showThinking === 'function') showThinking(false); render(); }   // 思考終了→バッジ消去＋実盤面を再描画
     }
     AGENTS.puct = { takeTurn: puctTurn };   // P.agent='puct'（policy-guided 決定化ロールアウト探索）
+
+    /* ===== ハイブリッド: 戦略(プロファイル/Claude) × 戦術(puct探索) =====
+       戦略オブジェクト(shape)を G._shape/G._planOverride に積んで puct を走らせる共有コア。
+       ・shape の評価シェイピングが境界評価 evalWinProb(=手作りeval) に効き、priorBias が候補ランクに効く。
+       ・shape があるリーダーは G._puctNoSkip=true で必ず探索（enelのPUCT_SKIPも上書き＝シェイピングで直るか測る）。
+       ・shape が null のリーダーは puct と完全一致（PUCT_SKIP尊重＝enelはheuristicフォールバック）。
+       ・lethal(詰め)は渡さない＝戦術はエンジン(cpuPickAttack/cpuCanLethal)に委ねる。finallyで必ず復元。 */
+    function shapeForSide(side) {
+      const S = (typeof window !== 'undefined' && window.AI_STRATEGY) ? window.AI_STRATEGY : null;
+      return (S && S.byLeader && S.byLeader[leaderKeyOf(side)]) || null; // byLeaderに掲載(=測定で勝った)リーダーだけ。未掲載はnull=puctそのまま
+    }
+    async function runShapedPuct(side, shape) {
+      const pShape = G._shape, pPO = G._planOverride, pNS = G._puctNoSkip;
+      G._shape = shape || null;
+      if (shape) {
+        G._planOverride = { aggression: shape.aggression, removalPriority: shape.removalPriority, donReserve: shape.donReserve }; // lethalは渡さない
+        G._puctNoSkip = true;
+      }
+      try { await puctTurn(side); }
+      finally { G._shape = pShape || null; G._planOverride = pPO || null; G._puctNoSkip = pNS; }
+    }
+    // hybridoff = LLM呼び出し無しで凍結プロファイル(AI_STRATEGY)だけを使う＝評価シェイピング層を“決定的に”測る代理。
+    async function hybridoffTurn(side) {
+      if (G._sim) return heuristicTurn(side);
+      await runShapedPuct(side, shapeForSide(side));
+    }
+    AGENTS.hybridoff = { takeTurn: hybridoffTurn };   // P.agent='hybridoff'（凍結プロファイル×puct・LLM不要・決定的）
 
     if (typeof window !== 'undefined') { window.polFeatures = polFeatures; window.legalActions = legalActions; window.POL_FEAT = POL_FEAT; window.improvedAttack = improvedAttack; }
 

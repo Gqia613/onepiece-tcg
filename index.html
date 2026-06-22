@@ -52,6 +52,8 @@
   <script src="src/ai-weights.js"></script>
   <!-- Stage B: 学習したアタック方策prior（tools/train-policy.js が生成）。70-aiより前に置きwindow.AI_POLICYを定義。 -->
   <script src="src/ai-policy.js"></script>
+  <!-- ハイブリッドAIの戦略プロファイル（Claude→探索の評価シェイピング/優先度, per-leader）。70-aiより前にwindow.AI_STRATEGYを定義。 -->
+  <script src="src/ai-strategy.js"></script>
   <!-- 強いCPUのためのAI基盤（前向きモデル/エージェントseam）。UI動作には不要だが先読み系の土台。 -->
   <script src="src/70-ai.js"></script>
 </body>
