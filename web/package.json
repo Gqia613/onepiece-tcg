@@ -1,0 +1,34 @@
+{
+  "name": "opcg-web",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "ONE PIECE カードゲーム対戦シミュレーター（React版・Cloudflare Pages）。既存のバニラ版(リポジトリ直下/GitHub Pages)とは別物。",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "pages:dev": "wrangler pages dev",
+    "d1:local": "wrangler d1 execute opcg --local --file=./schema.sql",
+    "d1:remote": "wrangler d1 execute opcg --remote --file=./schema.sql"
+  },
+  "dependencies": {
+    "framer-motion": "^11.3.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "zustand": "^4.5.4"
+  },
+  "devDependencies": {
+    "@testing-library/dom": "^10.4.1",
+    "@testing-library/react": "^16.3.2",
+    "@types/react": "^18.3.3",
+    "@types/react-dom": "^18.3.0",
+    "@vitejs/plugin-react": "^4.3.1",
+    "happy-dom": "^20.10.6",
+    "typescript": "^5.5.4",
+    "vite": "^5.4.0",
+    "vitest": "^2.0.5",
+    "wrangler": "^3.78.0"
+  }
+}

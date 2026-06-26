@@ -1,0 +1,16 @@
+name = "opcg-sim"
+compatibility_date = "2024-09-23"
+pages_build_output_dir = "dist"
+
+# D1（デッキ/ユーザー/AI利用カウンタ）。
+# 初回: `wrangler d1 create opcg` で得た database_id をここに貼る。
+[[d1_databases]]
+binding = "DB"
+database_name = "opcg"
+database_id = "REPLACE_WITH_D1_DATABASE_ID"
+
+# KV（AI応答キャッシュ）。任意（Phase5で使用）。
+# 初回: `wrangler kv namespace create AICACHE` で得た id を貼る。
+# [[kv_namespaces]]
+# binding = "AICACHE"
+# id = "REPLACE_WITH_KV_ID"

@@ -1,0 +1,5 @@
+# ローカル開発用のSecrets（コピーして .dev.vars を作る。.dev.vars はgitignore済み）
+# wrangler pages dev が自動で読み込む。
+JWT_SECRET=dev-only-change-me-to-a-long-random-string
+ANTHROPIC_API_KEY=sk-ant-xxxxx   # Phase5(AI proxy)で使用
+ANTHROPIC_VERSION=2023-06-01

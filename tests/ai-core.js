@@ -140,6 +140,14 @@ function chk(name, cond) { if (cond) pass++; else { fail++; console.log('  ✗ '
   const wp2 = await playPuct(31);
   chk('puct 1局完走（勝者確定・フリーズ無し）', wp2 === 'me' || wp2 === 'cpu');
 
+  // 9b) ★puctが「ドン付与込みでも届かない自滅アタック」をしない（candidateActions/applyActionの届く判定の回帰）。
+  //     アタッカー実効パワー < 対象パワー＝KOもライフも取れずレストになるだけ＝寝かせて次に狙われる損。通常heuristicは元々0。
+  let _futileAtk = 0;
+  const _declOrig = declareAttack;
+  declareAttack = async function (a, t) { if (!G._sim && a && t && power(a) < power(t)) _futileAtk++; return _declOrig(a, t); };
+  try { await playPuct(34); } finally { declareAttack = _declOrig; }
+  chk('puct: 届かない自滅アタックが実プレイで0（パワー未満で寝ない）', _futileAtk === 0);
+
   // 10) ★ハイブリッド基盤(Phase0-2)＋puct2(Phase5)の回帰
   chk('エージェント登録: hybrid/hybridoff/puct2', !!(AGENTS.hybrid && AGENTS.hybridoff && AGENTS.puct2));
   // G._shape の評価シェイピングが evalWinProb(手作りフォールバック)を動かす／null時は不変
@@ -173,6 +181,21 @@ function chk(name, cond) { if (cond) pass++; else { fail++; console.log('  ✗ '
   }
   const wh = await playHoff(33);
   chk('hybridoff 1局完走（勝者確定・フリーズ無し）', wh === 'me' || wh === 'cpu');
+
+  // 10b) ★web版「AI」モードの土台: hybrid(live Claude戦略×puct戦術)が、Claude不可環境(_proxyUp=false→callClaude即null)でも
+  //      shape=null→puctへフォールバックして1局完走（＝LLMが落ちてもハングせず強いCPUとして成立する）。
+  G._proxyUp = false;
+  async function playHybrid(seed) {
+    G._puctDet = 1; G._puctLook = 1; G._puctWidth = 3;
+    G.players = {}; G.winner = null; G.inGame = false; seedRng(seed);
+    startGame('teach', 'enel'); G.players.me.isCPU = true; G.players.me.agent = 'hybrid'; G.players.cpu.agent = 'heuristic';
+    let it = 0; while (!(G.winner && !G._sim) && it < 3000000) { await new Promise(r => setImmediate(r)); it++; }
+    G._puctDet = null; G._puctLook = null; G._puctWidth = null;
+    return G.winner;
+  }
+  const wy = await playHybrid(35);
+  chk('hybrid(Claude不可→puctフォールバック) 1局完走（web版AIモードの土台）', wy === 'me' || wy === 'cpu');
+  G._proxyUp = undefined;
 
   console.log('  AI基盤テスト: pass=' + pass + ' fail=' + fail);
   process.exit(fail ? 1 : 0);

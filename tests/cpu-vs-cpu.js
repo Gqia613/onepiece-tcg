@@ -9,7 +9,7 @@ showPrompt=function(cfg){const o=cfg.opts||[];const t=cfg.title||"";let v;
 humanPick=function(c){return Promise.resolve(c[0]||null);};
 // 同一ターンで同じカードが2回以上アタックしていないか検証
 let dblAtk=0; const seen={};
-const _da=declareAttack; declareAttack=async function(a,t){const key=G.active+"#"+G.turnSeq+"#"+a.uid; if(seen[key]){dblAtk++;console.log("DOUBLE ATTACK",a.base.name,"turn",G.turnSeq,"side",G.active);} seen[key]=1; return await _da(a,t);};
+const _da=declareAttack; declareAttack=async function(a,t){ if(G._sim) return await _da(a,t); /* 先読みシミュ中の攻撃は実攻撃でないので計測しない */ const key=G.active+"#"+G.turnSeq+"#"+a.uid; if(seen[key]){dblAtk++;console.log("DOUBLE ATTACK",a.base.name,"turn",G.turnSeq,"side",G.active);} seen[key]=1; return await _da(a,t);};
 async function pilotMe(){const me=G.players.me;let g=0;
   while(g++<25){const c=me.hand.find(c=>handPlayable(c));if(!c)break;await tryPlayHand(c);if(G.winner)return;}
   if(me.leader.base.leader==="enel"&&me.turnsTaken>=2&&me._enelUsedTurn!==G.turnSeq)await leaderActivate("me");

@@ -116,5 +116,16 @@ step('AI基盤（RNG/clone/MCTS）', ()=>{
   console.log('  ✓ AI基盤（RNG再現・clone往復・特徴量/重み整合・MCTS完走）pass');
 });
 
+// 10) AIモード(hybrid)プロンプト: 判断原則/シミュ根拠/カードの質/キャッシュ粒度/モデル分けが載るか（Claudeはモック）
+step('AIモード プロンプト検証', ()=>{
+  const p=path.join(__dirname,'ai-hybrid-prompt.js');
+  let out;
+  try{ out=cp.execSync('node '+JSON.stringify(p),{encoding:'utf8'}); }
+  catch(e){ throw {stdout:(e.stdout||'')+(e.stderr||'')}; }
+  process.stdout.write('  '+out.trim()+'\n');
+  if(!/fail=0/.test(out)) throw {stdout:'  ✗ AIモード プロンプト検証 失敗\n'};
+  console.log('  ✓ AIモード プロンプト（判断原則/シミュ根拠/カードの質/キャッシュ/モデル分け）pass');
+});
+
 console.log('\n'+(failed?`❌ ${failed} 件のチェックが失敗しました`:'✅ 全チェック通過'));
 process.exit(failed?1:0);

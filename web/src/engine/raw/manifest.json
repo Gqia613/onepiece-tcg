@@ -1,0 +1,16 @@
+[
+  "cards.js",
+  "cards-fx.js",
+  "cards-attr.js",
+  "00-data.js",
+  "10-engine-core.js",
+  "20-targeting-fx.js",
+  "30-flow-battle.js",
+  "40-ui-render.js",
+  "50-input-cpu-ai.js",
+  "60-screens-init.js",
+  "ai-weights.js",
+  "ai-policy.js",
+  "ai-strategy.js",
+  "70-ai.js"
+]

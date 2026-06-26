@@ -22,7 +22,7 @@ humanPick = function (c) { return Promise.resolve((c || [])[0] || null); };
 const usedFx = new Set(); const fxSet = new Set(Object.keys(window.CARD_FX));
 const _runFx = runFx; runFx = async function (ops, ctx) { if (ctx && ctx.self && fxSet.has(ctx.self.base.no)) usedFx.add(ctx.self.base.no); return await _runFx(ops, ctx); };
 let dblAtk = 0; const seen = {};
-const _da = declareAttack; declareAttack = async function (a, t) { const key = G.active + "#" + G.turnSeq + "#" + a.uid; if (seen[key]) { dblAtk++; console.log("DOUBLE ATTACK", a.base.name, "turn", G.turnSeq); } seen[key] = 1; return await _da(a, t); };
+const _da = declareAttack; declareAttack = async function (a, t) { if (G._sim) return await _da(a, t); /* 先読みシミュ中の攻撃は計測しない */ const key = G.active + "#" + G.turnSeq + "#" + a.uid; if (seen[key]) { dblAtk++; console.log("DOUBLE ATTACK", a.base.name, "turn", G.turnSeq); } seen[key] = 1; return await _da(a, t); };
 function buildCustomDeck(id, leaderNo) {
   const lc = C[leaderNo].color || [];
   const legal = window.CARD_DB.filter(c => c.type !== 'LEADER' && C[c.no] && (c.color || []).some(col => lc.includes(col)) && !/_p\d|_r\d/.test(c.no)).map(c => c.no);
