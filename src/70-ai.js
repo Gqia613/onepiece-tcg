@@ -290,7 +290,12 @@
           // ★届かないアタックは候補から除外＝アクティブドンを全て付与してもアタッカーが対象パワーに満たない手は
           //   KOもライフも取れずレストになるだけの自滅（寝かせて次に相手から狙われる損）。探索が選ぶ実害を断つ（通常heuristicは既に除外済）。
           if (power(at) + P.don.active * 1000 < power(tg)) continue;
-          if (tg === D.leader) { acts.push(a); continue; }                 // リーダー攻撃は常に候補
+          if (tg === D.leader) {                                           // リーダー攻撃
+            // ★太ドン同値除外(cpuPickAttックと同方針・ユーザー観察): 2ドン以上付与してリーダーへ同値は相手カウンター1枚で防がれ付与ドン使い切りの大損。相手手札0は別。
+            const need = Math.max(0, Math.ceil((power(tg) - power(at)) / 1000));
+            if (need >= 2 && (power(at) + need * 1000) === power(tg) && D.hand.length > 0) continue;
+            acts.push(a); continue;
+          }
           const threat = hasKw(tg, 'blocker') || power(tg) >= 5000 || (tg.base.fx && (tg.base.fx.onKO || tg.base.fx.act));
           if (threat) acts.push(a);                                        // 脅威キャラのKOのみ
         } else if (a.k === 'act') {                                        // ★起動メインは「今使う価値がある」時だけ候補化（heuristicのactWorthUsingをpuctにも適用）
