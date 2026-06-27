@@ -37,4 +37,19 @@ function runHarness(name, harness, execOpts = {}) {
   finally { try { fs.unlinkSync(tmp); } catch (_) { /* noop */ } }
 }
 
-module.exports = { loadApp, loadParts, runHarness, ROOT };
+// runHarness の非同期版（Promiseを返す＝複数を Promise.all で並列実行できる）。規模拡大: 自己対戦の多コア並列化用。
+// 各呼び出しは別プロセス＝状態汚染なし（CLAUDE.md のドレイン問題は同一プロセス内の話で、別プロセスなら無関係）。
+function runHarnessAsync(name, harness, execOpts = {}) {
+  const { stubs, cards, cardsfx, cardsattr, app } = loadParts();
+  const tmp = path.join(os.tmpdir(), `opcg-${name}-${Date.now()}-${Math.random().toString(36).slice(2)}.js`);
+  fs.writeFileSync(tmp, [stubs, cards, cardsfx, cardsattr, app, harness].join('\n'));
+  return new Promise((resolve, reject) => {
+    cp.execFile('node', [tmp], { encoding: 'utf8', maxBuffer: 1 << 28, ...execOpts }, (err, stdout, stderr) => {
+      try { fs.unlinkSync(tmp); } catch (_) { /* noop */ }
+      if (err) { err.stdout = stdout; err.stderr = stderr; reject(err); }
+      else resolve(stdout);
+    });
+  });
+}
+
+module.exports = { loadApp, loadParts, runHarness, runHarnessAsync, ROOT };

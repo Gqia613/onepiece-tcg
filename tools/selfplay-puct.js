@@ -11,7 +11,7 @@
            OPCG_GENS=3 OPCG_GAMES=120 OPCG_SP_DET=4 OPCG_MEASURE_N=40 node tools/selfplay-puct.js
    ★遅い（puct自己対戦＝両者探索）。1世代 数分。 */
 const fs = require('fs'), path = require('path'), cp = require('child_process'), os = require('os');
-const { runHarness, ROOT } = require('./../tests/_load-app');
+const { runHarness, runHarnessAsync, ROOT } = require('./../tests/_load-app');
 
 const GENS = +(process.env.OPCG_GENS || 2);
 const GAMES = +(process.env.OPCG_GAMES || 80);
@@ -98,21 +98,27 @@ function measureLeader(hero, vill) {
 }
 
 // 1世代の self-play を CHUNK 分割で回し、{vAll,pAll,meta} を返す（データ書き出しは駆動側=replay buffer）
-function selfplayGen(g) {
-  const vAll = [], pAll = []; let meta = null, done = 0;
-  while (done < GAMES) {
-    const n = Math.min(CHUNK, GAMES - done);
-    const tag = path.join(os.tmpdir(), 'sppuct-' + g + '-' + done + '-' + process.pid);
-    const vP = tag + '-v.json', pP = tag + '-p.json', mP = tag + '-m.json';
-    let out;
-    try { out = runHarness('sp-g' + g + '-c' + done, chunkHarness(900000 + g * 10000 + done, n, vP, pP, mP), { timeout: 590000 }); }
-    catch (e) { process.stdout.write((e.stdout || '') + (e.stderr || '')); process.exit(1); }
-    if (!/CHUNK value=/.test(out)) { console.error('✗ chunk結果なし\n' + out.slice(-400)); process.exit(1); }
-    vAll.push(...JSON.parse(fs.readFileSync(vP, 'utf8')));
-    pAll.push(...JSON.parse(fs.readFileSync(pP, 'utf8')));
-    meta = JSON.parse(fs.readFileSync(mP, 'utf8'));
-    for (const f of [vP, pP, mP]) { try { fs.unlinkSync(f); } catch (_) { } }
-    done += n;
+// ★規模拡大: chunk を多コア並列(Promise.all)で実行＝自己対戦の律速を解消。各chunkは別プロセス・別seed帯で独立（状態汚染なし）。
+const WORKERS = +(process.env.OPCG_PAR || Math.max(1, os.cpus().length - 1));   // 既定=コア数-1（8コアなら7並列）
+async function selfplayGen(g) {
+  const tasks = [];
+  for (let done = 0; done < GAMES; done += CHUNK) tasks.push({ done, n: Math.min(CHUNK, GAMES - done) });
+  const vAll = [], pAll = []; let meta = null;
+  for (let i = 0; i < tasks.length; i += WORKERS) {                              // WORKERS 件ずつ並列バッチ
+    const results = await Promise.all(tasks.slice(i, i + WORKERS).map(t => {
+      const tag = path.join(os.tmpdir(), 'sppuct-' + g + '-' + t.done + '-' + process.pid);
+      const vP = tag + '-v.json', pP = tag + '-p.json', mP = tag + '-m.json';
+      return runHarnessAsync('sp-g' + g + '-c' + t.done, chunkHarness(900000 + g * 10000 + t.done, t.n, vP, pP, mP), { timeout: 590000 })
+        .then(out => ({ out, vP, pP, mP }))
+        .catch(e => { process.stdout.write((e.stdout || '') + (e.stderr || '')); process.exit(1); });
+    }));
+    for (const r of results) {
+      if (!/CHUNK value=/.test(r.out)) { console.error('✗ chunk結果なし\n' + r.out.slice(-400)); process.exit(1); }
+      vAll.push(...JSON.parse(fs.readFileSync(r.vP, 'utf8')));
+      pAll.push(...JSON.parse(fs.readFileSync(r.pP, 'utf8')));
+      meta = JSON.parse(fs.readFileSync(r.mP, 'utf8'));
+      for (const f of [r.vP, r.pP, r.mP]) { try { fs.unlinkSync(f); } catch (_) { } }
+    }
   }
   return { vAll, pAll, meta };
 }
@@ -127,7 +133,7 @@ function selfplayGen(g) {
   const pBuf = [], vBuf = []; let meta = null;             // replay buffer（世代横断）
   for (let g = 1; g <= GENS; g++) {
     if (best) writeAI(best); else fs.writeFileSync(GFILE, committed);   // self-playは常にベスト（valueはbest=null→手作り）
-    const gen = selfplayGen(g);
+    const gen = await selfplayGen(g);
     pBuf.push(...gen.pAll); vBuf.push(...gen.vAll); meta = gen.meta;
     if (pBuf.length > MAXBUF) pBuf.splice(0, pBuf.length - MAXBUF);
     if (vBuf.length > MAXBUF) vBuf.splice(0, vBuf.length - MAXBUF);
