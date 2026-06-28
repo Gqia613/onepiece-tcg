@@ -36,8 +36,8 @@ const VAL = [], POL = [], WIN = {}; let GI = -1, REC = false;
 const _bt = beginTurn;
 beginTurn = async function (side) {
   if (REC && !G._sim && G.players.me && G.players.cpu && G.players.me.leader && G.players.cpu.leader) {
-    VAL.push({ f: evalFeatures('me'), lk: leaderKeyOf('me'), side: 'me', gi: GI });
-    VAL.push({ f: evalFeatures('cpu'), lk: leaderKeyOf('cpu'), side: 'cpu', gi: GI });
+    VAL.push({ f: evalFeatures('me'), bf: boardTensor('me'), lk: leaderKeyOf('me'), side: 'me', gi: GI });
+    VAL.push({ f: evalFeatures('cpu'), bf: boardTensor('cpu'), lk: leaderKeyOf('cpu'), side: 'cpu', gi: GI });
   }
   return _bt(side);
 };
@@ -72,7 +72,7 @@ async function playGame(seed, dMe, dCpu) {
   for (let i = 0; i < GAMES; i++) await playGame(500000 + i, LEADERS[i % NL], LEADERS[(i / NL | 0) % NL]);
   // value: 勝敗が確定した局のみ y を付けて書き出し（JSON配列＝harnessの改行問題を回避）
   const vrows = [];
-  for (const s of VAL) { const w = WIN[s.gi]; if (w !== 'me' && w !== 'cpu') continue; vrows.push({ lk: s.lk, y: w === s.side ? 1 : 0, f: s.f }); }
+  for (const s of VAL) { const w = WIN[s.gi]; if (w !== 'me' && w !== 'cpu') continue; vrows.push({ lk: s.lk, y: w === s.side ? 1 : 0, f: s.f, bf: s.bf }); }
   const prows = POL.map(s => ({ lk: s.lk, ci: s.ci, cands: s.cands }));
   fs.writeFileSync(VALOUT, JSON.stringify(vrows));
   fs.writeFileSync(POLOUT, JSON.stringify(prows));

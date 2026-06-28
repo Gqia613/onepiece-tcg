@@ -193,6 +193,36 @@
         ...LEADER_KEYS.map(k => oppLead === k ? 1 : 0)       // 相手リーダー one-hot（マッチアップ）
       ];
     }
+
+    /* ===== AlphaZero本格 ①状態表現: 生盤面テンソル（17次元要約でなくカード個別の属性で局面を表す） =====
+       evalFeaturesは差分の要約でカード個別を捨てている＝17次元が天井(段階1で実証)。boardTensorは各カードを
+       属性ベクトルにして並べる＝大規模NN(CNN/Transformer/深いMLP)がカード間の相互作用を学べる土台。 */
+    var CARD_DIM = 14, SLOT_CHAR = 6, SLOT_HAND = 10;          // カード属性14次元 / 盤面6枠 / 手札10枠
+    function cardVec(c) {
+      if (!c || !c.base) return new Array(CARD_DIM).fill(0);   // 空スロット=ゼロ埋め
+      const b = c.base, fx = b.fx || {};
+      return [
+        (power(c) || 0) / 1000, (b.cost || 0), (b.counter || 0) / 1000, (c.attachedDon || 0),
+        c.rested ? 1 : 0, hasKw(c, 'blocker') ? 1 : 0, hasKw(c, 'rush') ? 1 : 0,
+        fx.onPlay ? 1 : 0, fx.onAttack ? 1 : 0, fx.onKO ? 1 : 0, fx.trigger ? 1 : 0,
+        fx.act ? 1 : 0, fx.static ? 1 : 0,
+        (b.type === 'CHAR' ? 1 : b.type === 'EVENT' ? 2 : b.type === 'STAGE' ? 3 : 0) / 3
+      ];
+    }
+    // side視点の生盤面テンソル（固定長）。盤面は自分→相手、各枠 cardVec。手札は自分のみ(相手手札は不可視=決定化で扱う)。
+    function boardTensor(side) {
+      const P = G.players[side], D = G.players[opp(side)], o = opp(side);
+      const slots = (arr, n) => { const r = []; for (let i = 0; i < n; i++) r.push.apply(r, cardVec(arr[i])); return r; };
+      const lk = k => LEADER_KEYS.map(x => x === k ? 1 : 0);
+      return [
+        P.life.length, D.life.length, P.hand.length, D.hand.length,           // スカラー: ライフ/手札
+        P.don.active || 0, P.don.rested || 0, P.donMax || 0, donTotal(side) || 0, donTotal(o) || 0,  // ドン
+        P.deck.length, D.deck.length, P.trash.length, D.trash.length, G.active === side ? 1 : 0,     // 山/トラッシュ/手番
+        (power(P.leader) || 0) / 1000, (power(D.leader) || 0) / 1000,         // リーダーパワー
+        ...lk(leaderKeyOf(side)), ...lk(leaderKeyOf(o)),                      // リーダー種別 one-hot(自分/相手)
+        ...slots(P.chars, SLOT_CHAR), ...slots(D.chars, SLOT_CHAR), ...slots(P.hand, SLOT_HAND)       // 盤面/手札のカード列
+      ];
+    }
     // 学習重みからこのsideのリーダー用モデルを選ぶ（byLeader→default→旧フラット形式の順）。
     function pickModel(W, side) {
       if (!W) return null;
@@ -203,9 +233,16 @@
     // 学習NN(MLP)の純JS順伝播：標準化→隠れ層(ReLU)→出力(sigmoid)。外部依存なし＝file://でそのまま動く。
     //   m = { type:'mlp', mean[d], std[d], W1[h][d], b1[h], W2[h], b2 }
     function mlpForward(m, v) {
-      const x = v.map((val, i) => (val - m.mean[i]) / (m.std[i] || 1));
+      let x = v.map((val, i) => (val - m.mean[i]) / (m.std[i] || 1));
+      if (m.layers) {                                                  // ★深いNN(任意層数): 各層 {W:[out][in], b:[out]}・中間ReLU・最後は生→sigmoid
+        for (let li = 0; li < m.layers.length; li++) {
+          const L = m.layers[li], last = li === m.layers.length - 1, xin = x;
+          x = L.b.map((b, j) => { let z = b; const w = L.W[j]; for (let i = 0; i < xin.length; i++) z += w[i] * xin[i]; return last ? z : (z > 0 ? z : 0); });
+        }
+        return 1 / (1 + Math.exp(-x[0]));
+      }
       const h = m.b1.map((b, j) => { let z = b; const w1 = m.W1[j]; for (let i = 0; i < x.length; i++) z += w1[i] * x[i]; return z > 0 ? z : 0; });
-      let z2 = m.b2; for (let j = 0; j < h.length; j++) z2 += m.W2[j] * h[j];
+      let z2 = m.b2; for (let j = 0; j < h.length; j++) z2 += m.W2[j] * h[j];   // 旧形式(1隠れ層)互換
       return 1 / (1 + Math.exp(-z2));
     }
     // side視点の勝率推定 [0,1]。学習重み(window.AI_WEIGHTS, リーダー別)があれば NN/線形、無ければ手作りevalにフォールバック。
@@ -213,8 +250,8 @@
       const W = (typeof window !== 'undefined' && window.AI_WEIGHTS) ? window.AI_WEIGHTS : null;
       const m = pickModel(W, side);
       if (m) {
-        const v = evalFeatures(side);
-        if (m.type === 'mlp' && m.W1) return mlpForward(m, v);       // NN(MLP)
+        const v = (W.inputType === 'board') ? boardTensor(side) : evalFeatures(side);  // ★生盤面(336) or 17次元
+        if (m.type === 'mlp' && (m.W1 || m.layers)) return mlpForward(m, v);       // NN(MLP・深いNN対応)
         if (Array.isArray(m.w)) {                                    // 線形(ロジスティック)
           let z = m.b || 0; for (let i = 0; i < m.w.length && i < v.length; i++) z += m.w[i] * v[i];
           return 1 / (1 + Math.exp(-z));
