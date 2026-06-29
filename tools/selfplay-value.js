@@ -37,6 +37,7 @@ startGame(DECK, DECK);
 G.players.me.isCPU = true; G.players.cpu.isCPU = true;
 G.players.me.agent = 'puct'; G.players.cpu.agent = 'puct';   // ★puct自己対戦(葉=src/ai-weights.js の生盤面value)
 G._puctNoSkip = true;                                        // enelもpuctで探索(フォールバックさせない)
+G._puctDet = ` + (process.env.OPCG_PUCT_DET || 6) + `; G._puctLook = ` + (process.env.OPCG_PUCT_LOOK || 2) + `; G._puctWidth = ` + (process.env.OPCG_PUCT_WIDTH || 6) + `;  // ★strong(深い探索)=鶏と卵を計算規模で突破
 (async () => {
   let it = 0; while (!(G.winner && !G._sim) && it < 2000000) { await new Promise(r => setImmediate(r)); it++; }
   for (let k = 0; k < 40; k++) await new Promise(r => setImmediate(r));        // 非決定性ドレイン
