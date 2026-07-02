@@ -556,10 +556,22 @@
     }
     // side のターンを「今ここで終える」前提でロールアウト: endTurn → 相手/自分 look ターン heuristic → 価値[0,1]
     async function rolloutAfterTurn(side, look) {
+      // ★採用(リーダー殴り残し修正・既定0.8): endTurn"直前"(=side のターン終了時)に「フリーで届くのに殴り残したアタッカー」を
+      //   数えペナルティ化。evalWinProbはlookターン後(相手ターン中)で side が canCardAttack=falseになり測れないため、ここで測る。
+      //   ★measure(ミラーN20): 全リーダー退行なし・nami-15→+0/hancock+30→+45/teach+10→+15/ace+0→+5・lucy/enel±0＝ユーザー観察
+      //   「AIモードでリーダーを殴らない」を勝率改善で解消(puctの境界value評価に効く)。G._lifeAggr=0で無効化(測定用)。係数は小さく。
+      let penalty = 0;
+      const la = (G._lifeAggr != null) ? G._lifeAggr : 0.8;
+      if (la && !G.winner) {
+        const D = G.players[opp(side)], P = G.players[side], Lp = power(D.leader); let freeLeft = 0;
+        for (const c of [P.leader, ...P.chars]) if (canCardAttack(c) && canTargetLeader(c) && power(c) >= Lp) freeLeft++;
+        penalty = freeLeft * la * 0.05;
+      }
       if (!G.winner) await endTurn(side);
       let cur = side, t = 0;
       while (!G.winner && t < look) { cur = opp(cur); await beginTurn(cur); t++; }
-      return G.winner ? (G.winner === side ? 1 : 0) : evalWinProb(side);
+      const v = G.winner ? (G.winner === side ? 1 : 0) : evalWinProb(side);
+      return Math.max(0, v - penalty);
     }
     // 1手分の探索: 候補を prior で上位Wに絞り、各を K 決定化ロールアウト平均(境界価値)で評価。Q降順 [{a,q}] を返す。
     async function puctSearch(side, opt) {

@@ -29,7 +29,7 @@ showPrompt = function (cfg) { const t = cfg.title || ''; let v;
   if (cfg.onPick) cfg.onPick(v); return Promise.resolve(v); };
 humanPick = function (c) { return Promise.resolve(c[0] || null); };
 if (typeof loadLLMCache === 'function') loadLLMCache(` + LLM_CACHE_JSON + `);  // AGENT=hybrid用のLLM戦略キャッシュ(あれば。無ければnull=liveフォールバック)
-const HERO = ` + JSON.stringify(hero) + `, VILLAIN = ` + JSON.stringify(villain) + `, S0 = ` + s0 + `, N = ` + n + `, AGENT = ` + JSON.stringify(AGENT) + `;
+const HERO = ` + JSON.stringify(hero) + `, VILLAIN = ` + JSON.stringify(villain) + `, S0 = ` + s0 + `, N = ` + n + `, AGENT = ` + JSON.stringify(AGENT) + `, LIFE_AGGR = ` + (+process.env.OPCG_LIFE_AGGR || 0) + `;
 const SAVED_W = (typeof window !== 'undefined') ? window.AI_WEIGHTS : null;  // ロード済み学習重み（あれば）
 const HAS_LEARNED = !!(SAVED_W && (SAVED_W.byLeader || SAVED_W.w));
 // hero=me(評価対象), villain=cpu(常にheuristic)。heroAgent/学習eval使用 を切替。勝者の席を返す。
@@ -39,6 +39,7 @@ async function pg(seed, heroAgent, useLearned) {
   seedRng(seed);
   startGame(HERO, VILLAIN);
   G.players.me.isCPU = true; G.players.me.agent = heroAgent; G.players.cpu.agent = 'heuristic';
+  G._lifeAggr = LIFE_AGGR;   // ★殴り残しペナルティ実験(0=無効)。heroのpuct/mctsの境界value評価に効く
   let it = 0; while (!(G.winner && !G._sim) && it < 5000000) { await new Promise(r => setImmediate(r)); it++; }
   for (let k = 0; k < 40; k++) await new Promise(r => setImmediate(r));  // ★保留タスクを消化（次局に漏らさない＝再現性確保）
   return G.winner === 'me';
