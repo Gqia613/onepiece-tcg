@@ -607,7 +607,12 @@
     // ★per-leader 探索の深さ。enelは浅い探索(det3)だとミラー-20ptと弱い（コントロール/ランプの計画が見えない）が、
     //   深い探索(det6/look2/w6)で±0pt＝中立(弱くない)になる。実測スイープで確認。docs/ai-design.md §9.11。
     //   ＝enelの弱さは「価値」でなく「探索の深さ」だった。深く読む必要があるリーダーだけここに足す。
-    var PUCT_DEPTH = { enel: { det: 6, look: 2, width: 6 } };
+    // ★2026-07 深さスケーリング採用（E34）: 5リーダーのミラー深さプローブ(N=60×3段+確認帯)で
+    //   det9/look2/w8 が頂点（対h lucy+30.0★/teach+25.0★/hancock+18.3★/nami+13.3/ace+11.7・対base合算 改善60/退行29 p≈0.002★）。
+    //   det12/w10 は4/5で飽和/微減＝この先は逓減。探索は軽い(1手<0.5s)のでUI許容。docs/ai-design.md §9.12。
+    var PUCT_DEEP = { det: 9, look: 2, width: 8 };
+    var PUCT_DEPTH = { enel: { det: 6, look: 2, width: 6 },
+      lucy: PUCT_DEEP, ace: PUCT_DEEP, nami: PUCT_DEEP, hancock: PUCT_DEEP, teach: PUCT_DEEP };
     async function puctTurn(side) {
       if (G._sim) return heuristicTurn(side);                          // 入れ子探索＝指数爆発を防ぐ
       // ★enel特化: enelはmctsがpuct/heuristicを上回る(N60 mcts+8.3pt p0.063・改善5/退行0 / puct±0)。探索がランプを壊さないflat決定化MC(mcts)で読む。

@@ -28,6 +28,7 @@
 | heuristic | 既定CPU。観察由来の改良5件を吸収済み | （基準） | 出荷 |
 | mcts（方針探索） | ±0〜+7.5pt 不安定 | ≈中立 | opt-in（enelでは puct が内部利用: +8.3pt） |
 | **puct**（探索+自己対戦policy） | **強い/AIモードの本体** | **ミラーで lucy+45/teach+27.5/ace+25/nami+25/hancock+20（全て有意）** | 出荷（UIトグル） |
+| **puct-deep**（E34・2026-07-04） | **深さ det9/look2/w8 を5リーダーに採用（PUCT_DEEP）** | **対h平均 +9.7→+19.7pt（deep対base 2seed帯合算 改善121/退行59 p<0.00001★・退行リーダーなし）** | 出荷（強い/AIモードの新既定） |
 | puct-enel | 深さ自動(det6/look2/w6)+PUCT_MCTS | 約-10pt〜+8.3pt（heuristicが依然最適） | 仕様として許容 |
 | hybrid（Claude戦略×puct） | web版AIモード | **live実測は未了（APIキー無し）** | 配管検証済み |
 
