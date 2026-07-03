@@ -1,0 +1,7 @@
+{
+  "name": "opcg-engine",
+  "version": "0.0.0",
+  "private": true,
+  "type": "commonjs",
+  "description": "OPCG バニラエンジン + AI 学習ツール（CommonJS / ビルド不要・Node のみ）。ルートの web アプリ(type:module)から type を分離するために type:commonjs を明示。"
+}

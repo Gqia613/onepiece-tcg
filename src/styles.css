@@ -1,0 +1,239 @@
+/* =========================================================================
+   web版 静的シェル (ログイン / 常時トップバー / 中央ローディング)
+   -------------------------------------------------------------------------
+   デザイントークンと盤面・デッキ選択・デッキビルダーは battle.css（本体
+   css/styles.css の "ABYSS NEON" 全面刷新版）が所有する。ここは web 固有で
+   本体に無い画面（ログイン=.auth-* / appshell の .topbar / .center-wrap）
+   だけを、同じ視覚言語で定義する。
+   ★.panel/.tabs/.tab は盤面サイドパネル(§13)がバレアで使うため、ログインは
+     .auth-* にリネームして衝突を回避している（旧 styles.css は衝突していた）。
+   ========================================================================= */
+
+html, body, #root { height: 100%; margin: 0; }
+
+/* 固定オーロラ層(body::before, z-index:0)より前面へ。#screen/#preview は
+   battle.css 側で z-index:1 済み。web固有の .topbar/.center-wrap を持ち上げる */
+.topbar, .center-wrap { position: relative; z-index: 1; }
+
+.display { font-family: "Bebas Neue", sans-serif; letter-spacing: .04em; }
+
+/* ============ 常時トップバー（元 index.html #topbar のミラー） ============ */
+.topbar {
+  height: 50px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 14px;
+  background: linear-gradient(180deg, rgba(16, 34, 58, .92), rgba(7, 16, 30, .88));
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--surface-edge);
+  box-shadow: 0 1px 0 rgba(140, 200, 255, .06) inset, var(--elev-1);
+  z-index: 40;
+}
+
+/* 下辺のネオンライン（シアン→ゴールド→クリムゾン） */
+.topbar::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--self-line) 30%, rgba(255, 200, 87, .4) 50%, var(--opp-line) 70%, transparent);
+  pointer-events: none;
+}
+
+.topbar .logo {
+  font-family: "Bebas Neue";
+  font-size: 23px;
+  color: var(--ink);
+  letter-spacing: .07em;
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+  text-shadow: 0 0 18px rgba(62, 201, 255, .35);
+  white-space: nowrap;
+}
+
+.topbar .logo .logo-mark {
+  color: var(--gold);
+  font-size: 17px;
+  align-self: center;
+  filter: drop-shadow(0 0 6px rgba(255, 200, 87, .6));
+}
+
+.topbar .logo small {
+  color: var(--self-accent);
+  font-size: 11px;
+  letter-spacing: .3em;
+  font-family: var(--font-num);
+  font-weight: 600;
+  opacity: .9;
+}
+
+.topbar .spacer { flex: 1; }
+
+/* .tbtn / .ham-item / .switch は battle.css(§3) が所有＝そのまま新ルック */
+/* .hud-plate / .turnpill / .tp-steps の圧縮は battle.css §17 のバレアクラスが担当。
+   ここでは #topbar 依存だった topbar 自体の縮小を .topbar 用に補う（#screen の inset は battle.css）。 */
+@media (max-width: 1000px) { .topbar .logo small { display: none; } }
+@media (max-width: 680px) {
+  .topbar { height: 44px; gap: 6px; padding: 0 8px; }
+  .topbar .logo { display: none; }
+}
+
+/* ============ 中央ローディング ============ */
+.center-wrap {
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.loading { color: var(--muted); font-size: 14px; letter-spacing: .04em; }
+
+/* ============ ログイン / 新規登録（.auth-*） ============ */
+.auth-panel {
+  width: 100%;
+  max-width: 390px;
+  background: linear-gradient(180deg, var(--surface-3), rgba(6, 16, 30, .92));
+  border: 1px solid var(--surface-edge);
+  border-radius: 18px;
+  padding: 30px 28px;
+  box-shadow: var(--elev-3), 0 0 40px -12px rgba(62, 201, 255, .25);
+  position: relative;
+  overflow: hidden;
+  animation: authIn .5s cubic-bezier(.2, .8, .25, 1) both;
+}
+
+@keyframes authIn {
+  from { opacity: 0; transform: translateY(12px) scale(.98); }
+  to { opacity: 1; transform: none; }
+}
+
+/* 上辺のネオンライン */
+.auth-panel::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--self-line), transparent);
+}
+
+.auth-brand {
+  font-family: "Bebas Neue";
+  font-size: 34px;
+  letter-spacing: .06em;
+  text-align: center;
+  margin: 0 0 2px;
+  line-height: 1;
+  background: linear-gradient(180deg, #fff 10%, var(--self-glow) 50%, var(--self-accent) 88%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 3px 18px rgba(62, 201, 255, .35));
+}
+
+.auth-brand small {
+  display: block;
+  font-family: var(--font-num);
+  font-weight: 600;
+  font-size: 11px;
+  letter-spacing: .34em;
+  margin-top: 6px;
+  color: var(--gold);
+  -webkit-text-fill-color: var(--gold);
+  filter: none;
+}
+
+.auth-tabs {
+  display: flex;
+  gap: 6px;
+  margin: 20px 0 16px;
+}
+
+.auth-tab {
+  flex: 1;
+  padding: 9px;
+  border: 1px solid var(--surface-edge);
+  background: rgba(0, 0, 0, .3);
+  color: var(--muted);
+  border-radius: 10px;
+  font-weight: 700;
+  font-size: 13px;
+  cursor: pointer;
+  transition: .15s;
+}
+
+.auth-tab:hover { color: var(--ink); border-color: var(--self-line); }
+
+.auth-tab.on {
+  color: #04121f;
+  background: linear-gradient(180deg, #33b6ef, #1d84c4);
+  border-color: transparent;
+  box-shadow: 0 0 14px -3px var(--self-accent);
+}
+
+.auth-field { margin-bottom: 13px; }
+
+.auth-field label {
+  display: block;
+  font-size: 12px;
+  color: var(--muted);
+  margin-bottom: 6px;
+  letter-spacing: .02em;
+}
+
+.auth-field input {
+  width: 100%;
+  padding: 11px 13px;
+  border-radius: 10px;
+  border: 1px solid var(--surface-edge);
+  background: rgba(3, 9, 18, .7);
+  color: var(--ink);
+  font-size: 15px;
+  transition: .15s;
+}
+
+.auth-field input:focus {
+  outline: none;
+  border-color: var(--self-accent);
+  box-shadow: 0 0 0 3px rgba(62, 201, 255, .14);
+}
+
+.auth-btn {
+  width: 100%;
+  padding: 13px;
+  border: none;
+  border-radius: 12px;
+  font-weight: 800;
+  font-size: 15px;
+  cursor: pointer;
+  color: #221503;
+  background: linear-gradient(180deg, var(--gold-soft), var(--gold) 55%, var(--gold-dim));
+  box-shadow: 0 8px 24px rgba(255, 200, 87, .24);
+  transition: .15s;
+}
+
+.auth-btn:hover:not(:disabled) { filter: brightness(1.06); transform: translateY(-1px); }
+.auth-btn:disabled { opacity: .5; cursor: not-allowed; }
+
+.auth-err {
+  color: var(--danger-glow);
+  font-size: 12.5px;
+  margin: 4px 0 10px;
+  min-height: 16px;
+}
+
+.auth-hint {
+  color: var(--muted-2);
+  font-size: 11.5px;
+  text-align: center;
+  margin-top: 14px;
+  line-height: 1.6;
+}

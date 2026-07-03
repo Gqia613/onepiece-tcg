@@ -1,23 +1,26 @@
-# OS
+# OS / editor
 .DS_Store
+.vscode/
+.idea/
 
 # logs / temp
 *.log
 tmp/
 /tmp/
 
-# node (このプロジェクトはビルド不要だが念のため)
-node_modules/
-
-# editor
-.vscode/
-.idea/
-
 # Claude Code (machine-local config / session data)
 .claude/
 
-# Python/GPU(AlphaZero)学習: venv・自己対戦データ・学習中間出力はコミットしない
-pytorch/.venv/
-pytorch/data/
-pytorch/out/
+# --- web アプリ（ルート）---
+node_modules/
+dist/
+.wrangler/
+.dev.vars
+*.local
+tsconfig.tsbuildinfo
+
+# --- engine/（バニラエンジン + AlphaZero学習。venv/自己対戦データ/学習中間出力はコミットしない）---
+engine/pytorch/.venv/
+engine/pytorch/data/
+engine/pytorch/out/
 __pycache__/
