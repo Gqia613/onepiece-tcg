@@ -7,7 +7,7 @@ pages_build_output_dir = "dist"
 [[d1_databases]]
 binding = "DB"
 database_name = "opcg"
-database_id = "REPLACE_WITH_D1_DATABASE_ID"
+database_id = "537b9b81-aef7-450b-b1a4-93d2b101cf17"
 
 # KV（AI応答キャッシュ）。任意（Phase5で使用）。
 # 初回: `wrangler kv namespace create AICACHE` で得た id を貼る。
