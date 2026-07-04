@@ -1,5 +1,6 @@
 # ローカル開発用のSecrets（コピーして .dev.vars を作る。.dev.vars はgitignore済み）
 # wrangler pages dev が自動で読み込む。
 JWT_SECRET=dev-only-change-me-to-a-long-random-string
-ANTHROPIC_API_KEY=sk-ant-xxxxx   # Phase5(AI proxy)で使用
+INVITE_CODE=dev-invite            # 新規登録の招待コード（★未設定だと登録は閉鎖される）
+ANTHROPIC_API_KEY=sk-ant-xxxxx    # AI対戦(proxy)で使用。ログイン/デッキには不要
 ANTHROPIC_VERSION=2023-06-01

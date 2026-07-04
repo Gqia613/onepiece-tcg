@@ -11,6 +11,13 @@ export const onRequestPost = async ({ request, env }) => {
 
   let body;
   try { body = await request.json(); } catch { return json({ error: 'bad_json' }, 400); }
+
+  // 招待コードゲート（友達限定）。INVITE_CODE(Pages Secret) が未設定なら登録は閉鎖（フェイルセーフ）。
+  // 招待を先に検証＝正しいコードが無いとユーザー名の存在確認等の処理にも進めない。
+  if (!env.INVITE_CODE) return json({ error: 'registration_closed' }, 403);
+  const invite = String(body.invite || '').trim();
+  if (invite !== env.INVITE_CODE) return json({ error: 'bad_invite' }, 403);
+
   const username = String(body.username || '').trim();
   const password = String(body.password || '');
   if (!USERNAME_RE.test(username) || password.length < 6 || password.length > 200) {

@@ -21,8 +21,8 @@ export type SavedDeck = { id: string; name: string; leader: string; list: Record
 
 export const api = {
   me: () => req<{ user: User | null }>('/api/me'),
-  register: (username: string, password: string) =>
-    req<{ user: User }>('/api/auth/register', { method: 'POST', body: JSON.stringify({ username, password }) }),
+  register: (username: string, password: string, invite: string) =>
+    req<{ user: User }>('/api/auth/register', { method: 'POST', body: JSON.stringify({ username, password, invite }) }),
   login: (username: string, password: string) =>
     req<{ user: User }>('/api/auth/login', { method: 'POST', body: JSON.stringify({ username, password }) }),
   logout: () => req<{ ok: true }>('/api/logout', { method: 'POST' }),

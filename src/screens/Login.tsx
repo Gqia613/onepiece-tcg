@@ -7,6 +7,7 @@ export default function Login() {
   const [mode, setMode] = useState<'login' | 'register'>('login');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [invite, setInvite] = useState('');
   const [err, setErr] = useState('');
   const [busy, setBusy] = useState(false);
 
@@ -16,9 +17,10 @@ export default function Login() {
     const u = username.trim();
     if (u.length < 3) return setErr('IDは3文字以上で入力してください');
     if (password.length < 6) return setErr('パスワードは6文字以上で入力してください');
+    if (mode === 'register' && !invite.trim()) return setErr('招待コードを入力してください');
     setBusy(true);
     try {
-      const { user } = mode === 'login' ? await api.login(u, password) : await api.register(u, password);
+      const { user } = mode === 'login' ? await api.login(u, password) : await api.register(u, password, invite.trim());
       setUser(user);
     } catch (e) {
       const ae = e as ApiError;
@@ -44,6 +46,12 @@ export default function Login() {
           <label>パスワード</label>
           <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete={mode === 'login' ? 'current-password' : 'new-password'} placeholder="6文字以上" />
         </div>
+        {mode === 'register' ? (
+          <div className="auth-field">
+            <label>招待コード</label>
+            <input value={invite} onChange={(e) => setInvite(e.target.value)} autoComplete="off" placeholder="管理者から共有されたコード" />
+          </div>
+        ) : null}
         <div className="auth-err">{err}</div>
         <button className="auth-btn" type="submit" disabled={busy}>{busy ? '…' : (mode === 'login' ? 'ログイン' : '登録して開始')}</button>
         <div className="auth-hint">自分・友達用の簡易アカウントです。パスワードは安全に保管してください。</div>
@@ -53,6 +61,8 @@ export default function Login() {
 }
 
 function errMessage(e: ApiError, mode: 'login' | 'register'): string {
+  if (e.error === 'bad_invite') return '招待コードが違います';
+  if (e.error === 'registration_closed') return '現在、新規登録は招待制です（管理者にコードを問い合わせてください）';
   if (e.status === 409) return 'そのIDは既に使われています';
   if (e.status === 401) return 'IDまたはパスワードが違います';
   if (e.status === 429) return '試行回数が多すぎます。しばらく待ってください';
