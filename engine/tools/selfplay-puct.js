@@ -9,7 +9,14 @@
    → 反復: 強くなった prior で再 self-play。価値(≈手作りで最適)は据え置き、priorだけ鍛える＝同じ探索計算で更に強く。
    使い方: node tools/selfplay-puct.js                  （既定2世代×80局・self-play det3/look1/w5・chunk40）
            OPCG_GENS=3 OPCG_GAMES=120 OPCG_SP_DET=4 OPCG_MEASURE_N=40 node tools/selfplay-puct.js
-   ★遅い（puct自己対戦＝両者探索）。1世代 数分。 */
+   ★遅い（puct自己対戦＝両者探索）。1世代 数分。
+   ★E35(enel単独ローカルAlphaZero): OPCG_TARGET=both＝value+policyを同一世代で共同反復。
+     ・OPCG_BOARD=1  … valueを生盤面boardTensor(336次元)入力で学習（AZ_BOARD=1をtrain.pyへ。17次元は手作り同等が実証済みの天井）
+     ・OPCG_NOSKIP=1 … self-play/測定ともenelのPUCT_MCTS/SKIPフォールバックを無効化（本物のpuctで打つ・measure-matchupにも伝播）
+     ・gating指標: both=学習アーム(value+policy複合候補)の対h flip（同一seed帯なので世代間比較可）
+     例: OPCG_TARGET=both OPCG_BOARD=1 OPCG_NOSKIP=1 OPCG_DECKS=enel OPCG_GATE_LEADERS=enel:enel \
+         OPCG_GENS=10 OPCG_GAMES=400 OPCG_SP_DET=6 OPCG_SP_LOOK=2 OPCG_SP_WIDTH=6 OPCG_MAXBUF=20000 \
+         OPCG_MEASURE_N=60 node tools/selfplay-puct.js */
 const fs = require('fs'), path = require('path'), cp = require('child_process'), os = require('os');
 const { runHarness, runHarnessAsync, ROOT } = require('./../tests/_load-app');
 
@@ -35,19 +42,19 @@ showPrompt = function (cfg) { const t = cfg.title || ''; let v;
 humanPick = function (c) { return Promise.resolve(c[0] || null); };
 const fs = require('fs');
 const N = ` + n + `, SEED0 = ` + seed0 + `, LEADERS = ` + JSON.stringify(DECKS_POOL) + `;
-const DET = ` + DET + `, LOOK = ` + LOOK + `, WIDTH = ` + WIDTH + `;
+const DET = ` + DET + `, LOOK = ` + LOOK + `, WIDTH = ` + WIDTH + `, NOSKIP = ` + (process.env.OPCG_NOSKIP === '1') + `;
 const VAL = [], POL = [], WIN = {}; let GI = -1, REC = false;
 const _bt = beginTurn;
 beginTurn = async function (side) {
   if (REC && !G._sim && G.players.me && G.players.cpu && G.players.me.leader && G.players.cpu.leader) {
-    VAL.push({ f: evalFeatures('me'), lk: leaderKeyOf('me'), side: 'me', gi: GI });
-    VAL.push({ f: evalFeatures('cpu'), lk: leaderKeyOf('cpu'), side: 'cpu', gi: GI });
+    VAL.push({ f: evalFeatures('me'), bf: boardTensor('me'), lk: leaderKeyOf('me'), side: 'me', gi: GI });
+    VAL.push({ f: evalFeatures('cpu'), bf: boardTensor('cpu'), lk: leaderKeyOf('cpu'), side: 'cpu', gi: GI });
   }
   return _bt(side);
 };
 async function playGame(seed, dMe, dCpu) {
   GI++; G.players = {}; G.winner = null; G.inGame = false;
-  G._puctDet = DET; G._puctLook = LOOK; G._puctWidth = WIDTH;
+  G._puctDet = DET; G._puctLook = LOOK; G._puctWidth = WIDTH; G._puctNoSkip = NOSKIP;
   seedRng(seed); REC = true; G._puctRecSink = POL;
   startGame(dMe, dCpu);
   G.players.me.isCPU = true; G.players.me.agent = 'puct'; G.players.cpu.agent = 'puct';
@@ -60,7 +67,7 @@ async function playGame(seed, dMe, dCpu) {
   const NL = LEADERS.length;
   for (let i = 0; i < N; i++) await playGame(SEED0 + i, LEADERS[i % NL], LEADERS[(i / NL | 0) % NL]);
   const vrows = [];
-  for (const s of VAL) { const w = WIN[s.gi]; if (w !== 'me' && w !== 'cpu') continue; vrows.push({ lk: s.lk, y: w === s.side ? 1 : 0, f: s.f }); }
+  for (const s of VAL) { const w = WIN[s.gi]; if (w !== 'me' && w !== 'cpu') continue; vrows.push({ lk: s.lk, y: w === s.side ? 1 : 0, f: s.f, bf: s.bf }); }
   fs.writeFileSync(` + JSON.stringify(valPath) + `, JSON.stringify(vrows));
   fs.writeFileSync(` + JSON.stringify(polPath) + `, JSON.stringify(POL));
   fs.writeFileSync(` + JSON.stringify(metaPath) + `, JSON.stringify({ evalFeatures: EVAL_FEATURES, polFeat: POL_FEAT, leaderKeys: LEADER_KEYS }));
@@ -70,29 +77,36 @@ async function playGame(seed, dMe, dCpu) {
 `;
 }
 
-// ★学習対象: policy(=puctのprior, ai-policy.js) か value(=盤面評価, ai-weights.js)。part3で value を追加。
+// ★学習対象: policy(=puctのprior, ai-policy.js) / value(=盤面評価, ai-weights.js) / both(=E35: value+policyを同一世代で共同反復)。
 const TARGET = process.env.OPCG_TARGET || 'policy';
-const ISVAL = TARGET === 'value';
-const GFILE = path.join(ROOT, 'src', ISVAL ? 'ai-weights.js' : 'ai-policy.js');
-const GOUT = path.join(ROOT, 'pytorch', 'out', ISVAL ? 'ai-weights.js' : 'ai-policy.js');
-const GVAR = ISVAL ? 'AI_WEIGHTS' : 'AI_POLICY';
-const TRAIN_ENV = ISVAL ? { AZ_VALUE_ONLY: '1' } : { AZ_POLICY_ONLY: '1' };
+const ISVAL = TARGET === 'value', ISBOTH = TARGET === 'both';
+const KINDS = ISBOTH ? ['value', 'policy'] : [ISVAL ? 'value' : 'policy'];
+const F = {
+  value: { gvar: 'AI_WEIGHTS', file: path.join(ROOT, 'src', 'ai-weights.js'), out: path.join(ROOT, 'pytorch', 'out', 'ai-weights.js') },
+  policy: { gvar: 'AI_POLICY', file: path.join(ROOT, 'src', 'ai-policy.js'), out: path.join(ROOT, 'pytorch', 'out', 'ai-policy.js') },
+};
+const TRAIN_ENV = ISBOTH ? {} : (ISVAL ? { AZ_VALUE_ONLY: '1' } : { AZ_POLICY_ONLY: '1' });
+if (process.env.OPCG_BOARD === '1') TRAIN_ENV.AZ_BOARD = '1';   // ★E35: valueは生盤面boardTensor(336)入力で学習
 const MAXBUF = +(process.env.OPCG_MAXBUF || 6000);   // replay buffer のサンプル上限（直近を保持＝発散を抑える）
 // ★per-leader gating: リーダーごとに独立に「そのリーダーをheroにした測定で改善した時だけ」その byLeader モデルを採用。
 const GATE = (process.env.OPCG_GATE_LEADERS || 'teach:enel,enel:teach').split(',').map(s => s.split(':'));  // hero:villain
 
 // window.<VAR> = {...}; を取り出す（実代入は {" で始まる＝コメントの { feat... } に誤マッチしない）。null可。
-function parseAI(p) { const t = fs.readFileSync(p, 'utf8'); const m = t.match(new RegExp('window\\.' + GVAR + '\\s*=\\s*(\\{"[\\s\\S]*\\})\\s*;')); return m ? JSON.parse(m[1]) : null; }
-function writeAI(obj) { fs.writeFileSync(GFILE, '/* selfplay-puct.js per-leader gated（手で編集しない） */\nwindow.' + GVAR + ' = ' + JSON.stringify(obj) + ';\n'); }
+function parseAI(kind, p) { const t = fs.readFileSync(p, 'utf8'); const m = t.match(new RegExp('window\\.' + F[kind].gvar + '\\s*=\\s*(\\{"[\\s\\S]*\\})\\s*;')); return m ? JSON.parse(m[1]) : null; }
+function writeAI(kind, obj) { fs.writeFileSync(F[kind].file, '/* selfplay-puct.js per-leader gated（手で編集しない） */\nwindow.' + F[kind].gvar + ' = ' + JSON.stringify(obj) + ';\n'); }
 // 1リーダー hero を villain 相手に puct vs heuristic 測定 → net。
 //   policy: 「対h」flip（AI_WEIGHTSはnull固定なので ai-policy のtrialが効く）。
 //   value : 「学習 vs 手作り」flip（measure-matchupは手作りarmでAI_WEIGHTS=null化するので、価値の効果はこちらに出る）。
+//   both  : 学習アーム(value+policy複合候補)の対h flip。value未搭載時は手作りアーム対h flip（=同じ複合候補）。同一seed帯なので世代間比較可。
 function measureLeader(hero, vill) {
   try {
     const out = cp.execSync('node ' + JSON.stringify(path.join(__dirname, 'measure-matchup.js')),
       { encoding: 'utf8', env: Object.assign({}, process.env, { OPCG_AGENT: 'puct', OPCG_HERO: hero, OPCG_VILLAIN: vill, OPCG_N: MEASURE_N }), timeout: 590000 });
     const line = out.split('\n').filter(l => /vs/.test(l) && /対h/.test(l))[0] || '';
-    const m = ISVAL ? line.match(/改善=(\d+)\s*退行=(\d+)/) : line.match(/改善(\d+)\/退行(\d+)/);
+    let m;
+    if (ISBOTH) m = line.match(/学習=[\d.]+%\(対h [^ ]+ 改善(\d+)\/退行(\d+)/) || line.match(/改善(\d+)\/退行(\d+)/);
+    else if (ISVAL) m = line.match(/改善=(\d+)\s*退行=(\d+)/);
+    else m = line.match(/改善(\d+)\/退行(\d+)/);
     return { net: m ? (+m[1] - +m[2]) : 0, str: '    ' + line.trim() };
   } catch (e) { return { net: -999, str: '    (measure失敗 ' + hero + ')' }; }
 }
@@ -123,16 +137,22 @@ async function selfplayGen(g) {
   return { vAll, pAll, meta };
 }
 
+// 現ベスト（value/policy）をファイルへ反映（best無し=committedへ戻す）。self-play/trial測定の前提合わせに使う。
+function installBest(committed, best) {
+  for (const k of KINDS) { if (best[k]) writeAI(k, best[k]); else fs.writeFileSync(F[k].file, committed[k]); }
+}
+
 (async () => {
-  console.log('▶ puct自己対戦ループ [target=' + TARGET + ']（' + GENS + '世代 × ' + GAMES + '局・self-play det' + DET + '/look' + LOOK + '/w' + WIDTH + '・chunk' + CHUNK + '・replay+per-leader gating）');
-  const committed = fs.readFileSync(GFILE, 'utf8');         // 退行時に戻す素のファイル（policy=StageB / value=null）
-  let best = parseAI(GFILE);                                // policy: Stage B obj / value: null(手作り)
+  console.log('▶ puct自己対戦ループ [target=' + TARGET + ']（' + GENS + '世代 × ' + GAMES + '局・self-play det' + DET + '/look' + LOOK + '/w' + WIDTH + '・chunk' + CHUNK + '・replay+per-leader gating'
+    + (process.env.OPCG_NOSKIP === '1' ? '・noSkip' : '') + (TRAIN_ENV.AZ_BOARD ? '・value=board336' : '') + '）');
+  const committed = {}, best = {}, cand = {};
+  for (const k of KINDS) { committed[k] = fs.readFileSync(F[k].file, 'utf8'); best[k] = parseAI(k, F[k].file); }  // policy=StageB obj / value=null(手作り)
   const bestNet = {};
   if (ISVAL) { for (const [hero] of GATE) bestNet[hero] = 0; console.log('  世代0: value baseline=手作り（学習が手作りを上回る時だけ採用・基準net=0）'); }
-  else { console.log('  世代0（現prior）puct:'); for (const [hero, vill] of GATE) { const m = measureLeader(hero, vill); bestNet[hero] = m.net; console.log(m.str + '  [' + hero + ' net=' + m.net + ']'); } }
+  else { console.log('  世代0（現状態）puct:'); for (const [hero, vill] of GATE) { const m = measureLeader(hero, vill); bestNet[hero] = m.net; console.log(m.str + '  [' + hero + ' net=' + m.net + ']'); } }
   const pBuf = [], vBuf = []; let meta = null;             // replay buffer（世代横断）
   for (let g = 1; g <= GENS; g++) {
-    if (best) writeAI(best); else fs.writeFileSync(GFILE, committed);   // self-playは常にベスト（valueはbest=null→手作り）
+    installBest(committed, best);                          // self-playは常にベスト（value best無し=手作り）
     const gen = await selfplayGen(g);
     pBuf.push(...gen.pAll); vBuf.push(...gen.vAll); meta = gen.meta;
     if (pBuf.length > MAXBUF) pBuf.splice(0, pBuf.length - MAXBUF);
@@ -145,21 +165,31 @@ async function selfplayGen(g) {
       cp.execSync(JSON.stringify(PY) + ' ' + JSON.stringify(path.join(ROOT, 'pytorch', 'train.py')),
         { encoding: 'utf8', env: Object.assign({}, process.env, TRAIN_ENV, { AZ_PH: process.env.AZ_PH || '24', AZ_VH: process.env.AZ_VH || '32', AZ_EPOCHS: process.env.AZ_EPOCHS || '500' }), timeout: 590000 });
     } catch (e) { process.stdout.write('  ✗ train.py失敗: ' + ((e.stdout || '') + (e.stderr || '')).slice(-300) + '\n'); process.exit(1); }
-    const cand = parseAI(GOUT);
-    if (!cand || !cand.byLeader) { console.log('  ✗ 世代' + g + ' 学習結果なし（サンプル不足?）'); continue; }
-    if (!best) best = Object.assign({}, cand, { byLeader: {}, default: null });   // value: 空byLeader+default null = 全リーダー手作りから開始
+    for (const k of KINDS) cand[k] = parseAI(k, F[k].out);
+    if (!KINDS.some(k => cand[k] && cand[k].byLeader)) { console.log('  ✗ 世代' + g + ' 学習結果なし（サンプル不足?）'); continue; }
     for (const [hero, vill] of GATE) {
-      if (!cand.byLeader[hero]) continue;
-      const trial = Object.assign({}, best, { byLeader: Object.assign({}, best.byLeader, { [hero]: cand.byLeader[hero] }) });
-      writeAI(trial);
+      const kApply = KINDS.filter(k => cand[k] && cand[k].byLeader && cand[k].byLeader[hero]);   // heroの候補がある種別だけ差し替え
+      if (!kApply.length) continue;
+      for (const k of kApply) {
+        const base = best[k] || Object.assign({}, cand[k], { byLeader: {}, default: null });     // value初回: 空byLeader+default null=他リーダー手作り
+        writeAI(k, Object.assign({}, base, { byLeader: Object.assign({}, base.byLeader, { [hero]: cand[k].byLeader[hero] }) }));
+      }
       const m = measureLeader(hero, vill);
-      if (m.net > bestNet[hero]) { best.byLeader[hero] = cand.byLeader[hero]; bestNet[hero] = m.net; console.log('  ✓ 世代' + g + ' [' + hero + '] 採用(net=' + m.net + '):' + m.str.trim()); }
-      else { console.log('  ✗ 世代' + g + ' [' + hero + '] 棄却(net=' + m.net + ' <= ' + bestNet[hero] + ')'); }
+      if (m.net > bestNet[hero]) {
+        for (const k of kApply) {
+          if (!best[k]) best[k] = Object.assign({}, cand[k], { byLeader: {}, default: null });
+          best[k].byLeader[hero] = cand[k].byLeader[hero];
+        }
+        bestNet[hero] = m.net; console.log('  ✓ 世代' + g + ' [' + hero + '] 採用(' + kApply.join('+') + ' net=' + m.net + '):' + m.str.trim());
+      } else { console.log('  ✗ 世代' + g + ' [' + hero + '] 棄却(net=' + m.net + ' <= ' + bestNet[hero] + ')'); }
+      installBest(committed, best);                        // trialを戻す（採用済みならbest反映）
     }
-    writeAI(best);
   }
-  // 最終反映。value で1つも採用が無ければ素(null)に戻す。
-  if (ISVAL && best && Object.keys(best.byLeader).length === 0) { fs.writeFileSync(GFILE, committed); console.log('  value: 採用ゼロ→' + GFILE + ' を手作り(null)に戻す'); }
-  else if (best) writeAI(best);
+  // 最終反映。1つも採用が無い種別は素のファイル（policy=StageB / value=null手作り）に戻す。
+  for (const k of KINDS) {
+    if (best[k] && Object.keys(best[k].byLeader || {}).length === 0) { fs.writeFileSync(F[k].file, committed[k]); console.log('  ' + k + ': 採用ゼロ→' + F[k].file + ' を元に戻す'); }
+    else if (best[k]) writeAI(k, best[k]);
+    else fs.writeFileSync(F[k].file, committed[k]);
+  }
   console.log('▶ 完了 [target=' + TARGET + ']。per-leader best net: ' + GATE.map(([h]) => h + '=' + bestNet[h]).join(' '));
 })();

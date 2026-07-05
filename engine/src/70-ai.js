@@ -282,8 +282,16 @@
       return [isLead ? 1 : 0, isLead ? 0 : 1, 0, atk / 10000, tp / 10000, hasKw(tg, 'blocker') ? 1 : 0, (atk - tp) / 10000, donNeed / 4, dbl, unb, ...ctx, lethalIf];
     }
     // 方策ネットの生ロジット（softmax用・sigmoid前）。m={type:'policy',mean,std,W1[h][d],b1[h],W2[h],b2}
+    //   ★train.py(part7以降)は任意層 layers:[{W,b}] 形式で書き出す＝mlpForwardと同様に両形式を読む（旧形式はStage B資産）。
     function mlpLogit(m, v) {
-      const x = v.map((val, i) => (val - m.mean[i]) / (m.std[i] || 1));
+      let x = v.map((val, i) => (val - m.mean[i]) / (m.std[i] || 1));
+      if (m.layers) {                                                  // 深いNN(任意層数): 中間ReLU・最終層は生ロジット
+        for (let li = 0; li < m.layers.length; li++) {
+          const L = m.layers[li], last = li === m.layers.length - 1, xin = x;
+          x = L.b.map((b, j) => { let z = b; const w = L.W[j]; for (let i = 0; i < xin.length; i++) z += w[i] * xin[i]; return last ? z : (z > 0 ? z : 0); });
+        }
+        return x[0];
+      }
       let z2 = m.b2; for (let k = 0; k < m.b1.length; k++) { let z = m.b1[k]; const w1 = m.W1[k]; for (let j = 0; j < x.length; j++) z += w1[j] * x[j]; if (z > 0) z2 += m.W2[k] * z; }
       return z2;
     }
