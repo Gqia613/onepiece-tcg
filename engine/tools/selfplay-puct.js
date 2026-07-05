@@ -114,18 +114,26 @@ function measureLeader(hero, vill) {
 // 1世代の self-play を CHUNK 分割で回し、{vAll,pAll,meta} を返す（データ書き出しは駆動側=replay buffer）
 // ★規模拡大: chunk を多コア並列(Promise.all)で実行＝自己対戦の律速を解消。各chunkは別プロセス・別seed帯で独立（状態汚染なし）。
 const WORKERS = +(process.env.OPCG_PAR || Math.max(1, os.cpus().length - 1));   // 既定=コア数-1（8コアなら7並列）
+// 1チャンクを実行（★失敗は1回リトライ）。スリープ復帰でタイムアウト一斉発火しても全滅せず継続する（同一seed再実行=決定的）。
+async function runChunk(g, t) {
+  const tag = path.join(os.tmpdir(), 'sppuct-' + g + '-' + t.done + '-' + process.pid);
+  const vP = tag + '-v.json', pP = tag + '-p.json', mP = tag + '-m.json';
+  for (let at = 1; at <= 2; at++) {
+    try {
+      const out = await runHarnessAsync('sp-g' + g + '-c' + t.done, chunkHarness(900000 + g * 10000 + t.done, t.n, vP, pP, mP), { timeout: 590000 });
+      return { out, vP, pP, mP };
+    } catch (e) {
+      console.log('  ⚠ ' + new Date().toISOString() + ' chunk c' + t.done + ' 失敗(' + ((e && e.message) || e).toString().slice(0, 120) + ')' + (at === 1 ? ' → リトライ' : ' → 打ち切り'));
+      if (at === 2) { process.stdout.write((e.stdout || '') + (e.stderr || '')); process.exit(1); }
+    }
+  }
+}
 async function selfplayGen(g) {
   const tasks = [];
   for (let done = 0; done < GAMES; done += CHUNK) tasks.push({ done, n: Math.min(CHUNK, GAMES - done) });
   const vAll = [], pAll = []; let meta = null;
   for (let i = 0; i < tasks.length; i += WORKERS) {                              // WORKERS 件ずつ並列バッチ
-    const results = await Promise.all(tasks.slice(i, i + WORKERS).map(t => {
-      const tag = path.join(os.tmpdir(), 'sppuct-' + g + '-' + t.done + '-' + process.pid);
-      const vP = tag + '-v.json', pP = tag + '-p.json', mP = tag + '-m.json';
-      return runHarnessAsync('sp-g' + g + '-c' + t.done, chunkHarness(900000 + g * 10000 + t.done, t.n, vP, pP, mP), { timeout: 590000 })
-        .then(out => ({ out, vP, pP, mP }))
-        .catch(e => { process.stdout.write((e.stdout || '') + (e.stderr || '')); process.exit(1); });
-    }));
+    const results = await Promise.all(tasks.slice(i, i + WORKERS).map(t => runChunk(g, t)));
     for (const r of results) {
       if (!/CHUNK value=/.test(r.out)) { console.error('✗ chunk結果なし\n' + r.out.slice(-400)); process.exit(1); }
       vAll.push(...JSON.parse(fs.readFileSync(r.vP, 'utf8')));
@@ -133,6 +141,7 @@ async function selfplayGen(g) {
       meta = JSON.parse(fs.readFileSync(r.mP, 'utf8'));
       for (const f of [r.vP, r.pP, r.mP]) { try { fs.unlinkSync(f); } catch (_) { } }
     }
+    console.log('  ' + new Date().toISOString() + ' 世代' + g + ' self-play進行: ' + Math.min(i + WORKERS, tasks.length) + '/' + tasks.length + ' chunk完了');
   }
   return { vAll, pAll, meta };
 }
