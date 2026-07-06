@@ -498,11 +498,17 @@
             cost: cd.cost != null ? cd.cost : 0, power: cd.power || 0, counter: cd.counter || 0,
             text: t, dataOnly: true
           };
-          if (/【ブロッカー】/.test(t)) base.blocker = true;
-          if (/【速攻】/.test(t)) base.rush = true;
-          if (/【速攻：キャラ】/.test(t)) base.rushChar = true; // 登場ターンにキャラへのみアタック可
-          if (/【ダブルアタック】/.test(t)) base.doubleAttack = true;
-          if (/【バニッシュ】/.test(t)) base.banish = true;
+          // テキスト由来のキーワード派生。ただし「他キャラへ付与(◯◯は【KW】を得る)」「相手の【KW】を持つ〜(参照)」は
+          // 自身のキーワードではないので除外する（例 OP16-048バギー=「インペルダウンの囚人」に【ブロッカー】を付与するだけでバギー自身は非ブロッカー）。
+          // 自身のキーワード = 標準トークン(直後が を得る/を与える/を持つ でない) または 「このキャラ…(：。を跨がず)…【KW】を得る」(条件付き自己付与は現状維持)。
+          const innateKw = (jp) =>
+            new RegExp('【' + jp + '】(?!を得る|を与える|を持つ)').test(t) ||
+            new RegExp('このキャラ[^。：]*【' + jp + '】を得る').test(t);
+          if (innateKw('ブロッカー')) base.blocker = true;
+          if (innateKw('速攻')) base.rush = true;
+          if (innateKw('速攻：キャラ')) base.rushChar = true; // 登場ターンにキャラへのみアタック可
+          if (innateKw('ダブルアタック')) base.doubleAttack = true;
+          if (innateKw('バニッシュ')) base.banish = true;
           if (cd.type === 'LEADER') { base.leader = '_' + cd.no; base.life = cd.life != null ? cd.life : 5; base.donDeck = 10; }
         }
         // 効果fxは CARD_FX を正とし、def済み/データのみ問わず一律に付与（効果定義を cards-fx.js に一元化）。

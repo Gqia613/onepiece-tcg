@@ -24,27 +24,6 @@ const hamItem: CSSProperties = {
   background: 'transparent', color: 'var(--ink)', fontSize: 13.5,
 };
 
-// 常時HUD（元 src/40-ui-render.js hudPlateHTML）。両者の LIFE/手札/デッキ/ドン をトップバーに表示。
-// App が version を購読して再描画するので、その都度 engine.G から算出する。
-function HudPlate({ engine, side }: { engine: any; side: 'me' | 'cpu' }) {
-  const P = engine.G.players?.[side];
-  if (!P || !P.don) return null;
-  const donNow = P.don.active || 0;
-  const attached = [P.leader, ...(P.chars || []), ...(P.stage ? [P.stage] : [])]
-    .reduce((s: number, c: any) => s + ((c && c.attachedDon) || 0), 0);
-  const donAll = donNow + (P.don.rested || 0) + attached; // = donTotal(side)
-  const active = engine.G.active === side;
-  return (
-    <div className={'hud-plate ' + side + (active ? ' turn' : '')}>
-      <span className="hp-name">{side === 'me' ? 'YOU' : 'CPU'}</span>
-      <span className="hp-stat life" title="ライフ"><i>❤</i><b>{P.life.length}</b></span>
-      <span className="hp-stat hand" title="手札"><i>🂠</i><b>{P.hand.length}</b></span>
-      <span className="hp-stat deck" title="デッキ残"><i>▤</i><b>{P.deck.length}</b></span>
-      <span className="hp-stat don" title="アクティブなドン / 場のドン合計"><i>◈</i><b>{donNow}</b><small>/{donAll}</small></span>
-    </div>
-  );
-}
-
 // ターンピル＋フェイズステッパー（元 setPhase）。リフレッシュ→ドロー→ドン→メイン→エンドの現在地を点灯。
 const PHASE_STEPS = ['リフレッシュ', 'ドロー', 'ドン', 'メイン', 'エンド'];
 function TurnPill({ engine }: { engine: any }) {
@@ -106,11 +85,9 @@ export default function App() {
     <div className="appshell">
       <div className="topbar">
         <div className="logo"><span className="logo-mark">⚓</span>ONE PIECE<small>BATTLE SIM</small></div>
-        {inGame ? <HudPlate engine={engine} side="me" /> : null}
         <div className="spacer" />
         {inGame ? <TurnPill engine={engine} /> : null}
         <div className="spacer" />
-        {inGame ? <HudPlate engine={engine} side="cpu" /> : null}
         {inGame ? (
           // CPUモード表示＝デッキ選択で選んだものと一致（通常/強い/AI）。ハンバーガーの左隣に配置。
           <span
