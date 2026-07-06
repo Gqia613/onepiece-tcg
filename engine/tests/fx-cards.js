@@ -640,6 +640,42 @@ humanPick=function(c){return Promise.resolve((c||[])[0]||null);};
       me.life=[I('ST01-006','me'),I('ST01-006','me'),I('ST01-006','me')]; const d1=me.deck.length;
       await runFx(me.leader.base.fx.onAttack,{self:me.leader,side:'me'});
       ok(me.deck.length===d1, 'ST29-001 onAttack: ライフ3以上では不発'); }
+    // OP10-045 キャベンディッシュ: 【アタック時】【ターン1回】2ドロー＆手札1枚捨て
+    G.players={me:mkP('OP11-041',false),cpu:mkP('OP11-041',true)}; G.active='me';
+    { const me=G.players.me; const cav=I('OP10-045','me'); me.chars=[cav];
+      me.deck=[I('OP15-067','me'),I('OP15-067','me'),I('OP15-067','me')]; me.hand=[I('OP15-067','me')];
+      const d0=me.deck.length,h0=me.hand.length,t0=me.trash.length;
+      await runFx(C['OP10-045'].fx.onAttack,{self:cav,side:'me'});
+      ok(me.deck.length===d0-2 && me.hand.length===h0+1 && me.trash.length===t0+1, 'OP10-045 onAttack: 2ドロー＆手札1捨て'); }
+    // === 赤青エース/ルーシー 公式照合修正の回帰（旧手書きdefの偽コスト減/偽ブロッカー/偽効果を是正） ===
+    // OP08-047 ジョズ: 白ひげリーダーでも偽の-4は無く常にコスト6・非ブロッカー・カウンター1000
+    G.players={me:mkP('OP13-002',false),cpu:mkP('OP11-041',true)}; G.active='me';
+    { const me=G.players.me; const jz=I('OP08-047','me'); me.hand=[jz];
+      ok(effCost('me',jz)===6 && !C['OP08-047'].blocker && C['OP08-047'].counter===1000, 'OP08-047: 白ひげLでもコスト6(偽-4撤去)・非ブロッカー・counter1000'); }
+    // ST23-001 ウタ: costModは「自分P10000以上のキャラがいる」時のみ-4（リーダー色では減らない）
+    G.players={me:mkP('OP13-002',false),cpu:mkP('OP11-041',true)}; G.active='me';
+    { const me=G.players.me; const uta=I('ST23-001','me'); me.hand=[uta];
+      const c0=effCost('me',uta); me.chars=[I('OP13-042','me')]; const c1=effCost('me',uta);
+      ok(c0===6 && c1===2 && C['ST23-001'].counter===2000, 'ST23-001: 10000+キャラ不在=6/在=2(赤青Lでは減らない)・counter2000'); }
+    // OP13-054 ヤマト: ライフ3以下で2ドロー+リーダーにレストドン1（旧偽のバウンス/常在+1000は無い）
+    G.players={me:mkP('OP13-002',false),cpu:mkP('OP11-041',true)}; G.active='me';
+    { const me=G.players.me; me.life=[I('ST01-006','me'),I('ST01-006','me')]; me.deck=[I('OP15-067','me'),I('OP15-067','me'),I('OP15-067','me')]; me.don.rested=2; me.don.active=0;
+      const ym=I('OP13-054','me'); const d0=me.deck.length;
+      await runFx(C['OP13-054'].fx.onPlay,{self:ym,side:'me'});
+      ok(me.deck.length===d0-2 && me.leader.attachedDon===1 && !C['OP13-054'].fx.static && C['OP13-054'].counter===1000, 'OP13-054: ライフ3以下で2ドロー+レストドン1(常在バフ無し)・counter1000'); }
+    // OP13-043 お玉: 公式はドン付与しない・カウンター2000
+    G.players={me:mkP('OP13-002',false),cpu:mkP('OP11-041',true)}; G.active='me';
+    { const me=G.players.me; me.life=[I('ST01-006','me')]; me.deck=[I('OP15-067','me'),I('OP15-067','me')]; me.hand=[I('OP15-067','me')]; me.don.rested=2; me.don.active=0;
+      const ot=I('OP13-043','me'); await runFx(C['OP13-043'].fx.onPlay,{self:ot,side:'me'});
+      ok(me.leader.attachedDon===0 && C['OP13-043'].counter===2000, 'OP13-043: お玉はドン付与しない・counter2000'); }
+    // OP04-056: 相手キャラをデッキ下(バウンスでない)・カウンター効果は無い
+    ok(C['OP04-056'].fx.main.fx[0].op==='deckBottom' && !C['OP04-056'].fx.counter, 'OP04-056: 主効果=デッキ下・【カウンター】無し(公式準拠)');
+    // OP13-057: 【カウンター】は+3000（旧+2000は誤り）
+    ok(C['OP13-057'].fx.counter.fx.some(o=>o.op==='counterBuff'&&o.amount===3000), 'OP13-057: 【カウンター】+3000');
+    // OP10-045: ドレスローザ特徴（デッキ内サーチ/登場シナジーの対象）
+    ok(C['OP10-045'].traits.includes('ドレスローザ'), 'OP10-045: ドレスローザ特徴を持つ');
+    // ST22-002 イゾウ: 相手アタック時効果あり・特徴は「白ひげ海賊団」(元白ひげ海賊団ではない)
+    ok(C['ST22-002'].fx.onOppAttack && C['ST22-002'].traits.includes('白ひげ海賊団') && !C['ST22-002'].traits.includes('元白ひげ海賊団'), 'ST22-002: 相手アタック時効果あり・白ひげ海賊団特徴');
     // OP16-022 ルフィ: 【起動メイン】自キャラがインペルダウンのみでドン2アクティブ
     G.players={me:mkP('OP16-022',false),cpu:mkP('OP11-041',true)}; G.active='me';
     { const me=G.players.me; me.don.rested=2; me.don.active=0; me.donMax=10;

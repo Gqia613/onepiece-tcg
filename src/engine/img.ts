@@ -12,3 +12,7 @@ export const IMG_RAW = (no: string) =>
 // ライフ用 横向き（270°回転＝左側が画像の上）
 export const IMG_ROT = (no: string) =>
   `https://images.weserv.nl/?url=${HOST}/${no}.png&ro=270&w=320`;
+
+// 拡大表示用（高解像度）。カードリストモーダルのタップ拡大などに使う。
+export const IMG_BIG = (no: string) =>
+  `https://images.weserv.nl/?url=${HOST}/${no}.png&w=640`;

@@ -647,6 +647,7 @@
         case 'trashSelfCost': {
           const inChars = P.chars.includes(self), isStage = P.stage === self;
           if (!inChars && !isStage) break;
+          if (op.cpuSkip && P.isCPU) break; // CPUは反射的に自壊しない任意コスト（confirmUse常true対策。ST22-002イゾウの相手アタック時等）
           if (!(await confirmUse(side, '自身をトラッシュ', `「${self.base.name}」をトラッシュに置いて効果を使いますか？`, '置いて使う'))) break;
           P.don.rested += self.attachedDon || 0;
           if (inChars) removeChar(self); if (isStage) P.stage = null;

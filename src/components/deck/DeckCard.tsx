@@ -11,11 +11,12 @@ const COLOR_HEX: Record<string, string> = {
   紫: 'var(--c-purple)', 黒: 'var(--c-black)', 黄: 'var(--c-yellow)',
 };
 
-export function DeckCard({ deck, selected, onSelect, onDelete }: {
+export function DeckCard({ deck, selected, onSelect, onDelete, onShowList }: {
   deck: Deck;
   selected: boolean;
   onSelect: () => void;
   onDelete?: () => void; // クラウド保存デッキのみ削除可
+  onShowList?: () => void; // カードリストをモーダル表示
 }) {
   // DECKS の色フィールドは colors（custom デッキも colors）。念のため color もフォールバック。
   const colors = deck.colors || deck.color || [];
@@ -40,6 +41,19 @@ export function DeckCard({ deck, selected, onSelect, onDelete }: {
             fontSize: 13, cursor: 'pointer', padding: 0,
           }}
         >×</button>
+      ) : null}
+
+      {onShowList ? (
+        <button
+          title="カードリストを見る"
+          onClick={(e) => { e.stopPropagation(); onShowList(); }}
+          style={{
+            position: 'absolute', top: 6, right: onDelete ? 34 : 6, zIndex: 11,
+            fontSize: 10.5, fontWeight: 700, cursor: 'pointer',
+            background: 'rgba(0,0,0,.78)', border: '1px solid var(--surface-edge)',
+            color: 'var(--ink)', padding: '2px 8px', borderRadius: 999,
+          }}
+        >📋 カードリスト</button>
       ) : null}
 
       <div className="art" style={{ backgroundImage: `url('${IMG(deck.leader)}')` }}>

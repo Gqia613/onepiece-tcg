@@ -3852,6 +3852,55 @@ button.hb-chip:not(.zero):not([disabled]):hover {
   display: flex
 }
 
+/* デッキリストモーダルのカードサムネイル（.trash-modal-grid に依存せず単体で成立）。
+   リーダー行のサムネイルもこれで描く＝グリッド外でも画像が原寸で溢れない/名前が崩れない。 */
+.dl-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, 62px);
+  justify-content: start;
+  gap: 8px
+}
+
+.dl-thumb {
+  position: relative;
+  aspect-ratio: 1/1.4;
+  border-radius: 6px;
+  overflow: hidden;
+  background: var(--surface-2);
+  border: 1px solid var(--surface-edge);
+  cursor: zoom-in;
+  transition: border-color .15s, transform .15s
+}
+
+.dl-thumb:hover {
+  border-color: var(--gold);
+  transform: translateY(-2px)
+}
+
+.dl-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block
+}
+
+.dl-thumb .dl-fb {
+  position: absolute;
+  inset: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  font-size: 9px;
+  padding: 3px;
+  line-height: 1.25;
+  color: var(--ink)
+}
+
+.dl-thumb.noimg .dl-fb {
+  display: flex
+}
+
 @media(max-width:680px) {
   .deck-list-cols {
     columns: 1

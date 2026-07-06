@@ -6,6 +6,7 @@ import { useEngineStore } from '../state/engineStore';
 import { unlockAudio } from '../audio';
 import type { Deck } from '../engine/types';
 import { DeckCard } from '../components/deck/DeckCard';
+import { DeckListModal } from '../components/deck/DeckListModal';
 import { importAndSaveDeck, deleteCloudDeck } from '../state/decks';
 
 // 元 renderSelect の tier 昇順ソート（src/60-screens-init.js:12-13）。
@@ -17,6 +18,7 @@ export default function DeckSelect() {
   const fileRef = useRef<HTMLInputElement>(null);
   const [msg, setMsg] = useState<{ text: string; err?: boolean } | null>(null);
   const [busy, setBusy] = useState(false);
+  const [listDeck, setListDeck] = useState<Deck | null>(null); // カードリスト表示中のデッキ
   if (!engine) return null;
   const G = engine.G;
 
@@ -94,6 +96,7 @@ export default function DeckSelect() {
           selected={G.sel![side] === d.id}
           onSelect={() => selDeck(side, d.id)}
           onDelete={(d as any).cloud ? () => onDeleteDeck(d.id, d.name) : undefined}
+          onShowList={() => setListDeck(d)}
         />
       ))}
     </div>
@@ -195,6 +198,8 @@ export default function DeckSelect() {
 
       <div className="sect-label">② 対戦相手 (CPU) のデッキ</div>
       {grid('cpu')}
+
+      <DeckListModal deck={listDeck} C={engine.C || {}} onClose={() => setListDeck(null)} />
     </div>
   );
 }

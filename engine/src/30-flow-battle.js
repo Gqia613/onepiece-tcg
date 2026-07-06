@@ -575,18 +575,16 @@
           }
           render();
         } else if (v === '__lucy') { await lucyCounter(dSide, target); }
-        else if (v === '__ace') { await aceCounter(dSide, attacker); }
       }
     }
+    // 【エース】相手のアタック時の手札1枚捨て→相手-2000 は fx.onOppAttack(OP13-002)が担当（人間=宣言時に選択）。
+    // CPUだけは fx を cpuSkip し、下の aceCounter を賢く（生存に必要な時のみ）使う。二重発動を避けるため人間用の counter-step オプションは持たない。
     function defenderLeaderReactionOpts(dSide, attacker, target) {
       const D = G.players[dSide]; const out = [];
       if (isNegated(D.leader)) return out;
       if (D.leader.base.leader === 'lucy' && target.uid === D.leader.uid) {
         const ev = D.hand.filter(c => c.base.type === 'EVENT' || c.base.type === 'STAGE');
         if (ev.length) out.push({ t: `【ルーシー】イベント/ステージを捨て+1000`, v: '__lucy' });
-      }
-      if (D.leader.base.leader === 'ace') {
-        if (D.hand.length > 0 && !D._aceUsed) out.push({ t: `【エース】手札1枚捨て:相手-2000`, v: '__ace' });
       }
       return out;
     }
@@ -606,7 +604,7 @@
       const D = G.players[dSide];
       if (D.hand.length === 0) return;
       const c = await chooseFromHand(dSide, D.hand, '捨てる手札を選択');
-      if (c) { D.hand.splice(D.hand.indexOf(c), 1); D.trash.push(reset(c)); addBuff(attacker, -2000, 'battle'); floatOn(attacker.uid, '-2000', 'dmg'); D._aceUsed = true; flog(dSide, '【エース】相手-2000'); render(); }
+      if (c) { D.hand.splice(D.hand.indexOf(c), 1); D.trash.push(reset(c)); addBuff(attacker, -2000, 'battle'); floatOn(attacker.uid, '-2000', 'dmg'); D._aceCounterTurn = G.turnSeq; flog(dSide, '【エース】相手-2000'); render(); }
     }
     // カウンターイベント/【カウンター】効果が戦闘にもたらすパワー差の見積もり（自分+ / 相手- を加算）
     function counterEventValue(side, fxArr) {
@@ -677,7 +675,7 @@
       const numSum = D.hand.reduce((s, c) => s + (cval(c) > 0 ? cval(c) : 0), 0);
       const evSum = evList.reduce((s, x) => s + x.val, 0);
       const lucyVal = (!isNegated(D.leader) && D.leader.base.leader === 'lucy' && isLeader && D.hand.some(c => c.base.type === 'EVENT' || c.base.type === 'STAGE')) ? 1000 : 0;
-      const aceVal = (!isNegated(D.leader) && D.leader.base.leader === 'ace' && D.hand.length > 0 && !D._aceUsed) ? 2000 : 0;
+      const aceVal = (!isNegated(D.leader) && D.leader.base.leader === 'ace' && D.hand.length > 0 && D._aceCounterTurn !== G.turnSeq) ? 2000 : 0;
       if (numSum + evSum + lucyVal + aceVal <= need0) return; // どう足掻いても止められない→手札を温存して素受け
       // 数値カウンターを最小枚数で（1枚で耐えられるなら最小の1枚／足りなければ大きい順に最小枚数）
       const ascN = D.hand.filter(c => cval(c) > 0).sort((a, b) => cval(a) - cval(b));
@@ -699,7 +697,7 @@
       }
       if (power(attacker) - power(target) >= 0 && !isNegated(D.leader)) {
         if (D.leader.base.leader === 'lucy' && isLeader && D.hand.some(c => c.base.type === 'EVENT' || c.base.type === 'STAGE')) await lucyCounter(dSide, target);
-        if (power(attacker) - power(target) >= 0 && D.leader.base.leader === 'ace' && D.hand.length > 0 && !D._aceUsed) await aceCounter(dSide, attacker);
+        if (power(attacker) - power(target) >= 0 && D.leader.base.leader === 'ace' && D.hand.length > 0 && D._aceCounterTurn !== G.turnSeq) await aceCounter(dSide, attacker);
       }
       render();
     }

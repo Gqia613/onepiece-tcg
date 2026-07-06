@@ -103,7 +103,7 @@
       no: 'OP15-053', name: 'レベッカ', color: ['青'], type: 'CHAR', cost: 1, power: 0, counter: 1000, traits: ['ドレスローザ'], condBlocker: 'donX1', text: 'ドン付与1以上で【ブロッカー】。【登場時】デッキ上3枚からドレスローザ1枚'
     });
     def({
-      no: 'OP10-045', name: 'キャベンディッシュ', color: ['青'], type: 'CHAR', cost: 4, power: 6000, counter: 0, traits: ['美しき海賊団'], text: '【登場時】1ドロー、手札1枚をデッキ下'
+      no: 'OP10-045', name: 'キャベンディッシュ', color: ['青'], type: 'CHAR', cost: 4, power: 6000, counter: 0, traits: ['ドレスローザ', '美しき海賊団'], text: '【アタック時】【ターン1回】2ドロー、手札1枚を捨てる'
     });
     def({
       no: 'OP15-047', name: 'サンジ', color: ['青'], type: 'CHAR', cost: 3, power: 4000, counter: 1000, blocker: true, traits: ['ドレスローザ', '麦わらの一味'], text: '【ブロッカー】【登場時】自キャラ1枚に【ブロック不可】'
@@ -124,7 +124,7 @@
     });
     def({
       no: 'OP04-056', name: 'ゴムゴムの業火拳銃', color: ['青'], type: 'EVENT', cost: 6, traits: ['麦わらの一味'],
-      text: '【メイン】相手コスト7以下を手札に戻す 【カウンター】+2000'
+      text: '【メイン】キャラ1枚までを、持ち主のデッキの下に置く'
     });
     def({
       no: 'OP15-020', name: '火拳', color: ['赤'], type: 'EVENT', cost: 7, traits: ['ドレスローザ', '革命軍'],
@@ -151,25 +151,25 @@
       no: 'OP13-016', name: 'モンキー・D・ガープ', color: ['赤'], type: 'CHAR', cost: 1, power: 2000, counter: 1000, traits: ['海軍'], text: '【登場時】デッキ上4枚からコスト3以上1枚を手札に'
     });
     def({
-      no: 'ST22-002', name: 'イゾウ', color: ['青'], type: 'CHAR', cost: 1, power: 0, counter: 1000, traits: ['ワノ国', '元白ひげ海賊団'], text: '【登場時】デッキ上5枚から白ひげ海賊団1枚を手札に'
+      no: 'ST22-002', name: 'イゾウ', color: ['青'], type: 'CHAR', cost: 1, power: 0, counter: 1000, traits: ['ワノ国', '白ひげ海賊団'], text: '【登場時】デッキ上5枚から白ひげ海賊団1枚を手札に。【相手のアタック時】自身をトラッシュ:1ドロー、手札1枚をデッキ下'
     });
     def({
       no: 'PRB02-008', name: 'マルコ', color: ['青'], type: 'CHAR', cost: 4, power: 6000, blocker: true, traits: ['ワノ国', '元白ひげ海賊団'], text: '【ブロッカー】【KO時】2ドロー'
     });
     def({
-      no: 'OP13-043', name: 'お玉', color: ['青'], type: 'CHAR', cost: 1, power: 0, traits: ['ワノ国'],
-      text: '【登場時】ライフ3以下:2ドロー手札1枚捨て、リーダーにドン1付与'
+      no: 'OP13-043', name: 'お玉', color: ['青'], type: 'CHAR', cost: 1, power: 0, counter: 2000, traits: ['ワノ国'],
+      text: '【登場時】ライフ3以下:2ドロー手札1枚捨て'
     });
     def({
-      no: 'OP13-054', name: 'ヤマト', color: ['青'], type: 'CHAR', cost: 5, power: 6000, traits: ['ワノ国'],
-      text: '【登場時】相手コスト5以下を手札に戻す、リーダーにドン1付与。【ドン×1】+1000'
+      no: 'OP13-054', name: 'ヤマト', color: ['青'], type: 'CHAR', cost: 5, power: 6000, counter: 1000, traits: ['ワノ国'],
+      text: '【登場時】ライフ3以下:2ドロー、リーダーにレストのドン1付与'
     });
     def({
-      no: 'ST23-001', name: 'ウタ', color: ['赤'], type: 'CHAR', cost: 6, costMod: { cond: 'leaderRB', amount: -4 }, power: 4000, blocker: true, traits: ['FILM'],
-      text: 'リーダー赤/青でコスト-4。【ブロッカー】【登場時】相手コスト6以下をデッキ下'
+      no: 'ST23-001', name: 'ウタ', color: ['赤'], type: 'CHAR', cost: 6, power: 4000, counter: 2000, blocker: true, traits: ['FILM'],
+      text: '手札のこのカードは自分のパワー10000以上のキャラがいればコスト-4。【ブロッカー】'
     });
     def({
-      no: 'OP08-047', name: 'ジョズ', color: ['青'], type: 'CHAR', cost: 6, costMod: { cond: 'leaderWB', amount: -4 }, power: 7000, blocker: true, traits: ['白ひげ海賊団'], text: '白ひげリーダーでコスト-4。【ブロッカー】【登場時】相手コスト4以下を手札に戻す'
+      no: 'OP08-047', name: 'ジョズ', color: ['青'], type: 'CHAR', cost: 6, power: 7000, counter: 1000, traits: ['白ひげ海賊団'], text: '【登場時】自キャラ1枚(自身以外)を持ち主の手札に戻す:コスト6以下1枚を持ち主の手札に戻す'
     });
     def({
       no: 'OP13-042', name: 'エドワード・ニューゲート', color: ['青'], type: 'CHAR', cost: 10, power: 12000, blocker: true, traits: ['四皇', '白ひげ海賊団'],
@@ -180,16 +180,16 @@
       text: '【登場時】自リーダー+2000(次の自ターンまで)。【ドン×2】【アタック時】相手3000以下KO'
     });
     def({
-      no: 'OP09-118', name: 'ゴール・D・ロジャー', color: ['赤'], type: 'CHAR', cost: 10, power: 13000, rush: true, traits: ['ロジャー海賊団'],
-      text: '【速攻】アタック時ブロッカー不可。【登場時】自ライフ上1枚を手札に'
+      no: 'OP09-118', name: 'ゴール・D・ロジャー', color: ['赤'], type: 'CHAR', cost: 10, power: 13000, rush: true, traits: ['海賊王', 'ロジャー海賊団'],
+      text: '【速攻】相手が【ブロッカー】発動時、どちらかのライフが0なら勝利'
     });
     def({
       no: 'EB02-006', name: 'ヤマト', color: ['赤'], type: 'CHAR', cost: 6, power: 7000, traits: ['ワノ国'],
       text: '【起動】【ターン1】リーダーにドン1付与し、自身【速攻】'
     });
     def({
-      no: 'ST22-015', name: 'おれァ“白ひげ”だァア!!!!', color: ['青'], type: 'EVENT', cost: 8, traits: ['白ひげ海賊団'],
-      text: '【メイン】手札の「エドワード・ニューゲート」を登場（登場時効果なし）'
+      no: 'ST22-015', name: 'おれァ“白ひげ”だァア!!!!', color: ['青'], type: 'EVENT', cost: 8, traits: ['四皇', '白ひげ海賊団'],
+      text: '【メイン】白ひげリーダーなら手札の「エドワード・ニューゲート」を登場。ライフ1枚を手札に加えてよく、そうしたらリーダー+2000(次相手ターン終了時まで)'
     });
     def({
       no: 'OP13-057', name: '"力"に屈したら男に生まれた意味がねェだろう', color: ['青'], type: 'EVENT', cost: 1, traits: ['白ひげ海賊団'],
@@ -448,6 +448,29 @@
           'OP16-094': 4, 'OP16-089': 2, 'OP16-084': 2,
           'OP16-081': 4, 'OP16-088': 3, 'OP16-091': 2,
           'OP16-100': 2, 'OP16-101': 2
+        }
+      },
+      {
+        // 青緑ルフィ（OP16新リーダー OP16-022）。2026/6/7開催フラッグシップバトル優勝構築準拠（cardrush.media/onepiece/decks/1605）。
+        // リーダー・全採用カードのfxは cards-fx.js に実装済み（OP16全枚数を official-op16.js で公式照合済み。OP16-042は「何枚でも入る」ルール札＝効果なしが正）。
+        id: 'luffygb', name: '青緑ルフィ', leader: 'OP16-022', colors: ['緑', '青'], tier: 'TIER 1', usage: '5.5%',
+        style: 'ミッドレンジ', accuracy: 'high',
+        desc: 'OP16新リーダー。《インペルダウン》のみで盤面を固めリーダー効果でドン!!2枚をアクティブに変換（実質ドン加速）。クロコダイル/バギーの登場時展開とMr.1/2/3の火力、ブロック不可ハンコックで押し込む展開ミッドレンジ。2026/6/7フラッグシップ優勝構築準拠。',
+        list: {
+          'OP16-042': 8, 'OP16-055': 4, 'OP16-054': 4, 'OP16-056': 4, 'OP16-045': 4, 'OP16-048': 4, 'OP16-026': 4,
+          'OP16-027': 4, 'OP16-034': 4, 'ST30-010': 2, 'OP16-032': 2,
+          'OP13-040': 3, 'OP16-038': 2, 'OP12-037': 1
+        }
+      },
+      {
+        // 青バギー（OP16新リーダー OP16-041）。カードラッシュ公式販売デッキ ver1.0 準拠（cardrush-op.jp/product/13683）。
+        // リーダー効果（《インペルダウン》離場時に手札から「インペルダウンの囚人」を登場）・全採用カードのfxは cards-fx.js に実装済み。
+        id: 'buggy', name: '青バギー', leader: 'OP16-041', colors: ['青'], tier: 'TIER 2', usage: '4.0%',
+        style: 'ミッドレンジ', accuracy: 'high',
+        desc: 'OP16新リーダー。《インペルダウン》のキャラが場を離れるたび手札から6コスト6000「インペルダウンの囚人」を登場。囚人を無制限投入（16枚）しバウンス/自壊とかみ合わせ毎ターン大型を並べ替える展開デッキ。',
+        list: {
+          'OP16-042': 16, 'OP16-054': 4, 'OP16-055': 4, 'OP16-056': 4, 'OP16-045': 4, 'OP16-050': 4, 'OP16-048': 4,
+          'OP08-047': 4, 'OP16-059': 4, 'OP07-056': 2
         }
       },
     ];
