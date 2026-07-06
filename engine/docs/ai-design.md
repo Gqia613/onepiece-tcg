@@ -373,7 +373,11 @@ puct-enel が弱い原因を **行動集計で診断**（enelミラー me=enel v
 
 ### 10.2 測定結果（鍵不要の決定的範囲）
 - **enel静的プロファイル: ✗ 有意に直らず**。enelミラー hybridoff 対h **-8.3pt**(差動特徴が対称で相殺＝シェイプほぼ無効＝depth6 puct相当)。enel vs teach(非対称)は band1 +16.7pt/band2 -4.2pt＝**N=24ノイズ域で再現せず**。→ **静的1ベクトルでは不掲載**。ただし**マッチアップ依存で効く兆候**あり＝静的でなく **liveのper-matchup Claude(Phase2)が本筋**（鍵を入れて実測する価値あり）。
-- **liveの実強度は未測定**（環境にAPIキーが無いため）。配管(キャッシュ適用/フォールバック/決定的再生)は鍵不要で全て検証済み。**ユーザーが鍵付きproxyでウォーム→measureすれば決定的に採否できる**。
+- **★E37(2026-07-06)＝liveの実強度を実測（APIキー提供・E25回収）**: warm(各対面20局・sonnet・全局面で戦略取得成功)→決定的再生で測定（seed帯600000・N=60ペア）。
+  **teachミラー: hybrid +16.7pt(p=0.041★) ＝ 素のpuct +16.7pt(p=0.052)と完全同値＝Claude層の寄与ゼロ**。
+  **enel: ミラー-5.0pt/対teach-10.0pt(p=0.070)＝フォールバック先mcts(±0〜+5.0)より最大15pt有害**。§10.2の「band1 +16.7pt」の兆候はノイズと確定。
+  → ✅採用: **`HYBRID_SKIP={enel:1}`**（hybridTurn＝enelはシェイプせず素のpuct→PUCT_MCTS経由mcts直行・API節約・回帰ai-core 10c・`G._hybridNoSkip`で再測定可）。teach等は無害につきhybrid維持（lucy/ace/nami/hancockは未測定）。
+  付随修正: live経路の潜在バグ2件（llm-warm-cache: stubs下undici fetch崩壊＋stub setTimeoutで9s abort即発火→httpミニfetch／巨大キャッシュのstdout切断→ファイル受け渡し。コミット501d387）。
 
 ### 10.3 Phase5：JS探索の更なる強化 → 多手先木は✗・天井は依然puct
 - **多手先PUCT木 `puct2`（agent='puct2'）を実装→測定で退行確定**: teachミラー同一seed N=40で **puct2 -25.0pt(p=0.041★) / 同条件 puct +27.5pt(p=0.013★)**。SIMS増(32→120)でも-16.7pt。薄い木が第1手の訪問数を分散させ「最多訪問」が不安定で、puctの「各候補をK回ロールアウトで集中評価」に**構造的に劣る**(vlook/StageC退行と同根)。→ **opt-in実験として残置**（将来value-netの葉を載せる足場）。

@@ -237,6 +237,17 @@
 - **★副次発見＝E27「mcts対h+8.3pt」の正体**: E27コミット(6293a02)のworktree再現で、**+8.3ptはenel対teach（不利マッチ）の値**（再現+10.0pt 改善6/退行0 p=0.031★）。**ミラーは当時から+1.7pt(1/0)＝元々ほぼ効果なし**。現在コードでは対teachも+5.0pt(4/1 p=0.375)に減衰（太ドン抑制等の正当なheuristic変更で読み筋が変化・バグではない＝決定的再現で確認）。
 - 結論: **棄却＝mcts-enelは計算量を4倍にしても伸びない**（評価飽和で方針候補が区別できない構造）。`PUCT_MCTS={enel:1}`は維持（ミラー無害・対teachで小さな正）。**enelの実効的な残レバーは「ユーザー観察→heuristic修正」（E08型・enel最大の+6pt実績）と Hybrid live（E25）のみ**。
 
+## E37 / 2026-07-06: Hybrid live実測（E25回収）→ ❌teach±0・enel有害＝enelをHYBRID_SKIPへ（✅採用）
+- 仮説: live Claude（per-matchup戦略シェイプ）がpuctを強くする（§10.2の兆候）。特にenelは静的プロファイル✗でもliveなら効くかも＝enel最後の未測定レバー。
+- 設定: ユーザーがAPIキー提供（`.dev.vars`・gitignore済）→`llm-proxy`→`llm-warm-cache.js`で enel:teach/enelミラー/teachミラー 各20局の戦略をfixtureに焼き→`measure-matchup.js OPCG_LLM_CACHE`で決定的再生（seed帯600000・N=60ペア＋符号検定）。**live経路の潜在バグ2件を修正**（①stubs下で実fetch(undici)がTypeError＋stub setTimeoutが遅延無視でcallClaudeの9s abort即発火→http直叩きミニfetch(signal無視)に差し替え ②巨大キャッシュJSONのstdout受け渡しがmaxBuffer切断→一時ファイル経由。コミット501d387）。warmは全局面で戦略取得成功（sonnet・マッチアップを認識した具体的な指示が返る＝配管は完動）。
+- 結果（同一seed帯・対h）:
+  | 対面 | hybrid | 基準 |
+  |---|---|---|
+  | **teachミラー** | **+16.7pt(15/5 p=0.041★)** | **素のpuct +16.7pt(16/6 p=0.052)＝完全同値** |
+  | enelミラー | -5.0pt(5/8 p=0.581) | 素のpuct -11.7 / フォールバック先mcts ±0 |
+  | enel対teach | **-10.0pt(1/7 p=0.070)** | mcts +5.0 ＝Claude層が最大15pt損 |
+- 結論: **Claude戦略シェイプは「足さない(teach)か有害(enel)」**。§10.2の兆候（band1 +16.7pt）はノイズと確定。✅採用: `HYBRID_SKIP={enel:1}`（`src/70-ai.js` hybridTurn＝enelはシェイプせず素のpuct→PUCT_MCTS経由でmcts直行・API呼び出しも節約・回帰`tests/ai-core.js` 10c・`G._hybridNoSkip`で再測定可）。teach等は無害につきhybrid維持。未測定: lucy/ace/nami/hancockのhybrid（必要なら1対面約20分で追測可）。**E25はこれで回収完了**。
+
 ---
 
 ## 台帳サマリ（2026-07-03 時点・opcg-pm）

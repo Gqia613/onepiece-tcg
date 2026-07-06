@@ -197,6 +197,17 @@ function chk(name, cond) { if (cond) pass++; else { fail++; console.log('  ✗ '
   chk('hybrid(Claude不可→puctフォールバック) 1局完走（web版AIモードの土台）', wy === 'me' || wy === 'cpu');
   G._proxyUp = undefined;
 
+  // 10c) ★E37: enelはClaude戦略シェイプが有害(ミラー-5.0/対teach-10.0pt)→HYBRID_SKIPで素のpuct(=mcts)へ直行。
+  //      enelのhybridターンでLLM問い合わせ(fetchStrategyFromClaude)が一度も呼ばれず、1局完走することを確認。
+  let llmCalls = 0;
+  const _fsc = fetchStrategyFromClaude;
+  fetchStrategyFromClaude = async function (side) { llmCalls++; return _fsc(side); };
+  G.players = {}; G.winner = null; G.inGame = false; seedRng(36);
+  startGame('enel', 'teach'); G.players.me.isCPU = true; G.players.me.agent = 'hybrid'; G.players.cpu.agent = 'heuristic';
+  { let it = 0; while (!(G.winner && !G._sim) && it < 3000000) { await new Promise(r => setImmediate(r)); it++; } }
+  fetchStrategyFromClaude = _fsc;
+  chk('hybrid(enel)はHYBRID_SKIPで素のpuctへ直行（LLM問い合わせ0・1局完走）', (G.winner === 'me' || G.winner === 'cpu') && llmCalls === 0);
+
   console.log('  AI基盤テスト: pass=' + pass + ' fail=' + fail);
   process.exit(fail ? 1 : 0);
 })();

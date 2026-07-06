@@ -686,8 +686,13 @@
 
     // hybrid = live。毎ターン1回Claude(proxy経由)に戦略を問い合わせ→キャッシュ→puctへ注入。
     //   キャッシュヒット時はLLMを呼ばない（決定的・コスト償却）。LLM不可時は凍結プロファイル→puctにフォールバック（ハングしない）。
+    //   ★E37(2026-07-06)実測: Claude戦略シェイプは teachミラー±0.0pt(素のpuctと完全同値)・enelは有害
+    //     (ミラー-5.0pt/対teach-10.0pt vs フォールバック先mcts±0〜+5.0)→ enelはシェイプせず素のpuct
+    //     (=PUCT_MCTS経由でmcts)へ直行。API呼び出しも節約。G._hybridNoSkipで無効化可(再測定用)。
+    var HYBRID_SKIP = { enel: 1 };
     async function hybridTurn(side) {
       if (G._sim) return heuristicTurn(side);
+      if (HYBRID_SKIP[leaderKeyOf(side)] && !G._hybridNoSkip) return puctTurn(side);
       let shape = null;
       try {
         const key = strategyKey(side);
