@@ -321,6 +321,7 @@
       if (card.base.type !== 'LEADER' && card.base.type !== 'CHAR') return false; // アタックできるのはリーダー/キャラのみ（ステージ・イベントは不可）
       if (card.rested) return false;
       if (cantAttackNeg(card)) return false;
+      if (card._atkTaxSeq != null && G.players[card.owner].hand.length < (card._atkTaxN || 2)) return false; // 攻撃税(OP08-043): 手札が足りず税を払えないキャラはアタック宣言できない
       if (isRestImmune(card)) return false; // 「レストにできない」＝アタック宣言できない（アタックはレストを伴う）
       if (!isNegated(card) && card.base.fx && card.base.fx.static && card.base.fx.static.some(o => o.op === 'cantAttack' && (!o.cond || checkCond(o.cond, card.owner, card)))) return false; // 「このリーダー/キャラはアタックできない」常在（cond対応＝OP11-058ルフィ手札5以上。効果無効中は解除＝OP14-056ワダツミの自身無効コンボ）
       if (card.owner !== G.active) return false;
@@ -358,6 +359,16 @@
     }
     async function declareAttack(attacker, target) {
       G.busy = true; G.pendingChoice = null; G.attackSel = null;
+      // 攻撃税（OP08-043ニューゲート）: このアタッカーに税(手札N捨て)が付いていれば、払えない/払わなければアタック不可（レスト前に判定）
+      if (attacker._atkTaxSeq != null) {
+        const AP = G.players[attacker.owner], taxN = attacker._atkTaxN || 2;
+        let paid = AP.hand.length >= taxN;
+        if (paid && !AP.isCPU) paid = await confirmUse(attacker.owner, '攻撃税', `手札${taxN}枚を捨ててアタックしますか？（捨てないとアタックできません）`, '捨てて攻撃');
+        if (!paid) { flog(attacker.owner, `攻撃税(手札${taxN}捨て)を払えず/払わずアタック中止`); if (AP.isCPU) { G.busy = true; } else { G.busy = false; G.myActable = true; } render(); return; }
+        if (AP.isCPU) { const disc = AP.hand.slice().sort((a, b) => ((a.base.counter || 0) - (b.base.counter || 0)) || ((a.base.cost || 0) - (b.base.cost || 0))).slice(0, taxN); for (const c of disc) { AP.hand.splice(AP.hand.indexOf(c), 1); AP.trash.push(reset(c)); } }
+        else { for (let i = 0; i < taxN; i++) { const c = await chooseFromHand(attacker.owner, AP.hand, `⚠ 攻撃税で捨てる（${i + 1}/${taxN}）`, null, false, 'danger'); if (!c) break; AP.hand.splice(AP.hand.indexOf(c), 1); AP.trash.push(reset(c)); } }
+        flog(attacker.owner, `攻撃税: 手札${taxN}枚を捨てた`); await fireHandDiscarded(attacker.owner, taxN);
+      }
       attacker.rested = true;
       const aSide = attacker.owner, dSide = opp(aSide);
       if (attacker.base.type === 'LEADER' && target && target.base.type === 'CHAR') G.players[aSide]._leaderBattledTurn = G.turnSeq; // リーダーが相手キャラとバトル（OP12-020ゾロLの起動メイン条件）
@@ -411,6 +422,10 @@
         const blocker = await chooseBlocker(dSide, attacker, target);
         if (blocker) {
           blocker.rested = true; blkTarget = blocker; G._atkTo = blocker.uid; flog(dSide, `「${blocker.base.name}」でブロック`); floatOn(blocker.uid, '🛡 BLOCK', 'buff'); sfx('block'); showAtkAnnounce(aSide, attacker, blocker); render(); await sleep(200); await luffyReveal(dSide);
+          // ゴール・D・ロジャー(OP09-118): 相手が【ブロッカー】を発動した時、どちらかのライフが0なら自分の勝利
+          if (!isNegated(attacker) && attacker.base.fx && attacker.base.fx.static && attacker.base.fx.static.some(o => o.op === 'winOnBlockLife0') && (G.players[aSide].life.length === 0 || G.players[dSide].life.length === 0)) { flog(aSide, '【ロジャー】相手のブロッカー発動時ライフ0で勝利'); lose(dSide, 'ロジャー: ブロッカー発動時ライフ0'); return; }
+          // 【相手が【ブロッカー】を発動した時】アタック側キャラの誘発（OP15-119ルフィ=ライフ公開してコスト分+1000）
+          for (const c of G.players[aSide].chars.slice()) { const cfg = c.base.fx && c.base.fx.onOppBlocker; if (!cfg || isNegated(c) || !G.players[aSide].chars.includes(c)) continue; if (cfg.once === 'turn') { if (c._oppBlockerTurn === G.turnSeq) continue; c._oppBlockerTurn = G.turnSeq; } await runFx(cfg.fx || cfg, { self: c, side: aSide }); }
           // 【ブロック時】(onBlock): ブロッカー宣言時に誘発（カウンター前）。fx未定義カードは無変化＝純粋に追加
           if (blocker.base.fx && blocker.base.fx.onBlock && !isNegated(blocker)) {
             const onceGated = blocker.base.fx.onBlock.some(o => o.once === 'turn'); // 【アタック時】/【ブロック時】【ターン1回】は両タイミング共有(_onceAtkBlkTurn)

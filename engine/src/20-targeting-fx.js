@@ -342,7 +342,7 @@
           if (op.target === 'allOwn' || op.target === 'allOwnL') { // 条件一致の自分のキャラ（Lはリーダー含む）全てに付与
             const dur = durTag(op.duration, 'turn');
             const pool = (op.target === 'allOwnL' ? [P.leader, ...P.chars] : P.chars).filter(c => matchFilter(c, opFilter(op)));
-            for (const t of pool) t.kwGrant.push({ kw: op.kw, dur });
+            for (const t of pool) t.kwGrant.push({ kw: op.kw, dur, self: t === self }); // self=自己付与（効果無効で失う。外部付与のみ残す）
             if (pool.length) flog(side, `自分のキャラ全てに【${kwJa(op.kw)}】`);
             break;
           }
@@ -350,11 +350,11 @@
           if (op.target === 'self') t = self;
           else if (op.target === 'chooseOwn') t = await chooseCard(side, P.chars.filter(c => matchFilter(c, opFilter(op))), `【${kwJa(op.kw)}】を与える対象`, 'ownBig', true);
           else if (op.target === 'chooseOwnL') t = await chooseCard(side, [P.leader, ...P.chars].filter(c => matchFilter(c, opFilter(op))), `【${kwJa(op.kw)}】を与える対象（リーダーかキャラ）`, 'ownBig', true);
-          if (t) { t.kwGrant.push({ kw: op.kw, dur: durTag(op.duration, 'turn') }); flog(side, `「${t.base.name}」に【${kwJa(op.kw)}】`); }
+          if (t) { t.kwGrant.push({ kw: op.kw, dur: durTag(op.duration, 'turn'), self: t === self }); flog(side, `「${t.base.name}」に【${kwJa(op.kw)}】`); } // self=自己付与（効果無効で失う。OP15-060エネルのブロッカー等）
           break;
         }
         case 'playSelf': { if (self) { await summon(side, self, false); flog(side, `「${self.base.name}」を登場させた`); } break; }
-        case 'lifeToHand': { if (P._noLifeToHandTurn === G.turnSeq) { flog(side, 'このターンは効果でライフを手札に加えられない'); break; } const ln = op.n || 1; let moved = 0; for (let i = 0; i < ln; i++) { const c = P.life.shift(); if (!c) break; P.hand.push(c); moved++; } if (moved) { flog(side, `自ライフ${moved}枚を手札に`); render(); fireSimpleReact(side, 'onLifeToHand'); if (op.then) await runFx(op.then, ctx); } break; }
+        case 'lifeToHand': { if (P._noLifeToHandTurn === G.turnSeq) { flog(side, 'このターンは効果でライフを手札に加えられない'); break; } if (op.optional && !(P.life.length && await confirmUse(side, 'ライフを手札に', 'ライフ1枚を手札に加えますか？', '加える'))) break; const ln = op.n || 1; let moved = 0; for (let i = 0; i < ln; i++) { const c = P.life.shift(); if (!c) break; P.hand.push(c); moved++; } if (moved) { flog(side, `自ライフ${moved}枚を手札に`); render(); fireSimpleReact(side, 'onLifeToHand'); if (op.then) await runFx(op.then, ctx); } break; }
         // 自分のライフをトラッシュに置く（OP05-100エネルの代わり）
         case 'lifeTrashSelf': { for (let i = 0; i < (op.n || 1); i++) { const c = P.life.shift(); if (!c) break; P.trash.push(c); } flog(side, '自分のライフをトラッシュに置いた'); render(); break; }
         // このターンの後に自分のターンを追加で得る（OP05-119ルフィ）
@@ -368,6 +368,8 @@
         // 場のキャラ1枚を持ち主のライフ上に裏向きで加える（OP12-117破壊弦。side:'any'=自分/相手両方が対象）
         case 'charToLife': { const cands = op.side === 'self' ? P.chars.filter(c => matchFilter(c, opFilter(op))) : op.side === 'any' ? [...oppChars(side, opFilter(op)), ...P.chars.filter(c => matchFilter(c, opFilter(op)))] : oppChars(side, opFilter(op)); const t = await chooseCard(side, cands, 'ライフに加えるキャラを選択', op.side === 'self' ? 'ownBig' : 'oppBig', op.optional); if (t) { const ow2 = G.players[t.owner]; removeChar(t); const card2 = reset(t); if (op.faceUp) card2._faceUp = true; const bottom = op.pos === 'bottom'; if (bottom) ow2.life.push(card2); else ow2.life.unshift(card2); flog(side, `「${t.base.name}」を${t.owner === side ? '自分' : '相手'}のライフ${bottom ? '下' : '上'}に${op.faceUp ? '表向きで' : ''}加えた`); render(); } break; } // faceUp=表向き / pos:'bottom'（OP11-116人魚柔術）
         case 'handToLife': { if (P.hand.length) { const c = P.hand.slice().sort((a, b) => (a.base.counter || 0) - (b.base.counter || 0))[0]; P.hand.splice(P.hand.indexOf(c), 1); P.life.unshift(faceDown(c)); flog(side, '手札1枚をライフの上に置いた'); } break; }
+        // 自分のライフ上1枚を公開し、そのコスト1につき self を+per(既定1000)パワー（このターン中）。OP15-119ルフィ
+        case 'revealLifeCostBuff': { if (!P.life.length) break; const cost = P.life[0].base.cost || 0; const amt = cost * (op.per || 1000); if (self && amt) { addBuff(self, amt, durTag(op.duration, 'turnEnd')); floatOn(self.uid, `+${amt}`, 'buff'); } flog(side, `ライフ上を公開(コスト${cost})→パワー+${amt}`); render(); break; }
         // 手札からfilter一致のキャラ1枚を選び、自分のライフの上に加える（faceUp=表向き）。OP10-103/107/119
         case 'handCharToLife': {
           const cands = P.hand.filter(x => x.base.type === 'CHAR' && matchFilter(x, op.filter || {}));
@@ -689,6 +691,7 @@
         // 盤面のキャラに一時的なコスト増減を付与（side:'opp'|'self', amount:±N, duration, filter）
         case 'addCostBuff': {
           const dur = durTag(op.duration, 'turnEnd');
+          if (op.target === 'self') { if (self) { self.buffs.push({ costAmt: op.amount, until: dur }); floatOn(self.uid, `コスト${op.amount > 0 ? '+' : ''}${op.amount}`, op.amount < 0 ? 'dmg' : 'buff'); render(); } break; } // このキャラ自身のコスト±（OP12-119くま=自身コスト+2で除去耐性）
           const isOpp = op.side !== 'self';
           if (op.all) { // 条件一致の対象すべてにコスト±（自分/相手）
             const cands = isOpp ? oppChars(side, opFilter(op)) : ownChars(side, opFilter(op));
@@ -844,6 +847,8 @@
           for (let i = 0; i < (op.count || 1); i++) { const cands = oppChars(side, opFilter(op)).filter(c => c.noAtkSeq == null); const t = P.isCPU ? cands[0] : await chooseCard(side, cands, 'アタック不可にする相手キャラ', 'oppBig', op.optional); if (!t) break; t.noAtkSeq = durSeq(op.duration); flog(side, `「${t.base.name}」はアタック不可`); }
           render(); break;
         }
+        // 攻撃税（OP08-043ニューゲート）: 相手のキャラすべてに「アタック時に手札N枚を捨てなければアタック不可」を付与。declareAttack冒頭で判定。
+        case 'attackTax': { const n = op.n || 2; const until = durSeq(op.duration || 'untilNextEnd'); for (const c of oppChars(side, {})) { c._atkTaxSeq = until; c._atkTaxN = n; } flog(side, `相手のキャラは次の相手ターン、手札${n}枚を捨てなければアタックできない`); render(); break; }
         // 自分のキャラ1枚（filter一致）を手札に戻すコスト。任意。払えた時 then を実行
         case 'bounceOwnCharCost': {
           let cands = ownChars(side, opFilter(op));

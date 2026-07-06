@@ -396,7 +396,7 @@
     }
     function hasKw(card, kw) {
       if (!card) return false; const b = card.base;
-      if (isNegated(card)) return card.kwGrant.some(g => g.kw === kw); // 効果無効中は固有能力(ブロッカー等)を失う。外部付与のみ残る
+      if (isNegated(card)) return card.kwGrant.some(g => g.kw === kw && !g.self); // 効果無効中は固有能力(ブロッカー等)＋自己付与(OP15-060エネルの起動ブロッカー等)を失う。外部付与のみ残る
       if (b[kw]) return true;
       if (kw === 'rush' && b.condRush && checkCond(b.condRush, card.owner, card)) return true;
       if (kw === 'blocker' && b.condBlocker && checkCond(b.condBlocker, card.owner, card)) return true;
@@ -424,7 +424,7 @@
       return card.kwGrant.some(g => g.kw === kw);
     }
     function isUnblockable(card) {
-      if (isNegated(card)) return card.kwGrant.some(g => g.kw === 'unblockable');
+      if (isNegated(card)) return card.kwGrant.some(g => g.kw === 'unblockable' && !g.self);
       const st = card.base.fx && card.base.fx.static;
       if (st) for (const o of st) { if (o.op === 'unblockableAttack') return true; if (o.op === 'grantUnblockable' && o.self) return true; }
       // 他カードからの名前指定付与（フザ→「シュラ」全員 等）。供給元が無効化中なら付与しない。
@@ -450,7 +450,7 @@
     }
     function clearNegation() {
       for (const s of ['me', 'cpu']) {
-        const P = G.players[s]; const f = c => { if (!c) return; if (c.negSeq != null && G.turnSeq >= c.negSeq) c.negSeq = null; if (c.noAtkSeq != null && G.turnSeq >= c.noAtkSeq) c.noAtkSeq = null; if (c.restImmuneUntil != null && G.turnSeq > c.restImmuneUntil) c.restImmuneUntil = null; };
+        const P = G.players[s]; const f = c => { if (!c) return; if (c.negSeq != null && G.turnSeq > c.negSeq) c.negSeq = null; if (c.noAtkSeq != null && G.turnSeq > c.noAtkSeq) c.noAtkSeq = null; if (c._atkTaxSeq != null && G.turnSeq >= c._atkTaxSeq) { c._atkTaxSeq = null; c._atkTaxN = null; } if (c.restImmuneUntil != null && G.turnSeq > c.restImmuneUntil) c.restImmuneUntil = null; }; // negSeq/noAtkSeq: untilNextEnd/untilNextStart(=turnSeq+1)は相手の次ターンを通して継続＝restImmuneと同じ`>`で失効（`>=`だと相手ターン開始で1ターン早く切れた。OP09-093ティーチの効果無効＆アタック不可・setAttackBan等）。このターン中(=turnSeq)は`>`でも次ターン開始で失効し不変。
         f(P.leader); P.chars.forEach(f); if (P.stage) f(P.stage);
       }
     }

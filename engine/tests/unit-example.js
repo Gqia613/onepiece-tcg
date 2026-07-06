@@ -30,6 +30,35 @@ function setupG(leaderNo){G.active='me';G.turnSeq=5;G.winner=null;const mkP=(ln,
     ok(E.chars[0].attachedDon===4, 'エネル: キャラにレスト4付与');
     ok(donTotal('me')===5, 'エネル: 合計ドン=5');
 
+    // 例3b: OP15-060エネルの自己付与【ブロッカー】は効果無効中は失う（外部付与は残る）。
+    //       10コスト黒ティーチOP09-093でnegateしても次ターンもブロックできたバグの回帰（自己付与がkwGrantで外部付与と誤認されていた）。
+    setupG('OP15-058'); { const P2=G.players.me; const enel=mkc('OP15-060'); P2.chars=[enel]; P2.don.active=0; P2.don.rested=0;
+      await doOp({op:'giveKeyword',target:'self',kw:'blocker',duration:'untilNextEnd'},{side:'me',self:enel});
+      ok(enel.kwGrant.some(g=>g.kw==='blocker'&&g.self===true), '例3b: giveKeyword self は self:true で記録');
+      ok(hasKw(enel,'blocker')===true, '例3b: 無効化前は自己付与ブロッカーが有効');
+      ok(isLeaveImmune(enel)===true, '例3b: 無効化前は除去耐性(場を離れない)あり');
+      enel.negSeq=G.turnSeq; // OP09-093ティーチで効果無効
+      ok(hasKw(enel,'blocker')===false, '例3b: 効果無効中は自己付与ブロッカーを失う(=ブロック不可)');
+      ok(isLeaveImmune(enel)===false, '例3b: 効果無効中は除去耐性も失う(OP15-118も同静的)');
+      // 外部付与(他カードが与えたブロッカー)は無効化中も残る
+      const ally=mkc('OP15-067'); ally.kwGrant.push({kw:'blocker',dur:'turn',self:false}); ally.negSeq=G.turnSeq;
+      ok(hasKw(ally,'blocker')===true, '例3b: 外部付与ブロッカーは無効化中も残る');
+    }
+
+    // 例3c: OP09-093ティーチの「次の相手のターン終了時まで 効果無効＆アタック不可」が1ターン早く切れない回帰。
+    //       negSeq/noAtkSeq(=turnSeq+1)は clearNegation の 大なり(restImmuneと同じ)で失効＝相手ターンを通して継続。
+    setupG('OP15-058'); { const P3=G.players.me; const c=mkc('OP15-067'); P3.chars=[c];
+      G.turnSeq=10; c.negSeq=G.turnSeq+1; c.noAtkSeq=G.turnSeq+1; // ティーチが負荷(untilNextEnd)
+      G.turnSeq=11; clearNegation(); // 相手(所有者)の次ターン開始
+      ok(isNegated(c)===true && cantAttackNeg(c)===true, '例3c: 相手の次ターン中も効果無効＆アタック不可が継続');
+      G.turnSeq=12; clearNegation(); // その次のターン開始
+      ok(isNegated(c)===false && cantAttackNeg(c)===false, '例3c: 相手ターン終了後に失効');
+      // 「このターン中」(=turnSeq)の無効化は次ターン開始で失効（退行なし）
+      const c2=mkc('OP15-061'); P3.chars.push(c2); G.turnSeq=10; c2.negSeq=G.turnSeq;
+      G.turnSeq=11; clearNegation();
+      ok(isNegated(c2)===false, '例3c: このターン中の無効化は次ターン開始で失効(退行なし)');
+    }
+
     // 例4: 付与ドンは自分のターン中のみ+1000計上（相手ターンでは表示・計算とも元に戻る）
     setupG('OP13-002'); G.active='cpu'; P=G.players.me; const d1=mkc('OP15-067'); d1.attachedDon=2; P.chars=[d1];
     ok(power(d1)===(C['OP15-067'].power||0), '付与ドン: 相手ターン中は計上しない（表示も元に戻る）');

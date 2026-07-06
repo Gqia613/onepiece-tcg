@@ -676,6 +676,65 @@ humanPick=function(c){return Promise.resolve((c||[])[0]||null);};
     ok(C['OP10-045'].traits.includes('ドレスローザ'), 'OP10-045: ドレスローザ特徴を持つ');
     // ST22-002 イゾウ: 相手アタック時効果あり・特徴は「白ひげ海賊団」(元白ひげ海賊団ではない)
     ok(C['ST22-002'].fx.onOppAttack && C['ST22-002'].traits.includes('白ひげ海賊団') && !C['ST22-002'].traits.includes('元白ひげ海賊団'), 'ST22-002: 相手アタック時効果あり・白ひげ海賊団特徴');
+    // === 複雑機構3枚（攻撃税 / ブロッカー時勝利 / ニューゲート登場） ===
+    // OP08-043 ニューゲート(赤): 白ひげL&ライフ2以下で相手キャラ全てに攻撃税(手札2捨て)。ライフ3では不発
+    G.players={me:mkP('OP13-002',false),cpu:mkP('OP11-041',true)}; G.active='me'; G.turnSeq=5; G.winner=null;
+    { const me=G.players.me, cpu=G.players.cpu;
+      me.life=[I('ST01-006','me'),I('ST01-006','me')]; const oc=I('OP15-067','cpu'); cpu.chars=[oc];
+      await runFx(C['OP08-043'].fx.onPlay,{self:I('OP08-043','me'),side:'me'});
+      ok(oc._atkTaxSeq!=null && oc._atkTaxN===2, 'OP08-043: 白ひげL&ライフ2以下→相手キャラに攻撃税(手札2捨て)');
+      me.life=[I('ST01-006','me'),I('ST01-006','me'),I('ST01-006','me')]; const oc2=I('OP15-067','cpu'); cpu.chars=[oc2];
+      await runFx(C['OP08-043'].fx.onPlay,{self:I('OP08-043','me'),side:'me'});
+      ok(oc2._atkTaxSeq==null, 'OP08-043: ライフ3以上では攻撃税不発'); }
+    // 攻撃税ゲート: 税持ちCPUキャラは手札2枚捨ててアタック／手札不足なら中止(レストされない)
+    G.players={me:mkP('OP11-041',true),cpu:mkP('OP11-041',true)}; G.active='cpu'; G.turnSeq=6; G.winner=null;
+    { const cpu=G.players.cpu, me=G.players.me; cpu.turnsTaken=3; me.life=[I('ST01-006','me'),I('ST01-006','me')];
+      const atk=I('OP15-067','cpu'); atk._atkTaxSeq=G.turnSeq; atk._atkTaxN=2; cpu.chars=[atk];
+      cpu.hand=[I('OP15-067','cpu'),I('OP15-067','cpu'),I('OP15-067','cpu')]; const h0=cpu.hand.length,t0=cpu.trash.length;
+      await declareAttack(atk, me.leader);
+      ok(cpu.hand.length===h0-2 && cpu.trash.length===t0+2 && atk.rested, '攻撃税ゲート: CPUは手札2枚捨ててアタック実行');
+      G.winner=null; const atk2=I('OP15-067','cpu'); atk2._atkTaxSeq=G.turnSeq; atk2._atkTaxN=2; cpu.chars=[atk2]; cpu.hand=[I('OP15-067','cpu')];
+      await declareAttack(atk2, me.leader);
+      ok(!atk2.rested, '攻撃税ゲート: 手札不足ならアタック中止(レストされない)'); }
+    // OP09-118 ロジャー: 相手が【ブロッカー】発動時どちらかのライフ0で勝利
+    G.players={me:mkP('OP11-041',true),cpu:mkP('OP11-041',true)}; G.active='me'; G.turnSeq=7; G.winner=null;
+    { const me=G.players.me, cpu=G.players.cpu; me.turnsTaken=3;
+      const rj=I('OP09-118','me'); me.chars=[rj]; cpu.life=[]; cpu.chars=[I('OP13-042','cpu')]; // 相手ライフ0＋ブロッカー
+      await declareAttack(rj, cpu.leader);
+      ok(G.winner==='me', 'OP09-118: 相手ブロッカー発動＆ライフ0で自分の勝利'); }
+    // ST22-015: 白ひげLでニューゲートを登場時付き(noEnter撤去)で登場する構成
+    ok(!('noEnter' in C['ST22-015'].fx.main.fx[0].then[0]) && C['ST22-015'].fx.main.fx[0].then.some(o=>o.op==='lifeToHand'), 'ST22-015: ニューゲート登場時付き(noEnter撤去)＋ライフ回収+2000節あり');
+    // === 青黄ナミ/ハンコック 公式照合修正（正本＝WebFetch照合済みを根拠） ===
+    ok(C['OP15-113'].traits.includes('空島'), 'OP15-113: 空島トレイト付与(公式)');
+    ok(!C['OP07-057'].fx.trigger && C['OP07-057'].fx.main.fx[0].filter && C['OP07-057'].fx.main.fx[0].filter.trait==='王下七武海', 'OP07-057: 架空トリガー除去＋王下七武海フィルタ');
+    ok(!C['OP14-105'].fx.trigger && C['OP14-105'].fx.act.fx[0].op==='revealCost' && !(C['OP14-105'].fx.act.cost||{}).restSelf, 'OP14-105: 手札3公開コスト(restSelf誤り是正)＋架空トリガー除去');
+    ok(['OP07-115','OP06-104','OP14-108','OP14-107','OP14-112','OP14-104','OP14-114','OP14-113'].every(no=>!C[no].fx.trigger), '架空トリガー除去: 8枚すべてトリガー無し(正本準拠)');
+    ok(!C['OP12-112'].fx, 'OP12-112: 正本「効果なし」＝fx無し(バニラ)');
+    // === 軽微4枚の仕上げ（任意コスト化/自身コスト+2/ライフ公開バフ） ===
+    // EB03-055 ロビン: ライフトラッシュ(任意コスト)→リーダー麦わらなら2枚ライフ追加。非麦わらでは追加なし
+    G.players={me:mkP('OP15-058',false),cpu:mkP('OP11-041',true)}; G.active='me';
+    { const me=G.players.me; me.life=[I('ST01-006','me')]; me.deck=[I('OP15-067','me'),I('OP15-067','me'),I('OP15-067','me')];
+      const l0=me.life.length; await runFx(C['EB03-055'].fx.onPlay,{self:I('EB03-055','me'),side:'me'});
+      // enelリーダー(非麦わら)=ライフtrashは payされる(CPU/自動true)がlifeAddは0 → 実質ライフ-1
+      ok(me.life.length===l0-1, 'EB03-055: 非麦わらリーダーではライフ追加なし(trashコストのみ)'); }
+    G.players={me:mkP('OP11-041',false),cpu:mkP('OP15-058',true)}; G.active='me';
+    { const me=G.players.me; me.life=[I('ST01-006','me')]; me.deck=[I('OP15-067','me'),I('OP15-067','me'),I('OP15-067','me')];
+      await runFx(C['EB03-055'].fx.onPlay,{self:I('EB03-055','me'),side:'me'});
+      ok(me.life.length===2, 'EB03-055: 麦わらリーダーで trash1→+2 = 差引+1(1→2)'); }
+    // OP12-119 くま: discard(任意コスト)→ライフ追加＋自身コスト+2
+    G.players={me:mkP('OP11-041',false),cpu:mkP('OP15-058',true)}; G.active='me';
+    { const me=G.players.me; me.hand=[I('OP15-067','me')]; me.deck=[I('OP15-067','me')]; me.life=[];
+      const kuma=I('OP12-119','me'); me.chars=[kuma];
+      await runFx(C['OP12-119'].fx.onPlay,{self:kuma,side:'me'});
+      const cb=(kuma.buffs||[]).some(b=>b.costAmt===2);
+      ok(me.life.length===1 && cb, 'OP12-119: 手札1捨て→ライフ+1＋自身コスト+2バフ'); }
+    // OP15-119 ルフィ: 相手ブロッカー発動時、ライフ上のコスト分+1000（onOppBlocker）
+    G.players={me:mkP('OP11-041',false),cpu:mkP('OP15-058',true)}; G.active='me';
+    { const me=G.players.me; const luffy=I('OP15-119','me'); me.chars=[luffy];
+      me.life=[I('OP13-042','me')]; // コスト10のライフ上
+      const p0=power(luffy);
+      await runFx(C['OP15-119'].fx.onOppBlocker,{self:luffy,side:'me'});
+      ok(power(luffy)===p0+10000, 'OP15-119: onOppBlockerでライフ上コスト10→+10000'); }
     // OP16-022 ルフィ: 【起動メイン】自キャラがインペルダウンのみでドン2アクティブ
     G.players={me:mkP('OP16-022',false),cpu:mkP('OP11-041',true)}; G.active='me';
     { const me=G.players.me; me.don.rested=2; me.don.active=0; me.donMax=10;
