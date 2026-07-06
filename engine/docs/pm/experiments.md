@@ -224,6 +224,12 @@
 - 結果: **det9/look2/w8 が頂点**＝対h lucy+30.0(p=0.000★)/teach+25.0(p=0.001★)/hancock+18.3(p=0.035★)/nami+13.3/ace+11.7、対base合算 改善60/退行29(p≈0.002★)。**det12/w10 は4/5リーダーで飽和/微減＝逓減開始**。確認帯: ace+30.0★/teach+30.0★/hancock+16.7/lucy+21.7/nami+3.3＝退行なし・**2帯合算 deep対base 改善121/退行59 p<0.00001★**。対h平均 +9.7→**+19.7pt**。基準腕の勝敗が別実行で完全一致＝決定的測定の健全性も再確認。
 - 結論: 採用。`src/70-ai.js` `PUCT_DEEP={det:9,look:2,width:8}`（5リーダーのPUCT_DEPTH・enelは従来det6/2/6→mcts・未知リーダーは標準・既定CPU=heuristic不変）。探索は軽く1手<0.5s＝UI許容。**単機で残っていた無償の伸びしろは「深さ det9」で回収完了＝この先は価値NN葉（クラウド）の領域**。
 
+## E35 / 2026-07-06: enel単独ローカルAlphaZero反復（value+policy共同）→ ❌10世代全棄却＝route close
+- 仮説: enelの弱点「手作りvalueがランプ/コントロール局面を評価できない」は、**enel単独にデータを全振り**（過去のvalue失敗は6デッキ分散＝120局中enel実質20局）した **value+policy共同の自己対戦反復**（replay+gating）なら学習で埋まる。前提のユーザー決定: クラウドAlphaZeroフル導入は見送り（成果物が6デッキ限定で任意デッキに汎化せず・汎化版は未解決研究）→ ローカルで傾きだけ測る。
+- 設定: `selfplay-puct.js OPCG_TARGET=both`（E35用に新設: value=boardTensor336+policyを同一世代で共同学習・`OPCG_NOSKIP=1`=enelをmcts代替させず本物のpuctで・`OPCG_BOARD=1`）。enelミラー400局/世代×10世代・self-play det6/look2/w6・replay20000・gating=学習アーム対hフリップ（`measure-matchup.js`にimpL/regL新設・N=60固定seed）。付随修正: **mlpLogitのlayers形式対応**（part7以降のtrain.py出力をpolicy推論が読めず今後のpolicy学習が全滅する潜在バグ・コミット20bc367）・chunk失敗1回リトライ+タイムスタンプ進捗（57eed30）・**チャンク40局は590sタイムアウト超過が2晩連続の無言死の真因**→10局に縮小（スリープ/jetsam説は無実・子プロセスRSS約90MB）。
+- 結果: ベースライン（手作りvalue+StageB policy・puct-enelミラー対h net=-7/N=60）に対し **10世代全棄却**: net = **-23,-20,-21,-17,-11,-13,-9,-21,-16,-16**。世代5-7の「上昇」（-17→-11→-9）は世代8で-21へ逆戻り＝**候補ネットの分散（-9〜-23・平均≒-17）でありトレンドではない**。gatingが全棄却のためself-play分布は10世代不変＝同一分布のデータ蓄積（buf20000飽和）だけでは基準に近づきもしない。所要2.5時間（単機6並列・約15分/世代）。
+- 結論: **route close**。最も有利な条件（enel特化・データ集中10倍・value+policy共同・境界価値教師）でも学習は手作りevalに届かない＝**enel学習ルートの4度目の✗**（part3/part5/part7に続く・今回が最終確認）。enelの最適解は現行 mcts代替（対h+8.3pt）維持で確定。単機の残レバーは Hybrid live実測（E25・APIキー待ち）と lucy/ace/nami の evalState 資源項目（E-次番）のみ。
+
 ---
 
 ## 台帳サマリ（2026-07-03 時点・opcg-pm）
