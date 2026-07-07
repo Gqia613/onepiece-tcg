@@ -91,11 +91,12 @@ export function Controls() {
     );
   }
 
-  // それ以外：思考中/処理中
+  // それ以外：CPU思考中/処理中 or あなたの応答待ち（ブロック/カウンター等の入力待ち）
+  const waitingForYou = !!(prompt || pick); // プロンプト/カード選択中＝あなたの操作待ち（CPU思考ではない）
   return (
     <div className="controls">
       <span className="thinking">
-        <span>{G.active === 'cpu' ? 'CPU 思考中' : '処理中'}</span>
+        <span>{waitingForYou ? 'あなたの操作待ち' : G.active === 'cpu' ? 'CPU 思考中' : '処理中'}</span>
         <span className="dots">
           <span>●</span>
           <span>●</span>

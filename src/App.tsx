@@ -44,6 +44,15 @@ function TurnPill({ engine }: { engine: any }) {
         ))}
       </span>
       <span className="tp-turn">TURN <b>{G.turnDisp ?? G.turnSeq ?? ''}</b></span>
+      {G.firstPlayer ? (
+        <span
+          className="tp-first"
+          title="この対戦の先攻/後攻"
+          style={{ fontSize: 11, fontWeight: 700, padding: '1px 7px', borderRadius: 999, border: '1px solid var(--surface-edge)', color: G.firstPlayer === 'me' ? 'var(--self-accent)' : 'var(--opp-accent)' }}
+        >
+          あなた{G.firstPlayer === 'me' ? '先攻' : '後攻'}
+        </span>
+      ) : null}
       <span
         id="whoTurn"
         style={{ color: active === 'me' ? 'var(--self-accent)' : active === 'cpu' ? 'var(--opp-accent)' : 'var(--muted)', fontWeight: 700 }}

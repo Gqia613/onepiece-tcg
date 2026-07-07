@@ -1160,6 +1160,9 @@ button {
   flex: 0 0 auto;
   transition: transform .18s cubic-bezier(.2, .8, .3, 1.1), box-shadow .18s, filter .18s;
   user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  /* 長押しでテキスト選択/コピー・画像保存メニューが出ないように（効果表示は長押しで詳細モーダルを開く用途） */
 }
 
 .card img {
@@ -3815,7 +3818,10 @@ button.hb-chip:not(.zero):not([disabled]):hover {
   border-radius: 16px;
   width: 100%;
   max-width: 340px;
-  box-shadow: var(--elev-3)
+  box-shadow: var(--elev-3);
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
 }
 
 .cardmodal-close {

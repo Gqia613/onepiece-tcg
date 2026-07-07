@@ -108,12 +108,14 @@
     async function fireLifeLeft(side) {
       const P = G.players[side];
       P._lifeLeftTurn = G.turnSeq; // このターンに side のライフが離れた（P-120サンジ「相手のライフが離れているターン中」コスト判定用）
-      for (const c of P.chars.slice()) {
+      // ★リーダーも走査対象（OP11-041ナミL＝ライフ離脱時に手札7枚以下ならドロー）。cond対応。
+      for (const c of [P.leader, ...P.chars.slice()]) {
         const cfg = c.base.fx && c.base.fx.onLifeLeave;
-        if (!cfg || isNegated(c) || !P.chars.includes(c)) continue;
+        if (!cfg || isNegated(c) || (c !== P.leader && !P.chars.includes(c))) continue;
         if (cfg.when === 'selfTurn' && side !== G.active) continue;
         if (cfg.when === 'oppTurn' && side === G.active) continue;
-        if (cfg.once === 'turn') { if (c._lifeLeftTurn === G.turnSeq) continue; c._lifeLeftTurn = G.turnSeq; }
+        if (cfg.cond && !checkCond(cfg.cond, side, c)) continue;
+        if (cfg.once === 'turn') { if (c._lifeLeaveTurn === G.turnSeq) continue; c._lifeLeaveTurn = G.turnSeq; }
         await runFx(cfg.fx, { self: c, side });
       }
       // 「相手のライフが離れた時」誘発（OP08-105ボニー＝攻撃側で相手のライフ離脱に反応）
@@ -162,12 +164,13 @@
       await runFx(cfg.fx, { self: L, side, entered: card });
     }
     // リーダーの onAllyLeave: 自分の filter一致キャラが場を離れた時に誘発（cause/when/filter/once/cond対応）
-    async function checkAllyLeave(side, card, cause) {
+    async function checkAllyLeave(side, card, cause, isKo) {
       const P = G.players[side];
       // onAllyLeave はリーダー/キャラ/ステージのいずれも持てる（OP07-038ハンコック=リーダー, OP13-078オーロ・ジャクソン号=ステージ）
       for (const src of [P.leader, ...P.chars, P.stage]) {
         if (!src || src === card || isNegated(src)) continue;
         const cfg = src.base.fx && src.base.fx.onAllyLeave; if (!cfg) continue;
+        if (cfg.ko && !isKo) continue;                       // 「KOされた時」限定（KO以外のbounce/デッキ送りでは誘発しない。OP14-041ハンコックL）
         if (cfg.cause && cfg.cause !== cause) continue;     // 原因限定（'ownEffect'|'oppEffect'|'battle'）。未指定なら全原因
         if (cfg.when === 'selfTurn' && side !== G.active) continue;
         if (cfg.when === 'oppTurn' && side === G.active) continue;
@@ -223,7 +226,7 @@
       if (card.base.fx && card.base.fx.onKO && !isNegated(card)) { await fxNote(card.owner, 'KO時効果', card.base.name); await runFx(card.base.fx.onKO, { self: card, side: card.owner }); }
       // エース(OP13-002): 【ドン‼×1】自分の元々パワー6000以上のキャラがKOされた時ターン1回ドロー（被ダメドローと _aceDrawTurn を共有＝合計ターン1回）
       { const oL = ow.leader; if (card.base.type === 'CHAR' && (card.base.power || 0) >= 6000 && oL.base.leader === 'ace' && !isNegated(oL) && oL.attachedDon >= 1 && ow._aceDrawTurn !== G.turnSeq) { ow._aceDrawTurn = G.turnSeq; if (draw(card.owner, 1)) { floatOn(oL.uid, 'DRAW', 'heal'); flog(card.owner, '【エース】元々パワー6000以上のKOで1ドロー'); } } }
-      await checkAllyLeave(card.owner, card, source === 'battle' ? 'battle' : 'oppEffect'); // 自分のキャラが場を離れた時のリーダー誘発（KOはバトル/相手効果）
+      await checkAllyLeave(card.owner, card, source === 'battle' ? 'battle' : 'oppEffect', true); // 自分のキャラが場を離れた時のリーダー誘発（KOはバトル/相手効果。第4引数isKo=true）
       // 「相手のキャラがKOされた時」誘発（OP01-061カイドウL）。KOされた側の相手＝koSide のキャラ/リーダーが反応。
       { const koSide = opp(card.owner); const K = G.players[koSide]; for (const c of [K.leader, ...K.chars]) { const cfg = c && c.base.fx && c.base.fx.onOppKO; if (!cfg || isNegated(c)) continue; if (cfg.when === 'selfTurn' && koSide !== G.active) continue; if (cfg.cond && !checkCond(cfg.cond, koSide, c)) continue; if (cfg.once === 'turn') { if (c._oppKOTurn === G.turnSeq) continue; c._oppKOTurn = G.turnSeq; } await runFx(cfg.fx, { self: c, side: koSide }); } }
       render();

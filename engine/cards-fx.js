@@ -7,9 +7,9 @@
 window.CARD_FX = {
   /* ===== リーダーのデータ駆動フック（onAllyEnter 等。従来は src/30 にハードコード） ===== */
   // OP11-041 ナミ:【ドン‼×1】自分のターン中に自分のキャラが登場した時、1ドローし手札1枚をデッキ下（ターン1回）
-  "OP11-041": {"onAllyEnter":{"when":"selfTurn","once":"turn","cond":"donX1Self","fx":[{"op":"draw","n":1},{"op":"bottomOwn","n":1}]}},
+  "OP11-041": {"onLifeLeave":{"when":"selfTurn","once":"turn","cond":{"selfHandAtMost":7},"fx":[{"op":"draw","n":1}]},"onOppAttack":[{"op":"cond","once":"turn","check":"donX1","then":[{"op":"discardCost","count":1,"optional":true,"then":[{"op":"leaderBuff","amount":2000,"duration":"battle"}]}]}]},
   // OP14-041 ボア・ハンコック: 相手のターン中に自分のキャラが登場した時、1ドロー（ターン1回制限なし）
-  "OP14-041": {"onAllyEnter":{"when":"oppTurn","fx":[{"op":"draw","n":1}]}},
+  "OP14-041": {"onAllyEnter":{"when":"oppTurn","fx":[{"op":"draw","n":1}]},"onAllyLeave":{"ko":true,"once":"turn","cond":"donX1","filter":{"minPower":5000,"traits":["アマゾン・リリー","九蛇海賊団"]},"fx":[{"op":"oppLifeToHand","n":1,"optional":true}]}},
   /* ----- 同名・別Noのリーダー（番号キーで実装。curatedの短縮キーとは独立＝誤適用なし） ----- */
   // ST29-001 モンキー・Ｄ・ルフィ(エッグヘッド/四皇): 【アタック時】自分のライフが2枚以下なら1ドローし手札1枚を捨てる
   "ST29-001": {"onAttack":[{"op":"cond","check":"life<=2","then":[{"op":"draw","n":1},{"op":"discardOwn","n":1}]}]},

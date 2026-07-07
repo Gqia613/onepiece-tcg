@@ -84,6 +84,33 @@ function setupG(leaderNo){G.active='me';G.turnSeq=5;G.winner=null;const mkP=(ln,
       ok(M.life.length===lifeBefore+1 && M.life[0].no==='OP01-077' && M.life[0]._faceUp===true && M.trash.length===0, '例3e: ライフブランチ=ペローナがライフ上に表向きで追加');
     }
 
+    // 例3f: 青黄ナミ(OP11-041)リーダー=【自分のターン中】ライフが離れた時、手札7枚以下ならドロー。
+    //       fireLifeLeftがリーダーを走査していなかった不具合の回帰。
+    setupG('OP11-041'); { let N=G.players.me; N.deck=[mkc('OP01-078'),mkc('OP01-078')]; N.hand=[];
+      const before=N.hand.length; await fireLifeLeft('me');
+      ok(N.hand.length===before+1, '例3f: ナミL 手札≤7でライフ離脱→1ドロー');
+      setupG('OP11-041'); N=G.players.me; N.deck=[mkc('OP01-078')]; N.hand=Array.from({length:8},()=>mkc('OP01-078'));
+      const b2=N.hand.length; await fireLifeLeft('me');
+      ok(N.hand.length===b2, '例3f: ナミL 手札8(>7)ではドローしない');
+    }
+
+    // 例3g: 青黄ハンコック(OP14-041)リーダー=九蛇/アマゾンリリーの元々5000以上がKO時、ドン×1なら相手ライフを持ち主手札へ。
+    //       KO時能力が未実装だった不具合の回帰（KO以外/ドン無しでは不発）。
+    setupG('OP14-041'); { const H=G.players.me, O=G.players.cpu; H.leader.attachedDon=1;
+      const kuja=mkc('OP01-078'); H.chars=[kuja]; O.life=[mkc('OP01-078'),mkc('OP01-078')]; O.hand=[];
+      const ol=O.life.length, oh=O.hand.length;
+      await checkAllyLeave('me', kuja, 'battle', true);
+      ok(O.life.length===ol-1 && O.hand.length===oh+1, '例3g: ハンコックL 九蛇5000 KO→相手ライフ-1・相手手札+1');
+      setupG('OP14-041'); const O2=G.players.cpu; G.players.me.leader.attachedDon=1;
+      const k2=mkc('OP01-078'); G.players.me.chars=[k2]; O2.life=[mkc('OP01-078')]; O2.hand=[];
+      await checkAllyLeave('me', k2, 'oppEffect'); // isKo未指定=KOでない
+      ok(O2.life.length===1, '例3g: ハンコックL KO以外(bounce)では不発');
+      setupG('OP14-041'); const O3=G.players.cpu; G.players.me.leader.attachedDon=0;
+      const k3=mkc('OP01-078'); G.players.me.chars=[k3]; O3.life=[mkc('OP01-078')]; O3.hand=[];
+      await checkAllyLeave('me', k3, 'battle', true);
+      ok(O3.life.length===1, '例3g: ハンコックL ドン×1無しでは不発');
+    }
+
     // 例4: 付与ドンは自分のターン中のみ+1000計上（相手ターンでは表示・計算とも元に戻る）
     setupG('OP13-002'); G.active='cpu'; P=G.players.me; const d1=mkc('OP15-067'); d1.attachedDon=2; P.chars=[d1];
     ok(power(d1)===(C['OP15-067'].power||0), '付与ドン: 相手ターン中は計上しない（表示も元に戻る）');
@@ -224,17 +251,8 @@ function setupG(leaderNo){G.active='me';G.turnSeq=5;G.winner=null;const mkP=(ln,
     setupG('OP14-041'); G.active='me'; Hp=G.players.me; Hp.deck=[mkc('OP15-067')]; Hp.hand=[];
     await summon('me', mkc('OP15-067'), true);
     ok(Hp.hand.length===0, 'ハンコック onAllyEnter: 自分ターン中は発動しない');
-    // ナミ(OP11-041): 【ドン×1】自ターン中の登場で1ドロー＆1枚デッキ下（枚数保存・ターン1回）
-    setupG('OP11-041'); let Np=G.players.me; Np.leader.attachedDon=1;
-    Np.deck=[mkc('OP15-067'),mkc('OP15-067'),mkc('OP15-067')]; Np.hand=[mkc('OP15-067')];
-    await summon('me', mkc('OP15-067'), true);
-    ok(Np.deck.length===3 && Np.hand.length===1 && Np.leader._allyEnterTurn===G.turnSeq, 'ナミ onAllyEnter: ドン×1で1ドロー＆1枚デッキ下(枚数保存)');
-    await summon('me', mkc('OP15-067'), true); // 2体目→once:turnで不発
-    ok(Np.hand.length===1, 'ナミ onAllyEnter: ターン1回(2体目では発動しない)');
-    // ドン×1未満（attachedDon=0）では発動しない
-    setupG('OP11-041'); Np=G.players.me; Np.leader.attachedDon=0; Np.deck=[mkc('OP15-067')]; Np.hand=[];
-    await summon('me', mkc('OP15-067'), true);
-    ok(Np.hand.length===0, 'ナミ onAllyEnter: ドン×1未満は発動しない(cond)');
+    // ※旧「ナミ OP11-041 onAllyEnter(登場時ドロー＆デッキ下)」テストは削除。
+    //   公式効果は「ライフ離脱時→手札7枚以下でドロー」「相手アタック時→手札1枚捨て+2000」で登場時能力は無い（誤実装だった）。検証は例3fに移設。
 
     // 例14: デッキビルダー — 色合致50枚で構築でき、自分/CPU両方のデッキを生成できる
     G.customDecks = [];
