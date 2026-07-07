@@ -3388,6 +3388,21 @@ button.hb-chip:not(.zero):not([disabled]):hover {
   }
 }
 
+/* 防御(カウンター)プロンプト表示中は、アタック宣言を画面上部へ退避し、プロンプトをその下へ配置。
+   （下部固定のままだと手札が多い＝プロンプトが縦に伸びた時に「選ばない」等のボタンと重なって押しづらい） */
+#atkAnnounce.aa-defense {
+  top: 10px;
+  bottom: auto
+}
+
+#promptHost .prompt.defense {
+  top: 118px
+}
+
+.prompt.defense .opt-cards {
+  max-height: max(120px, min(48vh, calc(100dvh - 400px)))
+}
+
 @media(max-width:680px) {
   #atkAnnounce {
     font-size: 12px;

@@ -54,6 +54,8 @@ export function AtkAnnounce() {
   if (!attacker || !target) return null;
 
   const opp = aSide !== 'me';
+  // 防御(カウンター)プロンプト表示中は、下部だと手札が多い時に「選ばない」等のボタンと重なるため上部へ退避。
+  const defenseMode = (prompt?.cls || '').includes('defense');
   const power = (c: Card): number => {
     try { return (engine.power(c) as number) ?? 0; } catch { return 0; }
   };
@@ -74,7 +76,7 @@ export function AtkAnnounce() {
       <motion.div
         key="atkAnnounce"
         id="atkAnnounce"
-        className={opp ? 'opp' : undefined}
+        className={[opp ? 'opp' : '', defenseMode ? 'aa-defense' : ''].filter(Boolean).join(' ') || undefined}
         // 元 CSS の atkAnn keyframes は Framer の transform と競合するため上書き（animation:none）
         style={{ animation: 'none' }}
         initial={{ opacity: 0, x: '-50%', y: fromY, scale: 0.82 }}

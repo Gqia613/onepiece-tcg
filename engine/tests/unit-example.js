@@ -111,6 +111,18 @@ function setupG(leaderNo){G.active='me';G.turnSeq=5;G.winner=null;const mkP=(ln,
       ok(O3.life.length===1, '例3g: ハンコックL ドン×1無しでは不発');
     }
 
+    // 例3h: 青黄ナミ(OP11-041)リーダー=【相手のアタック時】手札1枚捨て→リーダー+2000は「このターン中」(turnEnd)＝
+    //        相手ターンの全バトルで持続。以前 duration:'battle' で1バトルだけ(clearBattleBuffsで消滅)だった回帰。
+    ok(C['OP11-041'].fx.onOppAttack[0].then[0].then[0].duration==='turnEnd', '例3h: ナミL の+2000は turnEnd(このターン中)');
+    setupG('OP11-041'); { const P=G.players.me;
+      await doOp({op:'leaderBuff',amount:2000,duration:'turnEnd'},{side:'me',self:P.leader});
+      ok(power(P.leader)===7000, '例3h: リーダー+2000で7000');
+      clearBattleBuffs();
+      ok(power(P.leader)===7000, '例3h: バトル終了(clearBattleBuffs)後も7000で持続');
+      expireBuffs('me','turnEnd');
+      ok(power(P.leader)===5000, '例3h: ターン終了(turnEnd失効)で5000へ戻る');
+    }
+
     // 例4: 付与ドンは自分のターン中のみ+1000計上（相手ターンでは表示・計算とも元に戻る）
     setupG('OP13-002'); G.active='cpu'; P=G.players.me; const d1=mkc('OP15-067'); d1.attachedDon=2; P.chars=[d1];
     ok(power(d1)===(C['OP15-067'].power||0), '付与ドン: 相手ターン中は計上しない（表示も元に戻る）');
