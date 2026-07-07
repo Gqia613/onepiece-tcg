@@ -471,19 +471,14 @@ html, body, #root { height: 100%; margin: 0; }
   margin-bottom: 1px;
 }
 
+/* メインラベル（旧BATTLE等の位置に日本語ラベルを表示。英/日2行を1行に統合して高さを抑える）。 */
 .hc-en {
-  font-family: "Bebas Neue";
-  font-size: 22px;
-  line-height: 1;
-  letter-spacing: .08em;
+  font-family: "Noto Sans JP", sans-serif;
+  font-weight: 800;
+  font-size: 18px;
+  line-height: 1.2;
+  letter-spacing: .04em;
   color: var(--ink);
-}
-
-.hc-ja {
-  font-size: 12.5px;
-  font-weight: 700;
-  color: var(--hc);
-  letter-spacing: .12em;
 }
 
 .hc-desc {
@@ -534,14 +529,13 @@ html, body, #root { height: 100%; margin: 0; }
     min-height: 0;
     display: grid;
     grid-template-columns: auto 1fr auto;
-    grid-template-areas: "icon en go" "icon ja go" "icon desc go";
+    grid-template-areas: "icon en go" "icon desc go";
     align-items: center;
     column-gap: 14px;
     padding: 14px 16px;
   }
   .hc-icon { grid-area: icon; margin: 0; }
-  .hc-en { grid-area: en; font-size: 24px; }
-  .hc-ja { grid-area: ja; }
+  .hc-en { grid-area: en; font-size: 17px; }
   .hc-desc { grid-area: desc; margin: 2px 0 0; padding: 0; }
   .hc-go { grid-area: go; position: static; }
   .hc-kanji { font-size: 96px; bottom: -18px; }

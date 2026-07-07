@@ -30,16 +30,17 @@ describe('Home（タイトル/ハブ画面）', () => {
     render(<Home />);
     expect(document.querySelector('.home-title')?.textContent).toBe('ONE PIECE');
     expect(document.querySelectorAll('.home-card').length).toBe(3);
-    expect(document.body.textContent).toContain('BATTLE');
-    expect(document.body.textContent).toContain('MY DECKS');
-    expect(document.body.textContent).toContain('BUILDER');
+    // メインラベルは日本語1行に統合（旧BATTLE/MY DECKS/BUILDERの英語は撤去）
+    expect(document.body.textContent).toContain('CPU対戦');
+    expect(document.body.textContent).toContain('デッキ管理');
+    expect(document.body.textContent).toContain('デッキ作成');
   });
 
-  it('対戦中は復帰バナーと RESUME 表示になる', () => {
+  it('対戦中は復帰バナーと「対戦に戻る」表示になる', () => {
     act(() => { engine.G.inGame = true; useEngineStore.getState().bump(); });
     render(<Home />);
     expect(document.querySelector('.home-resume')).toBeTruthy();
-    expect(document.body.textContent).toContain('RESUME');
+    expect(document.body.textContent).toContain('対戦に戻る');
     act(() => { engine.G.inGame = false; useEngineStore.getState().bump(); });
   });
 
