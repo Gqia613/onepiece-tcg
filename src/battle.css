@@ -3990,7 +3990,8 @@ button.hb-chip:not(.zero):not([disabled]):hover {
   }
 
   .select-wrap>.start-row {
-    order: -1;
+    /* order指定を撤去（旧レイアウトで操作バーを最上部へ持ち上げていた＝bd-headより上に来る不具合）。
+       現行はDOM順どおり bd-head(戻る/対戦) → start-row(先攻/CPU/対戦開始) にする。 */
     position: static;
     bottom: auto;
     margin-top: 6px;

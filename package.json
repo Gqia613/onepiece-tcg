@@ -9,7 +9,7 @@
     "build": "tsc -b && vite build",
     "preview": "vite preview",
     "test": "vitest run",
-    "pages:dev": "wrangler pages dev",
+    "pages:dev": "wrangler pages dev --port 8788",
     "d1:local": "wrangler d1 execute opcg --local --file=./schema.sql",
     "d1:remote": "wrangler d1 execute opcg --remote --file=./schema.sql"
   },
