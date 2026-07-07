@@ -59,14 +59,19 @@ export default function DeckSelect() {
     // ★AIモードは対戦開始の“前”に確定＝1ターン目(CPU先攻でも)から有効。startGameはaiOnをリセットしない。
     e.G.aiOn = mode === 'claude';
     e.G.cpuStrength = mode === 'strong' ? 'strong' : 'normal'; // 互換
-    await e.startGame(e.G.sel!.me as string, e.G.sel!.cpu as string);
+    // startGame は同期部で盤面を立ち上げ(inGame=true)→そのままマリガンのモーダルを出して待機する。
+    // ここで await するとマリガンがデッキ選択画面の上に出てしまうため、先に /battle/play へ遷移して
+    // 盤面を表示してから解決を待つ（マリガンは盤面の上に出る）。
+    const started = e.startGame(e.G.sel!.me as string, e.G.sel!.cpu as string);
+    useEngineStore.getState().bump();
+    navigate('/battle/play');
+    await started;
     // 「強い」= ローカル探索(puct) / 「AI」= hybrid（Claude戦略×puct探索）。players は startGame で生成済み。
     if (e.G.players && e.G.players.cpu) {
       if (mode === 'strong') e.G.players.cpu.agent = 'puct';
       else if (mode === 'claude') e.G.players.cpu.agent = 'hybrid';   // Claudeが戦略shapeを返す→puctが戦術探索に注入。LLM不可なら自動でpuct/heuristicへフォールバック
     }
     useEngineStore.getState().bump();
-    navigate('/battle/play');
   }
 
   const grid = (side: 'me' | 'cpu') => (
