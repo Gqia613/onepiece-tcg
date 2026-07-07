@@ -3843,13 +3843,26 @@ button.hb-chip:not(.zero):not([disabled]):hover {
   gap: 8px
 }
 
+/* トラッシュ見出しは日本語なので Bebas Neue の巨大表示をやめて小さめに */
+.modal h2.trash-title {
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: 0;
+  color: var(--gold-soft);
+}
+
 .trash-modal-grid .tm-card {
   position: relative;
   aspect-ratio: 1/1.4;
   border-radius: 6px;
   overflow: hidden;
   background: var(--surface-2);
-  border: 1px solid var(--surface-edge)
+  border: 1px solid var(--surface-edge);
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
 }
 
 .trash-modal-grid .tm-card img {
