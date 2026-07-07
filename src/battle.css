@@ -4083,8 +4083,6 @@ button.hb-chip:not(.zero):not([disabled]):hover {
   margin-bottom: 12px;
   align-items: start;
   justify-content: start;
-  max-height: 300px;
-  overflow-y: auto;
   padding: 2px 4px 4px 0
 }
 
