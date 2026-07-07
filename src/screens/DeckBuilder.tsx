@@ -57,7 +57,7 @@ export default function DeckBuilder() {
   const [sortKey, setSortKey] = useState<SortKey>('new');
   const [search, setSearch] = useState('');
   const [leaderSearch, setLeaderSearch] = useState('');
-  const [leaderColor, setLeaderColor] = useState('all');
+  const [leaderColorSel, setLeaderColorSel] = useState<string[]>([]); // 複数選択（空=全色）。選んだ色を「すべて含む」リーダーを表示（多色検索）
   const [leaderPack, setLeaderPack] = useState('all');
   const [leaderOpen, setLeaderOpen] = useState(!builderDeck?.leader); // リーダー選択セクションの展開状態（選択後は自動で畳む）
   const [showList, setShowList] = useState(true); // デッキ内容リスト（右パネル/モバイルのstickyバー内）の表示
@@ -89,14 +89,14 @@ export default function DeckBuilder() {
   // リーダー一覧（色・弾・テキストで絞り込み）
   const leaders = useMemo(() => {
     let ls = Object.keys(C).filter((no) => C[no].leader);
-    if (leaderColor !== 'all') ls = ls.filter((no) => (C[no].color || []).includes(leaderColor));
+    if (leaderColorSel.length) ls = ls.filter((no) => leaderColorSel.every((c) => (C[no].color || []).includes(c)));
     if (leaderPack !== 'all') ls = ls.filter((no) => no.split('-')[0] === leaderPack);
     const q = leaderSearch.trim().toLowerCase();
     if (q) ls = ls.filter((no) => hay(no).includes(q));
     ls.sort((x, y) => y.localeCompare(x, undefined, { numeric: true }));
     return ls;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [leaderSearch, leaderColor, leaderPack]);
+  }, [leaderSearch, leaderColorSel, leaderPack]);
 
   // 使える弾（セット）
   const packs = useMemo(() => {
@@ -273,11 +273,18 @@ export default function DeckBuilder() {
           <div className="bd-leadhead">リーダーを選択：</div>
           <div className="bd-filters">
             <span className="bd-search-wrap"><Icon.search size={13} className="bd-search-ic" /><input className="bd-search has-ic" placeholder="リーダー検索（名前・特徴・番号）" value={leaderSearch} onChange={(e) => setLeaderSearch(e.target.value)} /></span>
-            {['all', ...LEADER_COLORS].map((cc) => (
-              <button className={'bd-fbtn' + (leaderColor === cc ? ' on' : '')} key={cc} onClick={() => setLeaderColor(cc)}>
-                {cc === 'all' ? '全色' : (<><span className="bd-cdot" style={{ background: COLOR_HEX[cc] }} />{cc}</>)}
-              </button>
-            ))}
+            {['all', ...LEADER_COLORS].map((cc) => {
+              // 複数選択トグル。全色=選択クリア。色チップ=on/offトグル（選んだ色を全て含むリーダーに絞る）。
+              const on = cc === 'all' ? leaderColorSel.length === 0 : leaderColorSel.includes(cc);
+              const toggle = () => cc === 'all'
+                ? setLeaderColorSel([])
+                : setLeaderColorSel((prev) => prev.includes(cc) ? prev.filter((x) => x !== cc) : [...prev, cc]);
+              return (
+                <button className={'bd-fbtn' + (on ? ' on' : '')} key={cc} onClick={toggle}>
+                  {cc === 'all' ? '全色' : (<><span className="bd-cdot" style={{ background: COLOR_HEX[cc] }} />{cc}</>)}
+                </button>
+              );
+            })}
             <select className="bd-fsel" value={leaderPack} onChange={(e) => setLeaderPack(e.target.value)}>
               <option value="all">全弾</option>
               {leaderPacks.map((p) => <option value={p} key={p}>{p}</option>)}
