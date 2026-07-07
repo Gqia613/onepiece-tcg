@@ -354,9 +354,9 @@
           break;
         }
         case 'playSelf': { if (self) { await summon(side, self, false); flog(side, `「${self.base.name}」を登場させた`); } break; }
-        case 'lifeToHand': { if (P._noLifeToHandTurn === G.turnSeq) { flog(side, 'このターンは効果でライフを手札に加えられない'); break; } if (op.optional && !(P.life.length && await confirmUse(side, 'ライフを手札に', 'ライフ1枚を手札に加えますか？', '加える'))) break; const ln = op.n || 1; let moved = 0; for (let i = 0; i < ln; i++) { const c = P.life.shift(); if (!c) break; P.hand.push(c); moved++; } if (moved) { flog(side, `自ライフ${moved}枚を手札に`); render(); fireSimpleReact(side, 'onLifeToHand'); if (op.then) await runFx(op.then, ctx); } break; }
+        case 'lifeToHand': { if (P._noLifeToHandTurn === G.turnSeq) { flog(side, 'このターンは効果でライフを手札に加えられない'); break; } if (op.optional && !(P.life.length && await confirmUse(side, 'ライフを手札に', 'ライフ1枚を手札に加えますか？', '加える'))) break; const ln = op.n || 1; let moved = 0; for (let i = 0; i < ln; i++) { const c = P.life.shift(); if (!c) break; P.hand.push(c); moved++; } if (moved) { flog(side, `自ライフ${moved}枚を手札に`); render(); fireSimpleReact(side, 'onLifeToHand'); await fireLifeLeft(side); if (op.then) await runFx(op.then, ctx); } break; }
         // 自分のライフをトラッシュに置く（OP05-100エネルの代わり）
-        case 'lifeTrashSelf': { for (let i = 0; i < (op.n || 1); i++) { const c = P.life.shift(); if (!c) break; P.trash.push(c); } flog(side, '自分のライフをトラッシュに置いた'); render(); break; }
+        case 'lifeTrashSelf': { let moved = 0; for (let i = 0; i < (op.n || 1); i++) { const c = P.life.shift(); if (!c) break; P.trash.push(c); moved++; } flog(side, '自分のライフをトラッシュに置いた'); render(); if (moved) await fireLifeLeft(side); break; }
         // このターンの後に自分のターンを追加で得る（OP05-119ルフィ）
         case 'extraTurn': { G._extraTurn = side; flog(side, 'このターンの後、追加のターンを得る'); break; }
         case 'oppDiscardToSize': { const O6 = G.players[o]; const tgt = op.n || 5; while (O6.hand.length > tgt) { const c = O6.isCPU ? O6.hand.slice().sort((a, b) => (a.base.counter || 0) - (b.base.counter || 0))[0] : await chooseFromHand(o, O6.hand.slice(), `手札を${tgt}枚にする`); if (!c) break; O6.hand.splice(O6.hand.indexOf(c), 1); O6.trash.push(reset(c)); } flog(side, `相手は手札を${tgt}枚に`); render(); break; } // 相手が手札N枚になるよう捨てる（OP05-058）
@@ -414,7 +414,7 @@
         case 'flipLifeUp': { if (P.life.length) { P.life[0]._faceUp = true; flog(side, '自分のライフの一番上を表向きにした'); floatOn(P.leader.uid, 'LIFE表', 'heal'); render(); await sleep(160); } break; }
         case 'lifeTrash': { // side:'both'=お互いのライフ上1枚トラッシュ（OP11-102ケイミー）／'opp'=相手のみ／既定=自分
           const sides = op.side === 'both' ? [side, o] : op.side === 'opp' ? [o] : [side];
-          for (const sd of sides) { const PP = G.players[sd]; const c = PP.life.shift(); if (c) { PP.trash.push(c); flog(side, sd === side ? '自ライフ1枚をトラッシュ' : '相手ライフ1枚をトラッシュ'); } }
+          for (const sd of sides) { const PP = G.players[sd]; const c = PP.life.shift(); if (c) { PP.trash.push(c); flog(side, sd === side ? '自ライフ1枚をトラッシュ' : '相手ライフ1枚をトラッシュ'); await fireLifeLeft(sd); } }
           render(); break;
         }
         case 'activateSelf': { if (self) { self.rested = false; flog(side, `「${self.base.name}」をアクティブにした`); render(); } break; } // このキャラをアクティブにする（OP11-107チョンマゲ＝ターン終了時）
@@ -446,8 +446,8 @@
         case 'donReturnToMatchOpp': { const want = donTotal(o); let excess = Math.max(0, donTotal(side) - want); while (excess > 0) { if (P.don.rested > 0) P.don.rested--; else if (P.don.active > 0) P.don.active--; else break; excess--; } if (donTotal(side) <= want) flog(side, '自分のドンを相手と同じ枚数に戻した'); render(); break; }
         // 自分のライフをすべて裏向きにする（OP08-075キャンディメイデン）
         case 'flipAllLifeDown': { for (const l of P.life) l._faceUp = false; flog(side, '自分のライフをすべて裏向きにした'); render(); break; }
-        case 'lifeTrashToSize': { const tgt = op.n || 1; let k = 0; while (P.life.length > tgt) { const c = P.life.shift(); if (!c) break; P.trash.push(c); k++; } if (k) flog(side, `自分のライフ${k}枚をトラッシュ（ライフ${tgt}枚に）`); render(); break; } // 自分のライフがN枚になるよう上からトラッシュ（EB01-059/060空島）
-        case 'lifeTrashFaceUp': { const fu = P.life.filter(l => l._faceUp); for (const c of fu) { P.life.splice(P.life.indexOf(c), 1); P.trash.push(c); } if (fu.length) flog(side, `表向きのライフ${fu.length}枚をトラッシュ`); render(); break; } // 表向きのライフをすべてトラッシュ（ST13-002エースL）
+        case 'lifeTrashToSize': { const tgt = op.n || 1; let k = 0; while (P.life.length > tgt) { const c = P.life.shift(); if (!c) break; P.trash.push(c); k++; } if (k) flog(side, `自分のライフ${k}枚をトラッシュ（ライフ${tgt}枚に）`); render(); if (k) await fireLifeLeft(side); break; } // 自分のライフがN枚になるよう上からトラッシュ（EB01-059/060空島）
+        case 'lifeTrashFaceUp': { const fu = P.life.filter(l => l._faceUp); for (const c of fu) { P.life.splice(P.life.indexOf(c), 1); P.trash.push(c); } if (fu.length) flog(side, `表向きのライフ${fu.length}枚をトラッシュ`); render(); if (fu.length) await fireLifeLeft(side); break; } // 表向きのライフをすべてトラッシュ（ST13-002エースL）
         // デッキ上1枚をトラッシュに置き、そのコストが minCost 以上なら then 実行（OP08-096人の夢は終わらねェ）
         case 'millBuff': { if (!P.deck.length) break; const top = P.deck.shift(); P.trash.push(reset(top)); flog(side, `デッキの上「${top.base.name}」をトラッシュに置いた`); if ((top.base.cost || 0) >= (op.minCost || 0)) await runFx(op.then, ctx); render(); break; }
         // このキャラを持ち主の手札に戻すコスト（OP08-041アフェランドラ）。払えたら then。

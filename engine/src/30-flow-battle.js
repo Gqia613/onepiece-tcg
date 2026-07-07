@@ -475,6 +475,7 @@
         const card = D.life.shift();
         if (banish) { D.trash.push(reset(card)); flog(dSide, 'ライフ1枚がバニッシュ（トラッシュ）'); }
         else if (card.base.fx && card.base.fx.trigger) {
+          clearAtkAnnounce();                            // ★トリガー＝このアタックは解決済み。アタック宣言表示は消す
           await triggerReveal(dSide, card);              // ★ライフ公開の派手な演出（カード大写し）
           const use = await askTrigger(dSide, card);      // 人間: 演出のカード大写しを背後に残したまま選択
           clearTriggerReveal();                           // 選択直後に閉じる（trigger効果の対象選択で盤面を隠さない）

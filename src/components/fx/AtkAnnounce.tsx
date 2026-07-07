@@ -39,9 +39,17 @@ function AaCard({ no }: { no: string }) {
 export function AtkAnnounce() {
   const engine = useEngineStore((s) => s.engine);
   const atk = useEngineStore((s) => s.atk);
+  const trigger = useEngineStore((s) => s.trigger);
+  const prompt = useEngineStore((s) => s.prompt);
+  const peek = useEngineStore((s) => s.promptPeek);
   useEngineStore((s) => s.version); // 再描画トリガ（power 再評価のため）
 
   if (!engine || !atk) return null;
+  // トリガー公開演出中はアタック宣言を出さない（このアタックは解決済み）。
+  if (trigger) return null;
+  // 通常の防御プロンプト表示中は「誰が誰にアタックしているか」を見せる。
+  // 「盤面を見る」で退避中(peek)は盤面に集中させるためアタック表示は隠す。
+  if (prompt && (prompt.cls || '').includes('defense') && peek) return null;
   const { aSide, attacker, target, phase } = atk;
   if (!attacker || !target) return null;
 

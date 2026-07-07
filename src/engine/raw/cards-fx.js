@@ -6,7 +6,7 @@
    現在: 検証用3枚 + OP-16(100枚) + OP-15(82枚)。 */
 window.CARD_FX = {
   /* ===== リーダーのデータ駆動フック（onAllyEnter 等。従来は src/30 にハードコード） ===== */
-  // OP11-041 ナミ:【ドン‼×1】自分のターン中に自分のキャラが登場した時、1ドローし手札1枚をデッキ下（ターン1回）
+  // OP11-041 ナミ:【自分のターン中】【ターン1回】ライフが離れた時、手札7枚以下なら1ドロー ／【ドン‼×1】【相手のアタック時】【ターン1回】手札1枚を捨てて、このリーダーはこのターン中パワー+2000
   "OP11-041": {"onLifeLeave":{"when":"selfTurn","once":"turn","cond":{"selfHandAtMost":7},"fx":[{"op":"draw","n":1}]},"onOppAttack":[{"op":"cond","once":"turn","check":"donX1","then":[{"op":"discardCost","count":1,"optional":true,"then":[{"op":"leaderBuff","amount":2000,"duration":"battle"}]}]}]},
   // OP14-041 ボア・ハンコック: 相手のターン中に自分のキャラが登場した時、1ドロー（ターン1回制限なし）
   "OP14-041": {"onAllyEnter":{"when":"oppTurn","fx":[{"op":"draw","n":1}]},"onAllyLeave":{"ko":true,"once":"turn","cond":"donX1","filter":{"minPower":5000,"traits":["アマゾン・リリー","九蛇海賊団"]},"fx":[{"op":"oppLifeToHand","n":1,"optional":true}]}},

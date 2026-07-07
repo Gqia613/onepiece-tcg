@@ -16,6 +16,8 @@ import type { PromptOption } from '../../engine/types';
 
 export function Prompt() {
   const prompt = useEngineStore((s) => s.prompt);
+  const peek = useEngineStore((s) => s.promptPeek);
+  const setPeek = useEngineStore((s) => s.setPromptPeek);
 
   // 画像読み込み失敗時に .oc-art へ noimg を付与（元: onerror で parentNode.classList.add('noimg')）
   const onImgError = (e: React.SyntheticEvent<HTMLImageElement>) => {
@@ -24,13 +26,28 @@ export function Prompt() {
     img.parentElement?.classList.add('noimg');
   };
 
+  // 「盤面を見る」導線を出せるのは、カードを見比べたい防御選択（カウンター/ブロッカー）だけ。
+  const canPeek = !!prompt && (prompt.cls || '').includes('defense') && (prompt.opts || []).some((o) => o.card);
+
   return (
     <div id="promptHost">
       <AnimatePresence>
-        {prompt && (
-          <PromptCard key={prompt.id} prompt={prompt} onImgError={onImgError} />
+        {prompt && !(peek && canPeek) && (
+          <PromptCard
+            key={prompt.id}
+            prompt={prompt}
+            onImgError={onImgError}
+            canPeek={canPeek}
+            onPeek={() => setPeek(true)}
+          />
         )}
       </AnimatePresence>
+      {/* 退避中＝盤面を見ている。選択は保留のまま。ボタンでプロンプトに戻る。 */}
+      {prompt && peek && canPeek && (
+        <button className="peek-back" onClick={() => setPeek(false)}>
+          防御にもどる
+        </button>
+      )}
     </div>
   );
 }
@@ -38,9 +55,13 @@ export function Prompt() {
 function PromptCard({
   prompt,
   onImgError,
+  canPeek,
+  onPeek,
 }: {
   prompt: NonNullable<ReturnType<typeof useEngineStore.getState>['prompt']>;
   onImgError: (e: React.SyntheticEvent<HTMLImageElement>) => void;
+  canPeek?: boolean;
+  onPeek?: () => void;
 }) {
   const opts: PromptOption[] = prompt.opts || [];
   // 元 promptHTML: card 付きと無しを分離（順序保持のため元 index は使わず o を直接渡す）
@@ -68,6 +89,13 @@ function PromptCard({
     >
       <h3 {...html(prompt.title || '')} />
       {prompt.text ? <p {...html(prompt.text)} /> : null}
+
+      {/* 盤面を見たい時：選択を保留してプロンプトを退避（盤面が見える）。 */}
+      {canPeek && (
+        <button className="prompt-peek-btn" onClick={onPeek}>
+          盤面を見る
+        </button>
+      )}
 
       {cardOpts.length > 0 && (
         <div className="opt-cards">

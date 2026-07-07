@@ -1,8 +1,8 @@
-import { useEffect, useState, type CSSProperties } from 'react';
+import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from './state/auth';
 import { useEngineStore } from './state/engineStore';
-import { setAudioMuted } from './audio';
+import { setAudioMuted, unlockAudio, startBgm, stopBgm, setBgmVolume as applyBgmVolume } from './audio';
 import Login from './screens/Login';
 import Home from './screens/Home';
 import Decks from './screens/Decks';
@@ -29,6 +29,21 @@ const hamItem: CSSProperties = {
   background: 'transparent', color: 'var(--ink)', fontSize: 13.5,
   display: 'flex', alignItems: 'center', gap: 8,
 };
+
+// ── 対戦BGM（public/bgm/*.mp3 を静的配信で参照）──
+type BgmTrack = 'random' | 'adventure' | 'battle' | 'casual' | 'wafu';
+const BGM_SRC: Record<string, string> = {
+  adventure: '/bgm/adventure.mp3',
+  battle: '/bgm/battle.mp3',
+  casual: '/bgm/casual.mp3',
+  wafu: '/bgm/wafu.mp3',
+};
+const BGM_KEYS = ['adventure', 'battle', 'casual', 'wafu'] as const;
+// track→実ファイル。random は対戦開始（や試聴）ごとに4曲から抽選。
+function resolveBgmSrc(t: BgmTrack): string {
+  const key = t === 'random' ? BGM_KEYS[Math.floor(Math.random() * BGM_KEYS.length)] : t;
+  return BGM_SRC[key] || BGM_SRC.adventure;
+}
 
 // ターンピル＋フェイズステッパー（元 setPhase）。リフレッシュ→ドロー→ドン→メイン→エンドの現在地を点灯。
 const PHASE_STEPS = ['リフレッシュ', 'ドロー', 'ドン', 'メイン', 'エンド'];
@@ -72,11 +87,37 @@ function Shell({ username, logout }: { username: string; logout: () => void }) {
   const engine = useEngineStore((s) => s.engine);
   const muted = useEngineStore((s) => s.muted);
   const setMuted = useEngineStore((s) => s.setMuted);
-  useEngineStore((s) => s.version); // 盤面状態の購読（inGame 判定）
+  const bgmOn = useEngineStore((s) => s.bgmOn);
+  const setBgmOn = useEngineStore((s) => s.setBgmOn);
+  const bgmVolume = useEngineStore((s) => s.bgmVolume);
+  const setBgmVolume = useEngineStore((s) => s.setBgmVolume);
+  const bgmTrack = useEngineStore((s) => s.bgmTrack);
+  const setBgmTrack = useEngineStore((s) => s.setBgmTrack);
+  const end = useEngineStore((s) => s.end);
+  const version = useEngineStore((s) => s.version); // 盤面状態の購読（inGame 判定）
+  const bgmActiveRef = useRef(false);
   const [menuOpen, setMenuOpen] = useState(false);
 
   // 画面遷移したらハンバーガーを閉じる
   useEffect(() => { setMenuOpen(false); }, [location.pathname]);
+
+  // BGMのライフサイクル: 盤面表示中(かつ勝敗未確定・BGM ON)で再生、離脱/中断/勝敗でフェードアウト。
+  // random は開始時に1回だけ抽選（version bump では再抽選しない＝ref ガードで多重startを防止）。
+  useEffect(() => {
+    const eng = useEngineStore.getState().engine;
+    const shouldPlay = !!eng?.G.inGame && location.pathname === '/battle/play' && !end && bgmOn;
+    if (shouldPlay && !bgmActiveRef.current) {
+      bgmActiveRef.current = true;
+      startBgm(resolveBgmSrc(bgmTrack));
+    } else if (!shouldPlay && bgmActiveRef.current) {
+      bgmActiveRef.current = false;
+      stopBgm({ fade: true });
+    }
+    // bgmTrack は依存に含めない：曲変更は changeTrack が(盤面中のみ)startBgm で反映する。
+  }, [location.pathname, end, bgmOn, version]);
+
+  // 音量スライダー→再生中BGMへ即時反映
+  useEffect(() => { applyBgmVolume(bgmVolume); }, [bgmVolume]);
 
   if (!engine) return <div className="center-wrap"><div className="loading">エンジン初期化中…</div></div>;
 
@@ -87,6 +128,24 @@ function Shell({ username, logout }: { username: string; logout: () => void }) {
     const m = !muted;
     setMuted(m);
     setAudioMuted(m);
+  }
+
+  function toggleBgm() {
+    const on = !bgmOn;
+    setBgmOn(on);
+    // OFFは即停止。ONは lifecycle effect が盤面表示中を見て開始する。
+    if (!on) { bgmActiveRef.current = false; stopBgm({ fade: true }); }
+  }
+
+  // 曲を切替え。ゲームプレイ画面(盤面)で再生中のときだけ即差し替え＝その場で試聴。
+  // 盤面外では設定を保存するだけで音は鳴らさない（BGMはゲームプレイ画面限定）。
+  function changeTrack(t: BgmTrack) {
+    setBgmTrack(t);
+    if (bgmOn && inPlay) {
+      unlockAudio();
+      bgmActiveRef.current = true;
+      startBgm(resolveBgmSrc(t));
+    }
   }
 
   // 対戦を破棄してデッキ選択へ戻る（ハンバーガーの中断ボタン）
@@ -153,6 +212,40 @@ function Shell({ username, logout }: { username: string; logout: () => void }) {
             <button className="ham-item" style={hamItem} onClick={() => { toggleMute(); }}>
               {muted ? <><Icon.volumeMute size={15} />効果音 OFF</> : <><Icon.volume size={15} />効果音 ON</>}
             </button>
+            <button className="ham-item" style={hamItem} onClick={() => { toggleBgm(); }}>
+              {bgmOn ? <><Icon.music size={15} />BGM ON</> : <><Icon.musicMute size={15} />BGM OFF</>}
+            </button>
+            {bgmOn ? (
+              <>
+                <div style={{ ...hamItem, cursor: 'default' }}>
+                  <Icon.volume size={15} />
+                  <input
+                    type="range" min={0} max={1} step={0.05} value={bgmVolume}
+                    onChange={(e) => setBgmVolume(Number(e.target.value))}
+                    aria-label="BGM音量"
+                    style={{ flex: 1, accentColor: 'var(--gold-soft)' }}
+                  />
+                </div>
+                <div style={{ ...hamItem, cursor: 'default' }}>
+                  <Icon.disc size={15} />
+                  <select
+                    value={bgmTrack}
+                    onChange={(e) => changeTrack(e.target.value as BgmTrack)}
+                    aria-label="BGM曲"
+                    style={{ flex: 1, background: 'var(--ocean-850)', color: 'var(--ink)', border: '1px solid var(--gold-dim)', borderRadius: 6, padding: '3px 6px', fontSize: 12.5 }}
+                  >
+                    <option value="random">ランダム</option>
+                    <option value="adventure">冒険活劇</option>
+                    <option value="battle">緊迫バトル</option>
+                    <option value="casual">軽快カジュアル</option>
+                    <option value="wafu">和風/シリアス</option>
+                  </select>
+                </div>
+                <div style={{ padding: '2px 11px 4px', fontSize: 10.5, color: 'var(--muted)', lineHeight: 1.4 }}>
+                  Music: Kevin MacLeod (incompetech.com) — CC BY 4.0
+                </div>
+              </>
+            ) : null}
             {inGame ? (
               <button className="ham-item" style={hamItem} onClick={abandonBattle}>
                 <Icon.flag size={15} />対戦を中断

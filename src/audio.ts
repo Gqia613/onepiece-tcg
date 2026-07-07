@@ -59,6 +59,7 @@ export function unlockAudio() {
   unlocked = true;
   const c = ac();
   if (c && c.state === 'suspended') { try { c.resume(); } catch { /* ignore */ } }
+  ensureBgmEl(); // 最初のユーザー操作でBGM要素も準備（自動再生アンロック）
 }
 
 export function playSfx(name: string) {
@@ -68,3 +69,79 @@ export function playSfx(name: string) {
 
 export function setAudioMuted(m: boolean) { muted = m; }
 export function isAudioMuted() { return muted; }
+
+// ── BGM（ループ音源。HTMLAudioElement＝SE用のWeb Audioとは独立チャンネル）──
+let bgmEl: HTMLAudioElement | null = null;
+let bgmVol = 0.4;          // 目標音量（0..1）
+let curSrc = '';           // 再生中/指定中の src
+let fadeTimer: number | null = null;
+
+function ensureBgmEl(): HTMLAudioElement | null {
+  if (typeof Audio === 'undefined') return null;
+  if (!bgmEl) {
+    bgmEl = new Audio();
+    bgmEl.loop = true;
+    bgmEl.preload = 'auto';
+    bgmEl.volume = 0;
+  }
+  return bgmEl;
+}
+
+function clearFade() {
+  if (fadeTimer != null) { clearInterval(fadeTimer); fadeTimer = null; }
+}
+
+// el.volume を target まで ms かけて段階変化。完了時 onDone。
+function fadeTo(target: number, ms: number, onDone?: () => void) {
+  const el = bgmEl;
+  if (!el) return;
+  clearFade();
+  const from = el.volume;
+  const steps = Math.max(1, Math.round(ms / 40));
+  let i = 0;
+  fadeTimer = window.setInterval(() => {
+    i++;
+    const v = from + (target - from) * (i / steps);
+    try { el.volume = Math.max(0, Math.min(1, v)); } catch { /* ignore */ }
+    if (i >= steps) { clearFade(); if (onDone) onDone(); }
+  }, 40);
+}
+
+// 指定srcのBGMをフェードインで再生。同じ曲を再生中なら何もしない（連続呼び出し安全）。
+export function startBgm(src: string) {
+  const el = ensureBgmEl();
+  if (!el) return;
+  if (curSrc === src && !el.paused) return;
+  curSrc = src;
+  try {
+    el.src = src;
+    el.volume = 0;
+    const p = el.play();
+    if (p && typeof (p as Promise<void>).catch === 'function') {
+      (p as Promise<void>).catch(() => { /* 自動再生拒否は無視（次のユーザー操作で再試行） */ });
+    }
+    fadeTo(bgmVol, 800);
+  } catch { /* ignore */ }
+}
+
+// BGM停止。fade:true でフェードアウトしてから pause。
+export function stopBgm(opts?: { fade?: boolean }) {
+  const el = bgmEl;
+  curSrc = '';
+  if (!el) return;
+  if (opts && opts.fade) {
+    fadeTo(0, 600, () => { try { el.pause(); el.currentTime = 0; } catch { /* ignore */ } });
+  } else {
+    clearFade();
+    try { el.pause(); el.currentTime = 0; el.volume = 0; } catch { /* ignore */ }
+  }
+}
+
+// BGM音量（0..1）を設定。再生中は即時反映（進行中フェードは打ち切り）。
+export function setBgmVolume(v: number) {
+  bgmVol = Math.max(0, Math.min(1, v));
+  const el = bgmEl;
+  if (el && curSrc && !el.paused) { clearFade(); try { el.volume = bgmVol; } catch { /* ignore */ } }
+}
+
+export function getBgmVolume() { return bgmVol; }

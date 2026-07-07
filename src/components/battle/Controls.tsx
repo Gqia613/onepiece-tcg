@@ -6,7 +6,6 @@
 //  - それ以外        : 「CPU 思考中 / 処理中」(.thinking + .dots)
 // 元のクラス名・文言・DOM階層を1:1で踏襲（onclick属性は React の onClick + engine 呼び出しへ置換）。
 // 自分メイン判定は元の !G.promptState && !G.pendingChoice を store の !prompt && !pick で代替する。
-import type { ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useEngineStore } from '../../state/engineStore';
 import { Icon } from '../ui/Icon';
@@ -60,30 +59,9 @@ export function Controls() {
       );
     }
 
-    // 通常のメイン：ヒントバー（元 controlsHTML 357-364）＋ターン終了
-    const P = G.players.me;
-    const safeCount = (fn: () => number) => { try { return fn(); } catch { return 0; } };
-    const playN = safeCount(() => P.hand.filter((c: any) => engine.handPlayable(c)).length);
-    const atkN = safeCount(() => [P.leader, ...P.chars].filter((c: any) => engine.canCardAttack(c)).length);
-    const actN = safeCount(
-      () => [...P.chars, ...(P.stage ? [P.stage] : [])]
-        .filter((c: any) => c.base.fx && c.base.fx.act && c._actTurn !== G.turnSeq).length,
-    );
-    const chip = (cls: string, label: ReactNode, n: number) => (
-      <span className={'hb-chip' + (n ? '' : ' zero') + (cls ? ' ' + cls : '')} style={{ display: 'inline-flex', alignItems: 'center', gap: 3 }}>
-        {label}<b>{n}</b>
-      </span>
-    );
+    // 通常のメイン：ヒントバーは表示せず、ターン終了ボタンのみ
     return (
       <div className="controls">
-        <div className="hintbar">
-          <span className="hb-lead">あなたのメイン</span>
-          <span className="hb-chip don" style={{ display: 'inline-flex', alignItems: 'center', gap: 3 }}><Icon.disc size={12} />ドン<b>{P.don.active}</b></span>
-          {chip('', <><Icon.layers size={12} />出せる手札</>, playN)}
-          {chip('', <><Icon.swords size={12} />アタック可</>, atkN)}
-          {actN ? chip('act', <><Icon.zap size={12} />起動</>, actN) : null}
-          <span className="hb-tip">光る手札=登場/使用・光る自分のカード=アタック/ドン付与/起動</span>
-        </div>
         <button className="phasebtn go" onClick={() => engine.uiEndTurn()}>
           ターン終了
         </button>

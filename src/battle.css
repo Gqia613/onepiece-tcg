@@ -1299,17 +1299,17 @@ button {
   z-index: 3;
   font-family: var(--font-num);
   font-weight: 700;
-  font-size: 12px;
-  width: 19px;
-  height: 19px;
+  font-size: 9.5px;
+  width: 15px;
+  height: 15px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   color: var(--ink);
   background: rgba(0, 0, 0, .82);
-  border: 1.5px solid rgba(255, 255, 255, .3);
-  box-shadow: 0 1px 4px #000a;
+  border: 1px solid rgba(255, 255, 255, .3);
+  box-shadow: 0 1px 3px #000a;
 }
 
 .card .costchip.ok {
@@ -5181,3 +5181,50 @@ button.hb-chip:not(.zero):not([disabled]):hover {
   border: 1px solid rgba(255, 214, 110, .55);
   box-shadow: 0 4px 14px rgba(0, 0, 0, .5);
 }
+
+/* ===== 防御選択「盤面を見る」導線 ===== */
+/* プロンプト内の退避ボタン（カウンター/ブロッカー選択を保留して盤面を見る） */
+.prompt-peek-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin: 0 auto 11px;
+  padding: 5px 14px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--gold-soft);
+  background: rgba(255, 200, 87, .08);
+  border: 1px solid rgba(255, 200, 87, .4);
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background .15s, border-color .15s;
+}
+.prompt-peek-btn:hover {
+  background: rgba(255, 200, 87, .18);
+  border-color: rgba(255, 200, 87, .7);
+}
+
+/* 退避中に画面下へ出す「防御にもどる」FAB（盤面が見えている＝選択は保留中） */
+.peek-back {
+  position: absolute;
+  left: 50%;
+  bottom: 22px;
+  transform: translateX(-50%);
+  z-index: 55;
+  pointer-events: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 22px;
+  font-family: "Noto Sans JP";
+  font-size: 14px;
+  font-weight: 800;
+  color: #fff;
+  background: linear-gradient(180deg, var(--opp-accent), #b3352f);
+  border: 1px solid rgba(255, 180, 170, .6);
+  border-radius: 999px;
+  box-shadow: var(--elev-3), 0 0 24px -6px var(--opp-accent);
+  cursor: pointer;
+  animation: promptIn .22s cubic-bezier(.2, .85, .3, 1.1);
+}
+.peek-back:hover { filter: brightness(1.08); }

@@ -63,6 +63,13 @@ humanPick=function(c){return Promise.resolve((c||[])[0]||null);};
     const s=I('OP16-027','me'); s.attachedDon=1; G.players.me.chars=[s];
     ok(power(s)===(C['OP16-027'].power+1000+2000), 'OP16-027: 付与ドン1で+2000(静的)');
 
+    // OP11-041 ナミ 効果1: 【自分のターン中】ライフが離れた時、手札7枚以下なら1ドロー
+    // （fireLifeLeft を lifeToHand 等のライフ離脱opから誘発。被弾以外の自ターンのライフ操作で発動＝回帰）
+    G.players={me:mkP('OP11-041',false),cpu:mkP('OP13-002',true)}; G.active='me'; G.turnSeq=9; G.winner=null;
+    { const me=G.players.me; me.hand=[]; me.deck=[I('OP13-002','me'),I('OP13-002','me')]; me.life=[I('OP13-002','me'),I('OP13-002','me')];
+      await runFx([{op:'lifeToHand',n:1}],{side:'me'});
+      ok(me.hand.length===2 && me.deck.length===1 && me.life.length===1, 'OP11-041 効果1: 自ターンにライフ→手札で1ドロー誘発(手札=ライフ1+ドロー1・デッキ-1)'); }
+
     // OP16-072: 【登場時】デッキ上5枚から《インペルダウン》1枚を手札へ (search)
     G.players={cpu:mkP('OP11-041',true),me:mkP('OP13-002',false)}; G.active='cpu';
     const imp=Object.keys(C).find(no=>!C[no].leader&&(C[no].traits||[]).includes('インペルダウン'));
