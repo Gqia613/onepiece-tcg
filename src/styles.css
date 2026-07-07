@@ -524,21 +524,17 @@ html, body, #root { height: 100%; margin: 0; }
 @media (max-width: 640px) {
   .home-wrap { justify-content: flex-start; gap: 20px; }
   .home-menu { flex-direction: column; align-items: stretch; }
+  /* gridをやめてPC版と同じflex column（icon→ラベル→説明を縦に）。
+     ★縦flexだと flex:1 1 190px の grow でカードが縦に伸びて余白が出るため flex:0 0 auto で content にフィット。
+     min-height と desc の margin-top:auto も無効化して無駄な余白をなくす。 */
   .home-card {
+    flex: 0 0 auto;
     max-width: none;
     min-height: 0;
-    display: grid;
-    grid-template-columns: auto 1fr auto;
-    grid-template-areas: "icon en go" "icon desc go";
-    align-items: center;
-    column-gap: 14px;
-    padding: 14px 16px;
+    padding: 13px 15px;
   }
-  .hc-icon { grid-area: icon; margin: 0; }
-  .hc-en { grid-area: en; font-size: 17px; }
-  .hc-desc { grid-area: desc; margin: 2px 0 0; padding: 0; }
-  .hc-go { grid-area: go; position: static; }
-  .hc-kanji { font-size: 96px; bottom: -18px; }
+  .hc-desc { margin-top: 3px; padding-top: 0; }
+  .hc-kanji { font-size: 84px; bottom: -14px; }
 }
 
 /* =========================================================================
