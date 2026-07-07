@@ -12,7 +12,37 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { useEngineStore } from '../../state/engineStore';
 import { IMG } from '../../engine/img';
-import type { PromptOption } from '../../engine/types';
+import { Icon } from '../ui/Icon';
+import type { PromptOption, Card } from '../../engine/types';
+
+// 防御(カウンター/ブロック)モーダルの上部に出す「誰が誰にアタックしているか」ヘッダー。
+// 旧: 別枠の浮動ダイアログ(AtkAnnounce)で表示 → 情報が重複し重なるため、モーダル内に統合。
+function AttackHead() {
+  const atk = useEngineStore((s) => s.atk);
+  const engine = useEngineStore((s) => s.engine);
+  useEngineStore((s) => s.version); // カウンター加算などで power を再評価
+  if (!atk || !atk.attacker || !atk.target || !engine) return null;
+  const { attacker, target, aSide } = atk;
+  const pw = (c: Card): number => { try { return (engine.power(c) as number) ?? 0; } catch { return 0; } };
+  const opp = aSide !== 'me';
+  const toN = target.base.type === 'LEADER' ? (opp ? 'あなたのリーダー' : '相手のリーダー') : target.base.name;
+  const hideImg = (e: React.SyntheticEvent<HTMLImageElement>) => { e.currentTarget.style.visibility = 'hidden'; };
+  return (
+    <div className="prompt-atkhead">
+      <span className="pah-side pah-atk">
+        <img className="pah-card" src={IMG(attacker.base.no)} referrerPolicy="no-referrer" decoding="async" alt="" onError={hideImg} />
+        <span className="pah-nm">{attacker.base.name}</span>
+        <b className="pah-pw">P{pw(attacker)}</b>
+      </span>
+      <span className="pah-arrow"><Icon.swords size={20} /></span>
+      <span className="pah-side pah-def">
+        <img className="pah-card" src={IMG(target.base.no)} referrerPolicy="no-referrer" decoding="async" alt="" onError={hideImg} />
+        <span className="pah-nm">{toN}</span>
+        <b className="pah-pw def">P{pw(target)}</b>
+      </span>
+    </div>
+  );
+}
 
 export function Prompt() {
   const prompt = useEngineStore((s) => s.prompt);
@@ -67,6 +97,7 @@ function PromptCard({
   // 元 promptHTML: card 付きと無しを分離（順序保持のため元 index は使わず o を直接渡す）
   const cardOpts = opts.filter((o) => o.card);
   const plainOpts = opts.filter((o) => !o.card);
+  const isDefense = (prompt.cls || '').includes('defense'); // カウンター/ブロック＝攻撃ヘッダーを上部に出す
 
   const pick = (o: PromptOption) => {
     if (o.disabled) return;
@@ -87,6 +118,7 @@ function PromptCard({
       exit={{ x: '-50%', opacity: 0, scale: 0.92 }}
       transition={{ duration: 0.2, ease: 'easeOut' }}
     >
+      {isDefense && <AttackHead />}
       <h3 {...html(prompt.title || '')} />
       {prompt.text ? <p {...html(prompt.text)} /> : null}
 

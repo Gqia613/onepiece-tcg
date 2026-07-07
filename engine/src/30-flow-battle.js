@@ -504,9 +504,8 @@
         render();
         const opts = blockers.map(b => ({ t: b.base.name, v: 'blk:' + b.uid, card: { no: b.base.no, sub: '🛡 P' + power(b) } }));
         opts.push({ t: 'ブロックしない', v: '__skip', ghost: true });
-        const tgt = target.base.type === 'LEADER' ? 'リーダー' : '「' + target.base.name + '」';
         showPrompt({
-          cls: 'defense', title: '🛡 ブロック — あなたの防御', text: '「' + attacker.base.name + '」（P' + power(attacker) + '）が' + tgt + 'にアタック。ブロッカーで肩代わりできます',
+          cls: 'defense', title: '🛡 ブロック — あなたの防御', text: 'ブロッカーで肩代わりできます',
           opts, onPick: v => {
             if (!G.pendingChoice) return;
             if (v === '__skip') { G.pendingChoice.res(null); }
@@ -575,7 +574,7 @@
         const v = await new Promise(res => showPrompt({
           cls: 'defense',
           title: '🛡 カウンター — あなたの防御',
-          text: `「${attacker.base.name}」P${power(attacker)} ⚔ 防御側 P${power(target)}　` + (need < 0 ? '<b style="color:var(--legal-glow)">現在は耐えています</b>' : `<b style="color:var(--danger-glow)">あと +${need + 1000} 必要</b>`) + advice,
+          text: (need < 0 ? '<b style="color:var(--legal-glow)">現在は耐えています</b>' : `<b style="color:var(--danger-glow)">あと +${need + 1000} 必要</b>`) + advice,
           opts, onPick: res
         }));
         if (v === '__done') return;
