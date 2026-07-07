@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { createEngine, type EngineAPI } from '../engine/bootstrap';
 import { makeReactAdapter } from '../engine/reactAdapter';
-import type { PromptState, PickState, FxEvent, AtkState, EndState, Card, Side } from '../engine/types';
+import type { PromptState, PickState, FxEvent, AtkState, EndState, Card, Side, Deck } from '../engine/types';
 
 interface EngineStore {
   engine: EngineAPI | null;
@@ -15,12 +15,13 @@ interface EngineStore {
   muted: boolean;
   hover: Card | null; // ホバー中のカード（効果プレビュー用。専用スライス＝盤面は再描画しない）
   builderOpen: boolean; // デッキ作成画面の表示
+  builderDeck: Deck | null; // ビルダーの初期値に使うデッキ（編集/コピー元。新規作成時は null）
   cardModal: Card | null; // カード長押し詳細モーダル（タッチ）
   trashModal: Side | null; // トラッシュ閲覧モーダル
   logs: Array<{ cls: string; html: string }>;
   bump: () => void;
   setHover: (c: Card | null) => void;
-  setBuilderOpen: (b: boolean) => void;
+  setBuilderOpen: (b: boolean, deck?: Deck | null) => void;
   setCardModal: (c: Card | null) => void;
   setTrashModal: (s: Side | null) => void;
   setPrompt: (p: PromptState | null) => void;
@@ -47,12 +48,13 @@ export const useEngineStore = create<EngineStore>((set, get) => ({
   muted: false,
   hover: null,
   builderOpen: false,
+  builderDeck: null,
   cardModal: null,
   trashModal: null,
   logs: [],
   bump: () => set((s) => ({ version: s.version + 1 })),
   setHover: (c) => set({ hover: c }),
-  setBuilderOpen: (b) => set({ builderOpen: b }),
+  setBuilderOpen: (b, deck) => set({ builderOpen: b, builderDeck: b ? (deck ?? null) : null }),
   setCardModal: (c) => set({ cardModal: c }),
   setTrashModal: (s) => set({ trashModal: s }),
   setPrompt: (p) => set({ prompt: p }),

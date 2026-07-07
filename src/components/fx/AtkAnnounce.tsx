@@ -6,6 +6,7 @@
 import { useEffect } from 'react';
 import { motion, AnimatePresence, useSpring, useTransform } from 'framer-motion';
 import { useEngineStore } from '../../state/engineStore';
+import { Icon } from '../ui/Icon';
 import { IMG, IMG_RAW } from '../../engine/img';
 import type { Card } from '../../engine/types';
 
@@ -103,7 +104,7 @@ export function AtkAnnounce() {
           }}
           transition={{ type: 'spring', stiffness: 320, damping: 18 }}
         >
-          {phase === 'block' ? '🛡' : '⚔'}
+          {phase === 'block' ? <Icon.shield size={30} /> : <Icon.swords size={30} />}
         </motion.span>
 
         {/* 防御側 */}

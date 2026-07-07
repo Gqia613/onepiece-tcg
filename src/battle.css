@@ -644,6 +644,23 @@ button {
   width: 100%
 }
 
+/* スマホ: デッキ選択を4列表示（既定の auto-fill minmax(150px) だと2列になるため固定4列に上書き）。 */
+@media(max-width:560px) {
+  .deck-grid {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px
+  }
+
+  /* 4列で窮屈になるため、カード上のピルはアイコンのみ（テキスト非表示）にする。 */
+  .deck-card .dc-pill .dc-btn-txt {
+    display: none
+  }
+
+  .deck-card .dc-pill {
+    padding: 4px 5px
+  }
+}
+
 .tip.warn {
   color: var(--danger-glow);
   font-weight: 700
@@ -4150,6 +4167,31 @@ button.hb-chip:not(.zero):not([disabled]):hover {
   border-color: var(--self-line)
 }
 
+/* 検索フィールド内にフリーアイコン（虫眼鏡）を置くラッパー。元の .bd-search の flex 挙動を維持。 */
+.bd-search-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  flex: 1 1 200px;
+  min-width: 180px;
+  max-width: 340px;
+}
+
+.bd-search-wrap .bd-search.has-ic {
+  flex: 1 1 auto;
+  width: 100%;
+  min-width: 0;
+  max-width: none;
+  padding-left: 30px;
+}
+
+.bd-search-ic {
+  position: absolute;
+  left: 11px;
+  color: var(--muted);
+  pointer-events: none;
+}
+
 .bd-cdot {
   display: inline-block;
   width: 9px;
@@ -4391,6 +4433,10 @@ button.hb-chip:not(.zero):not([disabled]):hover {
     padding-top: 2px
   }
 
+  .bd-st-stats {
+    display: block
+  }
+
   .bd-panel {
     display: none
   }
@@ -4595,8 +4641,168 @@ button.hb-chip:not(.zero):not([disabled]):hover {
   color: var(--gold-soft)
 }
 
+/* ── ビルダーUX改善: リーダー絞り込み/折りたたみ・デッキ内容トグル・カード拡大 ── */
+.bd-lead-cur {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid var(--self-line);
+  border-radius: 12px;
+  background: var(--self-tint);
+  padding: 8px 12px;
+  margin-bottom: 12px;
+}
+
+.bd-lead-cur .bd-lart {
+  width: 46px;
+  flex: 0 0 auto;
+  cursor: zoom-in
+}
+
+.bd-lc-info {
+  flex: 1 1 auto;
+  min-width: 0
+}
+
+.bd-lc-name {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--ink)
+}
+
+.bd-lc-sub {
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 2px
+}
+
+.bd-lead-cur .bd-fbtn {
+  flex: 0 0 auto
+}
+
+.bd-zoom {
+  position: absolute;
+  z-index: 2;
+  top: 3px;
+  right: 3px;
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  border: 1px solid var(--surface-edge);
+  background: rgba(0, 0, 0, .65);
+  color: var(--ink);
+  font-size: 11px;
+  cursor: zoom-in;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+.bd-zoom:hover {
+  border-color: var(--self-accent)
+}
+
+.bd-art {
+  cursor: zoom-in
+}
+
+.bd-main.nolist {
+  grid-template-columns: minmax(0, 1fr) auto
+}
+
+.bd-panel.min {
+  padding: 9px 12px
+}
+
+.bd-panel-head.tgl {
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap
+}
+
+.bd-panel-head.tgl:hover {
+  color: var(--gold-soft)
+}
+
+.bd-st-list-head {
+  cursor: pointer;
+  user-select: none
+}
+
+.bd-lh-hint {
+  font-size: 10px;
+  color: var(--muted);
+  margin-left: 6px;
+  letter-spacing: 0
+}
+
+/* デッキ統計（コストカーブ＋カウンター/トリガー）。bd-st-stats はモバイルstickyバー内のみ表示 */
+.bd-st-stats {
+  display: none
+}
+
+.bd-stats {
+  border-top: 1px solid var(--line);
+  padding-top: 6px
+}
+
+.bd-curve {
+  display: flex;
+  align-items: flex-end;
+  gap: 3px
+}
+
+.bd-cv-col {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 2px
+}
+
+.bd-cv-n {
+  font-size: 9px;
+  line-height: 1;
+  color: var(--muted);
+  font-family: var(--font-num);
+  min-height: 9px
+}
+
+.bd-cv-bar {
+  width: 100%;
+  max-width: 22px;
+  border-radius: 3px 3px 0 0;
+  background: linear-gradient(180deg, var(--gold-soft), var(--gold-dim))
+}
+
+.bd-cv-l {
+  font-size: 9px;
+  line-height: 1;
+  color: var(--muted);
+  font-family: var(--font-num)
+}
+
+.bd-stats-line {
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 5px
+}
+
+.bd-stats-line b {
+  color: var(--gold-soft);
+  font-family: var(--font-num)
+}
+
 @media (max-width: 760px) {
-  .bd-main {
+  .bd-main,
+  .bd-main.nolist {
     grid-template-columns: 1fr
   }
 

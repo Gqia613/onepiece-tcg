@@ -5,6 +5,7 @@
 // 🤖 アイコンを回転、バッジ全体をパルスさせ、false で AnimatePresence によりフェードアウトする。
 import { motion, AnimatePresence } from 'framer-motion';
 import { useEngineStore } from '../../state/engineStore';
+import { Icon } from '../ui/Icon';
 
 export function Thinking() {
   const thinking = useEngineStore((s) => s.thinking);
@@ -56,7 +57,7 @@ export function Thinking() {
             transition={{ duration: 2.2, repeat: Infinity, ease: 'linear' }}
             style={{ display: 'inline-block', fontSize: 16, lineHeight: 1 }}
           >
-            🤖
+            <Icon.cpu size={16} />
           </motion.span>
           <span>AI思考中…</span>
         </motion.div>

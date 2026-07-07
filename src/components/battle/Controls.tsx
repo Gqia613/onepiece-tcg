@@ -6,9 +6,13 @@
 //  - それ以外        : 「CPU 思考中 / 処理中」(.thinking + .dots)
 // 元のクラス名・文言・DOM階層を1:1で踏襲（onclick属性は React の onClick + engine 呼び出しへ置換）。
 // 自分メイン判定は元の !G.promptState && !G.pendingChoice を store の !prompt && !pick で代替する。
+import type { ReactNode } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useEngineStore } from '../../state/engineStore';
+import { Icon } from '../ui/Icon';
 
 export function Controls() {
+  const navigate = useNavigate();
   const engine = useEngineStore((s) => s.engine);
   const prompt = useEngineStore((s) => s.prompt);
   const pick = useEngineStore((s) => s.pick);
@@ -20,7 +24,10 @@ export function Controls() {
   if (G.winner) {
     return (
       <div className="controls">
-        <button className="phasebtn go" onClick={() => engine.backToSelect()}>
+        <button
+          className="phasebtn go"
+          onClick={() => { engine.backToSelect(); useEngineStore.getState().bump(); navigate('/battle'); }}
+        >
           もう一度プレイ
         </button>
       </div>
@@ -40,7 +47,7 @@ export function Controls() {
       return (
         <div className="controls">
           <div className="hintbar atk">
-            <span className="hb-lead">⚔ 攻撃対象を選択</span>
+            <span className="hb-lead" style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><Icon.swords size={13} />攻撃対象を選択</span>
             <span className="hb-chip warn">
               対象 <b>{tgts}</b>
             </span>
@@ -62,19 +69,19 @@ export function Controls() {
       () => [...P.chars, ...(P.stage ? [P.stage] : [])]
         .filter((c: any) => c.base.fx && c.base.fx.act && c._actTurn !== G.turnSeq).length,
     );
-    const chip = (cls: string, label: string, n: number) => (
-      <span className={'hb-chip' + (n ? '' : ' zero') + (cls ? ' ' + cls : '')}>
-        {label} <b>{n}</b>
+    const chip = (cls: string, label: ReactNode, n: number) => (
+      <span className={'hb-chip' + (n ? '' : ' zero') + (cls ? ' ' + cls : '')} style={{ display: 'inline-flex', alignItems: 'center', gap: 3 }}>
+        {label}<b>{n}</b>
       </span>
     );
     return (
       <div className="controls">
         <div className="hintbar">
           <span className="hb-lead">あなたのメイン</span>
-          <span className="hb-chip don">⛏ ドン <b>{P.don.active}</b></span>
-          {chip('', '🃏 出せる手札', playN)}
-          {chip('', '⚔ アタック可', atkN)}
-          {actN ? chip('act', '✦ 起動', actN) : null}
+          <span className="hb-chip don" style={{ display: 'inline-flex', alignItems: 'center', gap: 3 }}><Icon.disc size={12} />ドン<b>{P.don.active}</b></span>
+          {chip('', <><Icon.layers size={12} />出せる手札</>, playN)}
+          {chip('', <><Icon.swords size={12} />アタック可</>, atkN)}
+          {actN ? chip('act', <><Icon.zap size={12} />起動</>, actN) : null}
           <span className="hb-tip">光る手札=登場/使用・光る自分のカード=アタック/ドン付与/起動</span>
         </div>
         <button className="phasebtn go" onClick={() => engine.uiEndTurn()}>

@@ -48,25 +48,33 @@ export async function importAndSaveDeck(engine: EngineAPI, data: any): Promise<{
   return { ok: true, deck };
 }
 
-// デッキビルダーで組んだデッキをエンジン検証→クラウド保存→customDecks へ
+// デッキビルダーで組んだデッキをエンジン検証→クラウド保存→customDecks へ。
+// overwriteId 指定時は既存デッキの上書き（PUT）。customDecks 内の同 id を差し替える。
 export async function saveBuilderDeck(
   engine: EngineAPI,
   b: { leaderNo: string; list: Record<string, number>; name: string },
+  overwriteId?: string,
 ): Promise<{ ok: boolean; error?: string; deck?: any }> {
   try {
     const v = engine.builderValidate(b);
     if (v && v.ok === false) return { ok: false, error: (v.errors && v.errors[0]) || '不正なデッキ' };
   } catch { /* validate不在ならサーバ検証に委ねる */ }
   let saved: SavedDeck;
+  const payload = { name: b.name || 'マイデッキ', leader: b.leaderNo, list: b.list };
   try {
-    const r = await api.createDeck({ name: b.name || 'マイデッキ', leader: b.leaderNo, list: b.list });
+    const r = overwriteId ? await api.updateDeck(overwriteId, payload) : await api.createDeck(payload);
     saved = r.deck;
   } catch (e: any) {
     return { ok: false, error: '保存に失敗しました（' + (e?.error || 'error') + '）' };
   }
   const deck = toCustomDeck(engine, saved);
   engine.G.customDecks = engine.G.customDecks || [];
-  engine.G.customDecks.push(deck);
+  if (overwriteId) {
+    const i = engine.G.customDecks.findIndex((x: any) => x.id === overwriteId);
+    if (i >= 0) engine.G.customDecks[i] = deck; else engine.G.customDecks.push(deck);
+  } else {
+    engine.G.customDecks.push(deck);
+  }
   return { ok: true, deck };
 }
 

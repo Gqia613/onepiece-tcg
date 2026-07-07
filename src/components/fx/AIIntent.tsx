@@ -2,6 +2,7 @@
 // aiThink が intent をセット→ showAIIntent が render()→ ここが engine.G._aiIntent を読んで表示。
 import { AnimatePresence, motion } from 'framer-motion';
 import { useEngineStore } from '../../state/engineStore';
+import { Icon } from '../ui/Icon';
 
 export function AIIntent() {
   const engine = useEngineStore((s) => s.engine);
@@ -26,7 +27,7 @@ export function AIIntent() {
             boxShadow: '0 8px 24px #0008', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
           }}
         >
-          🤖 CPUの狙い: <span style={{ color: 'var(--ink)' }}>{intent}</span>
+          <Icon.cpu size={13} style={{ marginRight: 5, verticalAlign: '-2px' }} />CPUの狙い: <span style={{ color: 'var(--ink)' }}>{intent}</span>
         </motion.div>
       ) : null}
     </AnimatePresence>

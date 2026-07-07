@@ -1,11 +1,16 @@
 // @vitest-environment happy-dom
 // デッキ選択画面の「📋 カードリスト」ボタン→カードリスト画像モーダルの回帰テスト。
 import { describe, it, expect, beforeAll, afterEach } from 'vitest';
-import { render, cleanup, act, fireEvent } from '@testing-library/react';
+import { render as rtlRender, cleanup, act, fireEvent } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
+import type { ReactElement } from 'react';
 import { createEngine } from '../src/engine/bootstrap';
 import { headlessAdapter } from '../src/engine/ui-adapter';
 import { useEngineStore } from '../src/state/engineStore';
 import DeckSelect from '../src/screens/DeckSelect';
+
+// DeckSelect はルーター配下で動く（useNavigate）ため MemoryRouter で包む
+const render = (ui: ReactElement) => rtlRender(<MemoryRouter>{ui}</MemoryRouter>);
 
 let engine: any;
 

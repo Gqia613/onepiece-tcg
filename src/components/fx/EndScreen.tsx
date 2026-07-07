@@ -7,6 +7,7 @@
 //   重ねて入退場（fade / 軽いズーム）を強化する。内部 es-* は CSS アニメに任せて競合を避ける。
 //   win=金背景＋グロー＋リング拡大＋粒子 / lose=暗黒＋ビネット＋雨、の多層演出は元のまま。
 import { useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useEngineStore } from '../../state/engineStore';
 
@@ -31,6 +32,7 @@ function makeRain() {
 }
 
 export function EndScreen() {
+  const navigate = useNavigate();
   const engine = useEngineStore((s) => s.engine);
   const end = useEngineStore((s) => s.end);
 
@@ -42,7 +44,8 @@ export function EndScreen() {
   const onReplay = () => {
     try { engine?.backToSelect(); } catch { /* ignore */ }
     useEngineStore.getState().setEnd(null);
-    useEngineStore.getState().bump(); // backToSelect は render フックを呼ばないので明示再描画（App が DeckSelect へ切替）
+    useEngineStore.getState().bump(); // backToSelect は render フックを呼ばないので明示再描画
+    navigate('/battle'); // 対戦セットアップへ
   };
 
   return (

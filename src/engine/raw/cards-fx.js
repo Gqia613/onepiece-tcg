@@ -191,7 +191,7 @@ window.CARD_FX = {
   "OP08-050": {"onPlay":[{"op":"draw","n":2},{"op":"handToBottom","n":2}]},
   "OP06-101": {"onPlay":[{"op":"giveKeyword","target":"chooseOwnL","kw":"banish","duration":"turn"}],"trigger":[{"op":"ko","side":"opp","maxCost":5,"count":1,"optional":true}]},
   "OP14-105": {"act":{"label":"手札3公開:全体にレストドン1","cost":{},"fx":[{"op":"revealCost","count":3,"filter":{"traits":["アマゾン・リリー","九蛇海賊団"]},"then":[{"op":"donAttachAll","n":1,"incLeader":true}]}]}},
-  "OP14-104": {"onPlay":[{"op":"reviveFromTrash","maxCost":4,"filter":{"trait":"スリラーバーク海賊団"}}]},
+  "OP14-104": {"onPlay":[{"op":"chooseOption","options":[{"label":"登場させる","fx":[{"op":"reviveFromTrash","maxCost":4,"filter":{"trait":"スリラーバーク海賊団"}}]},{"label":"ライフの上に表向きで加える","fx":[{"op":"trashToLife","maxCost":4,"trait":"スリラーバーク海賊団","faceUp":true,"optional":true}]}]}]},
   "OP15-113": {"onPlay":[{"op":"discardCost","count":1,"then":[{"op":"lifeAddFromDeck","n":1,"optional":true}]}]},
   "OP14-112": {"onPlay":[{"op":"cond","check":"leaderShichibukai","then":[{"op":"lifeAddFromDeck","n":1},{"op":"oppLifeToHand","n":1}]}]},
   "OP07-057": {"main":{"don":0,"fx":[{"op":"powerMod","side":"self","amount":2000,"count":1,"leader":true,"optional":true,"filter":{"trait":"王下七武海"}},{"op":"giveKeyword","target":"chooseOwnL","kw":"unblockable","duration":"turn","filter":{"trait":"王下七武海"}}]}},

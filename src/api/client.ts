@@ -31,6 +31,8 @@ export const api = {
   listDecks: () => req<{ decks: SavedDeck[] }>('/api/decks'),
   createDeck: (d: { name: string; leader: string; list: Record<string, number> }) =>
     req<{ deck: SavedDeck }>('/api/decks', { method: 'POST', body: JSON.stringify(d) }),
+  updateDeck: (id: string, d: { name: string; leader: string; list: Record<string, number> }) =>
+    req<{ deck: SavedDeck }>('/api/decks/' + encodeURIComponent(id), { method: 'PUT', body: JSON.stringify(d) }),
   deleteDeck: (id: string) =>
     req<{ ok: true }>('/api/decks/' + encodeURIComponent(id), { method: 'DELETE' }),
 };

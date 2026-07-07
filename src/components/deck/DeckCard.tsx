@@ -11,16 +11,40 @@ const COLOR_HEX: Record<string, string> = {
   紫: 'var(--c-purple)', 黒: 'var(--c-black)', 黄: 'var(--c-yellow)',
 };
 
-export function DeckCard({ deck, selected, onSelect, onDelete, onShowList }: {
+// フリーアイコン（Feather Icons / MITライセンス）をインラインSVGで同梱（外部リクエストなし・currentColorでボタン色を継承）。
+const ICON = { flex: '0 0 auto', display: 'block' } as const;
+const ListIcon = () => (
+  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={ICON} aria-hidden="true">
+    <line x1="8" y1="6" x2="21" y2="6" /><line x1="8" y1="12" x2="21" y2="12" /><line x1="8" y1="18" x2="21" y2="18" />
+    <line x1="3" y1="6" x2="3.01" y2="6" /><line x1="3" y1="12" x2="3.01" y2="12" /><line x1="3" y1="18" x2="3.01" y2="18" />
+  </svg>
+);
+const EditIcon = () => (
+  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={ICON} aria-hidden="true">
+    <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z" />
+  </svg>
+);
+const CopyIcon = () => (
+  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={ICON} aria-hidden="true">
+    <rect x="9" y="9" width="13" height="13" rx="2" ry="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+  </svg>
+);
+
+export function DeckCard({ deck, selected, onSelect, onDelete, onShowList, onEdit, editLabel, hideTier }: {
   deck: Deck;
   selected: boolean;
   onSelect: () => void;
   onDelete?: () => void; // クラウド保存デッキのみ削除可
   onShowList?: () => void; // カードリストをモーダル表示
+  onEdit?: () => void; // ビルダーで開く（クラウド=編集 / プリセット=コピー）
+  editLabel?: string;
+  hideTier?: boolean; // TIERバッジを隠す（対戦画面のデッキ選択で使用）
 }) {
   // DECKS の色フィールドは colors（custom デッキも colors）。念のため color もフォールバック。
   const colors = deck.colors || deck.color || [];
   const accuracy = (deck as any).accuracy === 'high' ? '高' : '中';
+  const editText = editLabel || '編集';
+  const isCopy = editText.includes('コピー'); // プリセット=コピーして編集 / クラウド=編集
 
   return (
     <motion.div
@@ -30,7 +54,7 @@ export function DeckCard({ deck, selected, onSelect, onDelete, onShowList }: {
       whileHover={{ scale: 1.03 }}
       transition={{ type: 'spring', stiffness: 320, damping: 26 }}
     >
-      {deck.tier ? <div className="tierbadge">{deck.tier}</div> : null}
+      {deck.tier && !hideTier ? <div className="tierbadge">{deck.tier}</div> : null}
       {onDelete ? (
         <button
           title="このデッキを削除"
@@ -45,15 +69,34 @@ export function DeckCard({ deck, selected, onSelect, onDelete, onShowList }: {
 
       {onShowList ? (
         <button
+          className="dc-pill"
           title="カードリストを見る"
+          aria-label="カードリストを見る"
           onClick={(e) => { e.stopPropagation(); onShowList(); }}
           style={{
             position: 'absolute', top: 6, right: onDelete ? 34 : 6, zIndex: 11,
+            display: 'flex', alignItems: 'center', gap: 4,
             fontSize: 10.5, fontWeight: 700, cursor: 'pointer',
             background: 'rgba(0,0,0,.78)', border: '1px solid var(--surface-edge)',
-            color: 'var(--ink)', padding: '2px 8px', borderRadius: 999,
+            color: 'var(--ink)', padding: '3px 8px', borderRadius: 999,
           }}
-        >📋 カードリスト</button>
+        ><ListIcon /><span className="dc-btn-txt">カードリスト</span></button>
+      ) : null}
+
+      {onEdit ? (
+        <button
+          className="dc-pill"
+          title={editText}
+          aria-label={editText}
+          onClick={(e) => { e.stopPropagation(); onEdit(); }}
+          style={{
+            position: 'absolute', top: 32, right: onDelete ? 34 : 6, zIndex: 11,
+            display: 'flex', alignItems: 'center', gap: 4,
+            fontSize: 10.5, fontWeight: 700, cursor: 'pointer',
+            background: 'rgba(0,0,0,.78)', border: '1px solid var(--surface-edge)',
+            color: 'var(--gold-soft)', padding: '3px 8px', borderRadius: 999,
+          }}
+        >{isCopy ? <CopyIcon /> : <EditIcon />}<span className="dc-btn-txt">{editText}</span></button>
       ) : null}
 
       <div className="art" style={{ backgroundImage: `url('${IMG(deck.leader)}')` }}>

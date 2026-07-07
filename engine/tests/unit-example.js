@@ -68,6 +68,22 @@ function setupG(leaderNo){G.active='me';G.turnSeq=5;G.winner=null;const mkP=(ln,
     ok(C['OP01-008'].rush===true, '例3d: OP01-008キャベンディッシュは自己速攻を保持(このキャラは…を得る)');
     ok(C['ST30-012'].blocker!==true, '例3d: ST30-012ルフィは非ブロッカー(相手の【ブロッカー】を持つキャラ参照)');
 
+    // 例3e: OP14-104ゲッコー・モリア(8黄)=公式「トラッシュから…1枚までを、ライフの上に表向きで加えるか登場させる」の二択。
+    //       以前は登場(reviveFromTrash)のみでライフに加える選択肢が欠落していたバグの回帰。
+    { const fx = C['OP14-104'].fx.onPlay[0];
+      ok(fx.op==='chooseOption' && (fx.options||[]).length===2, '例3e: モリアのonPlayは2択(chooseOption)');
+      ok(fx.options[0].fx[0].op==='reviveFromTrash', '例3e: 選択肢1=登場(reviveFromTrash)');
+      ok(fx.options[1].fx[0].op==='trashToLife' && fx.options[1].fx[0].faceUp===true, '例3e: 選択肢2=ライフに表向きで加える(trashToLife faceUp)');
+      // 登場ブランチ: トラッシュのコスト4以下スリラーバーク(ペローナ)が場に登場
+      setupG('OP15-058'); let M=G.players.me; M.isCPU=true; M.trash=[mkc('OP01-077')];
+      await runFx(fx.options[0].fx, {self:M.leader, side:'me'});
+      ok(M.chars.some(c=>c.no==='OP01-077') && M.trash.length===0, '例3e: 登場ブランチ=ペローナが場に登場');
+      // ライフブランチ: トラッシュのペローナがライフ上に表向きで加わる
+      setupG('OP15-058'); M=G.players.me; M.isCPU=true; M.trash=[mkc('OP01-077')]; const lifeBefore=M.life.length;
+      await runFx(fx.options[1].fx, {self:M.leader, side:'me'});
+      ok(M.life.length===lifeBefore+1 && M.life[0].no==='OP01-077' && M.life[0]._faceUp===true && M.trash.length===0, '例3e: ライフブランチ=ペローナがライフ上に表向きで追加');
+    }
+
     // 例4: 付与ドンは自分のターン中のみ+1000計上（相手ターンでは表示・計算とも元に戻る）
     setupG('OP13-002'); G.active='cpu'; P=G.players.me; const d1=mkc('OP15-067'); d1.attachedDon=2; P.chars=[d1];
     ok(power(d1)===(C['OP15-067'].power||0), '付与ドン: 相手ターン中は計上しない（表示も元に戻る）');

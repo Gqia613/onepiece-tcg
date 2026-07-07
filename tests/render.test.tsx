@@ -1,6 +1,8 @@
 // @vitest-environment happy-dom
 import { describe, it, expect, beforeAll, afterEach } from 'vitest';
-import { render, cleanup, act } from '@testing-library/react';
+import { render as rtlRender, cleanup, act } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
+import type { ReactElement } from 'react';
 import { createEngine } from '../src/engine/bootstrap';
 import { headlessAdapter } from '../src/engine/ui-adapter';
 import { useEngineStore } from '../src/state/engineStore';
@@ -11,6 +13,9 @@ import { AtkAnnounce } from '../src/components/fx/AtkAnnounce';
 import { EndScreen } from '../src/components/fx/EndScreen';
 import { CardDetailModal } from '../src/components/fx/CardDetailModal';
 import { TrashModal } from '../src/components/fx/TrashModal';
+
+// 画面/オーバーレイはルーター配下で動く（useNavigate）ため MemoryRouter で包む
+const render = (ui: ReactElement) => rtlRender(<MemoryRouter>{ui}</MemoryRouter>);
 
 // headless でゲームを「自分が操作可能になる静止点」まで進め、その engine を store に入れて描画する。
 let engine: any;
