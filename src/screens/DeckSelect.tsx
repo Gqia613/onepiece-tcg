@@ -87,6 +87,7 @@ export default function DeckSelect() {
           onEdit={d.list ? () => { useEngineStore.getState().setBuilderOpen(true, d); navigate('/builder'); } : undefined}
           editLabel={(d as any).cloud ? '編集' : 'コピーして編集'}
           hideTier
+          noPop
         />
       ))}
     </div>

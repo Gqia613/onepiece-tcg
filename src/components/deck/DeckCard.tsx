@@ -30,7 +30,7 @@ const CopyIcon = () => (
   </svg>
 );
 
-export function DeckCard({ deck, selected, onSelect, onDelete, onShowList, onEdit, editLabel, hideTier }: {
+export function DeckCard({ deck, selected, onSelect, onDelete, onShowList, onEdit, editLabel, hideTier, noPop }: {
   deck: Deck;
   selected: boolean;
   onSelect: () => void;
@@ -39,6 +39,7 @@ export function DeckCard({ deck, selected, onSelect, onDelete, onShowList, onEdi
   onEdit?: () => void; // ビルダーで開く（クラウド=編集 / プリセット=コピー）
   editLabel?: string;
   hideTier?: boolean; // TIERバッジを隠す（対戦画面のデッキ選択で使用）
+  noPop?: boolean; // ホバー/タップの解説オーバーレイ(deck-pop)を出さない（対戦画面のデッキ選択で使用）
 }) {
   // DECKS の色フィールドは colors（custom デッキも colors）。念のため color もフォールバック。
   const colors = deck.colors || deck.color || [];
@@ -104,23 +105,25 @@ export function DeckCard({ deck, selected, onSelect, onDelete, onShowList, onEdi
         <div className="art-nm">{deck.name}</div>
       </div>
 
-      <div className="deck-pop">
-        <div className="pop-nm">{deck.name}</div>
-        <div className="colors">
-          {colors.map((c, i) => (
-            <span key={i} className="dot" style={{ background: COLOR_HEX[c] || '#1a2c3c' }} />
-          ))}
-          {deck.usage ? (
-            <span style={{ fontSize: 11, color: 'var(--muted)', marginLeft: 5 }}>
-              使用率 {deck.usage}
-            </span>
+      {!noPop ? (
+        <div className="deck-pop">
+          <div className="pop-nm">{deck.name}</div>
+          <div className="colors">
+            {colors.map((c, i) => (
+              <span key={i} className="dot" style={{ background: COLOR_HEX[c] || '#1a2c3c' }} />
+            ))}
+            {deck.usage ? (
+              <span style={{ fontSize: 11, color: 'var(--muted)', marginLeft: 5 }}>
+                使用率 {deck.usage}
+              </span>
+            ) : null}
+          </div>
+          {deck.desc ? <div className="pop-desc">{deck.desc}</div> : null}
+          {deck.style ? (
+            <span className="style-tag">{deck.style} ・ 再現度:{accuracy}</span>
           ) : null}
         </div>
-        {deck.desc ? <div className="pop-desc">{deck.desc}</div> : null}
-        {deck.style ? (
-          <span className="style-tag">{deck.style} ・ 再現度:{accuracy}</span>
-        ) : null}
-      </div>
+      ) : null}
     </motion.div>
   );
 }

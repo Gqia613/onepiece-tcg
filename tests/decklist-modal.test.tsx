@@ -55,16 +55,17 @@ describe('DeckSelect カードリストモーダル', () => {
 
     const thumb = document.querySelector('.dl-thumb');
     expect(thumb).toBeTruthy();
-    const big = () => Array.from(document.querySelectorAll('img')).find((im) => (im as HTMLImageElement).src.includes('w=640'));
-    expect(big()).toBeFalsy(); // 拡大前は w=640 画像なし
+    const zoom = () => document.querySelector('.card-zoom-back');
+    expect(zoom()).toBeFalsy(); // 拡大前はオーバーレイなし
 
-    // タップ→拡大（高解像度 w=640 の画像が中央オーバーレイに出る）
+    // タップ→拡大オーバーレイ（キャッシュ済みサムネを即表示、裏で高画質を先読み）
     act(() => { fireEvent.click(thumb!); });
-    expect(big()).toBeTruthy();
+    expect(zoom()).toBeTruthy();
+    expect(zoom()!.querySelector('img')).toBeTruthy(); // 画像が即出る
 
-    // 拡大表示を再タップ→元に戻る（w=640 画像が消える）
-    act(() => { fireEvent.click(big()!.parentElement!); });
-    expect(big()).toBeFalsy();
+    // 拡大表示を再タップ→元に戻る
+    act(() => { fireEvent.click(zoom()!); });
+    expect(zoom()).toBeFalsy();
   });
 
   it('新デッキ 青緑ルフィ のモーダルにリーダー名と50枚が出る', () => {

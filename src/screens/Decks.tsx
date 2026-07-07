@@ -69,6 +69,7 @@ export default function Decks() {
           onShowList={() => setListDeck(d)}
           onEdit={d.list ? () => openBuilder(d) : undefined}
           editLabel={(d as any).cloud ? '編集' : 'コピーして編集'}
+          hideTier
         />
       ))}
     </div>
