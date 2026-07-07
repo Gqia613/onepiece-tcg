@@ -44,6 +44,13 @@ const lib: Record<string, () => void> = {
   draw: () => { tone(520, 0.07, 'sine', 0.07); tone(680, 0.08, 'sine', 0.06, 0.05); },
   don: () => tone(300, 0.08, 'triangle', 0.09),
   trigger: () => { tone(700, 0.1, 'sine', 0.1); tone(950, 0.12, 'sine', 0.08, 0.06); },
+  // トリガー公開の演出音（溜め→上昇アルペジオ→高音キラーン）。
+  reveal: () => {
+    tone(180, 0.18, 'sawtooth', 0.05);
+    [392, 523, 659, 784].forEach((f, i) => tone(f, 0.14, 'triangle', 0.09, 0.1 + i * 0.07));
+    tone(1319, 0.5, 'sine', 0.08, 0.42);
+    tone(1976, 0.4, 'sine', 0.05, 0.5);
+  },
   win: () => [523, 659, 784, 1047].forEach((f, i) => tone(f, 0.3, 'triangle', 0.13, i * 0.12)),
   lose: () => [392, 330, 262, 196].forEach((f, i) => tone(f, 0.34, 'sine', 0.11, i * 0.14)),
 };

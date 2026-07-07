@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { createEngine, type EngineAPI } from '../engine/bootstrap';
 import { makeReactAdapter } from '../engine/reactAdapter';
-import type { PromptState, PickState, FxEvent, AtkState, EndState, Card, Side, Deck } from '../engine/types';
+import type { PromptState, PickState, FxEvent, AtkState, EndState, TriggerRevealState, Card, Side, Deck } from '../engine/types';
 
 interface EngineStore {
   engine: EngineAPI | null;
@@ -10,6 +10,7 @@ interface EngineStore {
   pick: PickState | null;
   fxQueue: FxEvent[];
   atk: AtkState | null;
+  trigger: TriggerRevealState | null; // ライフ公開トリガーの大写し演出
   end: EndState | null;
   thinking: boolean;
   muted: boolean;
@@ -29,6 +30,7 @@ interface EngineStore {
   pushFx: (e: FxEvent) => void;
   removeFx: (id: number) => void;
   setAtk: (a: AtkState | null) => void;
+  setTrigger: (t: TriggerRevealState | null) => void;
   setEnd: (e: EndState | null) => void;
   setThinking: (on: boolean) => void;
   setMuted: (m: boolean) => void;
@@ -43,6 +45,7 @@ export const useEngineStore = create<EngineStore>((set, get) => ({
   pick: null,
   fxQueue: [],
   atk: null,
+  trigger: null,
   end: null,
   thinking: false,
   muted: false,
@@ -62,6 +65,7 @@ export const useEngineStore = create<EngineStore>((set, get) => ({
   pushFx: (e) => set((s) => ({ fxQueue: [...s.fxQueue, e] })),
   removeFx: (id) => set((s) => ({ fxQueue: s.fxQueue.filter((f) => f.id !== id) })),
   setAtk: (a) => set({ atk: a }),
+  setTrigger: (t) => set({ trigger: t }),
   setEnd: (e) => set({ end: e }),
   setThinking: (on) => set({ thinking: on }),
   setMuted: (m) => set({ muted: m }),

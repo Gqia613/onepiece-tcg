@@ -225,7 +225,7 @@
     }
     // 効果・トリガーの発生通知（画面上部のピル）。相手(CPU)の行動は読めるよう小休止を入れる。
     let _fxNoteEl = null;
-    function showFxNote(side, label, name) {
+    function showFxNote(side, label, name, no) {
       if (G._sim) return;
       const felt = document.querySelector('.felt'); if (!felt) return;
       if (_fxNoteEl) { const old = _fxNoteEl; _fxNoteEl = null; old.remove(); }
@@ -235,10 +235,14 @@
       felt.appendChild(d); _fxNoteEl = d;
       setTimeout(() => { if (_fxNoteEl === d) _fxNoteEl = null; d.remove(); }, 1400);
     }
-    async function fxNote(side, label, name) {
-      showFxNote(side, label, name);
+    async function fxNote(side, label, name, no) {
+      showFxNote(side, label, name, no);
       await sleep(G.active === 'me' ? 340 : 660);
     }
+    // ライフからトリガーが公開された瞬間の演出（web は reactAdapter が派手なオーバーレイへ差し替え）。
+    // headless/既定実装は無害: 通知ピルを出して小休止するだけ。G._sim（AI探索）中は何もしない。
+    async function triggerReveal(side, card) { if (G._sim) return; showFxNote(side, 'トリガー', card.base.name); await sleep(300); }
+    function clearTriggerReveal() { }
     /* ===== 攻撃アナウンス（誰が誰にアタックしているか） ===== */
     function removeAtkEl() { const e = document.getElementById('atkAnnounce'); if (e) e.remove(); }
     function clearAtkAnnounce() { G._atkFrom = null; G._atkTo = null; removeAtkEl(); }

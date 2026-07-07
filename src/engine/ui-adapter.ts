@@ -8,8 +8,11 @@ export interface UIAdapter {
   toast?: (text: string) => void;
   floatOn?: (uid: number, text: string, kind?: string) => void;
   animClass?: (uid: number, cls: string) => void;
-  showFxNote?: (side: 'me' | 'cpu', label: string, name: string) => void;
-  fxNote?: (side: 'me' | 'cpu', label: string, name: string) => Promise<void> | void;
+  showFxNote?: (side: 'me' | 'cpu', label: string, name: string, no?: string) => void;
+  fxNote?: (side: 'me' | 'cpu', label: string, name: string, no?: string) => Promise<void> | void;
+  // ライフからトリガーが公開された瞬間の大写し演出。card は engine のカードオブジェクト（base.no/base.name を参照）。
+  triggerReveal?: (side: 'me' | 'cpu', card: any) => Promise<void> | void;
+  clearTriggerReveal?: () => void;
   showAtkAnnounce?: (aSide: 'me' | 'cpu', attacker: any, target: any) => void;
   clearAtkAnnounce?: () => void;
   showEndScreen?: (win: boolean, reason?: string) => void;
@@ -79,6 +82,8 @@ export function headlessAdapter(): UIAdapter {
     animClass: () => {},
     showFxNote: () => {},
     fxNote: () => {},
+    triggerReveal: () => {},
+    clearTriggerReveal: () => {},
     showAtkAnnounce: () => {},
     clearAtkAnnounce: () => {},
     showEndScreen: () => {},

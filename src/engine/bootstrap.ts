@@ -26,6 +26,7 @@ const PARTS = [cards, cardsfx, cardsattr, d00, e10, t20, b30, u40, i50, s60, aiw
 // footer で注入アダプタへ差し替えるUIフック束縛（全て function 宣言＝再代入可能）。
 const HOOKS = [
   'render', 'log', 'flog', 'toast', 'floatOn', 'animClass', 'showFxNote', 'fxNote',
+  'triggerReveal', 'clearTriggerReveal',
   'showAtkAnnounce', 'clearAtkAnnounce', 'showEndScreen', 'showThinking', 'sfx',
   // 盤面演出（登場波紋/KO粒子/斬撃/ドロー飛翔/ドン付与飛翔/画面シェイク）。raw の同名関数を実DOM実装へ差し替え。
   'spawnAt', 'drawFly', 'donFly', 'shakeScreen',

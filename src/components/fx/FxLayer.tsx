@@ -5,6 +5,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useEngineStore } from '../../state/engineStore';
+import { IMG, IMG_RAW } from '../../engine/img';
 import type { FxEvent } from '../../engine/types';
 
 // 元 CSS の .float.* / .fx-note.* と同じ色（battle.css の :root 変数）。
@@ -15,7 +16,7 @@ const FLOAT_COLOR: Record<string, string> = {
 };
 
 type FloatItem = { id: number; uid: number; text: string; kind?: string; x: number; y: number };
-type NoteItem = { id: number; side: 'me' | 'cpu'; label: string; name: string };
+type NoteItem = { id: number; side: 'me' | 'cpu'; label: string; name: string; no?: string };
 
 export function FxLayer() {
   const fxQueue = useEngineStore((s) => s.fxQueue);
@@ -36,7 +37,7 @@ export function FxLayer() {
         removeFx(f.id);
       } else if (f.type === 'fxnote') {
         seen.current.add(f.id);
-        setNotes((cur) => [...cur, { id: f.id, side: f.side, label: f.label, name: f.name }]);
+        setNotes((cur) => [...cur, { id: f.id, side: f.side, label: f.label, name: f.name, no: f.no }]);
         removeFx(f.id);
       }
     }
@@ -108,6 +109,21 @@ export function FxLayer() {
               style={{ position: 'static', transform: 'none' }}
             >
               {n.side === 'me' ? null : <span className="fx-side">CPU</span>}
+              {n.no ? (
+                <img
+                  className="fx-note-img"
+                  src={IMG(n.no)}
+                  referrerPolicy="no-referrer"
+                  decoding="async"
+                  alt=""
+                  onError={(e) => {
+                    const el = e.currentTarget;
+                    if (el.dataset.fb) { el.style.display = 'none'; return; }
+                    el.dataset.fb = '1';
+                    el.src = IMG_RAW(n.no as string);
+                  }}
+                />
+              ) : null}
               <span className="fx-note-lbl">{n.label}</span>
               {n.name ? <span className="fx-note-nm">{n.name}</span> : null}
               <NoteTimer id={n.id} onDone={() => setNotes((cur) => cur.filter((x) => x.id !== n.id))} />

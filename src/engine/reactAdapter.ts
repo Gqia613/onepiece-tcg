@@ -1,7 +1,7 @@
 // エンジンのUIフックを React(store) へ配線する UIAdapter 実装。
 // bootstrap の footer が各フック束縛をここの実装へ再代入する。store は参照渡し（循環import回避）。
 import type { UIAdapter, PromptConfig } from './ui-adapter';
-import type { Card, PromptState, PickState, FxEvent, AtkState, EndState } from './types';
+import type { Card, PromptState, PickState, FxEvent, AtkState, EndState, TriggerRevealState } from './types';
 import { playSfx, setAudioMuted } from '../audio';
 
 // 必要最小の store 面（zustand の useEngineStore が構造的に満たす）
@@ -14,6 +14,7 @@ export interface AdapterStoreApi {
     setPick: (p: PickState | null) => void;
     pushFx: (e: FxEvent) => void;
     setAtk: (a: AtkState | null) => void;
+    setTrigger: (t: TriggerRevealState | null) => void;
     setEnd: (e: EndState | null) => void;
     setThinking: (on: boolean) => void;
     pushLog: (l: { cls: string; html: string }) => void;
@@ -153,12 +154,26 @@ export function makeReactAdapter(store: AdapterStoreApi): UIAdapter {
     toast: (text) => { if (sim()) return; S().pushFx({ type: 'toast', id: ++fxId, text }); },
     floatOn: (uid, text, kind) => { if (sim()) return; S().pushFx({ type: 'float', id: ++fxId, uid, text, kind }); },
     animClass: (uid, cls) => { if (sim()) return; S().pushFx({ type: 'anim', id: ++fxId, uid, cls }); },
-    showFxNote: (side, label, name) => { if (sim()) return; S().pushFx({ type: 'fxnote', id: ++fxId, side, label, name }); },
-    fxNote: (side, label, name) => {
+    showFxNote: (side, label, name, no) => { if (sim()) return; S().pushFx({ type: 'fxnote', id: ++fxId, side, label, name, no }); },
+    fxNote: (side, label, name, no) => {
       if (sim()) return Promise.resolve();
-      S().pushFx({ type: 'fxnote', id: ++fxId, side, label, name });
+      S().pushFx({ type: 'fxnote', id: ++fxId, side, label, name, no });
       // エンジンの await を満たすため一定時間後に解決（me=340 / cpu=660ms）
       return new Promise<void>((res) => realSetTimeout(res, side === 'me' ? 340 : 660));
+    },
+    // ライフからトリガーが公開された瞬間の大写し演出。
+    // sim()（AI探索）中は実タイマーで回るため即解決（演出awaitで探索を遅延/破壊しない）。
+    triggerReveal: (side, card) => {
+      if (sim()) return Promise.resolve();
+      const b = (card && card.base) || {};
+      S().setTrigger({ side, no: b.no, name: b.name });
+      if (!S().muted) playSfx('reveal');
+      // 演出を見せる時間だけ待って解決（me=1400 / cpu=1900ms）。相手の行動は少し長く見せる。
+      return new Promise<void>((res) => realSetTimeout(res, side === 'me' ? 1400 : 1900));
+    },
+    clearTriggerReveal: () => {
+      if (sim()) return;
+      S().setTrigger(null);
     },
     showAtkAnnounce: (aSide, attacker, target) => {
       if (sim()) return;

@@ -12,6 +12,7 @@ import Battle from './screens/Battle';
 import { Prompt } from './components/fx/Prompt';
 import { FxLayer } from './components/fx/FxLayer';
 import { AtkAnnounce } from './components/fx/AtkAnnounce';
+import { TriggerReveal } from './components/fx/TriggerReveal';
 import { Toast } from './components/fx/Toast';
 import { Banner } from './components/fx/Banner';
 import { Thinking } from './components/fx/Thinking';
@@ -180,6 +181,7 @@ function Shell({ username, logout }: { username: string; logout: () => void }) {
       <Prompt />
       <FxLayer />
       <AtkAnnounce />
+      <TriggerReveal />
       <Toast />
       <Banner />
       <Thinking />
