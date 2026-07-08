@@ -148,6 +148,35 @@ function setupG(leaderNo){G.active='me';G.turnSeq=5;G.winner=null;const mkP=(ln,
       ok(ctx._committed===true, '例3i: discardCost支払い=_committed(使用)');
     }
 
+    // 例3j: レッドロック=ゴムゴムの業火拳銃(OP04-056)の【トリガー】=コスト4以下のキャラ1枚までを持ち主のデッキ下へ。
+    //        公式(cardrush照合)にトリガーがあるのに未実装だった回帰。fx.trigger(deckBottom maxCost4)を実装。
+    ok(!!(C['OP04-056'].fx && C['OP04-056'].fx.trigger), '例3j: OP04-056にfx.triggerが存在する(トリガー認識)');
+    setupG('OP13-002'); { const P=G.players.me; const O=G.players.cpu; P.isCPU=true; // meが発動(自動選択)
+      const low=mkc('OP06-090'); low.owner='cpu'; // コスト4
+      const high=mkc('OP14-101'); high.owner='cpu'; // コスト8
+      O.chars=[low,high]; O.deck=[];
+      await runFx(C['OP04-056'].fx.trigger, {self:mkc('OP04-056'), side:'me'});
+      ok(!O.chars.includes(low) && O.deck.some(c=>c.no==='OP06-090'), '例3j: トリガーでコスト4の相手キャラがデッキ下へ');
+      ok(O.chars.includes(high), '例3j: コスト8(>4)は対象外で場に残る');
+    }
+
+    // 例3k: スリラーバーク OP14-110ホグバック/OP14-111ペローナの【トリガー】=トラッシュからコスト4以下の
+    //        《スリラーバーク海賊団》1枚までをレストで登場(公式cardrush照合)。DBから欠落＋未実装だった回帰。
+    //        これによりホグバックの【KO時】(トリガー持ち蘇生)の対象(=fx.trigger持ち)も増える。
+    for (const no of ['OP14-110','OP14-111']) ok(!!(C[no].fx && C[no].fx.trigger), '例3k: '+no+' にfx.triggerが存在');
+    setupG('OP13-002'); { const P=G.players.me; P.isCPU=true;
+      const buddy=mkc('OP14-089'); buddy.owner='me'; // コスト3 スリラーバーク(リューマ)
+      P.trash=[buddy]; P.chars=[];
+      await runFx(C['OP14-111'].fx.trigger, {self:mkc('OP14-111'), side:'me'});
+      ok(P.chars.some(c=>c.no==='OP14-089') && P.trash.length===0, '例3k: トリガーでスリラーバークがトラッシュから登場');
+      ok(P.chars.find(c=>c.no==='OP14-089').rested===true, '例3k: レストで登場する');
+      // ホグバックKO時の蘇生対象=fx.trigger持ち。ペローナ(trigger実装済)がトラッシュにあれば認識される
+      setupG('OP13-002'); const P2=G.players.me; P2.isCPU=true;
+      const perona=mkc('OP14-111'); perona.owner='me'; P2.trash=[perona]; P2.chars=[];
+      await runFx(C['OP14-110'].fx.onKO, {self:mkc('OP14-110'), side:'me'});
+      ok(P2.chars.some(c=>c.no==='OP14-111'), '例3k: ホグバックKO時がトリガー持ち(ペローナ)を蘇生対象に認識');
+    }
+
     // 例4: 付与ドンは自分のターン中のみ+1000計上（相手ターンでは表示・計算とも元に戻る）
     setupG('OP13-002'); G.active='cpu'; P=G.players.me; const d1=mkc('OP15-067'); d1.attachedDon=2; P.chars=[d1];
     ok(power(d1)===(C['OP15-067'].power||0), '付与ドン: 相手ターン中は計上しない（表示も元に戻る）');

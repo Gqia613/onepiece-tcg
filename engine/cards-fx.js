@@ -163,7 +163,7 @@ window.CARD_FX = {
   "OP15-046": {"onPlay":[{"op":"playEventFromHand","cond":{"leaderTrait":"ドレスローザ"},"filter":{"trait":"ドレスローザ","type":"EVENT"}}]},
   "OP15-021": {"costMod":{"cond":{"trashCount":{"filter":{"type":"EVENT"},"min":4}},"amount":-3},"main":{"don":0,"fx":[{"op":"powerMod","side":"opp","amount":-3000,"count":1,"optional":true}]},"counter":{"cost":0,"fx":[{"op":"powerMod","side":"opp","amount":-3000,"count":1,"battle":true,"optional":true}]}},
   "OP15-054": {"main":{"don":0,"fx":[{"op":"cond","check":{"leaderNameIncludes":"ルーシー"},"then":[{"op":"chooseOption","options":[{"label":"2ドロー・1捨て・ドレスローザ登場","fx":[{"op":"draw","n":2},{"op":"discardOwn","n":1},{"op":"playCharFromHand","count":1,"optional":true,"filter":{"maxCost":4,"trait":"ドレスローザ"}}]},{"label":"ステージ1枚を持ち主の手札に戻す","fx":[{"op":"bounceStage","optional":true}]}]}]}]}},
-  "OP04-056": {"main":{"don":0,"fx":[{"op":"deckBottom","count":1,"optional":true}]}},
+  "OP04-056": {"main":{"don":0,"fx":[{"op":"deckBottom","count":1,"optional":true}]},"trigger":[{"op":"deckBottom","count":1,"maxCost":4,"optional":true}]},
   "OP15-020": {"main":{"don":0,"fx":[{"op":"powerMod","side":"self","amount":3000,"count":1,"leader":true},{"op":"powerMod","side":"opp","amount":-8000,"count":1,"optional":true,"duration":"untilNextEnd"},{"op":"discardCost","count":2,"then":[{"op":"ko","side":"opp","count":1,"optional":true,"filter":{"maxEffPower":0}}]}]}},
   "OP15-056": {"main":{"don":0,"fx":[{"op":"draw","n":2},{"op":"leaderDoubleAttack","amount":3000,"cond":{"leaderNameIncludes":"ルーシー"}}]}},
   "OP15-057": {"onPlay":[{"op":"cond","check":"leaderDressrosa","then":[{"op":"draw","n":1}]}],"onOppAttack":[{"op":"restSelfCost","then":[{"op":"discardCost","count":1,"filter":{"or":[{"type":"EVENT"},{"type":"STAGE"}]},"then":[{"op":"powerMod","side":"self","amount":2000,"count":1,"leader":true,"battle":true,"optional":true}]}]}]},
@@ -340,7 +340,7 @@ window.CARD_FX = {
   // OP14-100: 【KO時】デッキ上3枚から《スリラーバーク》1枚を手札へ
   "OP14-100": {"onKO":[{"op":"search","look":3,"filter":{"traitIncludes":"スリラーバーク海賊団"},"count":1}]},
   // OP14-111: 【登場時】/【KO時】相手コスト6以下1枚を次相手エンド終了までアタック不可
-  "OP14-111": {"onPlay":[{"op":"setAttackBan","side":"opp","maxCost":6,"duration":"untilNextEnd","count":1,"optional":true}],"onKO":[{"op":"setAttackBan","side":"opp","maxCost":6,"duration":"untilNextEnd","count":1,"optional":true}]},
+  "OP14-111": {"onPlay":[{"op":"setAttackBan","side":"opp","maxCost":6,"duration":"untilNextEnd","count":1,"optional":true}],"onKO":[{"op":"setAttackBan","side":"opp","maxCost":6,"duration":"untilNextEnd","count":1,"optional":true}],"trigger":[{"op":"reviveFromTrash","maxCost":4,"rested":true,"filter":{"traitIncludes":"スリラーバーク海賊団"}}]},
   // OP14-116: 【カウンター】リーダーかキャラ1枚+2000→手札のコスト4以下《アマゾン・リリー》/《九蛇》1枚を登場
   "OP14-116": {"counter":{"cost":0,"fx":[{"op":"counterBuff","amount":2000},{"op":"playCharFromHand","maxCost":4,"filter":{"or":[{"traitIncludes":"アマゾン・リリー"},{"traitIncludes":"九蛇海賊団"}]},"count":1,"optional":true}]}},
   // OP14-117: 【カウンター】自《スリラーバーク》のリーダーかキャラ1枚を このバトル中+3000
@@ -361,7 +361,7 @@ window.CARD_FX = {
   // OP14-063: 【登場時】ドンデッキからアクティブ追加 ／【KO時】相手の場のドンが6枚以上なら手札のコスト5以下《ドンキ》1枚を登場
   "OP14-063": {"onPlay":[{"op":"donFromDeck","n":1,"mode":"active"}],"onKO":[{"op":"cond","check":{"oppDonAtLeast":6},"then":[{"op":"playCharFromHand","filter":{"traitIncludes":"ドンキホーテ海賊団","maxCost":5},"count":1,"optional":true}]}]},
   // OP14-110: 【KO時】トラッシュから「ホグバック」以外のコスト4以下の【トリガー】持ちキャラ1枚を登場
-  "OP14-110": {"onKO":[{"op":"reviveFromTrash","maxCost":4,"needsTrigger":true,"filter":{"nameExcludes":"ホグバック"}}]},
+  "OP14-110": {"onKO":[{"op":"reviveFromTrash","maxCost":4,"needsTrigger":true,"filter":{"nameExcludes":"ホグバック"}}],"trigger":[{"op":"reviveFromTrash","maxCost":4,"rested":true,"filter":{"traitIncludes":"スリラーバーク海賊団"}}]},
   // OP14-092: 【相手のターン中】【ターン1回】このキャラがKOされる場合、代わりにトラッシュ3枚をデッキ下に置きKO回避
   "OP14-092": {"static":[{"op":"leaveProtect","targetSelf":true,"onlyKO":true,"pay":"trashToDeck","n":3,"once":"turn"}]},
   // OP14-048: 【登場時】相手キャラ1枚を手札に戻す→自分の手札すべてを捨てる
