@@ -713,9 +713,10 @@ humanPick=function(c){return Promise.resolve((c||[])[0]||null);};
     ok(!('noEnter' in C['ST22-015'].fx.main.fx[0].then[0]) && C['ST22-015'].fx.main.fx[0].then.some(o=>o.op==='lifeToHand'), 'ST22-015: ニューゲート登場時付き(noEnter撤去)＋ライフ回収+2000節あり');
     // === 青黄ナミ/ハンコック 公式照合修正（正本＝WebFetch照合済みを根拠） ===
     ok(C['OP15-113'].traits.includes('空島'), 'OP15-113: 空島トレイト付与(公式)');
-    ok(!C['OP07-057'].fx.trigger && C['OP07-057'].fx.main.fx[0].filter && C['OP07-057'].fx.main.fx[0].filter.trait==='王下七武海', 'OP07-057: 架空トリガー除去＋王下七武海フィルタ');
-    ok(!C['OP14-105'].fx.trigger && C['OP14-105'].fx.act.fx[0].op==='revealCost' && !(C['OP14-105'].fx.act.cost||{}).restSelf, 'OP14-105: 手札3公開コスト(restSelf誤り是正)＋架空トリガー除去');
-    ok(['OP07-115','OP06-104','OP14-108','OP14-107','OP14-112','OP14-104','OP14-114','OP14-113'].every(no=>!C[no].fx.trigger), '架空トリガー除去: 8枚すべてトリガー無し(正本準拠)');
+    // ★旧「架空トリガー除去」は誤り(DBテキストが【トリガー】句を体系的に欠落→実在トリガーを誤削除)。公式(公式サイト/cardrush/tier-one)照合で復活。
+    ok(C['OP07-057'].fx.trigger && C['OP07-057'].fx.trigger[0].op==='draw' && C['OP07-057'].fx.main.fx[0].filter.trait==='王下七武海', 'OP07-057: 【トリガー】1ドロー(公式)＋王下七武海フィルタ');
+    ok(C['OP14-105'].fx.trigger && C['OP14-105'].fx.act.fx[0].op==='revealCost' && !(C['OP14-105'].fx.act.cost||{}).restSelf, 'OP14-105: 手札3公開コスト＋【トリガー】九蛇なら登場(公式)');
+    ok(['OP07-115','OP06-104','OP14-108','OP14-107','OP14-112','OP14-104','OP14-114','OP14-113'].every(no=>!!C[no].fx.trigger), '公式トリガー実装(旧「架空除去」は誤削除だった): 8枚すべてに【トリガー】あり');
     ok(!C['OP12-112'].fx, 'OP12-112: 正本「効果なし」＝fx無し(バニラ)');
     // === 軽微4枚の仕上げ（任意コスト化/自身コスト+2/ライフ公開バフ） ===
     // EB03-055 ロビン: ライフトラッシュ(任意コスト)→リーダー麦わらなら2枚ライフ追加。非麦わらでは追加なし

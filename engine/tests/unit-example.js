@@ -177,6 +177,34 @@ function setupG(leaderNo){G.active='me';G.turnSeq=5;G.winner=null;const mkP=(ln,
       ok(P2.chars.some(c=>c.no==='OP14-111'), '例3k: ホグバックKO時がトリガー持ち(ペローナ)を蘇生対象に認識');
     }
 
+    // 例3l: OP14全公式再照合で追加したトリガー各型の検証。
+    // (a) playSelf型「このカードを登場させる」(OP14-106サロメ)＝ライフ公開カード自身が場に出る
+    setupG('OP13-002'); { const P=G.players.me; P.chars=[]; const self=mkc('OP14-106');
+      await runFx(C['OP14-106'].fx.trigger, {self, side:'me'});
+      ok(P.chars.includes(self), '例3l(a): OP14-106 トリガーで自身が登場(playSelf)');
+    }
+    // (b) 九蛇条件つきplaySelf(OP14-105ゴルゴン三姉妹)＝リーダーが九蛇なら登場・違えば不発
+    setupG('OP14-041'); { const P=G.players.me; P.chars=[]; const self=mkc('OP14-105'); // OP14-041ハンコック=九蛇海賊団
+      await runFx(C['OP14-105'].fx.trigger, {self, side:'me'});
+      ok(P.chars.includes(self), '例3l(b): OP14-105 九蛇リーダーならトリガーで登場');
+    }
+    setupG('OP13-002'); { const P=G.players.me; P.chars=[]; const self=mkc('OP14-105'); // 非九蛇
+      await runFx(C['OP14-105'].fx.trigger, {self, side:'me'});
+      ok(!P.chars.includes(self), '例3l(b): OP14-105 非九蛇リーダーでは登場しない');
+    }
+    // (c) reviveFromTrash型(OP14-102クマシー)＝トラッシュからコスト4以下スリラーバークをレスト登場
+    setupG('OP13-002'); { const P=G.players.me; P.isCPU=true; const buddy=mkc('OP14-089'); buddy.owner='me'; P.trash=[buddy]; P.chars=[];
+      await runFx(C['OP14-102'].fx.trigger, {self:mkc('OP14-102'), side:'me'});
+      ok(P.chars.some(c=>c.no==='OP14-089'), '例3l(c): OP14-102 トリガーでスリラーバークをトラッシュから登場');
+    }
+    // (d) playCharFromHand needsTrigger(OP14-112ハンコック)＝手札からパワー6000以下の【トリガー】持ちを登場
+    setupG('OP13-002'); { const P=G.players.me; P.isCPU=true; const trigHolder=mkc('OP14-089'); trigHolder.owner='me'; // OP14-089=fx.trigger持ち
+      P.hand=[trigHolder]; P.chars=[];
+      ok((C['OP14-089'].power||0)<=6000, '例3l(d前提): OP14-089はパワー6000以下');
+      await runFx(C['OP14-112'].fx.trigger, {self:mkc('OP14-112'), side:'me'});
+      ok(P.chars.some(c=>c.no==='OP14-089'), '例3l(d): OP14-112 トリガーで手札のトリガー持ちを登場');
+    }
+
     // 例4: 付与ドンは自分のターン中のみ+1000計上（相手ターンでは表示・計算とも元に戻る）
     setupG('OP13-002'); G.active='cpu'; P=G.players.me; const d1=mkc('OP15-067'); d1.attachedDon=2; P.chars=[d1];
     ok(power(d1)===(C['OP15-067'].power||0), '付与ドン: 相手ターン中は計上しない（表示も元に戻る）');
