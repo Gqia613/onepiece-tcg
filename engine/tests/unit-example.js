@@ -123,6 +123,31 @@ function setupG(leaderNo){G.active='me';G.turnSeq=5;G.winner=null;const mkP=(ln,
       ok(power(P.leader)===5000, '例3h: ターン終了(turnEnd失効)で5000へ戻る');
     }
 
+    // 例3i: 【相手のアタック時】【ターン1回】の任意効果を"見送った"時は onceゲートを消費しない(_declined&&!_committed)。
+    //        赤シャンクス(OP09-001 powerMod任意)/青黄ナミ(OP11-041 cond→discardCost)が最初のアタックでしか選べなかった回帰。
+    //        ctx._declined=見送り / ctx._committed=使用。ハンドラは _declined&&!_committed の時だけ _oppAtkTurn を戻す。
+    setupG('OP13-002'); { const P=G.players.me;
+      // powerMod 任意・対象なし(相手キャラ0/includeLeaderなし)=見送り
+      let ctx={side:'me',self:P.leader}; G.players.cpu.chars=[];
+      await doOp({op:'powerMod',side:'opp',amount:-1000,count:1,optional:true},ctx);
+      ok(ctx._declined===true && !ctx._committed, '例3i: powerMod任意で対象0=_declined(見送り)');
+      // powerMod 任意・対象あり=使用
+      ctx={side:'me',self:P.leader}; const foe=mkc('OP15-067'); foe.owner='cpu'; G.players.cpu.chars=[foe];
+      await doOp({op:'powerMod',side:'opp',amount:-1000,count:1,optional:true},ctx);
+      ok(ctx._committed===true, '例3i: powerMod任意で対象選択=_committed(使用)');
+      // discardCost 手札0=見送り / cond不成立=見送り
+      ctx={side:'me',self:P.leader}; P.hand=[];
+      await doOp({op:'discardCost',count:1,then:[{op:'draw',n:0}]},ctx);
+      ok(ctx._declined===true && !ctx._committed, '例3i: discardCost手札0=_declined');
+      ctx={side:'me',self:P.leader};
+      await doOp({op:'cond',check:'donX1',then:[{op:'draw',n:1}]},ctx); // リーダー付与ドン0→不成立
+      ok(ctx._declined===true, '例3i: cond不成立=_declined');
+      // discardCost 支払い(CPU)=使用
+      ctx={side:'me',self:P.leader}; P.isCPU=true; P.hand=[mkc('OP15-067')];
+      await doOp({op:'discardCost',count:1,then:[{op:'leaderBuff',amount:2000,duration:'turnEnd'}]},ctx);
+      ok(ctx._committed===true, '例3i: discardCost支払い=_committed(使用)');
+    }
+
     // 例4: 付与ドンは自分のターン中のみ+1000計上（相手ターンでは表示・計算とも元に戻る）
     setupG('OP13-002'); G.active='cpu'; P=G.players.me; const d1=mkc('OP15-067'); d1.attachedDon=2; P.chars=[d1];
     ok(power(d1)===(C['OP15-067'].power||0), '付与ドン: 相手ターン中は計上しない（表示も元に戻る）');

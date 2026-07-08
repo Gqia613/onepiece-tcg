@@ -396,8 +396,12 @@
         if (c.base.fx && c.base.fx.onOppAttack && !isNegated(c)) {
           const onceGated = c.base.fx.onOppAttack.some(o => o.once === 'turn');
           if (onceGated && c._oppAtkTurn === G.turnSeq) continue;
+          const prevAtkTurn = c._oppAtkTurn;
           if (onceGated) c._oppAtkTurn = G.turnSeq;
-          await fxNote(dSide, '相手のアタック時', c.base.name); await runFx(c.base.fx.onOppAttack, { self: c, side: dSide, attacker, target });
+          const octx = { self: c, side: dSide, attacker, target };
+          await fxNote(dSide, '相手のアタック時', c.base.name); await runFx(c.base.fx.onOppAttack, octx);
+          // 任意効果を見送った(コスト未払い/対象未選択/条件不成立)だけなら【ターン1回】を消費しない＝同ターンの後続アタックでも選べる
+          if (onceGated && octx._declined && !octx._committed) c._oppAtkTurn = prevAtkTurn;
         }
       }
       { // 【相手のアタック時】防御側ステージ（ドレスローザ王国 等）の誘発
@@ -405,8 +409,11 @@
         if (st && st.base.fx && st.base.fx.onOppAttack && !isNegated(st)) {
           const onceGated = st.base.fx.onOppAttack.some(o => o.once === 'turn');
           if (!(onceGated && st._oppAtkTurn === G.turnSeq)) {
+            const prevAtkTurn = st._oppAtkTurn;
             if (onceGated) st._oppAtkTurn = G.turnSeq;
-            await fxNote(dSide, '相手のアタック時', st.base.name); await runFx(st.base.fx.onOppAttack, { self: st, side: dSide, attacker });
+            const octx = { self: st, side: dSide, attacker };
+            await fxNote(dSide, '相手のアタック時', st.base.name); await runFx(st.base.fx.onOppAttack, octx);
+            if (onceGated && octx._declined && !octx._committed) st._oppAtkTurn = prevAtkTurn;
           }
         }
       }
