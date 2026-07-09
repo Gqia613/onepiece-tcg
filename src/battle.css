@@ -6417,7 +6417,7 @@ button.hb-chip:not(.zero):not([disabled]):hover {
   }
 }
 
-/* --- 主役級（SEC/SP）登場ミニカットイン（非ブロッキング・右下にカードが差し込む） --- */
+/* --- 主役級（SEC/SP）登場カットイン（非ブロッキング・右側にカードが叩きつけられる） --- */
 .sum-cut {
   position: fixed;
   inset: 0;
@@ -6428,28 +6428,157 @@ button.hb-chip:not(.zero):not([disabled]):hover {
   justify-content: flex-end;
   padding-right: clamp(18px, 7vw, 90px);
   overflow: hidden;
-  /* スライドイン中のはみ出しをクリップ */
 }
 
-.sum-cut img {
-  width: clamp(150px, 30vw, 230px);
+/* 開幕の金フラッシュ（一瞬で消える） */
+.sum-cut .sc-flash {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 72% 50%, rgba(255, 231, 150, .85) 0%, rgba(255, 200, 80, 0) 52%);
+  mix-blend-mode: screen;
+  animation: scFlash .5s ease-out forwards;
+}
+
+@keyframes scFlash {
+  0% {
+    opacity: 0;
+    transform: scale(.5);
+  }
+
+  18% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 0;
+    transform: scale(1.6);
+  }
+}
+
+.sum-cut .sc-stage {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* カード背面で回転する放射光 */
+.sum-cut .sc-rays {
+  position: absolute;
+  width: clamp(320px, 64vw, 520px);
+  height: clamp(320px, 64vw, 520px);
+  background: repeating-conic-gradient(from 0deg,
+      rgba(255, 214, 110, 0) 0deg,
+      rgba(255, 214, 110, .3) 3deg,
+      rgba(255, 214, 110, 0) 8deg,
+      rgba(255, 214, 110, 0) 14deg);
+  -webkit-mask-image: radial-gradient(circle, #000 0%, transparent 68%);
+  mask-image: radial-gradient(circle, #000 0%, transparent 68%);
+  animation: scRays 4s linear infinite, scRaysIn .3s ease-out both;
+}
+
+@keyframes scRays {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes scRaysIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+.sum-cut .sc-stage img {
+  position: relative;
+  z-index: 2;
+  width: clamp(160px, 32vw, 240px);
   aspect-ratio: 5 / 7;
   object-fit: cover;
   border-radius: 12px;
   border: 2px solid var(--gold);
-  box-shadow: 0 0 0 1px rgba(255, 200, 87, .4), 0 0 60px -4px rgba(255, 200, 87, .8), 0 24px 60px rgba(0, 0, 0, .8);
+  box-shadow: 0 0 0 1px rgba(255, 200, 87, .4), 0 0 70px -2px rgba(255, 200, 87, .95), 0 24px 60px rgba(0, 0, 0, .8);
+}
+
+/* 着地の衝撃波リング */
+.sum-cut .sc-ring {
+  position: absolute;
+  z-index: 1;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 4px solid rgba(255, 224, 140, .95);
+  opacity: 0;
+  animation: scRing .55s ease-out .16s forwards;
+}
+
+@keyframes scRing {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+
+  100% {
+    transform: scale(16);
+    opacity: 0;
+  }
+}
+
+/* 金粒子バースト（着地から放射） */
+.sum-cut .sc-parts {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+}
+
+.sum-cut .sc-parts i {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 7px;
+  height: 7px;
+  margin: -3.5px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #fff3c0 0%, #ffce5a 60%, rgba(255, 206, 90, 0) 72%);
+  opacity: 0;
+  transform: rotate(var(--a)) translateY(0);
+  animation: scBurst .8s ease-out .18s forwards;
+}
+
+@keyframes scBurst {
+  0% {
+    opacity: 0;
+    transform: rotate(var(--a)) translateY(0) scale(.4);
+  }
+
+  18% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 0;
+    transform: rotate(var(--a)) translateY(var(--d)) scale(1);
+  }
 }
 
 .sum-cut .sc-name {
   position: absolute;
-  right: clamp(10px, 6vw, 90px);
-  bottom: calc(50% - clamp(150px, 30vw, 230px) * .7 - 30px);
-  font-size: 13px;
+  z-index: 3;
+  bottom: -34px;
+  font-size: 14px;
   font-weight: 900;
   color: var(--gold-soft);
-  background: rgba(10, 6, 2, .8);
-  border: 1px solid rgba(255, 200, 87, .5);
+  background: rgba(10, 6, 2, .85);
+  border: 1px solid rgba(255, 200, 87, .55);
   border-radius: 999px;
-  padding: 3px 14px;
+  padding: 4px 16px;
   text-shadow: 0 1px 3px #000;
+  white-space: nowrap;
+  max-width: 78vw;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
