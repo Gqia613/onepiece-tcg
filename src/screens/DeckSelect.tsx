@@ -1,8 +1,8 @@
-// 対戦セットアップ画面（/battle）— v2「リーダーカルーセル + VSステージ」。
-// 旧: 同じデッキ一覧グリッドを「あなた用/CPU用」で2回表示（長い折り返し・メタ情報なし）
-// 新: ステップ式（①あなた→②CPU）で1つの横スナップカルーセルを使い回し、
-//     選択結果は上部の VS ステージ（リーダー同士が向き合う）へスラムイン。
-//     中央のデッキはオーラ発光＋ティア/色/使用率/スタイルを常時表示。
+// 対戦セットアップ画面（/battle）— v3「固定1画面のアプリ型レイアウト」。
+// - 画面はスクロールしない（カルーセルが残り高さにフィット）
+// - 中央のデッキ＝現在ステップ（①あなた/②CPU）の選択（ライブ反映・決定ボタン廃止）
+// - カスタムデッキとプリセットはタブで切替（カスタムがあればカスタムを先に表示）
+// - 下部アクションバー: おまかせ即対戦 + 対戦開始（常時同じ位置＝親指域）
 // 選択状態は従来どおり engine.G.sel に持つ（start() のロジックは不変）。
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -18,10 +18,6 @@ import { deleteCloudDeck } from '../state/decks';
 // 元 renderSelect の tier 昇順ソート（src/60-screens-init.js:12-13）。
 const TIER_RANK: Record<string, number> = { 'TIER 1': 1, 'TIER 2': 2, 'TIER 3': 3 };
 
-const COLOR_HEX: Record<string, string> = {
-  赤: 'var(--c-red)', 緑: 'var(--c-green)', 青: 'var(--c-blue)',
-  紫: 'var(--c-purple)', 黒: 'var(--c-black)', 黄: 'var(--c-yellow)',
-};
 // オーラ（発光）用の実色。CSS変数だと box-shadow の色混合が効かない環境があるため直値。
 const AURA_HEX: Record<string, string> = {
   赤: '#d2473f', 緑: '#2f9e63', 青: '#3a7fc9', 紫: '#9a57d4', 黒: '#7a8496', 黄: '#c9b03a',
@@ -61,7 +57,7 @@ function VsSlot({ side, deck, active, onClick }: {
       </div>
       <div className="vs-slot-lb">
         <b>{label}</b>
-        <span>{deck ? deck.name : 'タップして選択'}</span>
+        <span>{deck ? deck.name : '未選択'}</span>
       </div>
     </button>
   );
@@ -72,20 +68,40 @@ export default function DeckSelect() {
   const engine = useEngineStore((s) => s.engine);
   useEngineStore((s) => s.version); // 再描画トリガ（値は使わないが購読）
   const [listDeck, setListDeck] = useState<Deck | null>(null); // カードリスト表示中のデッキ
-  const [delDeck, setDelDeck] = useState<Deck | null>(null);   // 削除確認モーダル（window.confirm 廃止）
+  const [delDeck, setDelDeck] = useState<Deck | null>(null);   // 削除確認モーダル
   const [step, setStep] = useState<'me' | 'cpu'>('me');        // ①あなた → ②CPU
+  const [cat, setCat] = useState<'custom' | 'preset'>('preset'); // カルーセルの表示カテゴリ
+  const catTouched = useRef(false);                            // ユーザーが手で切り替えたか
   const [activeIdx, setActiveIdx] = useState(0);               // カルーセル中央のデッキ
   const railRef = useRef<HTMLDivElement | null>(null);
   const rafPending = useRef(false);
 
   const G = engine?.G;
 
-  const baseDecks: Deck[] = ((engine?.DECKS || []) as Deck[]);
-  const custom: Deck[] = ((G?.customDecks || []) as Deck[]);
-  const ordered: Deck[] = baseDecks
-    .concat(custom)
+  const presetList: Deck[] = ((engine?.DECKS || []) as Deck[])
     .slice()
     .sort((a, b) => (TIER_RANK[a.tier || ''] || 9) - (TIER_RANK[b.tier || ''] || 9));
+  const customList: Deck[] = ((G?.customDecks || []) as Deck[]);
+  const hasCustom = customList.length > 0;
+  const allDecks: Deck[] = customList.concat(presetList);
+  // カスタムを先に: カスタムがあるのに未操作なら custom タブを既定にする（クラウド読込は非同期のため effect で追随）
+  useEffect(() => {
+    if (hasCustom && !catTouched.current && cat !== 'custom') setCat('custom');
+    if (!hasCustom && cat === 'custom') setCat('preset');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hasCustom]);
+
+  const ordered: Deck[] = cat === 'custom' ? customList : presetList;
+
+  const bump = () => useEngineStore.getState().bump();
+
+  // 中央のデッキ＝現在ステップの選択（ライブ反映）
+  const bindSelection = (idx: number) => {
+    const d = ordered[idx];
+    if (!G || !d) return;
+    if (!G.sel) G.sel = {};
+    if (G.sel[step] !== d.id) { G.sel[step] = d.id; bump(); }
+  };
 
   // カルーセル: 中央に最も近いアイテムを activeIdx に（スクロール中は rAF で間引き）
   const onRailScroll = () => {
@@ -104,12 +120,14 @@ export default function DeckSelect() {
         if (d < bd) { bd = d; best = i; }
       });
       setActiveIdx((cur) => (cur === best ? cur : best));
+      bindSelection(best);
     });
   };
 
-  const centerTo = (i: number, smooth = true) => {
+  const centerTo = (i: number, smooth = true, bind = true) => {
     const n = Math.max(0, Math.min(ordered.length - 1, i));
     setActiveIdx(n);
+    if (bind) bindSelection(n);
     const rail = railRef.current;
     const el = rail?.children[n] as HTMLElement | undefined;
     if (rail && el && typeof rail.scrollTo === 'function') {
@@ -117,14 +135,29 @@ export default function DeckSelect() {
     }
   };
 
-  // ステップ切替時: そのステップで選択済みのデッキへ寄せる（未選択なら現在位置のまま）
+  // 初期化: あなた=リストの先頭 / CPU=ランダム（両方埋めて即対戦できる状態から始める）
+  useEffect(() => {
+    if (!G) return;
+    if (!G.sel) G.sel = {};
+    let changed = false;
+    const first = (hasCustom ? customList : presetList)[0];
+    if (!G.sel.me && first) { G.sel.me = first.id; changed = true; }
+    if (!G.sel.cpu && presetList.length) { G.sel.cpu = presetList[Math.floor(Math.random() * presetList.length)].id; changed = true; }
+    if (changed) bump();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [engine]);
+
+  // ステップ/カテゴリ変更時: そのステップで選択済みのデッキへ寄せる（別カテゴリのデッキならタブも追随）
   useEffect(() => {
     const selId = G?.sel?.[step];
     if (!selId) return;
-    const i = ordered.findIndex((d) => d.id === selId);
-    if (i >= 0) centerTo(i, false);
+    const inOrdered = ordered.findIndex((d) => d.id === selId);
+    if (inOrdered >= 0) { centerTo(inOrdered, false, false); return; }
+    const other: 'custom' | 'preset' = cat === 'custom' ? 'preset' : 'custom';
+    const otherList = other === 'custom' ? customList : presetList;
+    if (otherList.some((d) => d.id === selId)) setCat(other);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [step]);
+  }, [step, cat, ordered.length]);
 
   // デッキ数の変化（カスタム削除など）で activeIdx が範囲外にならないように
   useEffect(() => {
@@ -134,17 +167,15 @@ export default function DeckSelect() {
 
   if (!engine || !G) return null;
 
-  // 選択状態は engine.G に持つ（renderSelect の ensureSel 相当）。
   if (!G.sel) G.sel = { me: undefined, cpu: undefined };
   if (!G.firstPref) G.firstPref = 'random';
   const cpuMode: 'normal' | 'claude' | 'strong' = G.cpuMode || 'normal';
 
-  const bump = () => useEngineStore.getState().bump();
   const setFirstPref = (v: 'random' | 'me' | 'cpu') => { G.firstPref = v; bump(); };
   const setCpuMode = (v: 'normal' | 'claude' | 'strong') => { G.cpuMode = v; bump(); };
 
-  const meDeck = ordered.find((d) => d.id === G.sel!.me);
-  const cpuDeck = ordered.find((d) => d.id === G.sel!.cpu);
+  const meDeck = allDecks.find((d) => d.id === G.sel!.me);
+  const cpuDeck = allDecks.find((d) => d.id === G.sel!.cpu);
   const ready = !!(meDeck && cpuDeck);
   const active: Deck | undefined = ordered[activeIdx];
 
@@ -172,22 +203,19 @@ export default function DeckSelect() {
     useEngineStore.getState().bump();
   }
 
-  // このデッキに決定 → ①なら②へ自動前進（両方揃えば VS ステージが発光）
-  const decide = () => {
-    if (!active) return;
-    G.sel![step] = active.id;
-    bump();
-    if (step === 'me') setStep('cpu');
-  };
-
   // おまかせ: 両デッキを抽選して即対戦
   const randomStart = () => {
-    if (!ordered.length) return;
-    const pick = () => ordered[Math.floor(Math.random() * ordered.length)].id;
+    if (!allDecks.length) return;
+    const pick = () => allDecks[Math.floor(Math.random() * allDecks.length)].id;
     G.sel!.me = pick();
     G.sel!.cpu = pick();
     bump();
     void start();
+  };
+
+  const switchCat = (c: 'custom' | 'preset') => {
+    catTouched.current = true;
+    if (c !== cat) { setCat(c); setActiveIdx(0); }
   };
 
   const seg = <V extends string>(
@@ -208,16 +236,14 @@ export default function DeckSelect() {
     </div>
   );
 
-  const accuracy = active && (active as any).accuracy === 'high' ? '高' : '中';
-
   return (
     <div className="select-wrap ds2">
-      <div className="bd-head" style={{ width: '100%', maxWidth: 1000 }}>
+      <div className="bd-head ds2-head">
         <button className="bd-back" onClick={() => navigate('/')} style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
           <Icon.arrowLeft size={14} />戻る
         </button>
         <span style={{ fontFamily: '"Bebas Neue"', fontSize: 26, letterSpacing: '.06em', color: 'var(--self-glow)', fontWeight: 700 }}>対戦</span>
-        <span className="bd-note">デッキを選んで対戦を開始</span>
+        <span className="bd-note">中央のデッキが選ばれます</span>
       </div>
 
       {/* ===== VS ステージ: 選んだリーダー同士が向き合う ===== */}
@@ -225,24 +251,18 @@ export default function DeckSelect() {
         <VsSlot side="me" deck={meDeck} active={step === 'me'} onClick={() => setStep('me')} />
         <div className="vs-mid">
           <div className="vs-emblem">VS</div>
-          {ready ? <Icon.zap size={16} /> : null}
+          {ready ? <Icon.zap size={14} /> : null}
         </div>
         <VsSlot side="cpu" deck={cpuDeck} active={step === 'cpu'} onClick={() => setStep('cpu')} />
       </div>
 
-      {/* 設定と開始（PC/タブレット。スマホは下部固定バーが主導線） */}
+      {/* 設定（先攻/CPU）— 整列グリッド */}
       <div className="ds-controls">
         {seg('先攻', [['random', 'ランダム'], ['me', 'あなた'], ['cpu', 'CPU']] as Array<['random' | 'me' | 'cpu', string]>, (G.firstPref || 'random') as 'random' | 'me' | 'cpu', setFirstPref)}
         {seg('CPU', [['normal', '通常'], ['strong', '強い'], ['claude', 'AI']] as Array<['normal' | 'strong' | 'claude', string]>, cpuMode, setCpuMode)}
-        <button className="btn-primary ds-start-inline" disabled={!ready} onClick={() => void start()}>
-          対戦開始
-        </button>
-        <button className="ds-random" onClick={randomStart} title="デッキを2つ抽選して即対戦">
-          <Icon.zap size={13} />おまかせ即対戦
-        </button>
       </div>
 
-      {/* ===== ステップタブ ===== */}
+      {/* ===== ステップタブ + カテゴリ切替 ===== */}
       <div className="ds-step">
         <button className={'ds-step-tab' + (step === 'me' ? ' on' : '')} onClick={() => setStep('me')}>
           ① あなたのデッキ{meDeck ? <Icon.check size={13} /> : null}
@@ -251,19 +271,25 @@ export default function DeckSelect() {
           ② CPU のデッキ{cpuDeck ? <Icon.check size={13} /> : null}
         </button>
       </div>
+      {hasCustom ? (
+        <div className="ds-cat">
+          <button className={'ds-cat-btn' + (cat === 'custom' ? ' on' : '')} onClick={() => switchCat('custom')}>
+            マイデッキ ({customList.length})
+          </button>
+          <button className={'ds-cat-btn' + (cat === 'preset' ? ' on' : '')} onClick={() => switchCat('preset')}>
+            プリセット ({presetList.length})
+          </button>
+        </div>
+      ) : null}
 
-      {/* ===== リーダーカルーセル ===== */}
+      {/* ===== リーダーカルーセル（残り高さにフィット・中央=選択） ===== */}
       <div className="ds-rail-wrap" style={active ? ({ ['--aura' as any]: auraOf(active) }) : undefined}>
         <button className="ds-arrow left" aria-label="前のデッキ" onClick={() => centerTo(activeIdx - 1)}>‹</button>
         <div className="ds-rail" ref={railRef} onScroll={onRailScroll}>
           {ordered.map((d, i) => (
             <div
               key={d.id}
-              className={
-                'dsc-item' +
-                (i === activeIdx ? ' on' : '') +
-                (G.sel![step] === d.id ? ' picked' : '')
-              }
+              className={'dsc-item' + (i === activeIdx ? ' on' : '')}
               style={{ ['--aura' as any]: auraOf(d) }}
               onClick={() => centerTo(i)}
             >
@@ -278,48 +304,31 @@ export default function DeckSelect() {
         <button className="ds-arrow right" aria-label="次のデッキ" onClick={() => centerTo(activeIdx + 1)}>›</button>
       </div>
 
-      {/* ===== 中央デッキのメタ情報 + 決定 ===== */}
-      {active ? (
-        <div className="ds-meta">
-          <div className="dsm-row">
-            {active.tier ? <span className="dsm-tier">{active.tier}</span> : null}
-            <span className="dsm-dots">
-              {deckColors(active).map((c, i) => (
-                <span key={i} className="dot" style={{ background: COLOR_HEX[c] || '#1a2c3c' }} />
-              ))}
-            </span>
-            {active.usage ? <span className="dsm-usage">使用率 {active.usage}</span> : null}
-            {active.style ? <span className="style-tag">{active.style} ・ 再現度:{accuracy}</span> : null}
-          </div>
-          {active.desc ? <div className="dsm-desc">{active.desc}</div> : null}
-          <div className="dsm-actions">
-            <button className="dsm-pill" onClick={() => setListDeck(active)}>カードリスト</button>
-            {active.list ? (
-              <button
-                className="dsm-pill gold"
-                onClick={() => { useEngineStore.getState().setBuilderOpen(true, active); navigate('/builder'); }}
-              >
-                {(active as any).cloud ? '編集' : 'コピーして編集'}
-              </button>
-            ) : null}
-            {(active as any).cloud ? (
-              <button className="dsm-pill danger" onClick={() => setDelDeck(active)}>削除</button>
-            ) : null}
-          </div>
-          <button className="btn-primary ds-decide" onClick={decide}>
-            {step === 'me' ? 'あなたのデッキにする' : 'CPU のデッキにする'}
+      {/* 中央デッキの操作（説明は出さない） */}
+      <div className="dsm-actions">
+        {active ? <button className="dsm-pill" onClick={() => setListDeck(active)}>カードリスト</button> : null}
+        {active?.list ? (
+          <button
+            className="dsm-pill gold"
+            onClick={() => { useEngineStore.getState().setBuilderOpen(true, active); navigate('/builder'); }}
+          >
+            {(active as any).cloud ? '編集' : 'コピーして編集'}
           </button>
-        </div>
-      ) : null}
+        ) : null}
+        {active && (active as any).cloud ? (
+          <button className="dsm-pill danger" onClick={() => setDelDeck(active)}>削除</button>
+        ) : null}
+      </div>
 
-      {/* スマホ: 両方選択済みになったら親指域に開始バーを固定 */}
-      {ready ? (
-        <div className="ds-startbar">
-          <button className="btn-primary" onClick={() => void start()}>
-            <Icon.swords size={15} />　対戦開始 — {meDeck!.name} vs {cpuDeck!.name}
-          </button>
-        </div>
-      ) : null}
+      {/* ===== 下部アクションバー（常に同じ位置＝親指域） ===== */}
+      <div className="ds-actionbar">
+        <button className="ds-random" onClick={randomStart} title="デッキを2つ抽選して即対戦">
+          <Icon.zap size={15} />おまかせ
+        </button>
+        <button className="btn-primary ds-start" disabled={!ready} onClick={() => void start()}>
+          <Icon.swords size={22} />対戦開始
+        </button>
+      </div>
 
       {/* 削除確認（window.confirm の置き換え・他モーダルとデザイン統一） */}
       {delDeck ? (
