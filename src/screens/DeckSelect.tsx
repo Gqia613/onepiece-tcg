@@ -273,25 +273,27 @@ export default function DeckSelect() {
         {seg('CPU', [['normal', '通常'], ['strong', '強い'], ['claude', 'AI']] as Array<['normal' | 'strong' | 'claude', string]>, cpuMode, setCpuMode)}
       </div>
 
-      {/* ===== ステップタブ + カテゴリ切替 ===== */}
-      <div className="ds-step">
-        <button className={'ds-step-tab' + (step === 'me' ? ' on' : '')} onClick={() => setStep('me')}>
-          ① あなたのデッキ{meDeck ? <Icon.check size={13} /> : null}
-        </button>
-        <button className={'ds-step-tab' + (step === 'cpu' ? ' on' : '')} onClick={() => setStep('cpu')}>
-          ② CPU のデッキ{cpuDeck ? <Icon.check size={13} /> : null}
-        </button>
-      </div>
-      {hasCustom ? (
-        <div className="ds-cat">
-          <button className={'ds-cat-btn' + (cat === 'custom' ? ' on' : '')} onClick={() => switchCat('custom')}>
-            マイデッキ ({customList.length})
+      {/* ===== ステップタブ（アンダーライン・金＝VSステージの選択中スロットと対応） + カテゴリ切替 ===== */}
+      <div className="ds-tabsrow">
+        <div className="ds-step">
+          <button className={'ds-step-tab' + (step === 'me' ? ' on' : '')} onClick={() => setStep('me')}>
+            ① あなたのデッキ{meDeck ? <Icon.check size={13} /> : null}
           </button>
-          <button className={'ds-cat-btn' + (cat === 'preset' ? ' on' : '')} onClick={() => switchCat('preset')}>
-            プリセット ({presetList.length})
+          <button className={'ds-step-tab' + (step === 'cpu' ? ' on' : '')} onClick={() => setStep('cpu')}>
+            ② CPU のデッキ{cpuDeck ? <Icon.check size={13} /> : null}
           </button>
         </div>
-      ) : null}
+        {hasCustom ? (
+          <button
+            className="ds-cat-toggle"
+            onClick={() => switchCat(cat === 'custom' ? 'preset' : 'custom')}
+            title={cat === 'custom' ? 'プリセットに切り替え' : 'マイデッキに切り替え'}
+          >
+            <Icon.repeat size={13} />
+            {cat === 'custom' ? `マイデッキ (${customList.length})` : `プリセット (${presetList.length})`}
+          </button>
+        ) : null}
+      </div>
 
       {/* ===== リーダーカルーセル（残り高さにフィット・中央=選択） ===== */}
       <div className="ds-rail-wrap" style={active ? ({ ['--aura' as any]: auraOf(active) }) : undefined}>

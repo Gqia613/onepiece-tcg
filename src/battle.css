@@ -5734,47 +5734,57 @@ button.hb-chip:not(.zero):not([disabled]):hover {
   }
 }
 
-/* --- ボタン群の統一デザイン ---
-   先攻/CPU(.seg)・ステップタブ(.ds-step)・カテゴリ(.ds-cat)を同じ「結合ピル＋シアン活性」に揃える */
-.ds2 .seg-btn {
-  min-height: 36px;
-  padding: 6px 14px;
-  display: inline-flex;
-  align-items: center;
-}
-
-/* --- ステップタブ（.segと同じ結合ピル・幅広） --- */
-.ds-step {
-  flex: 0 0 auto;
+/* --- ボタン群は役割ごとにデザインを分ける ---
+   設定(先攻/CPU)=結合ピル＋シアン活性（横幅を完全に揃える）
+   ステップ(①②)=アンダーラインタブ・金＝VSステージの選択中スロット(金枠)と対応
+   カテゴリ(マイデッキ/プリセット)=⇄アイコンの単一切替ボタン */
+.ds2 .seg {
+  width: 236px;
   display: flex;
-  gap: 0;
-  width: 100%;
-  max-width: 560px;
-  border: 1px solid var(--surface-edge);
-  border-radius: 999px;
-  overflow: hidden;
-  background: rgba(0, 0, 0, .4);
 }
 
-.ds-step-tab {
+.ds2 .seg-btn {
   flex: 1 1 0;
+  min-height: 36px;
+  padding: 6px 4px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
+}
+
+/* --- ステップタブ行（タブ＋カテゴリ切替を1行に） --- */
+.ds-tabsrow {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  width: 100%;
+  max-width: 640px;
+}
+
+.ds-step {
+  display: flex;
   gap: 6px;
-  min-height: 38px;
-  padding: 7px 12px;
+}
+
+.ds-step-tab {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  min-height: 36px;
+  padding: 6px 10px 8px;
   font-size: 12.5px;
   font-weight: 700;
   color: var(--muted);
   background: transparent;
   border: none;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
   cursor: pointer;
-  transition: .15s;
-}
-
-.ds-step-tab:not(:last-child) {
-  border-right: 1px solid var(--surface-edge);
+  transition: color .15s, border-color .15s;
 }
 
 .ds-step-tab:hover {
@@ -5782,46 +5792,35 @@ button.hb-chip:not(.zero):not([disabled]):hover {
 }
 
 .ds-step-tab.on {
-  background: linear-gradient(180deg, #33b6ef, #1d84c4);
-  color: #04121f;
-  box-shadow: 0 0 12px -3px var(--self-accent);
+  color: var(--gold-soft);
+  border-bottom-color: var(--gold);
+  text-shadow: 0 0 12px rgba(255, 200, 87, .35);
 }
 
-/* --- カテゴリ切替（マイデッキ/プリセット・同じ結合ピル） --- */
-.ds-cat {
-  flex: 0 0 auto;
-  display: flex;
-  gap: 0;
+/* --- カテゴリ切替（単一トグル: 現在のカテゴリを表示・タップで交互切替） --- */
+.ds-cat-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 32px;
+  padding: 5px 14px;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--ink);
+  background: rgba(0, 0, 0, .45);
   border: 1px solid var(--surface-edge);
   border-radius: 999px;
-  overflow: hidden;
-  background: rgba(0, 0, 0, .4);
-}
-
-.ds-cat-btn {
-  min-height: 32px;
-  padding: 5px 18px;
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--muted);
-  background: transparent;
-  border: none;
   cursor: pointer;
   transition: .15s;
 }
 
-.ds-cat-btn:not(:last-child) {
-  border-right: 1px solid var(--surface-edge);
+.ds-cat-toggle:hover {
+  border-color: var(--gold);
+  color: var(--gold-soft);
 }
 
-.ds-cat-btn:hover {
-  color: var(--ink);
-}
-
-.ds-cat-btn.on {
-  background: linear-gradient(180deg, #33b6ef, #1d84c4);
-  color: #04121f;
-  box-shadow: 0 0 12px -3px var(--self-accent);
+.ds-cat-toggle svg {
+  color: var(--gold-soft);
 }
 
 /* --- リーダーカルーセル（残り高さにフィット・中央=選択） --- */
