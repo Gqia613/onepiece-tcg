@@ -216,9 +216,9 @@
           if (op.all) { for (const t of oppChars(side, opFilter(op)).slice()) { if (!(await protectFromEffect(t, 'bounce'))) { bounceCard(t); flog(side, `「${t.base.name}」を手札に戻した`); await checkAllyLeave(t.owner, t, 'oppEffect'); } } break; }
           for (let i = 0; i < (op.count || 1); i++) {
             // side:'any' なら自分/相手両方のキャラが対象（「（持ち主の）手札に戻す」OP14-058/049）。それ以外は相手キャラのみ。
-            const cands = op.side === 'any' ? [...P.chars.filter(c => matchFilter(c, opFilter(op))), ...oppChars(side, opFilter(op))] : oppChars(side, opFilter(op));
-            const t = await chooseCard(side, cands, progText('手札に戻すキャラを選択', i, op.count || 1), 'oppBig', op.optional);
-            if (!t) break; if (await protectFromEffect(t, 'bounce')) continue; bounceCard(t); flog(side, `「${t.base.name}」を手札に戻した`); await checkAllyLeave(t.owner, t, t.owner === side ? 'selfEffect' : 'oppEffect');
+            const cands = op.side === 'any' ? [...P.chars.filter(c => matchFilter(c, opFilter(op))), ...oppChars(side, opFilter(op))] : op.side === 'own' ? P.chars.filter(c => matchFilter(c, opFilter(op))) : oppChars(side, opFilter(op)); // side:'own'=自分のキャラのみ（OP07-094）
+            const t = await chooseCard(side, cands, progText('手札に戻すキャラを選択', i, op.count || 1), op.side === 'own' ? 'ownBig' : 'oppBig', op.optional);
+            if (!t) break; if (await protectFromEffect(t, 'bounce')) continue; bounceCard(t); flog(side, `「${t.base.name}」を手札に戻した`); await checkAllyLeave(t.owner, t, t.owner === side ? 'ownEffect' : 'oppEffect');
             // バウンスした場合、その持ち主(相手)が手札からコストN以下のキャラを登場できる（OP13-119エース「そうした場合、相手は…登場」）
             if (op.oppPlayAfter != null) { const O = G.players[t.owner]; const cc = O.hand.filter(c => c.base.type === 'CHAR' && (c.base.cost || 0) <= op.oppPlayAfter); if (cc.length && O.chars.length < 5) { const pc = O.isCPU ? cc.slice().sort((a, b) => (b.base.power || 0) - (a.base.power || 0))[0] : await chooseFromHand(t.owner, cc, '登場させるキャラを選択（任意）', null, true); if (pc) { O.hand.splice(O.hand.indexOf(pc), 1); await summon(t.owner, pc, false); } } }
           }
@@ -226,12 +226,14 @@
         }
         case 'deckBottom': {
           if (op.condLeader && !checkCond(op.condLeader, side, self)) break;
+          if (op.all) { for (const sd of [o, side]) { const PP = G.players[sd]; for (const t of PP.chars.slice()) { if (!matchFilter(t, opFilter(op))) continue; if (sd === o && (isImmune(t) || await protectFromEffect(t, 'deckBottom'))) continue; removeCharTo(t, G.players[t.owner].deck); flog(side, `「${t.base.name}」をデッキ下へ`); await checkAllyLeave(t.owner, t, t.owner === side ? 'ownEffect' : 'oppEffect'); } } render(); break; } // 「コストN以下のキャラすべて」＝両者の場が対象（OP05-058）
           const cands = oppChars(side, opFilter(op));
           const t = await chooseCard(side, cands, `デッキ下に送る相手キャラを選択`, 'oppBig', op.optional);
           if (t && !(await protectFromEffect(t, 'deckBottom'))) { removeCharTo(t, G.players[t.owner].deck); flog(side, `「${t.base.name}」をデッキ下へ`); await checkAllyLeave(t.owner, t, 'oppEffect'); }
           break;
         }
         case 'restChar': {
+          if (op.leaderOnly) { const L2 = G.players[o].leader; if (!L2.rested) { L2.rested = true; flog(side, '相手リーダーをレストにした'); } render(); break; } // 「相手のリーダーをレストにする」（OP16-039五老星）
           const restPool = () => { let arr = oppChars(side, opFilter(op)).filter(c => !c.rested && !isRestImmune(c) && !isOppRestImmune(c)); if (op.includeLeader && !G.players[o].leader.rested) arr = [G.players[o].leader, ...arr]; if (op.includeStage && G.players[o].stage && !G.players[o].stage.rested) arr = [...arr, G.players[o].stage]; return arr; };
           if (op.all) { const rs = restPool(); for (const t of rs) { t.rested = true; flog(side, `「${t.base.name === undefined ? '相手リーダー' : t.base.name}」をレスト`); } if (rs.length) await fireOwnRest(side); break; } // 条件一致を全てレスト
           for (let i = 0; i < (op.count || 1); i++) {
@@ -274,7 +276,7 @@
         }
         case 'negateChoose': {
           const o2 = opp(side); const D = G.players[o2];
-          const pool = op.charsOnly || op.filter || op.maxCost != null ? D.chars : [D.leader, ...D.chars]; // フィルタ/maxCost/charsOnly指定時はキャラのみ
+          const pool = op.leaderOnly ? [D.leader] : (op.charsOnly || op.filter || op.maxCost != null ? D.chars : [D.leader, ...D.chars]); // leaderOnly=リーダーのみ（OP10-098「リーダーとキャラ1枚ずつ」の前半）／フィルタ/maxCost/charsOnly指定時はキャラのみ
           const cands = pool.filter(c => matchFilter(c, opFilter(op)));
           const t = await chooseCard(side, cands, '効果を無効にする相手のキャラ1枚', 'oppBig', op.optional !== false);
           if (t) {
@@ -376,7 +378,7 @@
           await runFx(op.then, ctx); break;
         }
         case 'donAttachAll': { let targets = op.incLeader ? [P.leader, ...P.chars] : P.chars; if (op.filter) targets = targets.filter(t => matchFilter(t, op.filter)); if (op.max != null) targets = targets.slice(0, op.max); for (const t of targets) { const k = Math.min(op.n, P.don.rested); t.attachedDon += k; P.don.rested -= k; } flog(side, op.incLeader ? 'リーダーとキャラにレストのドン付与' : '自キャラにレストのドン付与'); render(); break; } // filter=対象限定／max=最大対象数（OP08-001チョッパーL＝動物/ドラム王国3枚まで1枚ずつ）
-        case 'selfToHand': { const z = P.trash; const i = z.indexOf(self); if (i >= 0) { z.splice(i, 1); P.hand.push(self); flog(side, `「${self.base.name}」をトラッシュから手札に加えた`); } break; }
+        case 'selfToHand': { const z = P.trash; const i = z.indexOf(self); if (i >= 0) { z.splice(i, 1); P.hand.push(self); flog(side, `「${self.base.name}」をトラッシュから手札に加えた`); } else if (self && !P.hand.includes(self) && !P.chars.includes(self) && !P.life.includes(self)) { P.hand.push(self); flog(side, `「${self.base.name}」を手札に加えた`); } break; } // トラッシュ外＝トリガー解決中のlimboからも手札へ（「KOし、このカードを手札に加える」OP12-109等）
         case 'giveKeyword': {
           if (op.target === 'allOwn' || op.target === 'allOwnL') { // 条件一致の自分のキャラ（Lはリーダー含む）全てに付与
             const dur = durTag(op.duration, 'turn');
@@ -405,7 +407,7 @@
         case 'selfHandToDeckDraw': { const hn = P.hand.length; P.deck.push(...P.hand.splice(0)); shuffle(P.deck); draw(side, hn); flog(side, `手札${hn}枚を山に戻しシャッフル→${hn}ドロー`); render(); break; } // OP04-048ササキ
         case 'bounceAttackerToBottom': { const a = ctx.attacker; if (a && a.base.type === 'CHAR' && (a.base.cost || 0) <= (op.maxCost != null ? op.maxCost : 5)) { const ow = G.players[a.owner]; ow.don.rested += a.attachedDon || 0; removeChar(a); ow.deck.push(reset(a)); flog(side, `バトルした「${a.base.name}」を持ち主のデッキ下へ`); render(); } break; } // OP04-047氷鬼（ブロック時に近似。付与ドンはレストで戻る）
         // 場のキャラ1枚を持ち主のライフ上に裏向きで加える（OP12-117破壊弦。side:'any'=自分/相手両方が対象）
-        case 'charToLife': { const cands = op.side === 'self' ? P.chars.filter(c => matchFilter(c, opFilter(op))) : op.side === 'any' ? [...oppChars(side, opFilter(op)), ...P.chars.filter(c => matchFilter(c, opFilter(op)))] : oppChars(side, opFilter(op)); const t = await chooseCard(side, cands, 'ライフに加えるキャラを選択', op.side === 'self' ? 'ownBig' : 'oppBig', op.optional); if (t) { const ow2 = G.players[t.owner]; removeChar(t); const card2 = reset(t); if (op.faceUp) card2._faceUp = true; const bottom = op.pos === 'bottom'; if (bottom) ow2.life.push(card2); else ow2.life.unshift(card2); flog(side, `「${t.base.name}」を${t.owner === side ? '自分' : '相手'}のライフ${bottom ? '下' : '上'}に${op.faceUp ? '表向きで' : ''}加えた`); render(); } break; } // faceUp=表向き / pos:'bottom'（OP11-116人魚柔術）
+        case 'charToLife': { const cands = op.side === 'self' ? P.chars.filter(c => matchFilter(c, opFilter(op))) : op.side === 'any' ? [...oppChars(side, opFilter(op)), ...P.chars.filter(c => matchFilter(c, opFilter(op)))] : oppChars(side, opFilter(op)); const t = await chooseCard(side, cands, 'ライフに加えるキャラを選択', op.side === 'self' ? 'ownBig' : 'oppBig', op.optional); if (t) { const ow2 = G.players[t.owner]; removeChar(t); const card2 = reset(t); if (op.faceUp) card2._faceUp = true; let bottom = op.pos === 'bottom'; if (op.pos === 'choose' && !P.isCPU) bottom = (await showPrompt({ title: 'ライフに加える', text: 'ライフの上か下、どちらに加えますか？', opts: [{ t: 'ライフ上', v: 'top', primary: true }, { t: 'ライフ下', v: 'bottom' }] })) === 'bottom'; if (bottom) ow2.life.push(card2); else ow2.life.unshift(card2); flog(side, `「${t.base.name}」を${t.owner === side ? '自分' : '相手'}のライフ${bottom ? '下' : '上'}に${op.faceUp ? '表向きで' : ''}加えた`); render(); } break; } // faceUp=表向き / pos:'bottom'（OP11-116人魚柔術）
         case 'handToLife': { if (P.hand.length) { const c = P.hand.slice().sort((a, b) => (a.base.counter || 0) - (b.base.counter || 0))[0]; P.hand.splice(P.hand.indexOf(c), 1); P.life.unshift(faceDown(c)); flog(side, '手札1枚をライフの上に置いた'); } break; }
         // 自分のライフ上1枚を公開し、そのコスト1につき self を+per(既定1000)パワー（このターン中）。OP15-119ルフィ
         case 'revealLifeCostBuff': { if (!P.life.length) break; const cost = P.life[0].base.cost || 0; const amt = cost * (op.per || 1000); if (self && amt) { addBuff(self, amt, durTag(op.duration, 'turnEnd')); floatOn(self.uid, `+${amt}`, 'buff'); } flog(side, `ライフ上を公開(コスト${cost})→パワー+${amt}`); render(); break; }
@@ -762,14 +764,14 @@
           const act = op.action || 'toHand';
           if (act === 'toHand' && P._noLifeToHandTurn === G.turnSeq) { flog(side, 'このターンは効果でライフを手札に加えられない'); break; }
           if (!P.life.length) break; // ライフが無ければ払えない＝不発
-          const pick2 = op.pos === 'choose' && act === 'toHand'; // 「ライフの上か下から1枚」＝上下を選べる
+          const pick2 = op.pos === 'choose' && (act === 'toHand' || act === 'trash'); // 「ライフの上か下から1枚」＝上下を選べる（toHand/trash対応）
           { const lbl = act === 'toHand' ? '手札に加え' : act === 'trash' ? 'トラッシュに置き' : act === 'faceUp' ? '表向きにし' : '裏向きにし'; const where = pick2 ? '上か下から1枚' : '上から1枚'; if (!(await confirmUse(side, 'ライフをコストに', `ライフの${where}を${lbl}て効果を使いますか？`, '使う', undefined, { cls: 'danger' }))) break; }
           if (act === 'toHand') {
             let fromBottom = false;
             if (pick2 && P.life.length >= 2 && !P.isCPU) fromBottom = (await showPrompt({ title: 'ライフを手札に', text: 'ライフの上か下、どちらの1枚を手札に加えますか？', opts: [{ t: 'ライフ上', v: 'top', primary: true }, { t: 'ライフ下', v: 'bot' }] })) === 'bot';
             P.hand.push(fromBottom ? P.life.pop() : P.life.shift()); flog(side, `ライフ${fromBottom ? '下' : '上'}1枚を手札に加えた`); fireSimpleReact(side, 'onLifeToHand'); // OP05-107スペーシー
           }
-          else if (act === 'trash') { P.trash.push(P.life.shift()); flog(side, 'ライフ上1枚をトラッシュ'); }
+          else if (act === 'trash') { let fb = false; if (pick2 && P.life.length >= 2 && !P.isCPU) fb = (await showPrompt({ title: 'ライフをトラッシュ', text: 'ライフの上か下、どちらの1枚をトラッシュに置きますか？', opts: [{ t: 'ライフ上', v: 'top', primary: true }, { t: 'ライフ下', v: 'bottom' }] })) === 'bottom'; P.trash.push(fb ? P.life.pop() : P.life.shift()); flog(side, `ライフ${fb ? '下' : '上'}1枚をトラッシュ`); }
           else if (act === 'faceUp') { P.life[0]._faceUp = true; flog(side, 'ライフ上を表向きにした'); }
           else if (act === 'faceDown') { P.life[0]._faceUp = false; flog(side, 'ライフ上を裏向きにした'); }
           render();
@@ -843,6 +845,21 @@
           if (!returned) await runFx(op.elseFx, ctx);
           break;
         }
+        // 自分か相手のライフの上から1枚までを見て、ライフの上か下に置く（ST07-016/ST20-003）。CPUは自分のライフを見て上に戻す
+        case 'peekLifeTopPlace': {
+          let tgtSide = op.target === 'opp' ? o : op.target === 'self' ? side : null;
+          if (tgtSide == null) { // 「自分か相手の」＝使用者が選ぶ
+            if (P.isCPU) tgtSide = side;
+            else { const v = await showPrompt({ title: 'ライフを見る', text: 'どちらのライフの上から1枚を見ますか？', opts: [{ t: '自分のライフ', v: 'self', primary: true }, { t: '相手のライフ', v: 'opp' }, { t: '見ない', v: 'no', ghost: true }] }); if (v === 'no') break; tgtSide = v === 'opp' ? o : side; }
+          }
+          const L = G.players[tgtSide].life; if (!L.length) break;
+          const c = L[0];
+          let toBottom = false;
+          if (!P.isCPU) toBottom = (await showPrompt({ title: 'ライフ確認', text: `${tgtSide === side ? '自分' : '相手'}のライフの上は「${c.base.name}」。上か下どちらに置きますか？`, opts: [{ t: '上に戻す', v: 'top', primary: true }, { t: '下に置く', v: 'bottom' }] })) === 'bottom';
+          if (toBottom) { L.shift(); L.push(c); }
+          flog(side, `${tgtSide === side ? '自分' : '相手'}のライフ上1枚を見て${toBottom ? '下' : '上'}に置いた`);
+          render(); break;
+        }
         // 相手は自身のライフの上から1枚をトラッシュに置いてもよい。置かなかった場合 elseFx を解決（OP05-099アマゾン）
         case 'oppMayTrashLife': {
           const O = G.players[o]; let paid = false;
@@ -897,7 +914,7 @@
         // 相手キャラ count枚をアタック不可にする（duration:'untilNextEnd'で次の相手ターン終了まで）
         case 'setAttackBan': {
           if (op.leaderOnly) { const L = G.players[o].leader; if (L && (!op.restedOnly || L.rested) && L.noAtkSeq == null) { L.noAtkSeq = durSeq(op.duration); flog(side, '相手リーダーはアタック不可'); } render(); break; } // 相手リーダーのアタック禁止（OP06-023アーロン＝レストのリーダー）
-          for (let i = 0; i < (op.count || 1); i++) { const cands = oppChars(side, opFilter(op)).filter(c => c.noAtkSeq == null); const t = P.isCPU ? cands[0] : await chooseCard(side, cands, 'アタック不可にする相手キャラ', 'oppBig', op.optional); if (!t) break; t.noAtkSeq = durSeq(op.duration); flog(side, `「${t.base.name}」はアタック不可`); }
+          for (let i = 0; i < (op.count || 1); i++) { let cands = oppChars(side, opFilter(op)).filter(c => c.noAtkSeq == null); if (op.includeLeader && G.players[o].leader.noAtkSeq == null) cands = [G.players[o].leader, ...cands]; const t = P.isCPU ? cands[0] : await chooseCard(side, cands, 'アタック不可にする相手キャラ', 'oppBig', op.optional); if (!t) break; t.noAtkSeq = durSeq(op.duration); flog(side, `「${t.base.type === 'LEADER' ? '相手リーダー' : t.base.name}」はアタック不可`); }
           render(); break;
         }
         // 攻撃税（OP08-043ニューゲート）: 相手のキャラすべてに「アタック時に手札N枚を捨てなければアタック不可」を付与。declareAttack冒頭で判定。

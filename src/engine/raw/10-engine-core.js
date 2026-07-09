@@ -246,6 +246,8 @@
       if (c.selfCharsFewerBy != null && !(P.chars.length <= O.chars.length - c.selfCharsFewerBy)) return false; // 自分のキャラが相手よりN枚以上少ない（OP10-098解放）
       if (c.selfTurn && G.active !== side) return false;
       if (c.oppTurn && G.active === side) return false;
+      if (c.oppDonAtLeast != null && donTotal(opp(side)) < c.oppDonAtLeast) return false; // 相手の場のドンN枚以上（OP02-089/090/091トリガー）
+      if (c.oppHandAtLeast != null && G.players[opp(side)].hand.length < c.oppHandAtLeast) return false; // 相手の手札N枚以上（OP09-111トリガー）
       return true;
     }
     // countBuff等の「数」を返す。of: selfChars/selfCharsOther/oppChars/trash/selfHand/selfLife/oppLife/don。ofTrait/ofFilterで絞り込み
@@ -519,12 +521,13 @@
       if (f.maxPower != null && (b.power || 0) > f.maxPower) return false;
       if (f.minPower != null && (b.power || 0) < f.minPower) return false;
       if (f.hasTrigger && !(b.triggerText || (b.fx && b.fx.trigger) || /【トリガー】/.test(b.text || ''))) return false; // 【トリガー】を持つカード（OP09-062ロビンLの捨てコスト）。正本=cards-trigger.js由来のtriggerText（fx未実装の印刷トリガーも判定）
-      if (f.noEffect && b.fx && Object.keys(b.fx).length) return false; // 元々効果のないキャラ（fx無し。OP03-091ヘルメッポ）
+      if (f.noEffect && (b.text || '') !== '' && b.text !== '-') return false; // 元々効果のないキャラ＝本文テキスト無し（OP03-091ヘルメッポ/OP02-046）。fx有無で見るとトリガー一括実装後に対象が消える（トリガー欄は本文と別）
       if (f.nameIncludes && !normName(b.name).includes(normName(f.nameIncludes)) && !(b.aliasName && normName(b.aliasName).includes(normName(f.nameIncludes)))) return false; // 別名対応（OP04-099おリン=シャーロット・リンリン）
       if (f.traitNot && (b.traits || []).some(t => t.includes(f.traitNot))) return false; // 指定特徴(部分一致)を持つものを除外
       if (f.nameExcludes && normName(b.name).includes(normName(f.nameExcludes))) return false; // 指定名を含むものを除外
       if (f.typeNot && b.type === f.typeNot) return false;
       if (f.restedOnly && !card.rested) return false; // レスト状態のキャラのみ
+      if (f.hasKw && !hasKw(card, f.hasKw)) return false; // 指定キーワード能力を持つ（例 hasKw:'blocker'＝ST01-016【ブロッカー】持ちKO）
       if (f.activeOnly && card.rested) return false; // アクティブのキャラのみ
       if (f.hasAttachedDon && (card.attachedDon || 0) < 1) return false; // ドン!!が付与されているキャラ
       if (f.minAttachedDon != null && (card.attachedDon || 0) < f.minAttachedDon) return false; // 付与ドンN枚以上

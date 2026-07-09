@@ -2110,6 +2110,58 @@ humanPick=function(c){return Promise.resolve((c||[])[0]||null);};
     ok(C['OP01-009'].triggerText==='【トリガー】このカードを登場させる。' && !!(C['OP02-117_r1']&&C['OP02-117_r1'].triggerText), 'triggerText: 本体+パラレル(_rN)に付与');
     { const anyUnimpl=Object.values(C).find(b=>b&&b.triggerText&&!(b.fx&&b.fx.trigger));
       ok(!anyUnimpl || matchFilter({no:anyUnimpl.no,base:anyUnimpl,rested:false,attachedDon:0,buffs:[],kwGrant:[]},{hasTrigger:true}), 'hasTrigger: fx未実装でも印刷トリガー(triggerText)で判定される'); }
+    // ===== トリガー追補（長尾118枚）の機能回帰 =====
+    // ドン-1して登場（OP04-065）: ドンがあれば登場・なければ不発
+    { const me=LP('OP11-041'); me.don.active=1; me.chars=[]; const self=I('OP04-065','me');
+      await runFx(C['OP04-065'].fx.trigger,{self,side:'me'});
+      ok(me.chars.includes(self) && donTotal('me')===0, '追補: OP04-065 ドン-1して自身登場（ドンはデッキへ）'); }
+    { const me=LP('OP11-041'); me.don.active=0; me.don.rested=0; me.chars=[]; const self=I('OP04-065','me');
+      await runFx(C['OP04-065'].fx.trigger,{self,side:'me'});
+      ok(!me.chars.includes(self), '追補: OP04-065 ドン0なら登場しない'); }
+    // KO+このカードを手札に（OP12-109）: limboのselfが手札へ
+    { const me=LP('OP11-041'); const self=I('OP12-109','me');
+      C['__k1__']={no:'__k1__',name:'k1',type:'CHAR',color:[],cost:1,power:1000,counter:0,traits:[]};
+      const k1=mkSyn('__k1__',C['__k1__']); k1.owner='cpu'; G.players.cpu.chars=[k1];
+      await runFx(C['OP12-109'].fx.trigger,{self,side:'me'});
+      ok(!G.players.cpu.chars.includes(k1) && me.hand.includes(self), '追補: OP12-109 コスト1をKOし自身は手札へ'); delete C['__k1__']; }
+    // 相手ドン6以上なら相手ドン1をデッキへ（OP02-089）
+    { const me=LP('OP11-041'); const cpu=G.players.cpu; cpu.don.active=6; cpu.donMax=10;
+      await runFx(C['OP02-089'].fx.trigger,{self:I('OP02-089','me'),side:'me'});
+      ok(donTotal('cpu')===5, '追補: OP02-089 相手ドン6以上→1枚デッキへ');
+      cpu.don.active=4; await runFx(C['OP02-089'].fx.trigger,{self:I('OP02-089','me'),side:'me'});
+      ok(donTotal('cpu')===4, '追補: OP02-089 相手ドン5以下は不発'); }
+    // 相手リーダーをレスト（OP16-039）／相手リーダーもアタック不可対象（OP04-100）
+    { const me=LP('OP11-041'); const cpu=G.players.cpu; cpu.leader.rested=false;
+      await runFx(C['OP16-039'].fx.trigger,{self:I('OP16-039','me'),side:'me'});
+      ok(cpu.leader.rested===true, '追補: OP16-039 相手リーダーをレスト'); }
+    { const me=LP('OP11-041'); const cpu=G.players.cpu; cpu.chars=[];
+      await runFx(C['OP04-100'].fx.trigger,{self:I('OP04-100','me'),side:'me'});
+      ok(cpu.leader.noAtkSeq!=null, '追補: OP04-100 相手リーダーをアタック不可にできる'); }
+    // リーダーとキャラ1枚ずつ効果無効（OP10-098）
+    { const me=LP('OP11-041'); const cpu=G.players.cpu;
+      C['__n1__']={no:'__n1__',name:'n1',type:'CHAR',color:[],cost:2,power:2000,counter:0,traits:[]};
+      const n1=mkSyn('__n1__',C['__n1__']); n1.owner='cpu'; cpu.chars=[n1]; cpu.leader.negSeq=null;
+      await runFx(C['OP10-098'].fx.trigger,{self:I('OP10-098','me'),side:'me'});
+      ok(cpu.leader.negSeq!=null && n1.negSeq!=null, '追補: OP10-098 リーダーとキャラ1枚ずつ効果無効'); delete C['__n1__']; }
+    // コスト2以下すべてデッキ下（OP05-058）＝両者対象
+    { const me=LP('OP11-041');
+      C['__d2__']={no:'__d2__',name:'d2',type:'CHAR',color:[],cost:2,power:2000,counter:0,traits:[]};
+      C['__d5__']={no:'__d5__',name:'d5',type:'CHAR',color:[],cost:5,power:5000,counter:0,traits:[]};
+      const a=mkSyn('__d2__',C['__d2__']); const b2=mkSyn('__d5__',C['__d5__']); b2.owner='cpu'; const c2=mkSyn('__d2__',C['__d2__']); c2.owner='cpu';
+      me.chars=[a]; G.players.cpu.chars=[b2,c2];
+      await runFx(C['OP05-058'].fx.trigger,{self:I('OP05-058','me'),side:'me'});
+      ok(!me.chars.includes(a) && !G.players.cpu.chars.includes(c2) && G.players.cpu.chars.includes(b2), '追補: OP05-058 両者のコスト2以下すべてデッキ下・コスト5は残る'); delete C['__d2__']; delete C['__d5__']; }
+    // noEffect回帰（OP02-046）: トリガーのみのバニラ（キャロット等）は「元々の効果のないキャラ」として登場できる
+    { const me=LP('OP11-041'); me.chars=[]; const carrot=I('OP01-009','me'); me.hand=[carrot];
+      await runFx(C['OP02-046'].fx.trigger,{self:I('OP02-046','me'),side:'me'});
+      ok(me.chars.includes(carrot), '追補: OP02-046 トリガー持ちバニラも「効果なし」として登場可（noEffect=本文text基準）'); }
+    // ブロッカー持ちKO（ST01-016）: hasKwフィルタ
+    { const me=LP('OP11-041');
+      C['__bl__']={no:'__bl__',name:'bl',type:'CHAR',color:[],cost:2,power:2000,counter:0,traits:[],blocker:true};
+      C['__nb__']={no:'__nb__',name:'nb',type:'CHAR',color:[],cost:2,power:2000,counter:0,traits:[]};
+      const bl=mkSyn('__bl__',C['__bl__']); bl.owner='cpu'; const nb=mkSyn('__nb__',C['__nb__']); nb.owner='cpu'; G.players.cpu.chars=[bl,nb];
+      await runFx(C['ST01-016'].fx.trigger,{self:I('ST01-016','me'),side:'me'});
+      ok(!G.players.cpu.chars.includes(bl) && G.players.cpu.chars.includes(nb), '追補: ST01-016 【ブロッカー】持ちのみKO（hasKwフィルタ）'); delete C['__bl__']; delete C['__nb__']; }
     // 機能: discardCost→playSelf（EB03-054 手札1捨てて自身を登場）
     { const me=LP('OP11-041'); me.hand=[I('OP11-041','me')]; me.chars=[]; const self=I('EB03-054','me');
       await runFx(C['EB03-054'].fx.trigger,{self,side:'me'});
