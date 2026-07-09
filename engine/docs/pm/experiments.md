@@ -248,6 +248,25 @@
   | enel対teach | **-10.0pt(1/7 p=0.070)** | mcts +5.0 ＝Claude層が最大15pt損 |
 - 結論: **Claude戦略シェイプは「足さない(teach)か有害(enel)」**。§10.2の兆候（band1 +16.7pt）はノイズと確定。✅採用: `HYBRID_SKIP={enel:1}`（`src/70-ai.js` hybridTurn＝enelはシェイプせず素のpuct→PUCT_MCTS経由でmcts直行・API呼び出しも節約・回帰`tests/ai-core.js` 10c・`G._hybridNoSkip`で再測定可）。teach等は無害につきhybrid維持。未測定: lucy/ace/nami/hancockのhybrid（必要なら1対面約20分で追測可）。**E25はこれで回収完了**。
 
+## E38 / 2026-07-09: 測定インフラ拡張（per-seed dump・直接flip比較・サーチ発火診断）→ ✅完了（挙動不変）
+- 背景: 「強いCPUモード」ロードマップ（E39〜E45・設計4案+敵対的レビュー）の前提インフラ。puct系の「上乗せ」改良（bpuct/puct3/planpuct等）は各アームの対h ptの差より、**両アームの同一seed直接flipの符号検定の方が検出力が高い**。またDECK_PLANS（E39）は測定前に「発火頻度」診断ゲートが必須（mulligan「発火せず」の教訓）。
+- 実装: ①`measure-matchup.js` に `OPCG_DUMP=<file>`（per-seed勝敗JSONを書き出し。chunkがDUMPROWS行で親に回収させる） ②`tools/compare-dumps.js`（2つのdumpを同一seedで直接flip比較・符号検定・複数dumpのカンマ区切り合算対応） ③`20-targeting-fx.js` のsearch/searchDeck opに診断フック `G._searchDiag`（**未設定なら挙動不変**。関数はJSONクローンに乗らないため探索ロールアウト内では自然に無効＝実対局のみ記録） ④`tools/plan-diagnose.js`（heuristicミラーでサーチ解決回数/局・候補数・plan差分率を集計。seed帯800000）。
+- 検証: `tests/test.js` 全緑（挙動不変）。dump→自己比較でflip 0/0を確認。診断smoke: **lucy サーチ2.0回/局/側・teach 2.1回/局/側**（候補平均2.6/3.6枚）＝E39の発火ゲート(1.5回/局)を両者通過見込み。
+- 測定規約（レビューで確定・E39以降に適用）: **主ゲート=対象ミラー合算flip符号検定p<0.05（別seed帯で符号再現）**・副ゲート=per-leader退行検出（p<0.05退行はgating除外）・heuristic系アームはN=120/ミラー・puct系はN=60/ミラー・採用部品は合成エージェントに per-leader テーブルで積む。
+
+## E39 / 2026-07-09: DECK_PLANS（サーチ先最適化+捨て札保護・planh）→ ❌lucy退行で不採用・teach/ace中立（機構はopt-in残置）
+- 仮説: サーチopの対象選択（byPow=パワー最大の盲取り、`20-targeting-fx.js` search/searchDeck）は探索もpriorも届かないop解決層＝デッキプラン(wants/combos/holds)を注入すれば「欲しい札を取る」で勝率が上がる（設計4案レビューの最有望#1）。
+- 実装: `src/ai-strategy.js` に `window.DECK_PLANS`＋純関数群（planFor/planCardMatch/planWantScore/planBestPick/planPickSearch/planDiscardProtect。want非合致は-∞=必ずbyPowへフォールバック・全て自陣完全観測情報のみ）、`20-targeting-fx.js` の search/searchDeck/chooseFromHand にopt-inフック（`P.usePlan` 未設定なら**バイト等価**）、`AGENTS.planh`。回帰 `tests/ai-core.js` 11節。診断ゲート（`tools/plan-diagnose.js`）: lucy発火1.93回/局/側・差分率43%／ace 2.04回・28%／teach 2.13回・24%＝全員「死にレバー」ではない。
+- 結果（ミラーN=120・同一seedペア）:
+  | リーダー | プラン | 対h | flip | p |
+  |---|---|---|---|---|
+  | lucy v1 | サボ+イベントwant+イベント捨て札保護 | **-10.8pt** | 改善2/退行15 | **0.002★退行** |
+  | lucy v2 | ボディ+サボコンボのみ | -4.2pt | 改善1/退行6 | 0.125（方向も負） |
+  | ace | ST22-015/ヤマトwant+ニューゲートコンボ | +0.8pt | 5/4 | 1.000 |
+  | teach | ゼハハ+ティーチコンボ | +0.8pt | 3/2 | 1.000 |
+- 結論: **採用ゼロ**。lucyは2案とも負（事前登録の2イテレーション上限で打ち切り・byLeaderから削除）。**★学び: 「デッキの勝ち筋に沿って札を取る」はheuristicの実行能力(イベントを換金する腕)が無いと逆効果＝サーチ選択の質はプレイの質に従属する**。byPow(パワー貪欲)はheuristicTurnと既に整合していた（「よく調整されたheuristic」の再確認）。teach/ace（コンボ札確保）は中立＝勝率には出ないが「デッキの意図どおり動く」体感価値としてopt-in（planh/`usePlan`）で残置。既定CPU・puctはバイト不変。planpuct（puct上でのプラン）はE45時点で期待を下げて判断。
+- 派生知見: 発火頻度・差分率が高くても（lucy 43%）勝率が付いてこない＝**「差分率」は必要条件で十分条件でない**。E42(トリガーゲート)等の残り実験は「取る札」でなく「無駄な行動の除去」型を優先する根拠が強まった。
+
 ---
 
 ## 台帳サマリ（2026-07-03 時点・opcg-pm）

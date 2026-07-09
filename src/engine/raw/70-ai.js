@@ -434,7 +434,10 @@
       const samples = opt.samples || 10, risk = opt.risk != null ? opt.risk : 0.12;
       const maxR = Math.min(opt.maxR != null ? opt.maxR : 4, G.players[me].don.active || 0);
       // 明確な脅威が無いなら温存不要（高コストなsimを省略）
-      if (typeof oppCanThreatenLethal === 'function' && !oppCanThreatenLethal(me)) return 0;
+      // ★E40(heur3): 脅威ゲートをドン到達考慮の精密版に置換（isThreatAware時のみ。既定は従来式）
+      if (typeof isThreatAware === 'function' && isThreatAware(me) && typeof threatOppLethal === 'function') {
+        if (!threatOppLethal(me)) return 0;
+      } else if (typeof oppCanThreatenLethal === 'function' && !oppCanThreatenLethal(me)) return 0;
       const snap = cloneGameState(G);                        // 決定化の元（純クローン）
       const saved = Object.assign({}, G);                   // 実状態の元オブジェクト参照を退避
       const rngSave = rngState();                            // 先読みのrng消費を実ゲームに漏らさない

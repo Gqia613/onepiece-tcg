@@ -29,3 +29,142 @@ window.AI_STRATEGY = {
     shape: { ramp: 0, longevity: 0, control: 0, threatQuality: 0, tempo: 0 },
     priorBias: { playChar: 1, event: 1, act: 1, leader: 1 } }
 };
+
+/* ===== E39: DECK_PLANS — デッキプラン駆動の「サーチ先最適化」＋「捨て札保護」 =====
+   探索(puct)も priorityCards も構造的に届かない op解決層（search/searchDeck の対象選択・
+   chooseFromHand の捨て札順）に、デッキの勝ち筋データを注入する。evalState/cpuPickAttack には一切触れない。
+   ・opt-in: G.players[side].usePlan が truthy の時だけ有効（AGENTS.planh/planpuct が設定）。未設定なら既定挙動とバイト等価。
+   ・完全フェア: 入力は自陣の完全観測情報（hand/chars/trash/don/turnsTaken）のみ。決定化サンプル値は読まない。
+   ・スキーマ（byLeader[leaderKey]）:
+       wants:  [{ no|name|{type,trait,minCost,maxCost}, w:基本重み, max:手札+盤面の飽和枚数, minTurn:このターン以降のみ }]
+       combos: [{ id, payoff, pieces:[{no|..., zone:'hand'(既定)|'board'|'trash'}] }]  … 不足ピースほど強く欲しい
+       holds:  [{ no|..., keep:保護する枚数(既定1) }]  … 捨て札候補の最後尾へ（コンボパーツをカウンター代わりに切らない）
+   ・採否は measure-matchup（planh vs heuristic・ミラーN=120・合算flip符号検定）。有意リーダーのみ掲載する。
+   ・注意: heuristicTurn は手札の STAGE をプレイしない（既知の構造穴）ため、planh 用 wants に STAGE を入れないこと
+     （byPow はパワー0のSTAGEを取らない＝入れると「使えない札を取る」確実な劣化。puct系プランで解禁を検討）。 */
+window.DECK_PLANS = {
+  byLeader: {
+    /* ★lucy: 不掲載（E39で2案とも退行）。v1(イベントwant+捨て札保護)=ミラーN=120で-10.8pt(p=0.002★)、
+       v2(ボディ+サボコンボのみ)=-4.2pt(改善1/退行6)。教訓: heuristicはイベントを人間のように換金できない
+       (lucyCounter上限2/イベントプレイはゲート付き)ため「イベントを取る」はボディテンポの喪失。byPow(パワー貪欲)は
+       heuristicTurnの実行能力と既に噛み合っており、サーチ差し替えの余地がlucyには無かった。 */
+    /* 黒黄ティーチ: サーチプール45/50と広くbyPowでも大型ティーチは取れる。差分は「ゼハハ(ドン10バースト・byPowは
+       絶対取らないEVENT)をティーチと揃える」コンボ確保と、その2枚を捨て札から守ること。 */
+    teach: {
+      wants: [
+        { no: 'OP16-116', w: 2, max: 2, minTurn: 4 },              // ゼハハ(ドン10: 手札ティーチ登場+相手ライフ奪取)
+        { type: 'CHAR', trait: '黒ひげ海賊団', minCost: 8, w: 1, max: 2 },  // ティーチ本体(OP16-119/OP09-093=ゼハハの弾)
+      ],
+      combos: [
+        { id: 'zehaha-burst', payoff: 8,
+          pieces: [{ no: 'OP16-116' }, { type: 'CHAR', trait: '黒ひげ海賊団', minCost: 8 }] },
+      ],
+      holds: [
+        { no: 'OP16-116', keep: 1 },
+        { type: 'CHAR', trait: '黒ひげ海賊団', minCost: 8, keep: 1 },
+      ],
+    },
+    /* 赤青エース: ST22-015(白ひげイベント)が手札のニューゲートを踏み倒す黄金ルート。byPowはST22-015を絶対取らない。
+       5cヤマトはリーダーへのドン付与=リーダードロー(付与ドン>=1が条件)の前提を作る。 */
+    ace: {
+      wants: [
+        { no: 'ST22-015', w: 2, max: 1, minTurn: 4 },              // おれァ"白ひげ"だァ(手札ニューゲート踏み倒し)
+        { no: 'OP13-054', w: 2, max: 1 },                          // 5cヤマト(リーダーにレストのドン付与+draw2)
+      ],
+      combos: [
+        { id: 'whitebeard-burst', payoff: 7,
+          pieces: [{ no: 'ST22-015' }, { name: 'エドワード・ニューゲート' }] },
+      ],
+      holds: [
+        { name: 'エドワード・ニューゲート', keep: 1 },
+        { no: 'ST22-015', keep: 1 },
+      ],
+    },
+  }
+};
+
+// プラン取得（opt-inゲート）。usePlan が無い/プラン未掲載なら null＝全フックが既定挙動へフォールバック。
+function planFor(side) {
+  const P = G.players[side];
+  if (!P || !P.usePlan) return null;
+  const DP = (typeof window !== 'undefined' && window.DECK_PLANS) || null;
+  if (!DP || !DP.byLeader) return null;
+  return DP.byLeader[leaderKeyOf(side)] || null;
+}
+// カード照合の小さなDSL: {no} / {name} / {type,trait,minCost,maxCost}（属性は完全一致・traitは配列includes）
+function planCardMatch(card, ref) {
+  if (!card || !card.base || !ref) return false;
+  const b = card.base;
+  if (ref.no) return b.no === ref.no;
+  if (ref.name) return (b.name || '') === ref.name;
+  return (!ref.type || b.type === ref.type)
+    && (!ref.trait || (b.traits || []).includes(ref.trait))
+    && (!ref.minCost || (b.cost || 0) >= ref.minCost)
+    && (!ref.maxCost || (b.cost || 0) <= ref.maxCost);
+}
+// コンボピースの所在チェック（zone: hand既定/board/trash）
+function planZoneHas(side, ref) {
+  const P = G.players[side];
+  const arr = ref.zone === 'board' ? P.chars : ref.zone === 'trash' ? P.trash : P.hand;
+  return (arr || []).some(c => planCardMatch(c, ref));
+}
+// コンボの不足ピースなら加点（「あと1枚」ほど強く欲しい）
+function planComboBoost(side, card, plan) {
+  let s = 0;
+  for (const L of plan.combos || []) {
+    const missing = (L.pieces || []).filter(p => !planZoneHas(side, p));
+    if (!missing.length) continue;                        // 揃済み→押し上げ不要
+    if (missing.some(p => planCardMatch(card, p))) s += (L.payoff || 4) / missing.length;
+  }
+  return s;
+}
+/* wantスコア: wants/combosに合致しない札は -Infinity（=プラン示唆なし→byPowへ）。
+   合致した札同士は 重複ペナルティ と 次ターンプレイ可能性 で順位付け。 */
+function planWantScore(side, card, plan) {
+  const P = G.players[side];
+  let base = 0;
+  for (const k of plan.wants || []) {
+    if (!planCardMatch(card, k)) continue;
+    if (k.max) {
+      const owned = P.hand.filter(c => c.base.no === card.base.no).length
+        + P.chars.filter(c => c.base.no === card.base.no).length;
+      if (owned >= k.max) continue;                       // 飽和: もう要らない
+    }
+    if (k.minTurn && P.turnsTaken + 1 < k.minTurn) continue;
+    base += (k.w || 1);
+  }
+  base += planComboBoost(side, card, plan);
+  if (base <= 0) return -Infinity;                        // want非合致はプランの示唆対象外
+  let s = base - 2 * P.hand.filter(c => c.base.no === card.base.no).length;  // 重複ペナルティ
+  const nextDon = Math.min(P.donMax || 10, donTotal(side) + 2);
+  if (card.base.type === 'CHAR' && effCost(side, card) <= nextDon) s += 1;   // 次ターン出せる札を優先
+  return s;
+}
+// 純関数（usePlan非依存・planを明示渡し）: 正スコア最大の1枚 or null。tools/plan-diagnose.js の仮想比較にも使う。
+function planBestPick(side, cands, plan) {
+  let best = null, bs = 0;
+  for (const c of cands) {
+    const s = planWantScore(side, c, plan);
+    if (s > bs + 1e-9) { bs = s; best = c; }
+  }
+  return best;
+}
+// サーチ/回収の対象選択エントリ（20-targeting-fx.js の search/searchDeck から呼ばれる）。
+// プラン非活性/示唆なし → fallback()（=既定挙動。search=byPow / searchDeck=cands[0]）＝既定パスはバイト等価。
+function planPickSearch(side, cands, fallback) {
+  const plan = planFor(side);
+  if (plan) { const bp = planBestPick(side, cands, plan); if (bp) return bp; }
+  return fallback();
+}
+// 捨て札保護: plan.holds に合致し、手札の同名枚数が keep 以下なら保護（=捨て札ソートの最後尾へ）。余剰コピーは保護しない。
+function planDiscardProtect(side, card) {
+  const plan = planFor(side);
+  if (!plan || !plan.holds) return 0;
+  const P = G.players[side];
+  for (const h of plan.holds) {
+    if (!planCardMatch(card, h)) continue;
+    const copies = P.hand.filter(c => c.base.no === card.base.no).length;
+    if (copies <= (h.keep || 1)) return 1;
+  }
+  return 0;
+}

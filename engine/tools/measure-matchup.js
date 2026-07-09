@@ -14,6 +14,8 @@ const PAIRS = process.env.OPCG_HERO
   : [['teach', 'enel'], ['enel', 'teach']];   // 既定: ティーチ視点・エネル視点の両方
 const N = +(process.env.OPCG_N || 60);
 const AGENT = process.env.OPCG_AGENT || 'mcts';   // 評価するhero方策（mcts / vlook 等）。heuristicと同一seedで比較
+const BASE = process.env.OPCG_BASE || 'heuristic'; // ★E41: 基準アームの方策。puct系の上乗せ改良は OPCG_BASE=puct で同一プロセス内の直接ペア比較にする（DB変動に頑健）
+const THR = process.env.OPCG_THR || '';            // ★E40: heur3部品の単離（例 OPCG_THR=hold → holdのみon）。空=全部on
 const SEED0 = +(process.env.OPCG_SEED0 || 600000);
 const CHUNK = +(process.env.OPCG_CHUNK || 50);   // 1harnessあたりの試合数（mcts ~8s なので 50×8=400s<590s）
 // AGENT=hybrid のLLM戦略キャッシュ(fixture)。事前ウォーム(tools/llm-warm-cache.js)した戦略を流し込み、live問い合わせ無しで決定的に再生する。
@@ -29,7 +31,8 @@ showPrompt = function (cfg) { const t = cfg.title || ''; let v;
   if (cfg.onPick) cfg.onPick(v); return Promise.resolve(v); };
 humanPick = function (c) { return Promise.resolve(c[0] || null); };
 if (typeof loadLLMCache === 'function') loadLLMCache(` + LLM_CACHE_JSON + `);  // AGENT=hybrid用のLLM戦略キャッシュ(あれば。無ければnull=liveフォールバック)
-const HERO = ` + JSON.stringify(hero) + `, VILLAIN = ` + JSON.stringify(villain) + `, S0 = ` + s0 + `, N = ` + n + `, AGENT = ` + JSON.stringify(AGENT) + `, LIFE_AGGR = ` + (+process.env.OPCG_LIFE_AGGR || 0) + `, NOSKIP = ` + (process.env.OPCG_NOSKIP === '1') + `;
+const HERO = ` + JSON.stringify(hero) + `, VILLAIN = ` + JSON.stringify(villain) + `, S0 = ` + s0 + `, N = ` + n + `, AGENT = ` + JSON.stringify(AGENT) + `, BASE = ` + JSON.stringify(BASE) + `, LIFE_AGGR = ` + (+process.env.OPCG_LIFE_AGGR || 0) + `, NOSKIP = ` + (process.env.OPCG_NOSKIP === '1') + `;
+G._thrParts = ` + (THR ? JSON.stringify(Object.fromEntries(THR.split(',').map(s => [s.trim(), 1]))) : 'null') + `;   // E40部品の単離（null=全部on）
 const MCTS_R = ` + (+process.env.OPCG_MCTS_ROLLOUTS || 0) + `, MCTS_D = ` + (+process.env.OPCG_MCTS_DEPTH || 0) + `;   // 0=既定(8/4)のまま。E36: mctsの計算スケーリング測定用
 const SAVED_W = (typeof window !== 'undefined') ? window.AI_WEIGHTS : null;  // ロード済み学習重み（あれば）
 const HAS_LEARNED = !!(SAVED_W && (SAVED_W.byLeader || SAVED_W.w));
@@ -51,19 +54,24 @@ async function pg(seed, heroAgent, useLearned) {
   // 同一seedで3アーム: heuristic / AGENT(手作りeval) / AGENT(学習eval)。学習無しならmLは省略。
   let hWin = 0, mhWin = 0, mlWin = 0, imp = 0, reg = 0;     // imp/reg = 学習 vs 手作り のflip
   let impH = 0, regH = 0, impL = 0, regL = 0;               // impH/regH = AGENT(手作り) vs h ／ impL/regL = AGENT(学習) vs h のflip
+  const ROWS = [];                                          // ★E38: per-seed勝敗（OPCG_DUMP用。親がDUMPROWSを回収）
   for (let i = 0; i < N; i++) {
     const seed = S0 + i;
-    const h = await pg(seed, 'heuristic', false);
+    const h = await pg(seed, BASE, false);                 // 基準アーム（既定heuristic。OPCG_BASE=puct等で差し替え可）
     const mh = await pg(seed, AGENT, false);               // hero方策（手作りeval）
     if (h) hWin++; if (mh) mhWin++;
     if (mh && !h) impH++; else if (!mh && h) regH++;        // 同一seedでAGENTが勝ちheuristicが負け=改善
+    const row = { seed, h: h ? 1 : 0, mh: mh ? 1 : 0 };
     if (HAS_LEARNED) {
       const ml = await pg(seed, AGENT, true);              // hero方策（学習eval）
       if (ml) mlWin++;
       if (ml && !mh) imp++; else if (!ml && mh) reg++;
       if (ml && !h) impL++; else if (!ml && h) regL++;      // 学習evalアームの対h flip（E35: value+policy複合候補のgating指標）
+      row.ml = ml ? 1 : 0;
     }
+    ROWS.push(row);
   }
+  console.log('DUMPROWS ' + JSON.stringify(ROWS));
   console.log('CHUNK ' + JSON.stringify({ hWin, mhWin, mlWin, imp, reg, impH, regH, impL, regL, n: N, learned: HAS_LEARNED }));
   process.exit(0);
 })();
@@ -80,16 +88,21 @@ function signTestP(imp, reg) {
 
 (async () => {
   console.log('▶ マッチアップ精密測定（ペア比較・同一seed, N=' + N + ' /hero, eval=' + (require('fs').existsSync(require('path').join(__dirname, '..', 'src', 'ai-weights.js')) ? 'src/ai-weights.js' : 'なし') + '）');
+  const DUMP = process.env.OPCG_DUMP || '';   // ★E38: per-seed勝敗をJSONで書き出す（tools/compare-dumps.js で2つのdumpを直接flip比較）
+  const dumpPairs = [];
   for (const [hero, villain] of PAIRS) {
     let hWin = 0, mhWin = 0, mlWin = 0, imp = 0, reg = 0, impH = 0, regH = 0, impL = 0, regL = 0, done = 0, learned = false;
+    let rows = [];
     while (done < N) {
       const n = Math.min(CHUNK, N - done);
       let out;
       try { out = runHarness('measure', chunkHarness(hero, villain, SEED0 + done, n), { timeout: 590000 }); }
       catch (e) { process.stdout.write((e.stdout || '') + (e.stderr || '')); process.exit(1); }
       const m = out.match(/CHUNK (\{.*\})/); if (!m) { console.error('✗ chunk結果なし\n' + out); process.exit(1); }
+      const dm = out.match(/DUMPROWS (\[.*\])/); if (dm) rows = rows.concat(JSON.parse(dm[1]));
       const r = JSON.parse(m[1]); hWin += r.hWin; mhWin += r.mhWin; mlWin += r.mlWin; imp += r.imp; reg += r.reg; impH += r.impH || 0; regH += r.regH || 0; impL += r.impL || 0; regL += r.regL || 0; learned = learned || r.learned; done += n;
     }
+    if (DUMP) dumpPairs.push({ hero, villain, rows });
     const effH = ((mhWin - hWin) / N * 100), pH = signTestP(impH, regH);
     let line = '  ' + hero + ' vs ' + villain + ' (N=' + N + '): heuristic=' + (100 * hWin / N).toFixed(1) + '%  ' + AGENT + '=' + (100 * mhWin / N).toFixed(1)
       + '%(対h ' + (effH >= 0 ? '+' : '') + effH.toFixed(1) + 'pt 改善' + impH + '/退行' + regH + ' p=' + pH.toFixed(3) + (pH < 0.05 ? '★' : '') + ')';
@@ -99,6 +112,10 @@ function signTestP(imp, reg) {
         + '  | 学習 vs 手作り: ' + (effLvsH >= 0 ? '+' : '') + effLvsH.toFixed(1) + 'pt  改善=' + imp + ' 退行=' + reg + ' (符号検定 p=' + p.toFixed(3) + (p < 0.05 ? ' ★有意' : '') + ')';
     }
     console.log(line);
+  }
+  if (DUMP) {   // ★E38: 同一seed帯で走らせた別AGENTのdumpと tools/compare-dumps.js で直接flip比較できる
+    require('fs').writeFileSync(DUMP, JSON.stringify({ agent: AGENT, n: N, seed0: SEED0, date: new Date().toISOString(), pairs: dumpPairs }));
+    console.log('  → per-seed dump: ' + DUMP);
   }
   process.exit(0);
 })();

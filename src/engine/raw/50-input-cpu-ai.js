@@ -267,6 +267,64 @@
       const myActiveBlk = P.chars.filter(c => hasKw(c, 'blocker') && !c.rested).length;        // 守りに使えるブロッカー
       return oppAtk >= P.life.length + Math.max(0, myActiveBlk - 1);                            // 1枚攻撃に回した後でも守り切れない＝危険
     }
+    /* ===== ★E40: リーサル算術モジュール（脅威判定器）＝ isThreatAware なエージェント(heur3等)のみ使用 =====
+       相手の攻撃を「列挙→貪欲ドン割当(顔に届く最小付与)→自分の防御資源(ブロッカー/カウンター壁)の貪欲割当」で
+       閉形式に見積る。公開情報＋手札の多重集合のみ使用（決定化サンプル値は読まない＝ノイズなし・決定的）。
+       horizon:'now'=この相手ターンの残り（カウンター判断用）/'next'=次の相手ターン（全員リフレッシュ+ドン+2。温存判断用）。
+       防御側は楽観（最小付与前提・壁の最適割当）＝「守っても死ぬ(boardLethal)」判定は保守側に倒れる。 */
+    function isThreatAware(side) { const a = G.players[side] && G.players[side].agent; return a === 'heur3' || a === 'puct3' || a === 'strong2'; }
+    function assessThreat(side, horizon, opt) {
+      opt = opt || {};
+      const P = G.players[side], oSide = opp(side), O = G.players[oSide];
+      // 自リーダーの相手ターン中パワー（自分の付与ドン+1000は自分の手番中しか数えない＝手番中に呼ばれたら差し引く）
+      const myLp = power(P.leader) - (G.active === side ? (P.leader.attachedDon || 0) * 1000 : 0);
+      // (1) 相手が使えるドン
+      let don;
+      if (horizon === 'next') {
+        don = Math.min(O.donMax, donTotal(oSide) + 2) - Math.min(O._donRefreshLock || 0, donTotal(oSide));
+        if (O.leader.base.leader === 'enel') don += 1;      // エネル: リーダー効果でドンデッキから1枚アクティブ追加
+      } else don = O.don.active;
+      // (2) 攻撃の列挙（doubleAttack=2ヒット。now=現在レスト/酔いを除外・next=リフレッシュ想定で凍結等のみ除外）
+      const atks = [];
+      for (const c of [O.leader, ...O.chars]) {
+        if (horizon === 'next') {
+          if (c !== O.leader && (c.frozen || c._noRefreshSeq != null)) continue;   // 次のリフレッシュで起きない
+        } else {
+          if (c.rested) continue;
+          if (c.base.type === 'CHAR' && c.summonedTurn === G.turnSeq && !hasKw(c, 'rush')) continue; // 召喚酔い
+        }
+        const pw = power(c) - (horizon === 'next' ? (c.attachedDon || 0) * 1000 : 0);  // 付与ドンはリフレッシュで戻る
+        const need = Math.max(0, Math.ceil((myLp - pw) / 1000));                        // 顔に届く最小付与
+        atks.push({ need, hits: hasKw(c, 'doubleAttack') ? 2 : 1, cost: Math.max(0, pw + need * 1000 - myLp) + 1000 }); // cost=止めるのに要るカウンター値
+      }
+      atks.sort((a, b) => a.need - b.need);
+      // (3) 貪欲ドン割当 → 素の最大被弾 maxHits（防御を考えない打点）
+      let d = don, maxHits = 0; const landed = [];
+      for (const a of atks) { if (a.need <= d) { d -= a.need; maxHits += a.hits; landed.push(a); } }
+      // (4) 防御資源の割当 → 実効被弾 effHits。ブロッカーはヒット数の大きい攻撃から吸収→残りを壁で安い順に止める
+      const blk = P.chars.filter(c => hasKw(c, 'blocker') && !c.rested && c.noBlockSeq !== G.turnSeq && !isRestImmune(c)).length;
+      let wall;
+      if (opt.wallOverride != null) wall = opt.wallOverride;
+      else {
+        wall = 0;
+        for (const c of P.hand) { const v = counterVal(c, side); if (v > 0) wall += v; }
+        for (const c of P.hand) if (c.base.fx && c.base.fx.counter) {
+          const cost = (c.base.fx.counter.cost != null ? c.base.fx.counter.cost : (c.base.cost || 0));
+          if (cost === 0 || P.don.active >= cost) wall += counterEventValue(side, c.base.fx.counter.fx);
+        }
+      }
+      let blkLeft = blk; const rest = [];
+      for (const a of landed.slice().sort((x, y) => y.hits - x.hits || y.cost - x.cost)) { if (blkLeft > 0) blkLeft--; else rest.push(a); }
+      let effHits = 0;
+      for (const a of rest.sort((x, y) => y.hits - x.hits || x.cost - y.cost)) { if (wall >= a.cost) wall -= a.cost; else effHits += a.hits; }
+      const lethalLine = P.life.length + 1;                 // 敗北=ライフ0でさらに被弾
+      return { maxHits, effHits, blk, boardLethal: effHits >= lethalLine, raceLethal: maxHits >= lethalLine };
+    }
+    // oppCanThreatenLethal の精密版（ドン到達を考慮した攻撃数で同じ不等式）。heur3系のholdBlk/reserveゲートが使う。
+    function threatOppLethal(side) {
+      const t = assessThreat(side, 'next');
+      return t.maxHits >= G.players[side].life.length + Math.max(0, t.blk - 1);
+    }
     function cpuPickAttack(side, plan) {
       const P = G.players[side], D = G.players[opp(side)];
       const Lp = power(D.leader);
@@ -276,7 +334,9 @@
       const lowLife = P.life.length <= 2;                 // 自分が劣勢→ブロッカーは守りに残す
       // ★CPU改良（測定駆動・採用済）: ブロッカー温存を「ライフ≤2」だけでなく「相手が次ターンにリーサルを出せるか(盤面リスク)」でも判断。
       //   ＝ライフに余裕があっても相手盤面が脅威ならブロッカーで攻撃して寝かせない（自滅防止）。有意な悪化は無く、teach対enel等で+4〜5pt。
-      const holdBlk = lowLife || oppCanThreatenLethal(side);
+      // ★E40(heur3): 判定をドン到達考慮の精密版(threatOppLethal)に置換＝「届かないキャラを脅威と数える誤温存」と
+      //   「ドンで届くのに数え漏らす見逃し」の両方を直す。既定エージェントは従来式のまま。
+      const holdBlk = lowLife || (isThreatAware(side) ? threatOppLethal(side) : oppCanThreatenLethal(side));
       const pri = ((plan && Array.isArray(plan.removalPriority)) ? plan.removalPriority : []).filter(n => typeof n === 'string' && n.trim().length > 0).map(n => n.trim());
       const aggr = plan && plan.aggression;
       const lethal = plan && plan.lethal;                 // リーサル成立時は全攻撃をリーダーに集中
@@ -466,7 +526,12 @@
     const AGENTS = {
       heuristic: { takeTurn: heuristicTurn },
       random: { takeTurn: randomTurn },
-      heur2: { takeTurn: heuristicTurn }   // 能動ターンは同じ。差は isHeur2 で分岐する各種ヒューリスティック改良
+      heur2: { takeTurn: heuristicTurn },   // 能動ターンは同じ。差は isHeur2 で分岐する各種ヒューリスティック改良
+      // ★E39: DECK_PLANS有効のheuristic（測定用）。usePlanはプレーン値＝cloneを生き残り、ロールアウト内の自己モデルも一貫する。
+      planh: { takeTurn: async (side) => { G.players[side].usePlan = 1; return heuristicTurn(side); } },
+      // ★E40: 脅威判定器(assessThreat/threatOppLethal)有効のheuristic（測定用）。差は isThreatAware で分岐
+      //   （holdBlk精密化・reserveゲート精密化・cpuCounterの「どのみち死ぬ列に壁を捨てない」温存）。
+      heur3: { takeTurn: heuristicTurn }
     };
     // 能動ターンのエントリ。beginTurn から side を受けて、そのサイドのエージェントに委譲。
     async function cpuTurn(side) {

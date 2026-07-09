@@ -208,6 +208,79 @@ function chk(name, cond) { if (cond) pass++; else { fail++; console.log('  ✗ '
   fetchStrategyFromClaude = _fsc;
   chk('hybrid(enel)はHYBRID_SKIPで素のpuctへ直行（LLM問い合わせ0・1局完走）', (G.winner === 'me' || G.winner === 'cpu') && llmCalls === 0);
 
+  // 11) ★E39: DECK_PLANS（サーチ先最適化・捨て札保護）の回帰
+  chk('エージェント登録: planh', !!AGENTS.planh);
+  G.players = {}; G.winner = null; seedRng(41); startGame('lucy', 'lucy');
+  const P11 = G.players.me; P11.isCPU = true;
+  const cBig = inst('OP15-046', 'me'), cSmall = inst('OP15-047', 'me');   // byPow=パワー大(cBig)が既定
+  const cands11 = [cBig, cSmall];
+  const fb11 = () => cpuPick(cands11, 'ownBig');
+  const savedPlan11 = window.DECK_PLANS.byLeader.lucy;
+  delete window.DECK_PLANS.byLeader.lucy;
+  P11.usePlan = 1;
+  chk('planPickSearch: プラン未掲載→fallback(byPow)', planPickSearch('me', cands11, fb11) === fb11());
+  window.DECK_PLANS.byLeader.lucy = { wants: [{ no: cSmall.base.no, w: 5 }] };
+  P11.usePlan = 0;
+  chk('planPickSearch: usePlan未設定→fallback（既定バイト等価）', planPickSearch('me', cands11, fb11) === fb11());
+  P11.usePlan = 1;
+  chk('planPickSearch: wants指定の札を選ぶ', planPickSearch('me', cands11, fb11) === cSmall);
+  // 飽和(max): 手札+盤面に既にkeep枚あればwant対象外→fallback
+  window.DECK_PLANS.byLeader.lucy = { wants: [{ no: cSmall.base.no, w: 5, max: 1 }] };
+  P11.hand.push(inst(cSmall.base.no, 'me'));
+  chk('planPickSearch: max飽和→fallback', planPickSearch('me', cands11, fb11) === fb11());
+  // minTurn: そのターン前は取らない
+  window.DECK_PLANS.byLeader.lucy = { wants: [{ no: cSmall.base.no, w: 5, minTurn: 9 }] };
+  P11.turnsTaken = 1;
+  chk('planPickSearch: minTurn前→fallback', planPickSearch('me', cands11, fb11) === fb11());
+  // 捨て札保護: 既定で先に捨てられる札をholdsで保護すると選択が変わる
+  window.DECK_PLANS.byLeader.lucy = null; P11.usePlan = 1;
+  window.DECK_PLANS.byLeader.lucy = undefined; delete window.DECK_PLANS.byLeader.lucy;
+  const d1 = await chooseFromHand('me', cands11, 'test捨て札');           // プラン無し=既定の捨て札選択
+  window.DECK_PLANS.byLeader.lucy = { holds: [{ no: d1.base.no, keep: 9 }] };
+  const d2 = await chooseFromHand('me', cands11, 'test捨て札');
+  chk('捨て札保護: holds該当が後回しになる', d2 !== d1);
+  P11.usePlan = 0;
+  const d3 = await chooseFromHand('me', cands11, 'test捨て札');
+  chk('捨て札保護: usePlan未設定なら既定と同一', d3 === d1);
+  // 後片付け（以後のテストに漏らさない）
+  if (savedPlan11 !== undefined) window.DECK_PLANS.byLeader.lucy = savedPlan11; else delete window.DECK_PLANS.byLeader.lucy;
+
+  // 12) ★E40: リーサル算術モジュール（assessThreat/threatOppLethal/heur3）の回帰
+  chk('エージェント登録: heur3', !!AGENTS.heur3);
+  G.players = {}; G.winner = null; seedRng(51); startGame('teach', 'teach');
+  const P12 = G.players.me, O12 = G.players.cpu;
+  P12.isCPU = true; O12.isCPU = true; G.active = 'me'; G.turnSeq = 10;
+  // 盤面を構成: 相手=リーダー5000+大型2体(アクティブ)・ドン潤沢／自分=ライフ2・ブロッカー0・手札カウンター0
+  O12.chars = [inst('OP16-119', 'cpu'), inst('OP09-093', 'cpu')];   // 10000/12000
+  O12.chars.forEach(c => { c.rested = false; c.summonedTurn = 0; });
+  O12.don = { active: 8, rested: 0 }; O12.donMax = 10;
+  P12.life.length = 2; P12.chars = []; P12.hand = [];
+  const t1 = assessThreat('me', 'next');
+  chk('assessThreat: 大型2+リーダーで次ターン3ヒット', t1.maxHits >= 3);
+  chk('assessThreat: 防御資源ゼロ→boardLethal(effHits>=life+1)', t1.boardLethal === true && t1.effHits >= 3);
+  // 手札に2000カウンター4枚→壁8000で2本止まる→boardLethal解除
+  for (let i = 0; i < 4; i++) { const c = inst('OP16-109', 'me'); P12.hand.push(c); }   // counter2000
+  const t2 = assessThreat('me', 'next');
+  chk('assessThreat: カウンター壁で実効被弾が減る', t2.effHits < t1.effHits && t2.boardLethal === false);
+  // ドン到達の考慮: 相手ドン0なら「届かない弱小キャラ」は打点に数えない
+  O12.chars = [inst('OP16-109', 'cpu')]; O12.chars[0].rested = false; O12.chars[0].summonedTurn = 0;  // P0キャラ
+  O12.don = { active: 0, rested: 0 }; O12.donMax = 0;   // 次ターンも+2のみ
+  const t3 = assessThreat('me', 'next');
+  chk('assessThreat: ドンで届かない攻撃は数えない(リーダー分のみ)', t3.maxHits <= 2);
+  // threatOppLethal は heur3 のときだけ holdBlk 経路で使われる（存在と真偽の健全性のみ確認）
+  chk('threatOppLethal: bool を返す', typeof threatOppLethal('me') === 'boolean');
+  chk('isThreatAware: agent=heur3のみ真', (P12.agent = 'heur3', isThreatAware('me')) && (P12.agent = 'heuristic', !isThreatAware('me')));
+  // heur3 で1局完走（cpuCounter/holdBlk/reserveの新分岐が破綻しない）
+  async function playHeur3(seed) {
+    G.players = {}; G.winner = null; G.inGame = false; seedRng(seed);
+    startGame('teach', 'teach'); G.players.me.isCPU = true; G.players.me.agent = 'heur3'; G.players.cpu.agent = 'heuristic';
+    let it = 0; while (!(G.winner && !G._sim) && it < 3000000) { await new Promise(r => setImmediate(r)); it++; }
+    for (let k = 0; k < 40; k++) await new Promise(r => setImmediate(r));
+    return G.winner;
+  }
+  const w12 = await playHeur3(52);
+  chk('heur3 1局完走（勝者確定・フリーズ無し）', w12 === 'me' || w12 === 'cpu');
+
   console.log('  AI基盤テスト: pass=' + pass + ' fail=' + fail);
   process.exit(fail ? 1 : 0);
 })();

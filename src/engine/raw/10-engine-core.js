@@ -139,6 +139,7 @@
         case 'selfTurn': return G.active === side;
         case 'koByOpp': return !!card && card._koSource === 'oppEffect'; // 相手の効果でKOされた時のみ
         case 'koByBattle': return !!card && card._koSource === 'battle';
+        case 'koByEffect': return !!card && !!card._koSource && card._koSource !== 'battle'; // 効果KO全般（自他問わず。ST15-003キングデュー）
         case 'don<=6': return donTotal(side) <= 6;
         case 'don>=6': return donTotal(side) >= 6;
         case 'donX1': case 'donX1Self': return !!card && card.attachedDon >= 1;
@@ -229,7 +230,7 @@
       if (c.selfSummonedThisTurn && !(card && card.summonedTurn === G.turnSeq)) return false; // このキャラが登場したターン
       if (c.deckEmpty && P.deck.length !== 0) return false; // 自分のデッキが0枚
       if (c.deckAtMost != null && P.deck.length > c.deckAtMost) return false;
-      if (c.selfCostAtLeast != null) { let ec = (card && card.base ? (card.base.cost || 0) : 0); if (card && card.buffs) ec += card.buffs.reduce((s, b) => s + (b.costAmt || 0), 0); if (card && !isNegated(card) && card.base && card.base.fx && card.base.fx.static) for (const o of card.base.fx.static) if (o.op === 'staticCost') ec += o.amount || 0; if (ec < c.selfCostAtLeast) return false; } // このキャラの盤面実効コスト（常在+一時コスト込み）がN以上
+      if (c.selfCostAtLeast != null) { let ec = (card && card.base ? (card.base.cost || 0) : 0); if (card && card.buffs) ec += card.buffs.reduce((s, b) => s + (b.costAmt || 0), 0); if (card && !isNegated(card) && card.base && card.base.fx && card.base.fx.static) for (const o of card.base.fx.static) if (o.op === 'staticCost') ec += o.per ? Math.floor(G.players[card.owner].trash.length / o.per) * (o.amount || 0) : (o.amount || 0); if (ec < c.selfCostAtLeast) return false; } // このキャラの盤面実効コスト（常在+一時コスト込み）がN以上
       if (c.oppCharKOedThisTurn && !(G._koedThisTurn && G._koedThisTurn[opp(side)] === G.turnSeq)) return false; // このターン相手キャラがKOされた
       if (c.lifeAtMost != null && P.life.length > c.lifeAtMost) return false;
       if (c.lifeAtLeast != null && P.life.length < c.lifeAtLeast) return false; // 自分のライフN枚以上（OP13-004サボ）
@@ -248,6 +249,7 @@
       if (c.oppTurn && G.active === side) return false;
       if (c.oppDonAtLeast != null && donTotal(opp(side)) < c.oppDonAtLeast) return false; // 相手の場のドンN枚以上（OP02-089/090/091トリガー）
       if (c.oppHandAtLeast != null && G.players[opp(side)].hand.length < c.oppHandAtLeast) return false; // 相手の手札N枚以上（OP09-111トリガー）
+      if (c.donReturnedAtLeast != null && (G._lastDonReturned || 0) < c.donReturnedAtLeast) return false; // 直前にドンデッキへ戻された枚数（EB02-035「2枚以上戻された時」）
       return true;
     }
     // countBuff等の「数」を返す。of: selfChars/selfCharsOther/oppChars/trash/selfHand/selfLife/oppLife/don。ofTrait/ofFilterで絞り込み
@@ -260,6 +262,7 @@
         case 'selfLife': return P.life.length;
         case 'oppLife': return O.life.length;
         case 'don': return donTotal(side);
+        case 'restedDon': return G.players[side].don.rested || 0; // レストのドン限定（EB01-014サンジ「レストのドン3枚につき+1000」）
         case 'oppChars': arr = O.chars; break;
         case 'selfCharsOther': arr = P.chars.filter(c => c !== card); break;
         case 'selfChars': default: arr = P.chars; break;
@@ -381,6 +384,8 @@
     }
     // 「相手の効果で場を離れない」(condBuff immune): 効果によるKO/バウンス/デッキ送りを無効化（選択・無効化・パワー減少・レスト等は通す）
     function isLeaveImmune(card) {
+      // 盤面の味方から allyLeaveImmune が供給されている場合（EB04-057=ライフ2以下で黄《科学者》すべて）
+      { const PP = G.players[card.owner]; for (const src of [PP.leader, ...PP.chars]) { if (!src || src === card || isNegated(src)) continue; const ss = src.base.fx && src.base.fx.static; if (!ss) continue; for (const o of ss) { if (o.op === 'allyLeaveImmune' && (!o.cond || checkCond(o.cond, card.owner, src)) && matchFilter(card, o.filter || {})) return true; } } }
       if (!card || isNegated(card)) return false; const st = card.base.fx && card.base.fx.static;
       return !!(st && st.some(o => o.op === 'condBuff' && o.immune && (!o.cond || checkCond(o.cond, card.owner, card))));
     }
@@ -395,6 +400,7 @@
     // 「相手の効果ではKOされない」= 効果KOを無効（effectImmune＝KO限定／「場を離れない」＝KO含む）。選択・パワー減少・レスト等は通す。バトルKOも通す
     function isKoImmune(card) {
       if (!card || isNegated(card)) return false; const st = card.base.fx && card.base.fx.static;
+      if (card._koImmuneSeq != null && card._koImmuneSeq >= G.turnSeq) return true; // 一時KO耐性（ST05-017鎧合体=このターン中KOされない）
       if (st && st.some(o => o.op === 'effectImmune')) return true;
       if (st && st.some(o => o.op === 'condBuff' && o.koImmune && (!o.cond || checkCond(o.cond, card.owner, card)))) return true; // 条件付き「効果でKOされない」（OP06-109傳ジロー）
       return isLeaveImmune(card);
@@ -500,7 +506,7 @@
       // フィールドのキャラの実効コスト：ティーチ・リーダーは【相手のターン中】自分のキャラすべてコスト+1
       let _ec = b.cost || 0;
       { const o = card.owner; if (o && G.players[o]) { const L = G.players[o].leader; if (L && L.base.leader === 'teach' && !isNegated(L) && G.active !== o && G.players[o].chars.includes(card)) _ec += 1; } }
-      if (!isNegated(card) && b.fx && b.fx.static) for (const o of b.fx.static) { if (o.op === 'staticCost' && (!o.cond || checkCond(o.cond, card.owner, card))) _ec += o.amount || 0; } // 常在「このキャラのコスト+N」（盤面の実効コストのみ。プレイコストには影響しない。cond対応）
+      if (!isNegated(card) && b.fx && b.fx.static) for (const o of b.fx.static) { if (o.op === 'staticCost' && (!o.cond || checkCond(o.cond, card.owner, card))) _ec += o.per ? Math.floor(G.players[card.owner].trash.length / o.per) * (o.amount || 0) : (o.amount || 0); } // 常在「このキャラのコスト+N」（盤面の実効コストのみ。プレイコストには影響しない。cond対応）
       { const ow2 = card.owner; if (ow2 && G.players[ow2]) for (const src of [G.players[ow2].leader, ...G.players[ow2].chars]) { if (!src || src === card || isNegated(src)) continue; const ss = src.base.fx && src.base.fx.static; if (!ss) continue; for (const o of ss) { if (o.op === 'allyCost' && (!o.cond || checkCond(o.cond, ow2, src)) && lightMatch(card, o.filter)) _ec += o.amount || 0; } } } // 自分の他キャラ/リーダーのstaticが「自分のフィルタ一致キャラのコスト±（allyCost）」（OP14-086ザラ：B・W全+2／OP10-042ウソップL：ドレスローザ+1）。lightMatchで再帰回避
       { const ow2 = card.owner; const en = ow2 && G.players[opp(ow2)]; if (en) for (const src of [en.leader, ...en.chars]) { if (!src || isNegated(src)) continue; const ss = src.base.fx && src.base.fx.static; if (!ss) continue; for (const o of ss) { if (o.op === 'oppCostMod' && (!o.cond || checkCond(o.cond, opp(ow2), src)) && lightMatch(card, o.filter)) _ec += o.amount || 0; } } } // 相手の盤面のstaticが「相手のキャラすべてのコスト±（oppCostMod）」を課す（OP08-083シープスヘッド：相手全コスト-1）
       if (card.buffs) _ec += card.buffs.reduce((s, bf) => s + (bf.costAmt || 0), 0); // 盤面の一時コスト増減（addCostBuff）
@@ -528,6 +534,8 @@
       if (f.typeNot && b.type === f.typeNot) return false;
       if (f.restedOnly && !card.rested) return false; // レスト状態のキャラのみ
       if (f.hasKw && !hasKw(card, f.hasKw)) return false; // 指定キーワード能力を持つ（例 hasKw:'blocker'＝ST01-016【ブロッカー】持ちKO）
+      if (f.noOnPlay && b.fx && b.fx.onPlay) return false; // 【登場時】効果を持たないキャラ（PRB01-001サンジ）
+      if (f.noCounter && (b.counter || 0) > 0) return false; // カウンターを持たないカード（EB01-001おでんL）
       if (f.activeOnly && card.rested) return false; // アクティブのキャラのみ
       if (f.hasAttachedDon && (card.attachedDon || 0) < 1) return false; // ドン!!が付与されているキャラ
       if (f.minAttachedDon != null && (card.attachedDon || 0) < f.minAttachedDon) return false; // 付与ドンN枚以上

@@ -130,8 +130,9 @@
       }
     }
     // 「自分の場のドン‼がドン‼デッキに戻された時」誘発（OP14-068トレーボル）。ターン1回ガード付き。
-    async function fireDonReturned(side) {
+    async function fireDonReturned(side, n) {
       const P = G.players[side];
+      G._lastDonReturned = n || 1; // cond donReturnedAtLeast（EB02-035）が参照。発火処理後にクリア
       for (const c of [...P.chars.slice(), P.leader]) { // リーダーのonDonReturnedも誘発（OP09-061ルフィL）
         if (c && c.base.fx && c.base.fx.onDonReturned && (c === P.leader || P.chars.includes(c)) && !isNegated(c)) {
           if (c.base.fx.onDonReturned.some(o => o.once === 'turn') && c._donRetTurn === G.turnSeq) continue;
@@ -139,6 +140,7 @@
           await runFx(c.base.fx.onDonReturned, { self: c, side });
         }
       }
+      G._lastDonReturned = 0;
     }
     // リーダーの onReviveFromTrash: トラッシュから filter一致のキャラが登場した時、そのキャラにキーワード付与
     function checkReviveTrigger(side, card) {
@@ -228,7 +230,7 @@
       { const oL = ow.leader; if (card.base.type === 'CHAR' && (card.base.power || 0) >= 6000 && oL.base.leader === 'ace' && !isNegated(oL) && oL.attachedDon >= 1 && ow._aceDrawTurn !== G.turnSeq) { ow._aceDrawTurn = G.turnSeq; if (draw(card.owner, 1)) { floatOn(oL.uid, 'DRAW', 'heal'); flog(card.owner, '【エース】元々パワー6000以上のKOで1ドロー'); } } }
       await checkAllyLeave(card.owner, card, source === 'battle' ? 'battle' : 'oppEffect', true); // 自分のキャラが場を離れた時のリーダー誘発（KOはバトル/相手効果。第4引数isKo=true）
       // 「相手のキャラがKOされた時」誘発（OP01-061カイドウL）。KOされた側の相手＝koSide のキャラ/リーダーが反応。
-      { const koSide = opp(card.owner); const K = G.players[koSide]; for (const c of [K.leader, ...K.chars]) { const cfg = c && c.base.fx && c.base.fx.onOppKO; if (!cfg || isNegated(c)) continue; if (cfg.when === 'selfTurn' && koSide !== G.active) continue; if (cfg.cond && !checkCond(cfg.cond, koSide, c)) continue; if (cfg.once === 'turn') { if (c._oppKOTurn === G.turnSeq) continue; c._oppKOTurn = G.turnSeq; } await runFx(cfg.fx, { self: c, side: koSide }); } }
+      { for (const koSide of ['me', 'cpu']) { const K = G.players[koSide]; if (!K) continue; for (const c of [K.leader, ...K.chars]) { const cfg = c && c.base.fx && c.base.fx.onOppKO; if (!cfg || isNegated(c)) continue; if (koSide === card.owner && !cfg.anySide) continue; if (koSide !== card.owner && cfg.anySide === 'ownOnly') continue; if (cfg.when === 'selfTurn' && koSide !== G.active) continue; if (cfg.cond && !checkCond(cfg.cond, koSide, c)) continue; if (cfg.once === 'turn') { if (c._oppKOTurn === G.turnSeq) continue; c._oppKOTurn = G.turnSeq; } await runFx(cfg.fx, { self: c, side: koSide }); } } } // anySide=自陣営のKOにも反応（ST08-001ルフィL「キャラがKOされた時」）
       render();
     }
     function bounceCard(card) { removeCharTo(card, G.players[card.owner].hand); }
@@ -326,7 +328,8 @@
       if (cantAttackNeg(card)) return false;
       if (card._atkTaxSeq != null && G.players[card.owner].hand.length < (card._atkTaxN || 2)) return false; // 攻撃税(OP08-043): 手札が足りず税を払えないキャラはアタック宣言できない
       if (isRestImmune(card)) return false; // 「レストにできない」＝アタック宣言できない（アタックはレストを伴う）
-      if (!isNegated(card) && card.base.fx && card.base.fx.static && card.base.fx.static.some(o => o.op === 'cantAttack' && (!o.cond || checkCond(o.cond, card.owner, card)))) return false; // 「このリーダー/キャラはアタックできない」常在（cond対応＝OP11-058ルフィ手札5以上。効果無効中は解除＝OP14-056ワダツミの自身無効コンボ）
+      if (!isNegated(card) && card.base.fx && card.base.fx.static && card.base.fx.static.some(o => o.op === 'cantAttack' && (!o.cond || checkCond(o.cond, card.owner, card)))) return false;
+      for (const sd of ['me', 'cpu']) { const PP = G.players[sd]; if (!PP) continue; for (const src of [PP.leader, ...PP.chars]) { if (!src || isNegated(src)) continue; const ss = src.base.fx && src.base.fx.static; if (!ss) continue; for (const o of ss) { if (o.op === 'globalAttackBan' && (!o.cond || checkCond(o.cond, src.owner, src)) && matchFilter(card, o.filter || {})) return false; } } } // 盤面全体へのアタック禁止（P-084バギー） // 「このリーダー/キャラはアタックできない」常在（cond対応＝OP11-058ルフィ手札5以上。効果無効中は解除＝OP14-056ワダツミの自身無効コンボ）
       if (card.owner !== G.active) return false;
       if (!canAttackThisTurn(card.owner)) return false;
       if (card.base.type === 'CHAR' && card.summonedTurn === G.turnSeq && !hasKw(card, 'rush') && !hasKw(card, 'rushChar')) return false;
@@ -449,6 +452,7 @@
       }
       // カウンター
       await counterStep(dSide, attacker, blkTarget);
+      if (G._counterRedirect) { blkTarget = G._counterRedirect; G._counterRedirect = null; G._atkTo = blkTarget.uid; flog(dSide, `アタック対象を「${blkTarget.base.name}」に変更`); render(); } // カウンターイベントの対象変更（EB01-038オカマ道）
       // ダメージ判定（カウンター後の最終パワーをアナウンスに反映）
       const atkP = power(attacker), defP = power(blkTarget);
       if (document.getElementById('atkAnnounce')) showAtkAnnounce(aSide, attacker, blkTarget);
@@ -459,7 +463,15 @@
           const banish = hasKw(attacker, 'banish');
           await dealLeaderDamage(dSide, attacker, dbl, banish);
         } else {
-          if (!(await protectFromEffect(blkTarget, 'battle', attacker))) { animClass(blkTarget.uid, 'shake'); await sleep(180); await koCard(blkTarget, 'battle'); } // includeBattle の身代わりがあればバトルKOを肩代わり（attacker=属性条件バトル耐性のsource）
+          let bkoSubbed = false; // EB02-030: このターン中、バトルKOの代わりに手札1枚を捨てられる
+          { const DP = G.players[blkTarget.owner];
+            if (DP._battleKoSubSeq === G.turnSeq && DP.hand.length) {
+              let pay;
+              if (DP.isCPU) pay = (blkTarget.base.cost || 0) >= 3 && DP.hand.length >= 2;
+              else pay = !!(await confirmUse(blkTarget.owner, '身代わり', `「${blkTarget.base.name}」のバトルKOの代わりに手札1枚を捨てますか？`, '捨てて守る'));
+              if (pay) { let dc; if (DP.isCPU) dc = DP.hand.slice().sort((a, b) => (a.base.counter || 0) - (b.base.counter || 0))[0]; else dc = await chooseFromHand(blkTarget.owner, DP.hand, '捨てるカードを選択'); if (dc) { DP.hand.splice(DP.hand.indexOf(dc), 1); DP.trash.push(reset(dc)); flog(blkTarget.owner, `手札1枚を捨てて「${blkTarget.base.name}」を守った`); bkoSubbed = true; } }
+            } }
+          if (!bkoSubbed && !(await protectFromEffect(blkTarget, 'battle', attacker))) { animClass(blkTarget.uid, 'shake'); await sleep(180); await koCard(blkTarget, 'battle'); } // includeBattle の身代わりがあればバトルKOを肩代わり（attacker=属性条件バトル耐性のsource）
         }
       } else {
         flog(aSide, `アタック失敗`); floatOn(blkTarget.uid, 'GUARD', 'buff');
@@ -480,7 +492,9 @@
         animClass(D.leader.uid, 'dmg'); spawnAt(D.leader.uid, 'slash'); shakeScreen(); floatOn(D.leader.uid, '-1', 'dmg'); sfx('hit'); await sleep(300);
         if (D.life.length === 0) { lose(dSide, 'ライフ0で被弾'); return; }
         const card = D.life.shift();
+        const fu2b = card._faceUp && !isNegated(D.leader) && D.leader.base.fx && D.leader.base.fx.static && D.leader.base.fx.static.some(x => x.op === 'faceUpLifeToDeckBottom'); // ST13-003ルフィL
         if (banish) { D.trash.push(reset(card)); flog(dSide, 'ライフ1枚がバニッシュ（トラッシュ）'); }
+        else if (fu2b) { D.deck.push(reset(card)); flog(dSide, '表向きのライフはデッキの下に置かれた'); await fireLifeLeft(dSide); render(); continue; }
         else if (card.base.fx && card.base.fx.trigger) {
           clearAtkAnnounce();                            // ★トリガー＝このアタックは解決済み。アタック宣言表示は消す
           await triggerReveal(dSide, card);              // ★ライフ公開の派手な演出（カード大写し）
@@ -551,7 +565,7 @@
     // 手札のカードの実効カウンター値（盤面の handCounterBuff static を加味。例: 手札のP8000キャラのカウンター+2000）
     function counterVal(c, side) {
       let v = c.base.counter || 0;
-      for (const src of G.players[side].chars) { if (isNegated(src)) continue; const st = src.base.fx && src.base.fx.static; if (!st) continue; for (const o of st) { if (o.op === 'handCounterBuff' && matchFilter(c, o.filter || {})) v += o.amount || 0; } }
+      for (const src of [G.players[side].leader, ...G.players[side].chars]) { if (!src || isNegated(src)) continue; const st = src.base.fx && src.base.fx.static; if (!st) continue; for (const o of st) { if (o.op === 'handCounterBuff' && matchFilter(c, o.filter || {})) v += o.amount || 0; } }
       return v;
     }
     async function counterStep(dSide, attacker, target) {
@@ -704,6 +718,16 @@
       const lucyVal = (!isNegated(D.leader) && D.leader.base.leader === 'lucy' && isLeader && D.hand.some(c => c.base.type === 'EVENT' || c.base.type === 'STAGE')) ? 1000 : 0;
       const aceVal = (!isNegated(D.leader) && D.leader.base.leader === 'ace' && D.hand.length > 0 && D._aceCounterTurn !== G.turnSeq) ? 2000 : 0;
       if (numSum + evSum + lucyVal + aceVal <= need0) return; // どう足掻いても止められない→手札を温存して素受け
+      // ★E40(heur3): 地平線をこの相手ターン全体へ拡張＝「このアタックを止めても(A)/受けても(B)、残りの攻撃で確実に死ぬ」なら
+      //   1枚も切らず温存（どのみち負ける列に壁を捨てない）。判定は防御楽観(最小付与前提・壁の最適割当)＝保守側。既定エージェント不変。
+      if (typeof isThreatAware === 'function' && isThreatAware(dSide) && typeof assessThreat === 'function') {
+        const hitsThis = dbl ? 2 : 1, costThis = need0 + 1000;
+        const wallAll = numSum + evSum + lucyVal + aceVal;
+        const tA = assessThreat(dSide, 'now', { wallOverride: Math.max(0, wallAll - costThis) }); // 止めた後の残り攻撃
+        const tB = assessThreat(dSide, 'now', { wallOverride: wallAll });                          // 受けた場合の残り攻撃
+        const lethalLine = D.life.length + 1;
+        if (tA.effHits >= lethalLine && tB.effHits + hitsThis >= lethalLine) return;
+      }
       // 数値カウンターを最小枚数で（1枚で耐えられるなら最小の1枚／足りなければ大きい順に最小枚数）
       const ascN = D.hand.filter(c => cval(c) > 0).sort((a, b) => cval(a) - cval(b));
       const singleN = ascN.find(c => cval(c) > need0);

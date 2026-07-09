@@ -719,7 +719,7 @@ humanPick=function(c){return Promise.resolve((c||[])[0]||null);};
       await declareAttack(rj, cpu.leader);
       ok(G.winner==='me', 'OP09-118: 相手ブロッカー発動＆ライフ0で自分の勝利'); }
     // ST22-015: 白ひげLでニューゲートを登場時付き(noEnter撤去)で登場する構成
-    ok(!('noEnter' in C['ST22-015'].fx.main.fx[0].then[0]) && C['ST22-015'].fx.main.fx[0].then.some(o=>o.op==='lifeToHand'), 'ST22-015: ニューゲート登場時付き(noEnter撤去)＋ライフ回収+2000節あり');
+    ok(!('noEnter' in C['ST22-015'].fx.main.fx[0].then[0]) && C['ST22-015'].fx.main.fx[0].then.some(o=>o.op==='lifeCost'), 'ST22-015: ニューゲート登場時付き(noEnter撤去)＋ライフ回収(上下選択)+2000節あり');
     // === 青黄ナミ/ハンコック 公式照合修正（正本＝WebFetch照合済みを根拠） ===
     ok(C['OP15-113'].traits.includes('空島'), 'OP15-113: 空島トレイト付与(公式)');
     // ★旧「架空トリガー除去」は誤り(DBテキストが【トリガー】句を体系的に欠落→実在トリガーを誤削除)。公式(公式サイト/cardrush/tier-one)照合で復活。
@@ -2155,6 +2155,22 @@ humanPick=function(c){return Promise.resolve((c||[])[0]||null);};
     { const me=LP('OP11-041'); me.chars=[]; const carrot=I('OP01-009','me'); me.hand=[carrot];
       await runFx(C['OP02-046'].fx.trigger,{self:I('OP02-046','me'),side:'me'});
       ok(me.chars.includes(carrot), '追補: OP02-046 トリガー持ちバニラも「効果なし」として登場可（noEffect=本文text基準）'); }
+    // ===== EB/ST/P/PRB 意味照合修正の回帰（2026-07-09・161発見の系統修正） =====
+    // scry: look別名（op.n未指定でも0枚spliceにならない）
+    { const me=LP('OP11-041'); me.deck=[I('OP11-041','me'),I('OP11-041','me'),I('OP11-041','me'),I('OP11-041','me')]; const d0=me.deck.length;
+      await runFx([{op:'scry',look:3}],{self:me.leader,side:'me'});
+      ok(me.deck.length===d0, 'scry look別名: 3枚見て戻す（枚数不変・0枚spliceでない）'); }
+    // ko all side any: 両者の場が対象（ST08-005）
+    { const me=LP('OP11-041');
+      C['__z1__']={no:'__z1__',name:'z1',type:'CHAR',color:[],cost:1,power:1000,counter:0,traits:[]};
+      const a1=mkSyn('__z1__',C['__z1__']); const b1=mkSyn('__z1__',C['__z1__']); b1.owner='cpu';
+      me.chars=[a1]; G.players.cpu.chars=[b1];
+      await runFx([{op:'ko',side:'any',filter:{maxCost:1},all:true}],{self:me.leader,side:'me'});
+      ok(!me.chars.includes(a1) && !G.players.cpu.chars.includes(b1), 'ko all any: 両者のコスト1以下を全KO'); delete C['__z1__']; }
+    // 強制discardはdiscardOwn（辞退不可・61箇所一括修正の型）: ST04-005=ドン-1で2ドロー1捨て
+    ok(JSON.stringify(C['ST04-005'].fx.onPlay).includes('"op":"discardOwn"') && !JSON.stringify(C['ST04-005'].fx.onPlay).includes('discardCost'), '強制「捨てる」はdiscardOwn（ST04-005）');
+    // 誤派生キーワードの打ち消し: 効果付与型はfxのgiveKeywordが担い常時フラグは立てない
+    ok(C['EB04-061'].blocker===false && C['P-005'].banish===false && C['P-039'].banish===true, 'キーワード誤派生打ち消し: EB04-061/P-005はfalse・印刷持ちP-039はtrue');
     // ブロッカー持ちKO（ST01-016）: hasKwフィルタ
     { const me=LP('OP11-041');
       C['__bl__']={no:'__bl__',name:'bl',type:'CHAR',color:[],cost:2,power:2000,counter:0,traits:[],blocker:true};

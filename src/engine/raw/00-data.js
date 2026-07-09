@@ -503,7 +503,7 @@
           // 自身のキーワードではないので除外する（例 OP16-048バギー=「インペルダウンの囚人」に【ブロッカー】を付与するだけでバギー自身は非ブロッカー）。
           // 自身のキーワード = 標準トークン(直後が を得る/を与える/を持つ でない) または 「このキャラ…(：。を跨がず)…【KW】を得る」(条件付き自己付与は現状維持)。
           const innateKw = (jp) =>
-            new RegExp('【' + jp + '】(?!を得る|を与える|を持つ)').test(t) ||
+            new RegExp('【' + jp + '】(?!を得る|を与える|を持つ|を発動)').test(t) ||
             new RegExp('このキャラ[^。：]*【' + jp + '】を得る').test(t);
           if (innateKw('ブロッカー')) base.blocker = true;
           if (innateKw('速攻')) base.rush = true;
@@ -526,6 +526,10 @@
           if (fxe.static) for (const o of fxe.static) { if (o.op === 'staticKeyword' && o.cond && base[o.kw]) base[o.kw] = false; } // 条件付きキーワード(staticKeyword cond)はテキスト由来の無条件キーワードを打ち消す（hasKwがcond評価。OP13-009ダダン等）
           const timed = {}; for (const k in fxe) if (k !== 'costMod' && k !== 'condRush' && k !== 'condBlocker') timed[k] = fxe[k];
           if (Object.keys(timed).length) base.fx = timed;
+          // ★テキスト由来キーワードの誤派生打ち消し: 「（コストを払い）このキャラは…【KW】を得る」型はfxのgiveKeywordが担うため、
+          //   innateKwの第2分岐（このキャラ…を得る）が立てた常時フラグを取り消す（EB04-061ブロッカー/P-005バニッシュ）。
+          //   ※印刷キーワード＋同種の効果付与を両方持つ稀なカードは個別対応（現状なし）。
+          if (!wasDef && base.fx) { const fj = JSON.stringify(base.fx); for (const [flag, kwn] of [['blocker', 'blocker'], ['rush', 'rush'], ['banish', 'banish'], ['doubleAttack', 'doubleAttack']]) { if (base[flag] && fj.includes('"op":"giveKeyword"') && fj.includes('"kw":"' + kwn + '"') && fj.includes('"target":"self"')) base[flag] = false; } }
           delete base.dataOnly;
         }
         // 属性(斬/打/射/特/知)を付与。パラレル(_rN)は本体noの属性を共有。
