@@ -5499,7 +5499,8 @@ button.hb-chip:not(.zero):not([disabled]):hover {
   justify-content: center;
   align-items: flex-start;
   gap: 8px;
-  margin: 8px 0 14px;
+  /* 下は選択肢ボタンとの間に十分な余白（ファンで両端カードが最大10px下がる分も考慮） */
+  margin: 10px 0 30px;
   perspective: 900px;
 }
 
