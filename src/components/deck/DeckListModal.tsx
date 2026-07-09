@@ -3,7 +3,7 @@
 // 画像は in-battle Card と同じ2段フォールバック（IMG=weserv → IMG_RAW=直リンク → 名前表示）。パラレル(_rN)は no そのままで解決。
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { IMG, IMG_RAW } from '../../engine/img';
+import { IMG_SM, IMG_RAW } from '../../engine/img';
 import { ZoomView } from './CardZoom';
 import type { Deck } from '../../engine/types';
 
@@ -16,7 +16,7 @@ const COLOR_HEX: Record<string, string> = {
 // カード1枚のサムネイル（画像フォールバック＋採用枚数バッジ）。タップで onZoom（拡大トグル）。
 function Thumb({ no, name, count, cost, onZoom }: { no: string; name: string; count: number; cost?: number; onZoom?: () => void }) {
   const [stage, setStage] = useState(0);
-  const src = stage === 0 ? IMG(no) : stage === 1 ? IMG_RAW(no) : '';
+  const src = stage === 0 ? IMG_SM(no) : stage === 1 ? IMG_RAW(no) : ''; // 62pxサムネ→w160で十分
   return (
     <div
       className={'dl-thumb' + (src ? '' : ' noimg')}

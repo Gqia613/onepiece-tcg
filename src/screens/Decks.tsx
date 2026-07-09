@@ -9,6 +9,7 @@ import { DeckCard } from '../components/deck/DeckCard';
 import { DeckListModal } from '../components/deck/DeckListModal';
 import { importAndSaveDeck, deleteCloudDeck } from '../state/decks';
 import { Icon } from '../components/ui/Icon';
+import { IMG } from '../engine/img';
 
 const TIER_RANK: Record<string, number> = { 'TIER 1': 1, 'TIER 2': 2, 'TIER 3': 3 };
 
@@ -83,6 +84,14 @@ export default function Decks() {
         </button>
         <span className="bd-title">マイデッキ</span>
         <span className="bd-note">保存済みデッキの管理とプリセット</span>
+      </div>
+
+      {/* ヒーロー帯: 自分のデッキのリーダーが手札のように並ぶ（未保存ならプリセットのリーダー） */}
+      <div className="decks-hero" aria-hidden="true">
+        {(custom.length ? custom : presets).slice(0, 6).map((d) => (
+          <img key={d.id} className="dh-card" src={IMG(d.leader)} referrerPolicy="no-referrer" decoding="async" alt=""
+            onError={(e) => { e.currentTarget.style.display = 'none'; }} />
+        ))}
       </div>
 
       <div className="decks-actions">

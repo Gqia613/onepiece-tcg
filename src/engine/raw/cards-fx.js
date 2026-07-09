@@ -2372,7 +2372,7 @@ window.CARD_FX = {
   // OP05-097 聖地マリージョア(STAGE): 自分が手札から登場させるコスト2以上の天竜人のコスト-1
   "OP05-097": {"static":[{"op":"playCostReduce","minCost":2,"amount":1,"filter":{"traitIncludes":"天竜人"}}]},
   // OP05-099 アマゾン: 【相手のアタック時】このキャラをレスト：相手はライフ上1枚トラッシュしてよい、しなければ相手1枚-2000(近似:常に-2000)
-  "OP05-099": {"onOppAttack":[{"op":"restSelfCost","then":[{"op":"powerMod","side":"opp","includeLeader":true,"amount":-2000,"duration":"turn","count":1,"optional":true}]}]},
+  "OP05-099": {"onOppAttack":[{"op":"restSelfCost","then":[{"op":"oppMayTrashLife","elseFx":[{"op":"powerMod","side":"opp","includeLeader":true,"amount":-2000,"duration":"turn","count":1,"optional":true}]}]}]},
   // OP05-100 エネル: 【速攻】 ／【ターン1回】場を離れる代わりに自分のライフ上1枚をトラッシュ(自分に「ルフィ」がいると無効)
   "OP05-100": {"static":[{"op":"leaveProtect","targetSelf":true,"once":"turn","pay":"selfLifeTrash","unless":{"nameIncludes":"モンキー・D・ルフィ"}}]},
   // OP05-101 オーム: 自ライフ2枚以下で+1000 ／【登場時】デッキ上5枚から「ホーリー」1枚を手札に→手札から「ホーリー」1枚を登場
@@ -3975,7 +3975,11 @@ window.CARD_FX = {
   "P-118": {"onPlay":[{"op":"cond","check":{"leaderTraitIncludes":"エッグヘッド"},"then":[{"op":"playCharFromHand","filter":{"maxCost":5,"or":[{"traitIncludes":"エッグヘッド"},{"hasTrigger":true}]},"count":1,"optional":true}]}]},
   "P-120": {"static":[{"op":"handCostCond","amount":-2,"cond":{"oppLifeLeftThisTurn":true}}]},
   "P-121": {"onPlay":[{"op":"millSelf","n":3}],"onKO":[{"op":"oppDiscard","n":2}]},
-  "P-135": {"onPlay":[{"op":"restChar","side":"opp","filter":{"maxCost":5},"count":1,"optional":true}]}
+  "P-135": {"onPlay":[{"op":"restChar","side":"opp","filter":{"maxCost":5},"count":1,"optional":true}]},
+  // P-150 クザン: 【自分のターン中】【登場時】トラッシュからコスト1の【トリガー】持ちキャラ登場（トリガー登場等の相手ターン登場では発動しない）
+  "P-150": {"onPlay":[{"op":"cond","check":{"selfTurn":true},"then":[{"op":"reviveFromTrash","maxCost":1,"needsTrigger":true}]}],"trigger":[{"op":"draw","n":1},{"op":"setAttackBan","side":"opp","maxCost":6,"count":1,"optional":true}]},
+  // P-151 スモーカー: 【登場時】手札1捨てできる→リーダーが《海軍》ならドン1レスト追加＋デッキ上5枚から海軍1枚サーチ
+  "P-151": {"onPlay":[{"op":"discardCost","count":1,"then":[{"op":"cond","check":{"leaderTrait":"海軍"},"then":[{"op":"donFromDeck","n":1},{"op":"search","look":5,"count":1,"filter":{"trait":"海軍"},"optional":true}]}]}]}
 });})();
 /* ===== PRB（プレミアムブースター）新規カード ===== */
 (function () { Object.assign(window.CARD_FX, {

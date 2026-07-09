@@ -27,6 +27,7 @@ function loadParts(htmlPath) {
     cards: fs.readFileSync(path.join(ROOT, 'cards.js'), 'utf8'),      // window.CARD_DB
     cardsfx: fs.readFileSync(path.join(ROOT, 'cards-fx.js'), 'utf8'), // window.CARD_FX
     cardsattr: fs.readFileSync(path.join(ROOT, 'cards-attr.js'), 'utf8'), // window.CARD_ATTR（属性）
+    cardstrigger: fs.readFileSync(path.join(ROOT, 'cards-trigger.js'), 'utf8'), // window.CARD_TRIGGER（【トリガー】全文・表示用）
     app: loadApp(htmlPath),                                           // src/00..60-*.js
   };
 }
@@ -34,9 +35,9 @@ function loadParts(htmlPath) {
 // stubs+cards+cards-fx+本体JS+harness を一時ファイルに連結して Node 実行し、標準出力を返す。
 // harness はテスト本体のJS文字列（各ハーネスの String.raw`...`）。execOpts は execSync へ素通し（timeout 等）。
 function runHarness(name, harness, execOpts = {}) {
-  const { stubs, cards, cardsfx, cardsattr, app } = loadParts();
+  const { stubs, cards, cardsfx, cardsattr, cardstrigger, app } = loadParts();
   const tmp = path.join(os.tmpdir(), `opcg-${name}-${Date.now()}-${Math.random().toString(36).slice(2)}.js`);
-  fs.writeFileSync(tmp, [stubs, cards, cardsfx, cardsattr, app, harness].join('\n'));
+  fs.writeFileSync(tmp, [stubs, cards, cardsfx, cardsattr, cardstrigger, app, harness].join('\n'));
   try { return cp.execSync('node ' + JSON.stringify(tmp), { encoding: 'utf8', ...execOpts }); }
   finally { try { fs.unlinkSync(tmp); } catch (_) { /* noop */ } }
 }
@@ -44,9 +45,9 @@ function runHarness(name, harness, execOpts = {}) {
 // runHarness の非同期版（Promiseを返す＝複数を Promise.all で並列実行できる）。規模拡大: 自己対戦の多コア並列化用。
 // 各呼び出しは別プロセス＝状態汚染なし（CLAUDE.md のドレイン問題は同一プロセス内の話で、別プロセスなら無関係）。
 function runHarnessAsync(name, harness, execOpts = {}) {
-  const { stubs, cards, cardsfx, cardsattr, app } = loadParts();
+  const { stubs, cards, cardsfx, cardsattr, cardstrigger, app } = loadParts();
   const tmp = path.join(os.tmpdir(), `opcg-${name}-${Date.now()}-${Math.random().toString(36).slice(2)}.js`);
-  fs.writeFileSync(tmp, [stubs, cards, cardsfx, cardsattr, app, harness].join('\n'));
+  fs.writeFileSync(tmp, [stubs, cards, cardsfx, cardsattr, cardstrigger, app, harness].join('\n'));
   return new Promise((resolve, reject) => {
     cp.execFile('node', [tmp], { encoding: 'utf8', maxBuffer: 1 << 28, ...execOpts }, (err, stdout, stderr) => {
       try { fs.unlinkSync(tmp); } catch (_) { /* noop */ }

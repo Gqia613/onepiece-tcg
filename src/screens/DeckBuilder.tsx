@@ -77,7 +77,7 @@ export default function DeckBuilder() {
 
   // 検索対象テキスト（名前・番号・特徴・効果）
   const hay = (no: string) => (
-    (C[no].name || '') + ' ' + no + ' ' + (C[no].traits || []).join(' ') + ' ' + (C[no].text || '')
+    (C[no].name || '') + ' ' + no + ' ' + (C[no].traits || []).join(' ') + ' ' + (C[no].text || '') + ' ' + (C[no].triggerText || '')
   ).toLowerCase();
 
   // リーダーが存在する弾一覧（リーダー絞り込み用）
@@ -183,7 +183,7 @@ export default function DeckBuilder() {
     curve[Math.min(c.cost || 0, 8)] += n;
     if (c.counter === 1000) cnt1000 += n;
     else if (c.counter === 2000) cnt2000 += n;
-    if (/【トリガー】/.test(c.text || '')) trigN += n;
+    if (c.triggerText || /【トリガー】/.test(c.text || '')) trigN += n; // トリガーは本文と別データ(triggerText)＝text依存では常に0だった
   }
   const curveMax = Math.max(...curve, 1);
   const statsEl = total > 0 ? (
@@ -227,9 +227,10 @@ export default function DeckBuilder() {
 
       {/* ステータスバー */}
       {leaderNo ? (
-        <div className="bd-statusbar on" id="bd-status">
+        <div className={'bd-statusbar on' + (validate.ok ? ' complete' : '')} id="bd-status">
           <div className="bd-st-top">
-            <div className={'bd-st-count' + (total === 50 ? ' ok' : '')}>{total}<span>/50</span></div>
+            {/* key={total}＝枚数が変わるたび再マウント→ポップアニメが再生（追加の手応え） */}
+            <div key={total} className={'bd-st-count' + (total === 50 ? ' ok' : '')}>{total}<span>/50</span></div>
             <input className="bd-name" placeholder="デッキ名を入力" value={name} onChange={(e) => setName(e.target.value)} />
             <div className={'bd-st-valid' + (validate.ok ? ' ok' : '')}>
               {validate.ok ? <><Icon.check size={13} style={{ marginRight: 4, verticalAlign: '-2px' }} />構築OK</> : (validate.errors && validate.errors.join(' / ')) || '構築中'}

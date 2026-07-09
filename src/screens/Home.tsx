@@ -54,7 +54,8 @@ export default function Home() {
 
       <nav className="home-menu" aria-label="メインメニュー">
         <button className="home-card hc-battle" onClick={() => navigate(inGame ? '/battle/play' : '/battle')}>
-          <span className="hc-kanji" aria-hidden="true">戦</span>
+          <img className="hc-chara" aria-hidden="true" src={IMG('ST01-001')} referrerPolicy="no-referrer" decoding="async" alt=""
+            onError={(e) => { e.currentTarget.style.display = 'none'; }} />
           <span className="hc-icon"><Icon.swords size={28} /></span>
           <span className="hc-en">{inGame ? '対戦に戻る' : 'CPU対戦'}</span>
           <span className="hc-desc">デッキを選んで出航。CPUの強さは 通常／強い／AI の3段階。</span>
@@ -62,7 +63,8 @@ export default function Home() {
         </button>
 
         <button className="home-card hc-decks" onClick={() => navigate('/decks')}>
-          <span className="hc-kanji" aria-hidden="true">集</span>
+          <img className="hc-chara" aria-hidden="true" src={IMG('OP01-025')} referrerPolicy="no-referrer" decoding="async" alt=""
+            onError={(e) => { e.currentTarget.style.display = 'none'; }} />
           <span className="hc-icon"><Icon.layers size={28} /></span>
           <span className="hc-en">デッキ管理</span>
           <span className="hc-desc">保存済みデッキの閲覧・編集・削除、JSONのインポート。</span>
@@ -70,7 +72,8 @@ export default function Home() {
         </button>
 
         <button className="home-card hc-builder" onClick={openBuilder}>
-          <span className="hc-kanji" aria-hidden="true">創</span>
+          <img className="hc-chara" aria-hidden="true" src={IMG('OP01-013')} referrerPolicy="no-referrer" decoding="async" alt=""
+            onError={(e) => { e.currentTarget.style.display = 'none'; }} />
           <span className="hc-icon"><Icon.tool size={28} /></span>
           <span className="hc-en">デッキ作成</span>
           <span className="hc-desc">全カードプールから50枚を構築してクラウドに保存。</span>

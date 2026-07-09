@@ -52,6 +52,11 @@ export function CardDetailModal() {
               <div style={{ fontSize: 12.5, lineHeight: 1.6, color: 'var(--ink)', borderTop: '1px solid var(--line)', paddingTop: 8, whiteSpace: 'pre-wrap' }}>
                 {b.text || '（効果なし）'}
               </div>
+              {b.triggerText ? (
+                <div style={{ marginTop: 7, fontSize: 12, lineHeight: 1.6, color: '#1a1205', background: 'linear-gradient(180deg,var(--gold-soft),var(--gold-dim))', borderRadius: 6, padding: '6px 8px', whiteSpace: 'pre-wrap' }}>
+                  {b.triggerText}
+                </div>
+              ) : null}
             </div>
             <button className="cardmodal-close" onClick={close}>閉じる</button>
           </motion.div>

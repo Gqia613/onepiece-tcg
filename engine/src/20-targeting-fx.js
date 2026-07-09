@@ -843,6 +843,18 @@
           if (!returned) await runFx(op.elseFx, ctx);
           break;
         }
+        // 相手は自身のライフの上から1枚をトラッシュに置いてもよい。置かなかった場合 elseFx を解決（OP05-099アマゾン）
+        case 'oppMayTrashLife': {
+          const O = G.players[o]; let paid = false;
+          if (O.life.length) {
+            let pay;
+            if (O.isCPU) pay = O.life.length >= 3; // CPU: ライフに余裕があれば払ってデバフ回避、切迫時は効果を受ける
+            else pay = (await showPrompt({ title: 'ライフを払う？', text: 'ライフの上から1枚をトラッシュに置きますか？（置かないと相手の効果を受けます）', opts: [{ t: 'トラッシュに置く', v: 'y', primary: true }, { t: '置かない', v: 'n', ghost: true }] })) === 'y';
+            if (pay) { const c = O.life.shift(); O.trash.push(c); flog(o, '自ライフ1枚をトラッシュ'); paid = true; await fireLifeLeft(o); render(); }
+          }
+          if (!paid) await runFx(op.elseFx, ctx);
+          break;
+        }
         // 相手キャラ1枚を選び、そのコスト＝付与ドン枚数 が一致する場合のみKO
         case 'selectKoIfCostEqualsDon': {
           const cands = oppChars(side, opFilter(op)).filter(c => !isKoImmune(c));
@@ -996,7 +1008,7 @@
         case 'reviveFromTrash': {
           let cands = P.trash.filter(c => c.base.type === 'CHAR' && (c.base.cost || 0) <= (op.maxCost != null ? op.maxCost : 99)); // maxCost未指定はコスト上限なし（filterで絞る）
           if (op.filter) cands = cands.filter(c => matchFilter(c, op.filter));
-          if (op.needsTrigger) cands = cands.filter(c => c.base.fx && c.base.fx.trigger); // 【トリガー】を持つキャラ限定
+          if (op.needsTrigger) cands = cands.filter(c => c.base.triggerText || (c.base.fx && c.base.fx.trigger)); // 【トリガー】を持つキャラ限定（正本=triggerText。fx未実装の印刷トリガーも対象）
           const c = await chooseCard(side, cands, 'トラッシュから登場させるキャラ', 'ownBig', true);
           if (c) { P.trash.splice(P.trash.indexOf(c), 1); await summon(side, c, false, 'trash'); if (op.rested && P.chars.includes(c)) c.rested = true; if (op.grantKw && P.chars.includes(c)) c.kwGrant.push({ kw: op.grantKw, dur: durTag(op.grantDuration, 'turn') }); if (op.returnEndTurn && P.chars.includes(c)) (G._pendingTurnEnd = G._pendingTurnEnd || []).push({ side, self: c, fx: [{ op: '_returnCardBottom', uid: c.uid }] }); } // rested=レストで登場（OP10-090フランキー）／returnEndTurn=このターン終了時に持ち主のデッキ下（OP11-092ヘルメッポ）
           break;

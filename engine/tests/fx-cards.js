@@ -2081,6 +2081,35 @@ humanPick=function(c){return Promise.resolve((c||[])[0]||null);};
     { const me=LP('OP11-041'); me.don.active=2; const cpu=G.players.cpu; cpu.chars=[]; const p0=power(cpu.leader);
       await runFx(C['OP12-018'].fx.counter.fx,{self:I('OP12-018','me'),side:'me'});
       ok(power(cpu.leader)===p0-1000, 'OP12-018: all+includeLeaderで相手リーダーにも-1000'); }
+    // ★P-150 クザン: 自ターンの【登場時】のみトラッシュからコスト1の【トリガー】持ちを蘇生（相手ターンの登場=トリガー登場では不発）
+    { const me=LP('OP11-041');
+      C['__t1__']={no:'__t1__',name:'t1',type:'CHAR',color:[],cost:1,power:1000,counter:0,traits:[],fx:{trigger:[{op:'draw',n:1}]}};
+      const t1=mkSyn('__t1__',C['__t1__']); me.trash=[t1]; me.chars=[];
+      await runFx(C['P-150'].fx.onPlay,{self:I('P-150','me'),side:'me'});
+      ok(me.chars.includes(t1), 'P-150: 自ターン登場時にコスト1トリガー持ちを蘇生');
+      G.active='cpu'; me.trash=[t1]; me.chars=[];
+      await runFx(C['P-150'].fx.onPlay,{self:I('P-150','me'),side:'me'});
+      ok(!me.chars.includes(t1), 'P-150: 相手ターンの登場では不発'); delete C['__t1__']; }
+    // ★P-151 スモーカー: 手札1捨て→海軍リーダーならドン1レスト追加＋デッキ上5枚から海軍サーチ
+    { G.players={me:mkP('OP02-093',false),cpu:mkP('OP11-041',true)}; G.active='me'; G.turnSeq=5; G.winner=null; const me=G.players.me;
+      C['__nv__']={no:'__nv__',name:'nv',type:'CHAR',color:[],cost:2,power:2000,counter:1000,traits:['海軍']};
+      me.hand=[I('OP11-041','me')]; me.deck=[mkSyn('__nv__',C['__nv__']),I('OP11-041','me'),I('OP11-041','me'),I('OP11-041','me'),I('OP11-041','me')]; me.don.rested=0;
+      await runFx(C['P-151'].fx.onPlay,{self:I('P-151','me'),side:'me'});
+      ok(me.don.rested===1, 'P-151: 海軍リーダーでドン1レスト追加');
+      ok(me.hand.some(c=>(c.base.traits||[]).includes('海軍')), 'P-151: 海軍カードをサーチして手札へ'); delete C['__nv__']; }
+    // ★OP05-099 アマゾン: 相手はライフ1枚トラッシュで回避できる／しなければ-2000（oppMayTrashLife新設）
+    { const me=LP('OP11-041'); const cpu=G.players.cpu; cpu.life=[I('OP11-041','cpu'),I('OP11-041','cpu'),I('OP11-041','cpu')]; const p0=power(cpu.leader);
+      await runFx(C['OP05-099'].fx.onOppAttack[0].then,{self:I('OP05-099','me'),side:'me'});
+      ok(cpu.life.length===2 && power(cpu.leader)===p0, 'OP05-099: CPU相手はライフ3枚なら1枚払って回避');
+      cpu.life=[I('OP11-041','cpu')]; const p1=power(cpu.leader); cpu.chars=[];
+      await runFx(C['OP05-099'].fx.onOppAttack[0].then,{self:I('OP05-099','me'),side:'me'});
+      ok(cpu.life.length===1 && power(cpu.leader)===p1-2000, 'OP05-099: ライフ1枚なら払わず-2000を受ける'); }
+    // ★OP01-119 雷鳴八卦: 公式はトリガーを本文textに埋め込む型（trigger div空）＝fx.triggerは実在効果として維持
+    ok(!!C['OP01-119'].fx.trigger && C['OP01-119'].fx.trigger[0].op==='donFromDeck' && C['OP01-119'].fx.trigger[0].mode==='active', 'OP01-119: text埋め込み型トリガー(ドン1アクティブ)を維持');
+    // ★triggerText: cards-trigger.js由来の【トリガー】全文が本体+パラレルに付与される（表示とhasTrigger判定の正本）
+    ok(C['OP01-009'].triggerText==='【トリガー】このカードを登場させる。' && !!(C['OP02-117_r1']&&C['OP02-117_r1'].triggerText), 'triggerText: 本体+パラレル(_rN)に付与');
+    { const anyUnimpl=Object.values(C).find(b=>b&&b.triggerText&&!(b.fx&&b.fx.trigger));
+      ok(!anyUnimpl || matchFilter({no:anyUnimpl.no,base:anyUnimpl,rested:false,attachedDon:0,buffs:[],kwGrant:[]},{hasTrigger:true}), 'hasTrigger: fx未実装でも印刷トリガー(triggerText)で判定される'); }
     // 機能: discardCost→playSelf（EB03-054 手札1捨てて自身を登場）
     { const me=LP('OP11-041'); me.hand=[I('OP11-041','me')]; me.chars=[]; const self=I('EB03-054','me');
       await runFx(C['EB03-054'].fx.trigger,{self,side:'me'});

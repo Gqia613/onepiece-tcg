@@ -4194,7 +4194,7 @@ button.hb-chip:not(.zero):not([disabled]):hover {
   overflow-y: auto;
   max-width: 1180px;
   margin: 0 auto;
-  padding: 14px 12px 44px
+  padding: 12px 12px 44px
 }
 
 .bd-head {
@@ -4534,9 +4534,9 @@ button.hb-chip:not(.zero):not([disabled]):hover {
 
 .bd-mn,
 .bd-pl {
-  width: 26px;
-  height: 26px;
-  border-radius: 7px;
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
   border: 1px solid var(--surface-edge);
   background: rgba(255, 255, 255, .05);
   color: var(--self-glow);
@@ -4803,8 +4803,8 @@ button.hb-chip:not(.zero):not([disabled]):hover {
 }
 
 .bd-rb button {
-  width: 22px;
-  height: 22px;
+  width: 28px;
+  height: 28px;
   border-radius: 5px;
   border: 1px solid var(--surface-edge);
   background: rgba(255, 255, 255, .05);
@@ -4901,8 +4901,8 @@ button.hb-chip:not(.zero):not([disabled]):hover {
   z-index: 2;
   top: 3px;
   right: 3px;
-  width: 22px;
-  height: 22px;
+  width: 30px;
+  height: 30px;
   border-radius: 6px;
   border: 1px solid var(--surface-edge);
   background: rgba(0, 0, 0, .65);
@@ -5601,7 +5601,7 @@ button.hb-chip:not(.zero):not([disabled]):hover {
   height: 100%;
   overflow-y: auto;
   overflow-x: hidden;
-  padding: 8px 14px 0;
+  padding: 12px 14px 0;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -5612,6 +5612,8 @@ button.hb-chip:not(.zero):not([disabled]):hover {
   width: 100%;
   max-width: 1000px;
   flex: 0 0 auto;
+  /* 縦リズム統一: 見出し下は container gap(6px) が担う */
+  margin-bottom: 0;
 }
 
 /* --- VS ステージ --- */
@@ -6218,3 +6220,85 @@ button.hb-chip:not(.zero):not([disabled]):hover {
     min-height: 46px;
   }
 }
+
+
+/* ===== 17. ビルダーの「作る楽しさ」演出 ===== */
+/* タイル押下の手応え */
+.bd-tile:active {
+  transform: scale(.94);
+}
+
+/* 枚数カウンタ: 増減のたびにポップ（DeckBuilder が key={total} で再マウント） */
+.bd-st-count {
+  animation: bdCountPop .22s ease;
+}
+
+@keyframes bdCountPop {
+  0% {
+    transform: scale(1.28);
+  }
+
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* 50枚ちょうど＝緑の発光。構築OK時はステータスバー全体が金縁で祝福 */
+.bd-st-count.ok {
+  text-shadow: 0 0 16px rgba(53, 227, 154, .7);
+}
+
+.bd-statusbar.complete {
+  border-color: rgba(53, 227, 154, .55);
+  box-shadow: 0 0 26px -8px rgba(53, 227, 154, .55), var(--elev-2);
+  animation: bdComplete 1s ease 1;
+}
+
+@keyframes bdComplete {
+  0% {
+    box-shadow: 0 0 0 0 rgba(53, 227, 154, .0);
+  }
+
+  35% {
+    box-shadow: 0 0 44px -2px rgba(53, 227, 154, .85);
+  }
+
+  100% {
+    box-shadow: 0 0 26px -8px rgba(53, 227, 154, .55);
+  }
+}
+
+/* ===== 18. マイデッキのヒーロー帯（自分のリーダーが並ぶ） ===== */
+.select-wrap.decks-wrap {
+  padding-top: 12px;
+}
+
+.decks-hero {
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  height: 86px;
+  margin: -2px 0 4px;
+  pointer-events: none;
+  -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 12%, #000 88%, transparent 100%);
+  mask-image: linear-gradient(90deg, transparent 0, #000 12%, #000 88%, transparent 100%);
+}
+
+.dh-card {
+  width: 58px;
+  aspect-ratio: 5 / 7;
+  object-fit: cover;
+  border-radius: var(--cardr-sm);
+  border: 1px solid rgba(255, 255, 255, .18);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, .65);
+  margin: 0 -8px;
+  opacity: .8;
+  animation: hfcFloat 6.5s ease-in-out infinite;
+}
+
+.dh-card:nth-child(1) { transform: rotate(-14deg) translateY(14px); animation-delay: 0s }
+.dh-card:nth-child(2) { transform: rotate(-8deg) translateY(6px); animation-delay: .9s }
+.dh-card:nth-child(3) { transform: rotate(-2deg); z-index: 2; animation-delay: 1.8s }
+.dh-card:nth-child(4) { transform: rotate(4deg) translateY(2px); z-index: 1; animation-delay: 2.7s }
+.dh-card:nth-child(5) { transform: rotate(10deg) translateY(9px); animation-delay: 3.6s }
+.dh-card:nth-child(6) { transform: rotate(16deg) translateY(18px); animation-delay: 4.5s }

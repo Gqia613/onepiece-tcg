@@ -9,6 +9,7 @@ import type { UIAdapter } from './ui-adapter';
 import cards from './raw/cards.js?raw';
 import cardsfx from './raw/cards-fx.js?raw';
 import cardsattr from './raw/cards-attr.js?raw';
+import cardstrigger from './raw/cards-trigger.js?raw';
 import d00 from './raw/00-data.js?raw';
 import e10 from './raw/10-engine-core.js?raw';
 import t20 from './raw/20-targeting-fx.js?raw';
@@ -21,7 +22,7 @@ import aip from './raw/ai-policy.js?raw';
 import ais from './raw/ai-strategy.js?raw';
 import ai70 from './raw/70-ai.js?raw';
 
-const PARTS = [cards, cardsfx, cardsattr, d00, e10, t20, b30, u40, i50, s60, aiw, aip, ais, ai70];
+const PARTS = [cards, cardsfx, cardsattr, cardstrigger, d00, e10, t20, b30, u40, i50, s60, aiw, aip, ais, ai70];
 
 // footer で注入アダプタへ差し替えるUIフック束縛（全て function 宣言＝再代入可能）。
 const HOOKS = [

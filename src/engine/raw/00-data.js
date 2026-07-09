@@ -487,6 +487,7 @@
       if (!DB) return;
       const FX = (typeof window !== 'undefined' && window.CARD_FX) || (typeof CARD_FX !== 'undefined' ? CARD_FX : null);
       const ATTR = (typeof window !== 'undefined' && window.CARD_ATTR) || (typeof CARD_ATTR !== 'undefined' ? CARD_ATTR : null); // 属性(斬/打/射/特/知)。cards-attr.js
+      const TRIG = (typeof window !== 'undefined' && window.CARD_TRIGGER) || (typeof CARD_TRIGGER !== 'undefined' ? CARD_TRIGGER : null); // 【トリガー】全文。cards-trigger.js（公式は本文と別divのためtextに含まれない）
       for (const cd of DB) {
         if (!cd || !cd.no) continue;
         let base = C[cd.no];          // def() 済みカードはメタ情報を維持して再利用
@@ -510,6 +511,8 @@
           if (innateKw('ダブルアタック')) base.doubleAttack = true;
           if (innateKw('バニッシュ')) base.banish = true;
           if (cd.type === 'LEADER') { base.leader = '_' + cd.no; base.life = cd.life != null ? cd.life : 5; base.donDeck = 10; }
+        } else if (cd.text) {
+          base.text = cd.text; // ★def済みカードも表示テキストは公式スクレイプ(cards.js)を正とする（手書きdef要約が公式全文を上書きして誤表示になっていた＝audit text_mismatch 84件の解消）
         }
         // 効果fxは CARD_FX を正とし、def済み/データのみ問わず一律に付与（効果定義を cards-fx.js に一元化）。
         // ★パラレル(_rN=別イラストの同一カード)は本体noのfxを共有する（CARD_FXは本体noのみキー。例: OP09-099_r1ハチノスが効果を失っていた）
@@ -527,6 +530,8 @@
         }
         // 属性(斬/打/射/特/知)を付与。パラレル(_rN)は本体noの属性を共有。
         if (ATTR) { const a = ATTR[cd.no] || ATTR[cd.no.replace(/_r\d+$/, '')]; if (a) base.attribute = a; }
+        // 【トリガー】全文を付与（表示用）。パラレル(_rN)は本体noを共有。
+        if (TRIG) { const tg = TRIG[cd.no] || TRIG[cd.no.replace(/_r\d+$/, '')]; if (tg) base.triggerText = tg; }
         // 別名（「カード名を「X」としても扱う」。OP04-099おリン=シャーロット・リンリン）
         { const m = /カード名を「(.+?)」としても扱う/.exec(base.text || ''); if (m) base.aliasName = m[1]; }
         if (!wasDef) C[cd.no] = base;

@@ -54,6 +54,11 @@ export function CardPreview() {
         ) : (
           <div style={{ fontSize: 12, color: 'var(--muted)' }}>（効果なし / バニラ）</div>
         )}
+        {b.triggerText ? (
+          <div style={{ marginTop: 5, fontSize: 11.5, lineHeight: 1.55, color: '#1a1205', background: 'linear-gradient(180deg,var(--gold-soft),var(--gold-dim))', borderRadius: 6, padding: '5px 7px', whiteSpace: 'pre-wrap' }}>
+            {b.triggerText}
+          </div>
+        ) : null}
       </div>
     </div>
   );

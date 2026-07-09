@@ -334,6 +334,7 @@
           (b.counter ? '<div style="font-size:19px;color:#fff">カウンター <span style="color:#ffd27a">' + b.counter + '</span></div>' : '') +
           '</div>' : '') +
         '<div style="font-size:12px;line-height:1.65;color:var(--ink);border-top:1px solid var(--line);padding-top:8px">' + escapeHTML(b.text || '（効果なし）') + '</div>' +
+        (b.triggerText ? '<div style="margin-top:7px;font-size:12px;line-height:1.6;color:#1a1205;background:linear-gradient(180deg,var(--gold-soft),var(--gold-dim));border-radius:6px;padding:6px 8px">' + escapeHTML(b.triggerText) + '</div>' : '') +
         (b.simp ? '<div style="margin-top:7px;font-size:10.5px;color:#ffd27a">※このカードの効果は簡易実装です</div>' : '') +
         '</div>';
     }

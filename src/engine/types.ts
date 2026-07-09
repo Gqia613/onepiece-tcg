@@ -21,6 +21,7 @@ export interface CardDef {
   attribute?: string; // 斬/打/射/特/知
   fx?: any;
   text?: string;
+  triggerText?: string; // 【トリガー】全文（cards-trigger.js 由来・表示用）
 }
 
 export interface Card {

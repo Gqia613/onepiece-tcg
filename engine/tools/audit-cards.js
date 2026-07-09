@@ -78,9 +78,11 @@ for (const o of official) {
   if (o.attribute && (c.attribute || null) !== o.attribute) push(o, 'field_mismatch', 'attribute', o.attribute, c.attribute || null);
   // テキスト（本文のみ。トリガーは別建て）
   if (normText(c.text) !== normText(o.text)) push(o, 'text_mismatch', 'text', o.text, c.text || '');
-  // トリガー
-  if (o.trigger && !hasTriggerFx(o.no)) push(o, 'trigger_unimplemented', 'trigger', o.trigger, null);
-  if (!o.trigger && hasTriggerFx(o.no)) push(o, 'trigger_extra', 'trigger', '', 'fx.triggerあり');
+  // トリガー（公式サイトはまれにトリガーを本文textに埋め込む＝OP01-119雷鳴八卦。「【トリガー】を持つ/が発動/を発動」は参照表現なので除外）
+  const embedded = ((o.text || '').match(/【トリガー】(?!を持|が発動|を発動).*$/) || [])[0] || '';
+  const offTrigger = o.trigger || embedded;
+  if (offTrigger && !hasTriggerFx(o.no)) push(o, 'trigger_unimplemented', 'trigger', offTrigger, null);
+  if (!offTrigger && hasTriggerFx(o.no)) push(o, 'trigger_extra', 'trigger', '', 'fx.triggerあり');
   // fx有無（効果テキストがあるのに実装なし。ハードコード済みリーダーは除外）
   const baseNo = o.no.replace(/_r\d+$/, '');
   if (o.text && !keywordOnly(o.text) && !hasFx(o.no) && !HARDCODED[baseNo]) push(o, 'fx_missing', 'fx', o.text, null);

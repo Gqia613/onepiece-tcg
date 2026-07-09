@@ -10,7 +10,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useEngineStore } from '../state/engineStore';
 import { unlockAudio } from '../audio';
 import type { Deck } from '../engine/types';
-import { IMG } from '../engine/img';
+import { IMG, IMG_BIG } from '../engine/img';
 import { DeckListModal } from '../components/deck/DeckListModal';
 import { Icon } from '../components/ui/Icon';
 import { deleteCloudDeck } from '../state/decks';
@@ -307,7 +307,8 @@ export default function DeckSelect() {
               onClick={() => centerTo(i)}
             >
               {d.tier ? <div className="dsc-tier">{d.tier}</div> : null}
-              <div className="art" style={{ backgroundImage: `url('${IMG(d.leader)}')` }}>
+              {/* 中央カードは最大~214px表示のためw640（w320だと甘くなる） */}
+              <div className="art" style={{ backgroundImage: `url('${IMG_BIG(d.leader)}')` }}>
                 <div className="scrim" />
                 <div className="art-nm">{d.name}</div>
               </div>

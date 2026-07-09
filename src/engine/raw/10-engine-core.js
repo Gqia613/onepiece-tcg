@@ -518,7 +518,7 @@
       if (f.power != null && (b.power || 0) !== f.power) return false; // 厳密パワー一致
       if (f.maxPower != null && (b.power || 0) > f.maxPower) return false;
       if (f.minPower != null && (b.power || 0) < f.minPower) return false;
-      if (f.hasTrigger && !(b.fx && b.fx.trigger)) return false; // 【トリガー】を持つカード（OP09-062ロビンLの捨てコスト）
+      if (f.hasTrigger && !(b.triggerText || (b.fx && b.fx.trigger) || /【トリガー】/.test(b.text || ''))) return false; // 【トリガー】を持つカード（OP09-062ロビンLの捨てコスト）。正本=cards-trigger.js由来のtriggerText（fx未実装の印刷トリガーも判定）
       if (f.noEffect && b.fx && Object.keys(b.fx).length) return false; // 元々効果のないキャラ（fx無し。OP03-091ヘルメッポ）
       if (f.nameIncludes && !normName(b.name).includes(normName(f.nameIncludes)) && !(b.aliasName && normName(b.aliasName).includes(normName(f.nameIncludes)))) return false; // 別名対応（OP04-099おリン=シャーロット・リンリン）
       if (f.traitNot && (b.traits || []).some(t => t.includes(f.traitNot))) return false; // 指定特徴(部分一致)を持つものを除外
@@ -529,7 +529,7 @@
       if (f.hasAttachedDon && (card.attachedDon || 0) < 1) return false; // ドン!!が付与されているキャラ
       if (f.minAttachedDon != null && (card.attachedDon || 0) < f.minAttachedDon) return false; // 付与ドンN枚以上
       if (f.not && matchFilter(card, f.not)) return false; // 下位フィルタに一致するものを除外
-      if (f.hasTrigger && !((b.fx && b.fx.trigger) || /【トリガー】/.test(b.text || ''))) return false; // 【トリガー】を持つ
+      // （hasTrigger は上で判定済み。旧: ここに緩い重複判定があったが先行する厳格判定に隠れて死んでいた）
       if (f.or && !f.or.some(sub => matchFilter(card, sub))) return false; // いずれかの下位フィルタに一致
       if (f.and && !f.and.every(sub => matchFilter(card, sub))) return false; // すべての下位フィルタに一致（OP12-098等）
       return true;
