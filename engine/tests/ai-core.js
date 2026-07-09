@@ -336,6 +336,61 @@ function chk(name, cond) { if (cond) pass++; else { fail++; console.log('  ✗ '
   O14.chars = [];
   chk('E42b: draw系トリガーは常に発動', triggerWorthUsing('me', trigDraw14) === true);
 
+  // 15) ★E43: 公開カード固定の決定化（_pubHand / G._beliefOn / bpuct）
+  chk('エージェント登録: bpuct', !!AGENTS.bpuct);
+  G.players = {}; G.winner = null; seedRng(81); startGame('teach', 'teach');
+  for (let k = 0; k < 300 && !G.myActable && !G.winner; k++) await new Promise(r => setImmediate(r));
+  const P15 = G.players.me, O15 = G.players.cpu;
+  // 相手(cpu)の手札の1枚に公開フラグを立て、me視点の決定化で常に手札スライスに入るか
+  const pub15 = O15.hand[0]; pub15._pubHand = G.turnSeq;
+  let inHand = 0, trials = 20;
+  G._beliefOn = 1;
+  for (let i = 0; i < trials; i++) { const s = determinize(cloneGameState(G), 'me'); if (s.players.cpu.hand.some(c => c.uid === pub15.uid)) inHand++; }
+  chk('E43: beliefOn=公開カードは常に手札スライス', inHand === trials);
+  G._beliefOn = 0;
+  let inHandOff = 0;
+  for (let i = 0; i < trials; i++) { const s = determinize(cloneGameState(G), 'me'); if (s.players.cpu.hand.some(c => c.uid === pub15.uid)) inHandOff++; }
+  chk('E43: 既定(off)=一様再配分（常時手札にはならない）', inHandOff < trials);
+  // 手札枚数/山枚数の保存（多重集合の整合）
+  G._beliefOn = 1;
+  const s15 = determinize(cloneGameState(G), 'me');
+  chk('E43: 決定化後も手札/山の枚数が保存される', s15.players.cpu.hand.length === O15.hand.length && s15.players.cpu.deck.length === O15.deck.length);
+  G._beliefOn = 0;
+  // 公開カードが手札を離れたら(トラッシュへ)強制配置されない
+  const left15 = O15.hand.shift(); O15.trash.push(left15);
+  G._beliefOn = 1;
+  const s15b = determinize(cloneGameState(G), 'me');
+  chk('E43: 手札を離れた公開カードは配置対象外', !s15b.players.cpu.hand.some(c => c.uid === left15.uid));
+  G._beliefOn = 0;
+
+  // 16) ★E46: ステージ設置（STAGE_PLAY採用=teachは既定で置く／未掲載リーダーはheur2+h2On('stage')のみ）
+  G.players = {}; G.winner = null; seedRng(91); startGame('lucy', 'lucy');
+  for (let k = 0; k < 300 && !G.myActable && !G.winner; k++) await new Promise(r => setImmediate(r));
+  const P16 = G.players.me;
+  P16.isCPU = true; G.active = 'me'; P16.turnsTaken = 1; G._h2Parts = null;   // turnsTaken=1=アタック不可（lucyリーダーの自アタック時STAGE捨てを排除）
+  const st16 = inst('OP09-099', 'me');   // ハチノス(STAGE cost1)
+  P16.hand.length = 0; P16.hand.push(st16);                   // 手札をSTAGEのみに固定（キャラ展開のドン消費を排除）
+  P16.stage = null; P16.don = { active: 3, rested: 0 };
+  P16.agent = 'heuristic'; G._sim = true; G._noChain = true;  // sim扱いでsleep短縮・連鎖抑止
+  await heuristicTurn('me');
+  chk('E46: 未掲載リーダー(lucy)の既定はSTAGEを出さない', P16.stage === null && P16.hand.includes(st16));
+  P16.agent = 'heur2'; P16.don = { active: 3, rested: 0 };
+  await heuristicTurn('me');
+  chk('E46: heur2(opt-in)はSTAGEを設置する', !!P16.stage && P16.stage.uid === st16.uid && !P16.hand.includes(st16));
+  G._sim = false; G._noChain = false;
+  // teachは既定(heuristic)で設置（STAGE_PLAY採用）
+  G.players = {}; G.winner = null; seedRng(92); startGame('teach', 'teach');
+  for (let k = 0; k < 300 && !G.myActable && !G.winner; k++) await new Promise(r => setImmediate(r));
+  const P16b = G.players.me;
+  P16b.isCPU = true; G.active = 'me'; P16b.turnsTaken = 2; G._h2Parts = null;
+  const st16b = inst('OP09-099', 'me');
+  P16b.hand.length = 0; P16b.hand.push(st16b);
+  P16b.stage = null; P16b.don = { active: 3, rested: 0 };
+  P16b.agent = 'heuristic'; G._sim = true; G._noChain = true;
+  await heuristicTurn('me');
+  chk('E46: teachの既定(heuristic)はSTAGEを設置する(STAGE_PLAY採用)', !!P16b.stage && P16b.stage.uid === st16b.uid);
+  G._sim = false; G._noChain = false;
+
   console.log('  AI基盤テスト: pass=' + pass + ' fail=' + fail);
   process.exit(fail ? 1 : 0);
 })();

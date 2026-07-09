@@ -227,6 +227,7 @@
               });
             }
             if (!pick) break;
+            if (!G._sim) pick._pubHand = G.turnSeq;   // ★E43: サーチは公開で手札に加わる＝相手AIの決定化が既知情報として使える（bpuct用・実対局のみ）
             picked.push(pick); P.hand.push(pick); flog(side, `「${pick.base.name}」を手札に`);
           }
           // 取らなかったカードはデッキ下（rest:'trash'ならトラッシュ）へ
@@ -563,7 +564,7 @@
         case 'restOppDon': { const O4 = G.players[o]; const n = Math.min(op.n || 1, O4.don.active); O4.don.active -= n; O4.don.rested += n; if (n) flog(side, `相手のドン${n}枚をレストにした`); render(); break; }
         case 'oppDonToDeck': { const O7 = G.players[o]; let n = op.n || 1; while (n > 0) { if (O7.don.active > 0) O7.don.active--; else if (O7.don.rested > 0) O7.don.rested--; else break; n--; } flog(side, `相手のドンをドンデッキに戻した`); render(); break; } // 相手のドンをドンデッキへ（OP02-085マゼラン）
         case 'peekOppHand': { const O8 = G.players[o]; const n = Math.min(op.n || 1, O8.hand.length); if (n) flog(side, `相手の手札を確認: ${O8.hand.slice(0, n).map(c => c.base.name).join('、')}`); if (op.then && n) await runFx(op.then, ctx); break; } // 相手の手札を見る（OP01-063アーロン/105バオファン）
-        case 'searchDeck': { const cands = P.deck.filter(c => matchFilter(c, op.filter || {})); const t = P.isCPU ? (cands.length && typeof planPickSearch === 'function' ? planPickSearch(side, cands, () => cands[0]) : cands[0]) : await chooseCard(side, cands, 'デッキから手札に加えるカード', 'ownBig', op.optional !== false); if (P.isCPU && G._searchDiag) try { G._searchDiag(side, cands, t, op); } catch (e) { } if (t) { P.deck.splice(P.deck.indexOf(t), 1); P.hand.push(t); flog(side, `デッキから「${t.base.name}」を手札に`); } shuffle(P.deck); render(); break; } // デッキ全体から1枚サーチ＋シャッフル（OP01-098オロチ）。E38: _searchDiag=診断フック／E39: usePlan時のみプラン優先（非活性はcands[0]＝バイト等価）
+        case 'searchDeck': { const cands = P.deck.filter(c => matchFilter(c, op.filter || {})); const t = P.isCPU ? (cands.length && typeof planPickSearch === 'function' ? planPickSearch(side, cands, () => cands[0]) : cands[0]) : await chooseCard(side, cands, 'デッキから手札に加えるカード', 'ownBig', op.optional !== false); if (P.isCPU && G._searchDiag) try { G._searchDiag(side, cands, t, op); } catch (e) { } if (t) { if (!G._sim) t._pubHand = G.turnSeq; P.deck.splice(P.deck.indexOf(t), 1); P.hand.push(t); flog(side, `デッキから「${t.base.name}」を手札に`); } shuffle(P.deck); render(); break; } // デッキ全体から1枚サーチ＋シャッフル（OP01-098オロチ）。E38: _searchDiag=診断フック／E39: usePlan時のみプラン優先（非活性はcands[0]＝バイト等価）／E43: _pubHand=公開フラグ
         // 自分の場のドンを「相手の場のドン枚数」と同じになるまでドンデッキへ戻す（OP08-074ブラックマリア・ターン終了時）
         case 'donReturnToMatchOpp': { const want = donTotal(o); let excess = Math.max(0, donTotal(side) - want); while (excess > 0) { if (P.don.rested > 0) P.don.rested--; else if (P.don.active > 0) P.don.active--; else break; excess--; } if (donTotal(side) <= want) flog(side, '自分のドンを相手と同じ枚数に戻した'); render(); break; }
         // 自分のライフをすべて裏向きにする（OP08-075キャンディメイデン）
@@ -634,10 +635,21 @@
         case 'revealCost': {
           const cnt = op.count || 1;
           const matches = P.hand.filter(c => matchFilter(c, op.filter));
-          if (matches.length < cnt) break; // 公開できるカードが足りない→不発
-          if (!(await confirmUse(side, '手札公開', `手札${cnt}枚を公開して効果を使いますか？`, '公開して使う'))) break;
-          flog(side, `手札${cnt}枚を公開: ${matches.slice(0, cnt).map(c => c.base.name).join('、')}`);
-          ctx._revealed = matches.slice(0, cnt); // 後続op（revealedToDeckTop等）が公開カードを参照
+          if (matches.length < cnt) { ctx._declined = true; break; } // 公開できるカードが足りない→不発
+          if (!(await confirmUse(side, '手札公開', `手札${cnt}枚を公開して効果を使いますか？`, '公開して使う'))) { ctx._declined = true; break; }
+          // ★公開するカードはプレイヤーが選ぶ（旧: 先頭から自動選択＝ST22-001エース&ニューゲートで公開→デッキ上に戻すカードを選べなかった）
+          let chosen;
+          if (P.isCPU) chosen = matches.slice(0, cnt);
+          else {
+            chosen = [];
+            for (let i = 0; i < cnt; i++) {
+              const c = await chooseFromHand(side, matches.filter(x => !chosen.includes(x)), cnt > 1 ? `公開するカードを選択（${i + 1}/${cnt}）` : '公開するカードを選択', null, true);
+              if (!c) break; chosen.push(c);
+            }
+            if (chosen.length < cnt) { ctx._declined = true; break; } // 途中キャンセル=公開せず不発
+          }
+          flog(side, `手札${cnt}枚を公開: ${chosen.map(c => c.base.name).join('、')}`);
+          ctx._revealed = chosen; // 後続op（revealedToDeckTop等）が公開カードを参照
           await runFx(op.then, ctx);
           break;
         }

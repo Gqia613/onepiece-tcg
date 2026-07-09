@@ -118,7 +118,19 @@
       const s = cloneGameState(state);
       const O = s.players[opp(side)];
       const pool = [...O.hand, ...O.deck]; shuffle(pool);   // 相手の未知カード=手札+山。多重集合を保ったまま再配分
-      O.hand = pool.slice(0, O.hand.length); O.deck = pool.slice(O.hand.length);
+      if (G._beliefOn) {
+        // ★E43(opt-in): 公開されて手札に入ったカード(_pubHand=サーチ公開等)が「今も実手札にある」なら手札スライスへ強制配置。
+        //   手札からの退出はほぼ全て公開アクション＝membershipは公開情報から演繹可能（フェア情報の回収・情報増なし）。
+        //   既定(G._beliefOn無し)は従来と完全一致。
+        const handN = O.hand.length;
+        const pub = new Set(O.hand.filter(c => c._pubHand).map(c => c.uid));
+        const forced = pool.filter(c => pub.has(c.uid));
+        const rest = pool.filter(c => !pub.has(c.uid));
+        O.hand = forced.concat(rest.slice(0, handN - forced.length));
+        O.deck = rest.slice(handN - forced.length);
+      } else {
+        O.hand = pool.slice(0, O.hand.length); O.deck = pool.slice(O.hand.length);
+      }
       shuffle(s.players[side].deck);                        // 自分の未来ドローも未知→山をシャッフル（自己カンニング防止）
       return s;
     }
@@ -668,6 +680,8 @@
     AGENTS.puct = { takeTurn: puctTurn };   // P.agent='puct'（policy-guided 決定化ロールアウト探索）
     // ★E41: puct+「リーダー攻撃の+1ドン上乗せ」変種（G._atkDonVarで候補生成が拡張。既定puctはバイト不変）
     AGENTS.puctdon = { takeTurn: async (side) => { G._atkDonVar = 1; try { return await puctTurn(side); } finally { G._atkDonVar = 0; } } };
+    // ★E43: puct+「公開済み手札の強制配置」決定化（G._beliefOnでdeterminizeが拡張。既定puctはバイト不変）
+    AGENTS.bpuct = { takeTurn: async (side) => { G._beliefOn = 1; try { return await puctTurn(side); } finally { G._beliefOn = 0; } } };
 
     /* ===== ハイブリッド: 戦略(プロファイル/Claude) × 戦術(puct探索) =====
        戦略オブジェクト(shape)を G._shape/G._planOverride に積んで puct を走らせる共有コア。

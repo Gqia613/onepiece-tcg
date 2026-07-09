@@ -329,6 +329,8 @@
     }
     // E42部品の個別on/off（G._h2Parts 未設定なら全部on。OPCG_H2=lethal等で部品を単離測定）
     function h2On(part) { const t = G._h2Parts; return !t || !!t[part]; }
+    // ★E46採用テーブル: ステージ設置を既定で行うリーダー（測定で正方向のリーダーのみ掲載。詳細は heuristicTurn 2b のコメント）
+    var STAGE_PLAY = { teach: 1 };
     /* ★E42a: cpuCanLethal の精密版（heur2ゲート）。相手の防御力を「手札枚数×0.5」でなく
        「アクティブブロッカー + 手札枚数×(hand+deckプールのカウンター平均)」で見積り、E40と同じ貪欲割当で判定。
        プールの多重集合は determinize と同じ情報水準（個々の手札は読まない＝セミフェア維持）。 */
@@ -485,6 +487,22 @@
         if (c.base.cost >= 3) P._lucyEventTurn = G.turnSeq;
         flog(side, '「' + c.base.name + '」を使用'); await fxNote(side, '効果使用', c.base.name); await runFx(c.base.fx.main.fx, { self: c, side }); P.trash.push(reset(c)); render(); await luffyReveal(side); await sleep(260); await fireOppEvent(side);
         if (G.winner) return;
+      }
+      // 2b) ★E46: ステージ設置。heuristicTurnは従来STAGEを一切プレイできず（キャラ/イベントのみ）、ハチノス(teach×4)等が
+      //   手札で死んでいた構造穴。ステージ未設置の時だけ、残ドンで置く。直後の起動効果ステップ(3)がそのターンからactを使える。
+      //   ★採用はper-leader（STAGE_PLAY）: teach=2seed帯で正方向再現(+3.3pt 9/5・+2.5pt 13/10)＋ハチノス死に札の構造的無駄の除去で既定化。
+      //   lucy=2帯とも負方向(1/3・2/4=王国設置の1ドンが微損)で不採用。他デッキはSTAGE非搭載でflip 0/0＝無影響。再測定はheur2+OPCG_H2=stage。
+      if ((STAGE_PLAY[leaderKeyOf(side)] || (isHeur2(side) && h2On('stage'))) && !P.stage && P._noPlayTurn !== G.turnSeq && !G.winner) {
+        const sts = P.hand.filter(c => c.base.type === 'STAGE' && (c.base.cost || 0) <= P.don.active);
+        if (sts.length) {
+          const c = sts.sort((a, b) => (b.base.cost || 0) - (a.base.cost || 0))[0];
+          payDon(side, c.base.cost || 0); P.hand.splice(P.hand.indexOf(c), 1);
+          c.owner = side; c.rested = false; P.stage = c;
+          flog(side, `ステージ「${c.base.name}」を設置`);
+          if (c.base.fx && c.base.fx.onPlay) await runFx(c.base.fx.onPlay, { self: c, side });
+          render(); await sleep(200);
+          if (G.winner) return;
+        }
       }
       // 3) 起動効果（エネル等）。エネルのリーダー効果は第2ターン以降ほぼ常に得（ドンランプ＋付与）なので毎ターン使う
       if (P.leader.base.leader === 'enel' && P.turnsTaken >= 2 && P._enelUsedTurn !== G.turnSeq) await leaderActivate(side);
