@@ -50,7 +50,8 @@ export function Controls() {
             <span className="hb-chip warn">
               対象 <b>{tgts}</b>
             </span>
-            <span className="hb-tip">光る相手カードをクリック／攻撃キャラ再クリックで取消</span>
+            <span className="hb-tip">光る相手カードを選択／攻撃キャラをもう一度押すと取消</span>
+          <span className="hb-tip-s">光る相手をタップ／再タップで取消</span>
           </div>
           <button className="phasebtn ghost" onClick={() => engine.cancelAttackSel()}>
             取消

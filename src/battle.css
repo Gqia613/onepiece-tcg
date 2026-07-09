@@ -2281,7 +2281,8 @@ button {
   align-items: center;
   justify-content: center;
   gap: 10px;
-  padding: 6px;
+  padding: 6px 6px calc(6px + env(safe-area-inset-bottom, 0px));
+  /* ホームインジケータ端末で最下段ボタンが密着しない */
   flex-wrap: wrap
 }
 
@@ -2389,15 +2390,31 @@ button.hb-chip:not(.zero):not([disabled]):hover {
   text-overflow: ellipsis
 }
 
+/* モバイル: 長文ヒントの代わりに短縮版を出す（操作導線を消さない） */
+.hintbar .hb-tip-s {
+  display: none;
+  font-size: 10.5px;
+  color: var(--muted);
+  flex: 0 1 auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 @media(max-width:560px) {
   .hintbar .hb-tip {
     display: none
+  }
+
+  .hintbar .hb-tip-s {
+    display: inline
   }
 }
 
 .phasebtn.ghost {
   background: transparent;
-  color: var(--muted)
+  color: var(--ink);
+  border: 1px solid var(--surface-edge)
 }
 
 .phasebtn {
@@ -3938,7 +3955,14 @@ button.hb-chip:not(.zero):not([disabled]):hover {
   background: none;
   border: none;
   color: var(--muted);
-  font-size: 22px
+  font-size: 22px;
+  /* タップ領域44px+（親指で確実に閉じられる。背景タップでも閉じられるが明示導線も確保） */
+  min-width: 44px;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin: -8px -8px 0 0
 }
 
 .deck-list-cols {
@@ -5329,6 +5353,8 @@ button.hb-chip:not(.zero):not([disabled]):hover {
 .prompt-peek-btn {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
+  min-height: 38px;
   gap: 5px;
   margin: 0 auto 11px;
   padding: 5px 14px;
@@ -5444,5 +5470,106 @@ button.hb-chip:not(.zero):not([disabled]):hover {
 
   .peek-back {
     bottom: calc(18px + env(safe-area-inset-bottom, 0px));
+  }
+
+  /* 操作バーのボタン（ターン終了/取消）もタップ高44px+ */
+  .phasebtn {
+    min-height: 44px;
+    padding: 10px 16px;
+    font-size: 13px;
+  }
+}
+
+/* ===== 15. マリガン専用モーダル（画面中央・スタート手札のフリップ公開） ===== */
+/* ボトムシートだと手札が隠れて引いたカードが分からない → 中央に5枚を大きく見せる。
+   モバイル媒体クエリ(#promptHost .prompt のボトムシート化)より高い詳細度で上書き */
+#promptHost .prompt.mulligan,
+.prompt.mulligan {
+  top: 50%;
+  bottom: auto;
+  left: 50%;
+  width: min(94vw, 640px);
+  max-width: 94vw;
+  min-width: 0;
+  border: 1px solid var(--gold);
+  border-radius: 18px;
+  padding: 18px 16px 16px;
+  max-height: none;
+  overflow: visible;
+  box-shadow: var(--elev-3), 0 0 60px -12px rgba(255, 200, 87, .55);
+}
+
+.prompt.mulligan h3 {
+  font-size: 19px;
+  letter-spacing: .1em;
+}
+
+/* 手札5枚のフリップ公開。perspective で3D回転に奥行き */
+.mull-hand {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 8px 0 14px;
+  perspective: 900px;
+}
+
+.mull-card {
+  position: relative;
+  width: clamp(56px, 16.5vw, 106px);
+  aspect-ratio: 5 / 7;
+  border-radius: 8px;
+  transform-style: preserve-3d;
+  box-shadow: 0 8px 22px #000a;
+}
+
+.mull-card img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid #ffffff2e;
+  display: block;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+/* 裏面（フリップ前に見える面） */
+.mull-back {
+  position: absolute;
+  inset: 0;
+  border-radius: 8px;
+  transform: rotateY(180deg);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  background: radial-gradient(circle at 50% 38%, #1d3a56, #0a1626 72%);
+  border: 1px solid rgba(255, 200, 87, .35);
+}
+
+.mull-back::before {
+  content: '';
+  position: absolute;
+  inset: 20%;
+  border: 2px solid rgba(255, 200, 87, .4);
+  border-radius: 50%;
+}
+
+/* フリップ完了後に金のシャインが1枚ずつ走る（--d は Prompt.tsx がカードごとに設定）。
+   background-position 掃引＝カードの外に光がはみ出さない（overflow:hidden は preserve-3d を壊すため不可） */
+.mull-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 8px;
+  background: linear-gradient(115deg, transparent 32%, rgba(255, 236, 170, .5) 50%, transparent 68%) no-repeat;
+  background-size: 300% 100%;
+  background-position: 130% 0;
+  animation: mullShine .8s ease-out var(--d, .8s) 1 forwards;
+  pointer-events: none;
+}
+
+@keyframes mullShine {
+  to {
+    background-position: -130% 0;
   }
 }

@@ -46,6 +46,34 @@ function AttackHead() {
   );
 }
 
+// マリガン専用: スタートの手札5枚を中央で1枚ずつフリップ公開（開封のワクワク演出）。
+// ボトムシートだと手札が隠れて引いたカードが分からないため、モーダル内に大きく見せる。
+function MulliganHand() {
+  const engine = useEngineStore((s) => s.engine);
+  useEngineStore((s) => s.version); // 引き直し後の手札更新を拾う
+  if (!engine) return null;
+  const hand: Card[] = (engine.G?.players?.me?.hand || []) as Card[];
+  const onErr = (e: React.SyntheticEvent<HTMLImageElement>) => { e.currentTarget.style.visibility = 'hidden'; };
+  const mid = (hand.length - 1) / 2;
+  return (
+    <div className="mull-hand">
+      {hand.map((c, i) => (
+        <motion.div
+          key={c.uid}
+          className="mull-card"
+          style={{ ['--d' as any]: (0.62 + i * 0.16) + 's' }} // シャイン掃引はフリップ完了後に
+          initial={{ opacity: 0, y: 46, rotateY: 180, scale: 0.72, rotate: 0 }}
+          animate={{ opacity: 1, y: Math.abs(i - mid) * 5, rotateY: 0, scale: 1, rotate: (i - mid) * 3 }}
+          transition={{ delay: 0.15 + i * 0.16, type: 'spring', stiffness: 240, damping: 20 }}
+        >
+          <img src={IMG(c.no)} referrerPolicy="no-referrer" decoding="async" alt={c.base?.name || ''} onError={onErr} />
+          <span className="mull-back" />
+        </motion.div>
+      ))}
+    </div>
+  );
+}
+
 export function Prompt() {
   const prompt = useEngineStore((s) => s.prompt);
   const peek = useEngineStore((s) => s.promptPeek);
@@ -62,8 +90,14 @@ export function Prompt() {
     img.parentElement?.classList.add('noimg');
   };
 
-  // 「盤面を見る」導線を出せるのは、カードを見比べたい防御選択（カウンター/ブロッカー）だけ。
-  const canPeek = !!prompt && (prompt.cls || '').includes('defense') && (prompt.opts || []).some((o) => o.card);
+  // 「盤面を見る」導線: 防御選択（カウンター/ブロッカー）に加え、アタック進行中の
+  // 全プロンプト（相手アタック時のリーダー効果確認など）でも盤面を確認できるようにする。
+  const atk = useEngineStore((s) => s.atk);
+  const isDefense = !!prompt && (prompt.cls || '').includes('defense');
+  const canPeek =
+    !!prompt &&
+    !(prompt.cls || '').includes('mulligan') &&
+    ((isDefense && (prompt.opts || []).some((o) => o.card)) || !!atk);
 
   // 薄いスクリム: 純粋なボタン決断のときだけ。盤面タップが必要な場面
   // （pick/pendingChoice=光るカードをクリックで選択、trigger=カード大写しを背後に見せる）では出さない。
@@ -96,7 +130,7 @@ export function Prompt() {
       {/* 退避中＝盤面を見ている。選択は保留のまま。ボタンでプロンプトに戻る。 */}
       {prompt && peek && canPeek && (
         <button className="peek-back" onClick={() => setPeek(false)}>
-          防御にもどる
+          {isDefense ? '防御にもどる' : '選択にもどる'}
         </button>
       )}
     </div>
@@ -124,6 +158,10 @@ function PromptCard({
     prompt.onPick?.(o.v);
   };
 
+  // マリガンは画面中央（CSSで top:50%）＝縦も translateY(-50%) が必要（Framer が transform を管理）。
+  const isMulligan = (prompt.cls || '').includes('mulligan');
+  const baseY = isMulligan ? '-50%' : 0;
+
   // 元 promptHTML は title/text/o.t/o.card.sub を innerHTML で描画（HTML可・エンジン生成の制御済み文字列）。
   // React のデフォルトはエスケープなので、ここは HTML として描画して元の見た目（<b>色付き等）を再現する。
   const html = (s: string) => ({ dangerouslySetInnerHTML: { __html: s } });
@@ -133,15 +171,18 @@ function PromptCard({
       className={'prompt show ' + (prompt.cls || '')}
       // .prompt は left:50% + translateX(-50%) で中央寄せ。Framer が transform を上書きするため
       // x:'-50%' を常に維持し scale/opacity のみアニメ（横中央がズレないように）。
-      initial={{ x: '-50%', opacity: 0, scale: 0.9 }}
-      animate={{ x: '-50%', opacity: 1, scale: 1 }}
-      exit={{ x: '-50%', opacity: 0, scale: 0.92 }}
+      initial={{ x: '-50%', y: baseY, opacity: 0, scale: 0.9 }}
+      animate={{ x: '-50%', y: baseY, opacity: 1, scale: 1 }}
+      exit={{ x: '-50%', y: baseY, opacity: 0, scale: 0.92 }}
       transition={{ duration: 0.2, ease: 'easeOut' }}
     >
       {/* アタック進行中は常に攻撃情報をモーダル内に統合（atk が無ければ AttackHead は何も描かない） */}
       <AttackHead />
       <h3 {...html(prompt.title || '')} />
       {prompt.text ? <p {...html(prompt.text)} /> : null}
+
+      {/* マリガン: スタートの手札5枚をフリップ公開 */}
+      {isMulligan && <MulliganHand />}
 
       {/* 盤面を見たい時：選択を保留してプロンプトを退避（盤面が見える）。 */}
       {canPeek && (

@@ -41,16 +41,15 @@ export function AtkAnnounce() {
   const atk = useEngineStore((s) => s.atk);
   const trigger = useEngineStore((s) => s.trigger);
   const prompt = useEngineStore((s) => s.prompt);
-  const peek = useEngineStore((s) => s.promptPeek);
   useEngineStore((s) => s.version); // 再描画トリガ（power 再評価のため）
 
   if (!engine || !atk) return null;
   // トリガー公開演出中はアタック宣言を出さない（このアタックは解決済み）。
   if (trigger) return null;
   // 何らかのプロンプト表示中は、攻撃情報をモーダル上部(AttackHead)に統合表示するので
-  // 浮動ダイアログは出さない（相手アタック時のリーダー効果確認などと重なってテキストが読めなくなる）。
-  // 「盤面を見る」(peek)でモーダルを退避中だけは、浮動ダイアログで攻撃情報を見せる。
-  if (prompt && !peek) return null;
+  // 浮動ダイアログは出さない。「盤面を見る」(peek)退避中も出さない＝盤面を隠すものはゼロにする
+  // （誰が誰を攻撃中かは盤面の攻撃ライン＋カードの発光で分かる）。
+  if (prompt) return null;
   const { aSide, attacker, target, phase } = atk;
   if (!attacker || !target) return null;
 

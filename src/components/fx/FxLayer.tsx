@@ -81,12 +81,13 @@ export function FxLayer() {
         ))}
       </AnimatePresence>
 
-      {/* 効果・トリガー発生通知のピル（画面上部中央に積む）。元 .fx-note を 1:1 再現。 */}
+      {/* 効果・トリガー発生通知のピル（画面上部中央に積む）。元 .fx-note を 1:1 再現。
+          top:56 ＝ Thinking ピル(top:16)やトップバーと重ならない段に置く。 */}
       <div
         style={{
           position: 'fixed',
           left: '50%',
-          top: 10,
+          top: 56,
           transform: 'translateX(-50%)',
           zIndex: 9200,
           display: 'flex',
@@ -126,7 +127,7 @@ export function FxLayer() {
               ) : null}
               <span className="fx-note-lbl">{n.label}</span>
               {n.name ? <span className="fx-note-nm">{n.name}</span> : null}
-              <NoteTimer id={n.id} onDone={() => setNotes((cur) => cur.filter((x) => x.id !== n.id))} />
+              <NoteTimer id={n.id} side={n.side} onDone={() => setNotes((cur) => cur.filter((x) => x.id !== n.id))} />
             </motion.div>
           ))}
         </AnimatePresence>
@@ -136,9 +137,10 @@ export function FxLayer() {
 }
 
 // 元 showFxNote は 1.4s 後に自動消滅。タイマーで exit を発火させる（AnimatePresence が退場アニメを担当）。
-function NoteTimer({ id, onDone }: { id: number; onDone: () => void }) {
+// 相手(CPU)の効果通知は読む前に消えやすいため長めに表示（自分=1.6s / 相手=2.4s。エンジンの進行は待たせない）。
+function NoteTimer({ id, side, onDone }: { id: number; side: 'me' | 'cpu'; onDone: () => void }) {
   useEffect(() => {
-    const t = setTimeout(onDone, 1400);
+    const t = setTimeout(onDone, side === 'me' ? 1600 : 2400);
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);

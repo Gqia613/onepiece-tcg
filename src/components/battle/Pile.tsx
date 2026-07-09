@@ -62,7 +62,7 @@ export function Pile({ side, kind }: { side: Side; kind: 'deck' | 'dondeck' | 't
   if (n === 0) {
     return (
       <div className="zone-side ga-trash">
-        <div className="pile trashp" style={{ cursor: 'pointer' }} onClick={openTrash} title="トラッシュ（クリックで全表示）">
+        <div className="pile trashp" style={{ cursor: 'pointer' }} onClick={openTrash} title="トラッシュ（クリック/タップで全表示）">
           <span className="pc">0</span>
         </div>
       </div>

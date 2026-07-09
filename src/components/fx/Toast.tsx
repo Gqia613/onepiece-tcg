@@ -56,9 +56,9 @@ export function Toast() {
 }
 
 function ToastOne({ item, onDone }: { item: ToastItem; onDone: () => void }) {
-  // 元 toast は 1000ms で remove。表示後にタイマーで exit を発火。
+  // 元 toast は 1000ms だったが日本語を読み切れないため 1800ms に延長（進行はブロックしない）。
   useEffect(() => {
-    const t = setTimeout(onDone, 1000);
+    const t = setTimeout(onDone, 1800);
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [item.id]);

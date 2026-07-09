@@ -82,6 +82,7 @@
       const cpu = G.players.cpu;
       if (cpuShouldMulligan(cpu)) { redraw(cpu); log('sys', 'CPUはマリガンした'); }
       const keep = await showPrompt({
+        cls: 'mulligan', // web: 中央配置＋手札5枚のフリップ公開演出（Prompt.tsx が特別扱い。挙動は通常プロンプトと同一）
         title: 'マリガン',
         text: '最初の手札を引き直しますか？（序盤に動けるカードが無ければ引き直し推奨）',
         opts: [{ t: '引き直す', v: true }, { t: 'この手札でいく', v: false, primary: true }]

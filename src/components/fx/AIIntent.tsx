@@ -20,7 +20,8 @@ export function AIIntent() {
           exit={{ opacity: 0, y: -8 }}
           transition={{ duration: 0.25 }}
           style={{
-            position: 'fixed', top: 56, left: '50%', transform: 'translateX(-50%)', zIndex: 50,
+            // fx-note 群(top:56)と段をずらし、盤面要素より前に出す
+            position: 'fixed', top: 96, left: '50%', transform: 'translateX(-50%)', zIndex: 8900,
             maxWidth: '86vw', padding: '6px 14px', borderRadius: 999, pointerEvents: 'none',
             background: 'linear-gradient(180deg, rgba(20,40,60,.95), rgba(10,28,41,.95))',
             border: '1px solid var(--gold-dim)', color: 'var(--gold-soft)', fontSize: 12.5, fontWeight: 700,

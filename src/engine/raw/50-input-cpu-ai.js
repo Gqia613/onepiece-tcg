@@ -76,7 +76,7 @@
     }
     function beginAttack(card) {
       if (legalTargets('me').length === 0) { toast('攻撃できる対象がいません'); return; }
-      G.attackSel = { attacker: card }; render(); toast('攻撃対象をクリック');
+      G.attackSel = { attacker: card }; render(); toast('攻撃対象を選択（光るカード）');
     }
     function cancelAttackSel() { if (G.attackSel) { G.attackSel = null; render(); } }
     async function activateAbility(card) {
