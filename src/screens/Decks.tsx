@@ -78,10 +78,10 @@ export default function Decks() {
   return (
     <div className="select-wrap decks-wrap">
       <div className="bd-head" style={{ width: '100%', maxWidth: 1000 }}>
-        <button className="bd-back" onClick={() => navigate('/')} style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
-          <Icon.arrowLeft size={14} />戻る
+        <button className="bd-back" onClick={() => navigate('/')}>
+          <Icon.arrowLeft size={15} />戻る
         </button>
-        <span style={{ fontFamily: '"Bebas Neue"', fontSize: 26, letterSpacing: '.06em', color: 'var(--self-glow)', fontWeight: 700 }}>マイデッキ</span>
+        <span className="bd-title">マイデッキ</span>
         <span className="bd-note">保存済みデッキの管理とプリセット</span>
       </div>
 

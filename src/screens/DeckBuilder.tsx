@@ -218,7 +218,7 @@ export default function DeckBuilder() {
   return (
     <div className="bd-wrap">
       <div className="bd-head">
-        <button className="bd-back" onClick={close} style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}><Icon.arrowLeft size={14} />戻る</button>
+        <button className="bd-back" onClick={close}><Icon.arrowLeft size={15} />戻る</button>
         <h1>{editId ? 'デッキ編集' : 'デッキ作成'}</h1>
         <span className="bd-note">
           {editId ? `「${builderDeck!.name}」を編集中。保存で上書きされます。` : '色はリーダー準拠／50枚・同名4枚まで。組んで保存でアカウントに保存。'}

@@ -250,10 +250,10 @@ export default function DeckSelect() {
   return (
     <div className="select-wrap ds2">
       <div className="bd-head ds2-head">
-        <button className="bd-back" onClick={() => navigate('/')} style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
-          <Icon.arrowLeft size={14} />戻る
+        <button className="bd-back" onClick={() => navigate('/')}>
+          <Icon.arrowLeft size={15} />戻る
         </button>
-        <span style={{ fontFamily: '"Bebas Neue"', fontSize: 26, letterSpacing: '.06em', color: 'var(--self-glow)', fontWeight: 700 }}>対戦</span>
+        <span className="bd-title">対戦</span>
         <span className="bd-note">中央のデッキが選ばれます</span>
       </div>
 

@@ -28,7 +28,8 @@ const render = (ui: ReactElement, path = '/') =>
 describe('Home（タイトル/ハブ画面）', () => {
   it('タイトルと3つのメニューカード（対戦/マイデッキ/作成）が出る', () => {
     render(<Home />);
-    expect(document.querySelector('.home-title')?.textContent).toBe('ONE PIECE');
+    // タイトルは公式「ONE PIECE CARD GAME」ロゴ画像（白）に変更
+    expect(document.querySelector('img.home-logo')).toBeTruthy();
     expect(document.querySelectorAll('.home-card').length).toBe(3);
     // メインラベルは日本語1行に統合（旧BATTLE/MY DECKS/BUILDERの英語は撤去）
     expect(document.body.textContent).toContain('CPU対戦');

@@ -23,6 +23,7 @@ import { CardDetailModal } from './components/fx/CardDetailModal';
 import { TrashModal } from './components/fx/TrashModal';
 import { Icon } from './components/ui/Icon';
 import { loadCloudDecks } from './state/decks';
+import { LOGO_WHITE } from './engine/img';
 
 const hamItem: CSSProperties = {
   textAlign: 'left', padding: '9px 11px', borderRadius: 7, border: 'none', cursor: 'pointer',
@@ -162,7 +163,7 @@ function Shell({ username, logout }: { username: string; logout: () => void }) {
 
   return (
     <div className="appshell">
-      <div className="topbar">
+      <div className={'topbar' + (inPlay ? ' inplay' : '')}>
         <div
           className="logo"
           role="button"
@@ -170,7 +171,8 @@ function Shell({ username, logout }: { username: string; logout: () => void }) {
           style={{ cursor: inPlay ? 'default' : 'pointer' }}
           onClick={() => { if (!inPlay) navigate('/'); }}
         >
-          <span className="logo-mark"><Icon.anchor size={16} /></span>ONE PIECE<small>BATTLE SIM</small>
+          <img className="logo-img" src={LOGO_WHITE} referrerPolicy="no-referrer" alt="ONE PIECE CARD GAME" />
+          <small>SIM</small>
         </div>
         <div className="spacer" />
         {inPlay ? <TurnPill engine={engine} /> : null}

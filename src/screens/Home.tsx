@@ -1,10 +1,12 @@
 // ホーム（タイトル/ハブ画面）。ログイン後の玄関口として BATTLE / MY DECKS / BUILDER への導線を
 // 「メニュー自体をカード（縦長パネル＋漢字ウォーターマーク＋ホロ光沢）」として並べる。
+// タイトルは公式「ONE PIECE CARD GAME」ロゴ（白）＋背後にリーダーカード実物が浮遊する演出。
 // 視覚言語は battle.css の "ABYSS NEON"（deep ocean × gold）に従い、CSS は styles.css の .home-* が所有。
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../state/auth';
 import { useEngineStore } from '../state/engineStore';
 import { Icon } from '../components/ui/Icon';
+import { IMG, LOGO_WHITE } from '../engine/img';
 
 export default function Home() {
   const navigate = useNavigate();
@@ -32,9 +34,21 @@ export default function Home() {
       ) : null}
 
       <div className="home-hero">
-        <div className="home-emblem"><Icon.anchor size={30} /></div>
-        <h1 className="home-title">ONE PIECE</h1>
-        <div className="home-title-sub">CARD BATTLE</div>
+        {/* 背後に浮遊するリーダーカード（実カードアート＝カードゲーム感の演出） */}
+        <div className="home-floats" aria-hidden="true">
+          {((engine?.DECKS || []) as any[]).slice(0, 5).map((d, i) => (
+            <img
+              key={d.id || i}
+              className={'hfc hfc' + i}
+              src={IMG(d.leader)}
+              referrerPolicy="no-referrer"
+              decoding="async"
+              alt=""
+              onError={(e) => { e.currentTarget.style.display = 'none'; }}
+            />
+          ))}
+        </div>
+        <img className="home-logo" src={LOGO_WHITE} referrerPolicy="no-referrer" alt="ONE PIECE CARD GAME" />
         <div className="home-tagline">GRAND LINE SIMULATOR</div>
       </div>
 

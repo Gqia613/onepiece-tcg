@@ -16,3 +16,7 @@ export const IMG_ROT = (no: string) =>
 // 拡大表示用（高解像度）。カードリストモーダルのタップ拡大などに使う。
 export const IMG_BIG = (no: string) =>
   `https://images.weserv.nl/?url=${HOST}/${no}.png&w=640`;
+
+// 公式「ONE PIECE CARD GAME」ロゴ（白・個人利用）。
+// 直リンクは公式CDNがクロスサイト画像取得を弾くため、カード画像と同じ weserv プロキシ経由。
+export const LOGO_WHITE = 'https://images.weserv.nl/?url=ssl:www.onepiece-cardgame.com/renewal/images/common/logo_op_white.png&w=560';

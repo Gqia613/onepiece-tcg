@@ -61,9 +61,9 @@ export function DeckCard({ deck, selected, onSelect, onDelete, onShowList, onEdi
           title="このデッキを削除"
           onClick={(e) => { e.stopPropagation(); onDelete(); }}
           style={{
-            position: 'absolute', top: 4, right: 4, zIndex: 5, width: 22, height: 22, lineHeight: '20px',
+            position: 'absolute', top: 4, right: 4, zIndex: 5, width: 28, height: 28, lineHeight: '26px',
             borderRadius: '50%', border: '1px solid var(--line)', background: '#000a', color: 'var(--danger)',
-            fontSize: 13, cursor: 'pointer', padding: 0,
+            fontSize: 14, cursor: 'pointer', padding: 0,
           }}
         >×</button>
       ) : null}
@@ -75,11 +75,11 @@ export function DeckCard({ deck, selected, onSelect, onDelete, onShowList, onEdi
           aria-label="カードリストを見る"
           onClick={(e) => { e.stopPropagation(); onShowList(); }}
           style={{
-            position: 'absolute', top: 6, right: onDelete ? 34 : 6, zIndex: 11,
-            display: 'flex', alignItems: 'center', gap: 4,
+            position: 'absolute', top: 6, right: onDelete ? 38 : 6, zIndex: 11,
+            display: 'flex', alignItems: 'center', gap: 4, minHeight: 26,
             fontSize: 10.5, fontWeight: 700, cursor: 'pointer',
             background: 'rgba(0,0,0,.78)', border: '1px solid var(--surface-edge)',
-            color: 'var(--ink)', padding: '3px 8px', borderRadius: 999,
+            color: 'var(--ink)', padding: '4px 9px', borderRadius: 999,
           }}
         ><ListIcon /><span className="dc-btn-txt">カードリスト</span></button>
       ) : null}
@@ -91,11 +91,11 @@ export function DeckCard({ deck, selected, onSelect, onDelete, onShowList, onEdi
           aria-label={editText}
           onClick={(e) => { e.stopPropagation(); onEdit(); }}
           style={{
-            position: 'absolute', top: 32, right: onDelete ? 34 : 6, zIndex: 11,
-            display: 'flex', alignItems: 'center', gap: 4,
+            position: 'absolute', top: 38, right: onDelete ? 38 : 6, zIndex: 11,
+            display: 'flex', alignItems: 'center', gap: 4, minHeight: 26,
             fontSize: 10.5, fontWeight: 700, cursor: 'pointer',
             background: 'rgba(0,0,0,.78)', border: '1px solid var(--surface-edge)',
-            color: 'var(--gold-soft)', padding: '3px 8px', borderRadius: 999,
+            color: 'var(--gold-soft)', padding: '4px 9px', borderRadius: 999,
           }}
         >{isCopy ? <CopyIcon /> : <EditIcon />}<span className="dc-btn-txt">{editText}</span></button>
       ) : null}

@@ -1,6 +1,10 @@
 import { useState } from 'react';
 import { api, type ApiError } from '../api/client';
 import { useAuth } from '../state/auth';
+import { IMG, LOGO_WHITE } from '../engine/img';
+
+// ログイン画面の装飾用リーダーカード（エンジン未初期化でも表示できるよう固定ID）
+const DECOR_CARDS = ['OP15-058', 'OP16-080', 'OP16-022'];
 
 export default function Login() {
   const setUser = useAuth((s) => s.setUser);
@@ -32,8 +36,18 @@ export default function Login() {
 
   return (
     <div className="center-wrap">
+      {/* 背後に浮遊するリーダーカード（世界観の演出・操作は透過） */}
+      <div className="auth-floats" aria-hidden="true">
+        {DECOR_CARDS.map((no, i) => (
+          <img key={no} className={'afc afc' + i} src={IMG(no)} referrerPolicy="no-referrer" decoding="async" alt=""
+            onError={(e) => { e.currentTarget.style.display = 'none'; }} />
+        ))}
+      </div>
       <form className="auth-panel" onSubmit={submit}>
-        <h1 className="auth-brand">ONE PIECE<small>BATTLE SIM</small></h1>
+        <h1 className="auth-brand">
+          <img className="auth-logo" src={LOGO_WHITE} referrerPolicy="no-referrer" alt="ONE PIECE CARD GAME" />
+          <small>BATTLE SIMULATOR</small>
+        </h1>
         <div className="auth-tabs">
           <button type="button" className={'auth-tab' + (mode === 'login' ? ' on' : '')} onClick={() => { setMode('login'); setErr(''); }}>ログイン</button>
           <button type="button" className={'auth-tab' + (mode === 'register' ? ' on' : '')} onClick={() => { setMode('register'); setErr(''); }}>新規登録</button>

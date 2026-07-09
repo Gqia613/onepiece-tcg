@@ -45,22 +45,18 @@ html, body, #root { height: 100%; margin: 0; }
 }
 
 .topbar .logo {
-  font-family: "Bebas Neue";
-  font-size: 23px;
-  color: var(--ink);
-  letter-spacing: .07em;
   display: flex;
-  align-items: baseline;
-  gap: 7px;
-  text-shadow: 0 0 18px rgba(62, 201, 255, .35);
+  align-items: center;
+  gap: 8px;
   white-space: nowrap;
 }
 
-.topbar .logo .logo-mark {
-  color: var(--gold);
-  font-size: 17px;
-  align-self: center;
-  filter: drop-shadow(0 0 6px rgba(255, 200, 87, .6));
+/* 公式ロゴ（白）。カードと同じホットリンク・no-referrer */
+.topbar .logo .logo-img {
+  height: 24px;
+  width: auto;
+  display: block;
+  filter: drop-shadow(0 0 12px rgba(62, 201, 255, .35));
 }
 
 .topbar .logo small {
@@ -80,7 +76,12 @@ html, body, #root { height: 100%; margin: 0; }
 @media (max-width: 1000px) { .topbar .logo small { display: none; } }
 @media (max-width: 680px) {
   .topbar { height: 44px; gap: 6px; padding: 0 8px; }
-  .topbar .logo { display: none; }
+
+  /* ロゴは消さない（スマホでも「ホームへ」の可視導線を維持）。小さくして省スペース */
+  .topbar .logo .logo-img { height: 19px; }
+
+  /* 対戦中はターン表示が主役＝ロゴを畳んで横幅を確保（ロゴ押下も対戦中は無効のため） */
+  .topbar.inplay .logo { display: none; }
 }
 
 /* ============ 中央ローディング ============ */
@@ -126,16 +127,17 @@ html, body, #root { height: 100%; margin: 0; }
 }
 
 .auth-brand {
-  font-family: "Bebas Neue";
-  font-size: 34px;
-  letter-spacing: .06em;
   text-align: center;
   margin: 0 0 2px;
   line-height: 1;
-  background: linear-gradient(180deg, #fff 10%, var(--self-glow) 50%, var(--self-accent) 88%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+}
+
+/* 公式ロゴ（白） */
+.auth-brand .auth-logo {
+  width: min(66vw, 280px);
+  height: auto;
+  display: block;
+  margin: 0 auto;
   filter: drop-shadow(0 3px 18px rgba(62, 201, 255, .35));
 }
 
@@ -145,11 +147,38 @@ html, body, #root { height: 100%; margin: 0; }
   font-weight: 600;
   font-size: 11px;
   letter-spacing: .34em;
-  margin-top: 6px;
+  margin-top: 8px;
   color: var(--gold);
-  -webkit-text-fill-color: var(--gold);
-  filter: none;
 }
+
+/* ログイン背景に浮遊するリーダーカード（パネルの背面・操作透過） */
+.auth-floats {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.afc {
+  position: absolute;
+  width: clamp(96px, 15vw, 150px);
+  aspect-ratio: 5 / 7;
+  object-fit: cover;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, .12);
+  box-shadow: 0 20px 44px rgba(0, 0, 0, .7);
+  opacity: .3;
+  filter: saturate(.85) brightness(.72) blur(.6px);
+  animation: hfcFloat 8s ease-in-out infinite;
+}
+
+.afc0 { left: 6%; top: 12%; transform: rotate(-11deg); animation-delay: 0s }
+.afc1 { right: 7%; top: 18%; transform: rotate(9deg); animation-delay: 1.4s }
+.afc2 { left: 14%; bottom: 8%; transform: rotate(6deg); animation-delay: 2.6s }
+
+/* パネルは装飾より前面に */
+.auth-panel { position: relative; z-index: 1; }
 
 .auth-tabs {
   display: flex;
@@ -273,6 +302,67 @@ html, body, #root { height: 100%; margin: 0; }
   align-items: center;
   text-align: center;
   position: relative;
+}
+
+/* 公式ロゴ（白）＝タイトル。金の余韻グローがゆっくり脈動 */
+.home-logo {
+  position: relative;
+  z-index: 2;
+  width: min(78vw, 440px);
+  height: auto;
+  filter: drop-shadow(0 6px 30px rgba(62, 201, 255, .38)) drop-shadow(0 2px 8px rgba(0, 0, 0, .8));
+  animation: heroIn .7s .05s cubic-bezier(.2, .8, .25, 1) both, logoGlow 4.5s ease-in-out 1s infinite;
+}
+
+@keyframes logoGlow {
+
+  0%,
+  100% {
+    filter: drop-shadow(0 6px 30px rgba(62, 201, 255, .38)) drop-shadow(0 2px 8px rgba(0, 0, 0, .8));
+  }
+
+  50% {
+    filter: drop-shadow(0 6px 34px rgba(255, 200, 87, .5)) drop-shadow(0 2px 8px rgba(0, 0, 0, .8));
+  }
+}
+
+/* 背後に浮遊するリーダーカード（実カードアート）。操作は透過・ロゴの背面 */
+.home-floats {
+  position: absolute;
+  inset: -12px -6vw -26px;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.hfc {
+  position: absolute;
+  width: clamp(64px, 9vw, 104px);
+  aspect-ratio: 5 / 7;
+  object-fit: cover;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, .14);
+  box-shadow: 0 16px 36px rgba(0, 0, 0, .65);
+  opacity: .42;
+  filter: saturate(.85) brightness(.75);
+  animation: hfcFloat 7s ease-in-out infinite;
+}
+
+.hfc0 { left: 2%; top: 6%; transform: rotate(-12deg); animation-delay: 0s }
+.hfc1 { left: 16%; top: -14%; transform: rotate(-5deg); animation-delay: 1.2s }
+.hfc2 { right: 16%; top: -16%; transform: rotate(6deg); animation-delay: .6s }
+.hfc3 { right: 1%; top: 8%; transform: rotate(13deg); animation-delay: 1.8s }
+.hfc4 { left: 44%; top: -24%; transform: rotate(2deg); opacity: .3; animation-delay: 2.4s }
+
+@keyframes hfcFloat {
+
+  0%,
+  100% {
+    margin-top: 0
+  }
+
+  50% {
+    margin-top: -12px
+  }
 }
 
 .home-emblem {
