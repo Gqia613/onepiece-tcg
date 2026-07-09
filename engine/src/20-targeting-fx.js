@@ -86,12 +86,23 @@
 
     /* 任意コスト/効果の発動確認: CPUは常に実行(true)、人間にはY/Nプロンプト。
        従来の「let go=true; if(!isCPU) go=(await showPrompt(...))==='y'」と等価。
-       o(任意): { cls:'danger'=不可逆コストの強調, src:発生源カードの明示指定, noSrc:発生源バッジ抑止 } */
+       o(任意): { cls:'danger'=不可逆コストの強調, src:発生源カードの明示指定, noSrc:発生源表示の抑止 }
+       ★表示の統一: 発生源が分かる確認は、タイトル=効果種別（リーダー効果/キャラ効果/イベント効果/ステージ効果）、
+         説明=『誰』の効果か＋必要なアクション（元text）に統一する。呼び出し元の title
+        （「手札を捨てる」等のコスト名）は発生源不明時のフォールバックとしてのみ使う。 */
     async function confirmUse(side, title, text, yes, no, o) {
       if (G.players[side].isCPU) return true;
+      const src = (o && o.noSrc) ? null : ((o && o.src) || _fxSrc());
+      let ttl = title, body = text || '';
+      if (src && src.base && src.base.name) {
+        ttl = src.base.type === 'LEADER' ? 'リーダー効果'
+          : src.base.type === 'EVENT' ? 'イベント効果'
+            : src.base.type === 'STAGE' ? 'ステージ効果' : 'キャラ効果';
+        body = '<span class="pp-src">『' + src.base.name + '』の効果</span>' + body;
+      }
       return (await showPrompt({
         cls: (o && o.cls) || '',
-        title, text: ((o && o.noSrc) ? '' : fxSrcTag(o && o.src)) + (text || ''),
+        title: ttl, text: body,
         opts: [{ t: yes, v: 'y', primary: true }, { t: no || '使わない', v: 'n', ghost: true }]
       })) === 'y';
     }
