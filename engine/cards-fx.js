@@ -2774,7 +2774,7 @@ window.CARD_FX = {
   // OP03-102 サンジ(c2): 【ドン×2】【アタック時】ライフ上か下1枚を手札に：デッキ上1枚をライフに
   "OP03-102": {"onAttack":[{"op":"cond","check":{"donX2":true},"then":[{"op":"lifeCost","pos":"choose","then":[{"op":"lifeAddFromDeck","n":1}]}]}]},
   // OP03-104 シャーリー(c3): 【ブロッカー】 ／【登場時】ライフ確認(情報)
-  "OP03-104": {"onPlay":[{"op":"scry","look":1}]},
+  "OP03-104": {"onPlay":[{"op":"peekLifeTopPlace"}]},
   // OP03-105 シャーロット・オーブン(c3): 【ドン×1】【アタック時】手札の【トリガー】1枚を捨てる：このキャラ+3000
   "OP03-105": {"onAttack":[{"op":"cond","check":{"donX1":true},"then":[{"op":"discardCost","count":1,"optional":true,"filter":{"hasTrigger":true},"then":[{"op":"powerMod","side":"self","target":"self","amount":3000,"battle":true}]}]}]},
   // OP03-108 シャーロット・クラッカー(c4): 【ドン×1】自ライフが相手より少ないと【ダブルアタック】＋1000
@@ -3193,7 +3193,7 @@ window.CARD_FX = {
   // EB01-010 お前がおれに!!!勝てるわけねェだろうが!!!!: 【カウンター】相手の元々パワー6000以下1枚KO
   "EB01-010": {"counter":{"cost":0,"fx":[{"op":"ko","side":"opp","filter":{"maxPower":6000},"count":1,"optional":true}]}},
   // EB01-011 ミニメリー2号(STAGE): 【起動メイン】レスト＋元々パワー1000のキャラ1枚をデッキ下：1ドロー
-  "EB01-011": {"act":{"label":"レスト＋パワー1000をデッキ下:1ドロー","cost":{"restSelf":true},"fx":[{"op":"deckBottomOwnCharCost","filter":{"basePower":1000},"then":[{"op":"draw","n":1}]}]}},
+  "EB01-011": {"act":{"label":"レスト＋パワー1000をデッキ下:1ドロー","cost":{},"fx":[{"op":"cond","check":{"selfActive":true},"then":[{"op":"deckBottomOwnCharCost","filter":{"basePower":1000},"then":[{"op":"restThis"},{"op":"draw","n":1}]}]}]}},
   // EB01-012 キャベンディッシュ(c5): 【登場時】/【アタック時】超新星リーダー＋他に「キャベンディッシュ」がいなければドン2アクティブ
   "EB01-012": {"onPlay":[{"op":"cond","check":{"and":[{"leaderTraitIncludes":"超新星"},{"not":{"selfCharOther":{"filter":{"nameIncludes":"キャベンディッシュ"}}}}]},"then":[{"op":"donActivate","n":2}]}],"onAttack":[{"op":"cond","check":{"and":[{"leaderTraitIncludes":"超新星"},{"not":{"selfCharOther":{"filter":{"nameIncludes":"キャベンディッシュ"}}}}]},"then":[{"op":"donActivate","n":2}]}]},
   // EB01-013 光月日和(c4): 【起動メイン】自身トラッシュ：手札から「自身」以外のコスト5以下ワノ国を登場→1ドロー
@@ -3318,7 +3318,7 @@ window.CARD_FX = {
   // EB02-024 そげキング(c4): 別名ウソップ ／【登場時】2ドロー→手札2枚をデッキ下→コスト1以下1枚を手札に戻す
   "EB02-024": {"onPlay":[{"op":"draw","n":2},{"op":"handToBottom","n":2,"posChoose":true},{"op":"bounce","side":"any","maxCost":1,"count":1,"optional":true}]},
   // EB02-025 ドンキホーテ・ロシナンテ(c2): 【起動メイン】ドン1＋このキャラレスト：ロシナンテリーダーならデッキ上5枚からコスト2以下をレスト登場
-  "EB02-025": {"act":{"label":"ドン1+レスト:コスト2以下をレスト登場","cost":{"restSelf":true},"fx":[{"op":"restDonCost","n":1,"then":[{"op":"cond","check":{"leaderNameIncludes":"ドンキホーテ・ロシナンテ"},"then":[{"op":"playFromDeck","look":5,"rested":true,"filter":{"maxCost":2}}]}]}]}},
+  "EB02-025": {"act":{"label":"ドン1+レスト:コスト2以下をレスト登場","cost":{},"fx":[{"op":"cond","check":{"selfActive":true},"then":[{"op":"restDonCost","n":1,"then":[{"op":"restThis"},{"op":"cond","check":{"leaderNameIncludes":"ドンキホーテ・ロシナンテ"},"then":[{"op":"playFromDeck","look":5,"rested":true,"filter":{"maxCost":2}}]}]}]}]}},
   // EB02-026 ネフェルタリ・ビビ(c3): 【登場時】多色リーダー＋手札5枚以下なら2ドロー
   "EB02-026": {"onPlay":[{"op":"cond","check":{"and":[{"leaderMulticolor":true},{"selfHandAtMost":5}]},"then":[{"op":"draw","n":2}]}]},
   // EB02-027 ビスタ(c4): 【登場時】相手のパワー1000以下1枚を持ち主のデッキ下
@@ -3705,7 +3705,7 @@ window.CARD_FX = {
   "ST08-005": {"onPlay":[{"op":"discardCost","count":1,"optional":true,"then":[{"op":"ko","side":"any","filter":{"maxCost":1},"all":true}]}]},
   "ST08-006": {"onPlay":[{"op":"addCostBuff","side":"opp","count":1,"amount":-4,"duration":"turn","optional":true}]},
   "ST08-009": {"onPlay":[{"op":"cond","check":{"or":[{"oppChar":{"cost":0}},{"selfChar":{"cost":0}}]},"then":[{"op":"draw","n":1}]}]},
-  "ST08-013": {"onAttack":[{"op":"cond","check":{"donX1":true},"then":[{"op":"koBattledTarget"}]}]},
+  "ST08-013": {"onBattleEndVsChar":[{"op":"cond","check":{"donX1":true},"then":[{"op":"koBattledTarget"}]}]},
   "ST08-014": {"main":{"fx":[{"op":"lifeCost","then":[{"op":"addCostBuff","side":"opp","count":1,"amount":-7,"duration":"turn","optional":true}]}]}},
   "ST08-015": {"main":{"fx":[{"op":"ko","side":"opp","filter":{"maxCost":2},"count":1,"optional":true}]}},
   "ST09-004": {"static":[{"op":"condBuff","battleImmune":true,"cond":{"and":[{"donX1":true},{"lifeAtMost":2}]}}]},
@@ -3744,13 +3744,13 @@ window.CARD_FX = {
   "ST12-006": {"onAttack":[{"op":"cond","check":{"donX1":true},"then":[{"op":"chooseOption","options":[{"label":"相手コスト2以下1枚レスト","fx":[{"op":"restChar","side":"opp","filter":{"maxCost":2},"count":1,"optional":true}]},{"label":"相手のレストのコスト2以下1枚KO","fx":[{"op":"ko","side":"opp","filter":{"restedOnly":true,"maxCost":2},"count":1,"optional":true}]}]}]}]},
   "ST12-007": {"onPlay":[{"op":"restDonCost","n":2,"then":[{"op":"cond","check":{"oppLifeAtLeast":3},"then":[{"op":"activateOwnChar","count":1,"filter":{"restedOnly":true,"maxCost":4,"attr":"斬"}}]}]}]},
   "ST12-008": {"onAttack":[{"op":"cond","check":{"donX1":true},"then":[{"op":"restChar","side":"opp","filter":{"maxCost":6},"count":1,"optional":true}]}]},
-  "ST12-010": {"onPlay":[{"op":"playFromDeck","look":1,"filter":{"cost":2,"type":"CHAR"}}],"onAttack":[{"op":"cond","check":{"selfHandAtMost":6},"once":"turn","then":[{"op":"draw","n":1}]}]},
+  "ST12-010": {"onPlay":[{"op":"playFromDeck","look":1,"restPos":"choose","filter":{"cost":2,"type":"CHAR"}}],"onAttack":[{"op":"cond","check":{"selfHandAtMost":6},"once":"turn","then":[{"op":"draw","n":1}]}]},
   "ST12-011": {"onAttack":[{"op":"cond","check":{"and":[{"donX1":true},{"selfHandAtMost":5}]},"then":[{"op":"powerMod","side":"self","target":"self","amount":2000,"duration":"untilNextStart"}]}]},
   "ST12-012": {"act":{"label":"このキャラを手札に戻す","cost":{},"fx":[{"op":"bounceSelfCost"}]}},
-  "ST12-013": {"onPlay":[{"op":"scry","look":3}],"onAttack":[{"op":"playFromDeck","look":1,"rested":true,"filter":{"cost":2,"type":"CHAR"}}]},
+  "ST12-013": {"onPlay":[{"op":"scry","look":3}],"onAttack":[{"op":"playFromDeck","look":1,"rested":true,"restPos":"choose","filter":{"cost":2,"type":"CHAR"}}]},
   "ST12-014": {"onPlay":[{"op":"scry","look":3}]},
   "ST12-016": {"main":{"fx":[{"op":"restChar","side":"opp","includeLeader":true,"filter":{"maxCost":4},"count":1,"optional":true}]},"counter":{"cost":0,"fx":[{"op":"restChar","side":"opp","includeLeader":true,"filter":{"maxCost":4},"count":1,"optional":true}]}},
-  "ST12-017": {"counter":{"cost":0,"fx":[{"op":"powerMod","side":"self","leader":true,"amount":2000,"battle":true,"count":1,"optional":true},{"op":"playFromDeck","look":1,"filter":{"cost":2,"type":"CHAR"}}]}},
+  "ST12-017": {"counter":{"cost":0,"fx":[{"op":"powerMod","side":"self","leader":true,"amount":2000,"battle":true,"count":1,"optional":true},{"op":"playFromDeck","look":1,"restPos":"choose","filter":{"cost":2,"type":"CHAR"}}]}},
   "ST13-001": {"act":{"label":"コスト3以上パワー7000以上をライフへ:キャラ+2000","cost":{},"fx":[{"op":"cond","check":{"donX1":true},"then":[{"op":"charToLife","side":"self","filter":{"minCost":3,"minEffPower":7000},"faceUp":true,"optional":true},{"op":"powerMod","side":"self","amount":2000,"duration":"untilNextStart","count":1,"optional":true}]}]}},
   "ST13-002": {"act":{"label":"デッキ上5枚からコスト5キャラをライフに表向き","cost":{},"fx":[{"op":"cond","check":"donX2","then":[{"op":"searchToLife","look":5,"filter":{"cost":5,"type":"CHAR"},"faceUp":true}]}]},"onTurnEnd":[{"op":"lifeTrashFaceUp"}]},
   "ST13-003": {"act":{"label":"手札1捨て:ライフ0なら手札/トラッシュのコスト5を2枚ライフに","cost":{},"fx":[{"op":"cond","check":"donX2","then":[{"op":"discardCost","count":1,"optional":true,"then":[{"op":"cond","check":{"lifeAtMost":0},"then":[{"op":"handCharToLife","faceUp":true,"fromTrash":true,"filter":{"cost":5}},{"op":"handCharToLife","faceUp":true,"fromTrash":true,"filter":{"cost":5}}]}]}]}]}},
@@ -3795,7 +3795,7 @@ window.CARD_FX = {
   "ST16-005": {"static":[{"op":"condBuff","cond":{"selfChar":{"nameIncludes":"ウタ","restedOnly":true}},"power":1000}]},
   "ST17-001": {"onPlay":[{"op":"revealTop","filter":{"traitIncludes":"王下七武海"},"then":[{"op":"draw","n":2},{"op":"handToBottom","n":1,"pos":"top"}]}]},
   "ST17-002": {"onPlay":[{"op":"bounceOwnCharCost","then":[{"op":"cond","check":{"leaderTraitIncludes":"王下七武海"},"then":[{"op":"bounce","side":"any","maxCost":4,"count":1,"optional":true}]}]}]},
-  "ST17-003": {"onPlay":[{"op":"scry","look":3}]},
+  "ST17-003": {"onPlay":[{"op":"scry","look":3,"pos":"top"}]},
   "ST17-005": {"act":{"label":"手札1枚をデッキ上:リーダーかキャラにレストのドン2","cost":{},"fx":[{"op":"handToBottomCost","n":1,"pos":"top","then":[{"op":"donAttach","target":"chooseOwn","n":2}]}]}},
   "ST18-001": {"onPlay":[{"op":"cond","check":{"donAtLeast":8},"then":[{"op":"restChar","side":"opp","filter":{"maxCost":5},"count":1,"optional":true}]}]},
   "ST18-002": {"onPlay":[{"op":"cond","check":{"donAtLeast":8},"then":[{"op":"discardOwn","n":1},{"op":"draw","n":2}]}]},
@@ -3881,7 +3881,7 @@ window.CARD_FX = {
   "ST30-010": {"onPlay":[{"op":"lockRefresh","count":1,"optional":true}]},
   "ST30-011": {"static":[{"op":"leaveProtect","targetFilter":{"basePower":6000},"pay":"restSelf"}]},
   "ST30-012": {"onPlay":[{"op":"restDonCost","n":1,"then":[{"op":"giveKeyword","target":"self","kw":"rush","duration":"turn"}]}],"onAttack":[{"op":"restChar","side":"opp","filter":{"hasKw":"blocker"},"count":1,"optional":true}]},
-  "ST30-014": {"act":{"label":"このキャラをレスト:元々パワー6000のキャラにレストのドン2ずつ","cost":{"restSelf":true},"fx":[{"op":"donAttach","target":"chooseOwn","filter":{"basePower":6000},"n":2},{"op":"donAttach","target":"chooseOwn","filter":{"basePower":6000},"n":2}]}},
+  "ST30-014": {"act":{"label":"このキャラをレスト:元々パワー6000のキャラにレストのドン2ずつ","cost":{"restSelf":true},"fx":[{"op":"donAttach","target":"chooseOwn","filter":{"basePower":6000},"n":2},{"op":"donAttach","target":"chooseOwn","excludePrev":true,"filter":{"basePower":6000},"n":2}]}},
   "ST30-015": {"counter":{"cost":0,"fx":[{"op":"cond","check":{"selfCharCount":{"filter":{"basePower":6000},"min":2}},"then":[{"op":"powerMod","side":"self","leader":true,"amount":4000,"battle":true,"count":1,"optional":true}]}]}},
   "ST30-016": {"counter":{"cost":0,"fx":[{"op":"powerMod","side":"self","leader":true,"amount":3000,"battle":true,"count":1,"optional":true},{"op":"cond","check":{"and":[{"selfChar":{"basePower":6000,"nameIncludes":"ポートガス・Ｄ・エース"}},{"selfChar":{"basePower":6000,"nameIncludes":"モンキー・Ｄ・ルフィ"}}]},"then":[{"op":"draw","n":1}]}]}},
   "ST30-017": {"main":{"fx":[{"op":"search","look":5,"count":1,"filter":{"basePower":6000},"optional":true}]}}

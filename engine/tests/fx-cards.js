@@ -2171,6 +2171,18 @@ humanPick=function(c){return Promise.resolve((c||[])[0]||null);};
     ok(JSON.stringify(C['ST04-005'].fx.onPlay).includes('"op":"discardOwn"') && !JSON.stringify(C['ST04-005'].fx.onPlay).includes('discardCost'), '強制「捨てる」はdiscardOwn（ST04-005）');
     // 誤派生キーワードの打ち消し: 効果付与型はfxのgiveKeywordが担い常時フラグは立てない
     ok(C['EB04-061'].blocker===false && C['P-005'].banish===false && C['P-039'].banish===true, 'キーワード誤派生打ち消し: EB04-061/P-005はfalse・印刷持ちP-039はtrue');
+    // 既知近似の解消（2026-07-09）: ST30-014=同一fx内の2回目donAttachは既選択を除外
+    { const me=LP('OP11-041'); me.don.rested=4;
+      C['__p6a__']={no:'__p6a__',name:'p6a',type:'CHAR',color:[],cost:4,power:6000,counter:0,traits:[]};
+      C['__p6b__']={no:'__p6b__',name:'p6b',type:'CHAR',color:[],cost:4,power:6000,counter:0,traits:[]};
+      const a6=mkSyn('__p6a__',C['__p6a__']); const b6=mkSyn('__p6b__',C['__p6b__']); me.chars=[a6,b6];
+      await runFx(C['ST30-014'].fx.act.fx,{self:a6,side:'me'});
+      ok(a6.attachedDon===2 && b6.attachedDon===2, 'ST30-014: 2回のドン付与が別々のキャラに2枚ずつ（同一対象重複を除外）'); delete C['__p6a__']; delete C['__p6b__']; }
+    // ST08-013=バトル終了時フックへ移行 / ST17-003=束を上固定 / OP03-104=ライフ効果（scry誤用解消）
+    ok(!!C['ST08-013'].fx.onBattleEndVsChar && !C['ST08-013'].fx.onAttack, 'ST08-013: onBattleEndVsCharフックで実装');
+    ok(C['ST17-003'].fx.onPlay[0].pos==='top' && C['OP03-104'].fx.onPlay[0].op==='peekLifeTopPlace', 'ST17-003=上固定scry / OP03-104=peekLifeTopPlace');
+    // EB01-011/EB02-025=コスト原子性（内部コスト成立後にrestThis）
+    ok(JSON.stringify(C['EB01-011'].fx.act).includes('"op":"restThis"') && !JSON.stringify(C['EB01-011'].fx.act.cost).includes('restSelf'), 'EB01-011: レストは内部コスト成立後（原子性）');
     // ブロッカー持ちKO（ST01-016）: hasKwフィルタ
     { const me=LP('OP11-041');
       C['__bl__']={no:'__bl__',name:'bl',type:'CHAR',color:[],cost:2,power:2000,counter:0,traits:[],blocker:true};

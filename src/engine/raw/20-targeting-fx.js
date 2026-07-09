@@ -160,8 +160,8 @@
           for (const c of seen) { if (c === pick) continue; P.deck.push(c); }
           if (pick) { pick._faceUp = !!op.faceUp; P.life.unshift(pick); flog(side, `「${pick.base.name}」をライフの上に${op.faceUp ? '表向きで' : ''}加えた`); }
           render(); break; }
-        case 'koBattledTarget': { // バトルした相手キャラをKOしてもよい→そうした場合このキャラをKO（ST08-013ボン・クレー。宣言時のアタック対象で近似）
-          const tg = ctx.target; if (!tg || tg.base.type !== 'CHAR' || isKoImmune(tg)) break;
+        case 'koBattledTarget': { // バトルした相手キャラをKOしてもよい→そうした場合このキャラをKO（ST08-013ボン・クレー。onBattleEndVsCharフックから呼ぶ）
+          const tg = ctx.target; if (!tg || tg.base.type !== 'CHAR' || isKoImmune(tg) || !G.players[tg.owner].chars.includes(tg)) break;
           let pay2 = P.isCPU ? (power(tg) >= power(self)) : await confirmUse(side, '相打ち', `バトルした「${tg.base.name}」をKOしますか？（そうした場合このキャラもKO）`, 'KOする');
           if (pay2 && !(await protectFromEffect(tg, 'ko', self))) { await koCard(tg, 'oppEffect'); await koCard(self, 'effect'); }
           break; }
@@ -409,7 +409,7 @@
           if (op.target === 'leader') targets = [P.leader];
           else if (op.target === 'self') targets = [self];
           else if (op.target === 'leaderAndChar') { targets = [P.leader]; const c = await chooseCard(side, P.chars, 'レストのドンを付与するキャラ', 'ownBig', true); if (c) targets.push(c); }
-          else if (op.target === 'chooseOwn') { const c = await chooseCard(side, [P.leader, ...P.chars].filter(c => matchFilter(c, opFilter(op))), 'レストのドンを付与する対象', 'ownBig', true); if (c) targets = [c]; }
+          else if (op.target === 'chooseOwn') { let daPool = [P.leader, ...P.chars].filter(c => matchFilter(c, opFilter(op))); if (op.excludePrev && ctx._donAttachPicked) daPool = daPool.filter(c => !ctx._donAttachPicked.includes(c)); const c = await chooseCard(side, daPool, 'レストのドンを付与する対象', 'ownBig', true); if (c) { (ctx._donAttachPicked = ctx._donAttachPicked || []).push(c); } if (c) targets = [c]; }
           // 公式: 効果による「レストのドン!!を付与」はレスト状態のドンを付ける。fromAny=「コストエリアのドン」＝アクティブ/レスト両方から付与
           for (const t of targets) {
             const avail = op.fromActive ? P.don.active : op.fromAny ? (P.don.rested + P.don.active) : P.don.rested;
@@ -602,24 +602,32 @@
           }
           render(); break;
         }
-        case 'scry': {
-          const scryN = op.n || op.look || 0; // ★look別名対応（fx側がlookで渡すカードが多数あり、op.nのみ読みでは0枚splice=完全無効だった）
+        case 'scry': { // 「デッキの上からN枚を見て、好きな順番に並び替え、デッキの上か下に置く」（全scryカード共通文言。pos:'top'=ST17-003の上固定）
+          const scryN = op.n || op.look || 0; // look別名対応（op.nのみ読みでは0枚splice=完全無効だった）
           const look = P.deck.splice(0, scryN);
-          flog(side, `デッキ上${scryN}枚を確認`);
-          if (!P.isCPU) {
-            let keep = look.slice(), pick;
-            while (keep.length) {
-              pick = await showPrompt({ title: 'デッキ操作', text: `上${scryN}枚を確認。デッキ下に送るカードを選択（残りは上に戻す）`, opts: [...keep.map(c => ({ t: c.base.name + ' を下へ', v: 'b:' + c.uid })), { t: '残りを上に戻す', v: 'done', primary: true }] });
-              if (pick === 'done' || !pick) break;
-              const c = keep.find(x => 'b:' + x.uid === pick); if (c) { keep.splice(keep.indexOf(c), 1); P.deck.push(c); }
+          flog(side, `デッキ上${look.length}枚を確認`);
+          if (!P.isCPU && look.length) {
+            // ①好きな順番に並び替え（上から順に選ぶ。reorderLife方式）
+            const remaining = look.slice(); const ordered = [];
+            while (remaining.length > 1) {
+              const v = await showPrompt({ title: 'デッキ操作', text: `上${scryN}枚を確認。${ordered.length + 1}番目（束の一番上側）に置くカードを選択`, opts: remaining.map((c, i) => ({ t: c.base.name, v: 'pick:' + i })) });
+              const idx = (typeof v === 'string' && v.indexOf('pick:') === 0) ? +v.slice(5) : 0;
+              ordered.push(remaining[idx]); remaining.splice(idx, 1);
             }
-            for (let i = keep.length - 1; i >= 0; i--)P.deck.unshift(keep[i]);
+            ordered.push(remaining[0]);
+            // ②束ごとデッキの上か下へ
+            let toBottom = false;
+            if (op.pos === 'bottom') toBottom = true;
+            else if (op.pos !== 'top') toBottom = (await showPrompt({ title: 'デッキ操作', text: '並び替えた束をデッキの上と下、どちらに置きますか？', opts: [{ t: 'デッキの上', v: 't', primary: true }, { t: 'デッキの下', v: 'b' }] })) === 'b';
+            if (toBottom) P.deck.push(...ordered);
+            else for (let i = ordered.length - 1; i >= 0; i--)P.deck.unshift(ordered[i]);
+            flog(side, `${look.length}枚を並び替えてデッキの${toBottom ? '下' : '上'}に置いた`);
           } else { for (let i = look.length - 1; i >= 0; i--)P.deck.unshift(look[i]); }
           render(); break;
         }
         case 'bottomOwn': { for (let i = 0; i < op.n; i++) { const c = await chooseFromHand(side, P.hand, 'デッキ下に置く手札を選択'); if (!c) break; P.hand.splice(P.hand.indexOf(c), 1); P.deck.push(reset(c)); } flog(side, `手札${op.n}枚をデッキ下`); break; }
         // デッキ上 look 枚から filter一致のキャラ1枚を登場、残りをデッキ下（OP11-051サンジ）。grantKwで登場時付与。
-        case 'playFromDeck': { const all = op.look === 'all'; const look = all ? P.deck.splice(0, P.deck.length) : P.deck.splice(0, op.look || 5); const cands = look.filter(c => (c.base.type === 'CHAR' || c.base.type === 'STAGE') && matchFilter(c, op.filter || {})); const pc = P.isCPU ? cands.slice().sort((a, b) => (b.base.power || 0) - (a.base.power || 0))[0] : await chooseCard(side, cands, '登場させるカードを選択（任意）', 'ownBig', true); if (pc) { look.splice(look.indexOf(pc), 1); if (pc.base.type === 'STAGE') { if (P.stage) P.trash.push(reset(P.stage)); P.stage = pc; pc.owner = side; pc.rested = false; if (pc.base.fx && pc.base.fx.onPlay && !isNegated(pc)) await runFx(pc.base.fx.onPlay, { self: pc, side }); } else { await summon(side, pc, false); if (op.rested && P.chars.includes(pc)) pc.rested = true; if (op.grantKw && P.chars.includes(pc)) pc.kwGrant.push({ kw: op.grantKw, dur: durTag(op.grantDuration, 'turn') }); } } for (const r of look) P.deck.push(r); if (all || op.shuffle) shuffle(P.deck); flog(side, all ? 'デッキから登場（シャッフル）' : `デッキ上${op.look || 5}枚から登場/デッキ下`); render(); break; } // look:'all'=デッキ全体から登場しシャッフル（OP08-071/073）／STAGE対応（OP08-100）／rested=レストで登場（OP08-007）
+        case 'playFromDeck': { const all = op.look === 'all'; const look = all ? P.deck.splice(0, P.deck.length) : P.deck.splice(0, op.look || 5); const cands = look.filter(c => (c.base.type === 'CHAR' || c.base.type === 'STAGE') && matchFilter(c, op.filter || {})); const pc = P.isCPU ? cands.slice().sort((a, b) => (b.base.power || 0) - (a.base.power || 0))[0] : await chooseCard(side, cands, '登場させるカードを選択（任意）', 'ownBig', true); if (pc) { look.splice(look.indexOf(pc), 1); if (pc.base.type === 'STAGE') { if (P.stage) P.trash.push(reset(P.stage)); P.stage = pc; pc.owner = side; pc.rested = false; if (pc.base.fx && pc.base.fx.onPlay && !isNegated(pc)) await runFx(pc.base.fx.onPlay, { self: pc, side }); } else { await summon(side, pc, false); if (op.rested && P.chars.includes(pc)) pc.rested = true; if (op.grantKw && P.chars.includes(pc)) pc.kwGrant.push({ kw: op.grantKw, dur: durTag(op.grantDuration, 'turn') }); } } let pfdTop = false; if (op.restPos === 'choose' && !all && look.length && !P.isCPU) pfdTop = (await showPrompt({ title: '残りのカード', text: `残り${look.length}枚をデッキの上と下、どちらに置きますか？`, opts: [{ t: 'デッキの下', v: 'b', primary: true }, { t: 'デッキの上', v: 't' }] })) === 't'; if (pfdTop) { for (let i = look.length - 1; i >= 0; i--)P.deck.unshift(look[i]); } else for (const r of look) P.deck.push(r); if (all || op.shuffle) shuffle(P.deck); flog(side, all ? 'デッキから登場（シャッフル）' : `デッキ上${op.look || 5}枚から登場・残りはデッキの${pfdTop ? '上' : '下'}`); render(); break; } // restPos:'choose'=「残りをデッキの上か下に置く」（ST12-010/013/017） // look:'all'=デッキ全体から登場しシャッフル（OP08-071/073）／STAGE対応（OP08-100）／rested=レストで登場（OP08-007）
         case 'discardOwn': { const n = op.all ? P.hand.length : (op.toSize != null ? Math.max(0, P.hand.length - op.toSize) : op.n); for (let i = 0; i < n; i++) { const c = await chooseFromHand(side, P.hand, '⚠ 捨てる手札を選択', null, false, 'danger'); if (!c) break; P.hand.splice(P.hand.indexOf(c), 1); P.trash.push(reset(c)); } if (n) { flog(side, `手札${n}枚を捨てた`); await fireHandDiscarded(side, n); } break; }
         case 'cond': if (checkCond(op.check, side, self)) await runFx(op.then, ctx); else { ctx._declined = true; if (op.else) await runFx(op.else, ctx); } break; // 条件不成立=未発動（onceゲート復元用マーカー）
         // 手札公開コスト: 手札の filter 一致カードを count 枚公開できる場合のみ then を実行（公開=手札に残す。任意）

@@ -327,6 +327,48 @@
       const t = assessThreat(side, 'next');
       return t.maxHits >= G.players[side].life.length + Math.max(0, t.blk - 1);
     }
+    // E42部品の個別on/off（G._h2Parts 未設定なら全部on。OPCG_H2=lethal等で部品を単離測定）
+    function h2On(part) { const t = G._h2Parts; return !t || !!t[part]; }
+    /* ★E42a: cpuCanLethal の精密版（heur2ゲート）。相手の防御力を「手札枚数×0.5」でなく
+       「アクティブブロッカー + 手札枚数×(hand+deckプールのカウンター平均)」で見積り、E40と同じ貪欲割当で判定。
+       プールの多重集合は determinize と同じ情報水準（個々の手札は読まない＝セミフェア維持）。 */
+    function threatCanLethal(side) {
+      const P = G.players[side], D = G.players[opp(side)];
+      const Lp = power(D.leader);
+      let don = P.don.active;
+      const atks = [];
+      for (const c of [P.leader, ...P.chars]) {
+        if (!canCardAttack(c) || !canTargetLeader(c)) continue;
+        const need = Math.max(0, Math.ceil((Lp - power(c)) / 1000));
+        atks.push({ need, hits: hasKw(c, 'doubleAttack') ? 2 : 1, cost: Math.max(0, power(c) + need * 1000 - Lp) + 1000 });
+      }
+      atks.sort((a, b) => a.need - b.need);
+      let dmg = 0; const landed = [];
+      for (const a of atks) { if (a.need <= don) { don -= a.need; dmg += a.hits; landed.push(a); } }
+      const blk = D.chars.filter(c => !c.rested && hasKw(c, 'blocker')).length;
+      const pool = [...D.hand, ...D.deck];
+      let poolCtr = 0; for (const c of pool) poolCtr += (c.base.counter || 0);
+      let wall = pool.length ? (poolCtr / pool.length) * D.hand.length : 0;   // 期待カウンター総量（カウンターイベント分は未計上=保守側）
+      let blkLeft = blk; const rest = [];
+      for (const a of landed.slice().sort((x, y) => y.hits - x.hits || y.cost - x.cost)) { if (blkLeft > 0) blkLeft--; else rest.push(a); }
+      let eff = 0;
+      for (const a of rest.sort((x, y) => y.hits - x.hits || x.cost - y.cost)) { if (wall >= a.cost) wall -= a.cost; else eff += a.hits; }
+      return eff >= D.life.length + 1;
+    }
+    /* ★E42b: トリガーの有用性ゲート（heur2）。「全opが相手キャラ対象の除去/妨害系」かつ「そのfilterに合致する相手キャラが1体も居ない」
+       トリガーは空砲＝発動せず手札に加える方が得（手札1枚の価値）。draw等が混ざる場合は常に発動（保守側）。 */
+    function triggerWorthUsing(side, card) {
+      const fx = (card.base.fx && card.base.fx.trigger) || [];
+      const allOps = []; const collect = arr => { for (const o of arr || []) { allOps.push(o); if (o.then) collect(o.then); if (o.fx) collect(o.fx); if (o.options) for (const op2 of o.options) collect(op2.fx); } };
+      collect(fx);
+      if (!allOps.length) return true;
+      const oppT = ['ko', 'koZero', 'bounce', 'deckBottom', 'restChar', 'lock', 'restImmune', 'setAttackBan', 'denyBlocker', 'negateChoose', 'koByTotalPower'];
+      const isOppRemoval = o => oppT.includes(o.op) || ((o.op === 'powerMod' || o.op === 'setPower') && o.side === 'opp');
+      const removals = allOps.filter(isOppRemoval);
+      const others = allOps.filter(o => !isOppRemoval(o) && o.op !== 'cond');
+      if (removals.length && !others.length && removals.every(o => { try { return oppChars(side, opFilter(o)).length === 0; } catch (e) { return false; } })) return false;
+      return true;
+    }
     function cpuPickAttack(side, plan) {
       const P = G.players[side], D = G.players[opp(side)];
       const Lp = power(D.leader);
@@ -450,7 +492,7 @@
       for (const c of [P.leader, ...P.chars, ...(P.stage ? [P.stage] : [])]) { if (c.base.fx && c.base.fx.act && c._actTurn !== G.turnSeq && !isNegated(c)) { const cost = c.base.fx.act.cost || {}; if ((!cost.don || P.don.active >= cost.don) && (!cost.restSelf || !c.rested) && actWorthUsing(side, c)) { if (cost.don) payDon(side, cost.don); if (cost.restSelf) c.rested = true; c._actTurn = G.turnSeq; await fxNote(side, '起動メイン', c.base.name); await runFx(c.base.fx.act.fx, { self: c, side }); await sleep(160); } } }
       // 4) アタック（リーサルが見えたらリーダー集中、そうでなければ盤面と圧を使い分け）
       if (canAttackThisTurn(side)) {
-        if (cpuCanLethal(side)) { plan.lethal = true; plan.donReserve = 0; }
+        if ((isHeur2(side) && h2On('lethal')) ? threatCanLethal(side) : cpuCanLethal(side)) { plan.lethal = true; plan.donReserve = 0; }   // ★E42a: heur2はプール期待値のリーサル判定
         else if (!G._sim && typeof requiredReserveSim === 'function') {
           // ★案B: 「相手の次ターン最善攻めに耐える最小ドン」を決定化シミュで算出して温存。
           //   耐えられない/脅威なし→0（攻め切る）。Claude/方針の温存値とは大きい方を採用（安全側）。

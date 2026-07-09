@@ -107,7 +107,8 @@
         const at = findCard(a.auid), tg = findCard(a.tuid); if (!at || !tg) return;
         const need = Math.max(0, Math.ceil((power(tg) - power(at)) / 1000));   // 対象に届く最小ドンだけ付与
         if (need > P.don.active) return;   // ★ドンを全て使っても対象パワーに届かない＝自滅手は実行しない（candidateActionsで除外済の保険）
-        for (let i = 0; i < need; i++) { at.attachedDon++; P.don.active--; }
+        const total = need + Math.min(a.extraDon || 0, Math.max(0, P.don.active - need));  // ★E41: +1ドン上乗せ変種（払えない分は切り捨て）
+        for (let i = 0; i < total; i++) { at.attachedDon++; P.don.active--; }
         await declareAttack(at, tg);
       }
     }
@@ -339,7 +340,12 @@
             // ★太ドン同値除外(cpuPickAttックと同方針・ユーザー観察): 2ドン以上付与してリーダーへ同値は相手カウンター1枚で防がれ付与ドン使い切りの大損。相手手札0は別。
             const need = Math.max(0, Math.ceil((power(tg) - power(at)) / 1000));
             if (need >= 2 && (power(at) + need * 1000) === power(tg) && D.hand.length > 0) continue;
-            acts.push(a); continue;
+            acts.push(a);
+            // ★E41(opt-in G._atkDonVar): 「+1ドン上乗せ」変種＝相手のカウンター要求を1段(1000)引き上げるライン選択。
+            //   現行の行動空間は常に最小付与(同値)のみで、この段はpuctの探索空間に存在しなかった（真の欠落）。
+            //   相手が手札で防ぎうる時だけ意味がある(手札0なら同値で十分)。既定puctはフラグ無し＝バイト不変。
+            if (G._atkDonVar && D.hand.length > 0 && need + 1 <= P.don.active) acts.push({ k: 'attack', auid: a.auid, tuid: a.tuid, extraDon: 1 });
+            continue;
           }
           const threat = hasKw(tg, 'blocker') || power(tg) >= 5000 || (tg.base.fx && (tg.base.fx.onKO || tg.base.fx.act));
           if (threat) acts.push(a);                                        // 脅威キャラのKOのみ
@@ -434,8 +440,8 @@
       const samples = opt.samples || 10, risk = opt.risk != null ? opt.risk : 0.12;
       const maxR = Math.min(opt.maxR != null ? opt.maxR : 4, G.players[me].don.active || 0);
       // 明確な脅威が無いなら温存不要（高コストなsimを省略）
-      // ★E40(heur3): 脅威ゲートをドン到達考慮の精密版に置換（isThreatAware時のみ。既定は従来式）
-      if (typeof isThreatAware === 'function' && isThreatAware(me) && typeof threatOppLethal === 'function') {
+      // ★E40(heur3): 脅威ゲートをドン到達考慮の精密版に置換（isThreatAware＋thrOn('reserve')時のみ。既定は従来式）
+      if (typeof isThreatAware === 'function' && isThreatAware(me) && thrOn('reserve') && typeof threatOppLethal === 'function') {
         if (!threatOppLethal(me)) return 0;
       } else if (typeof oppCanThreatenLethal === 'function' && !oppCanThreatenLethal(me)) return 0;
       const snap = cloneGameState(G);                        // 決定化の元（純クローン）
@@ -586,7 +592,8 @@
     }
     // 1手分の探索: 候補を prior で上位Wに絞り、各を K 決定化ロールアウト平均(境界価値)で評価。Q降順 [{a,q}] を返す。
     async function puctSearch(side, opt) {
-      const K = (opt && opt.det) || 3, LOOK = (opt && opt.look != null) ? opt.look : 1, W = (opt && opt.width) || 5;
+      const K = (opt && opt.det) || 3, LOOK = (opt && opt.look != null) ? opt.look : 1,
+        W = ((opt && opt.width) || 5) + (G._atkDonVar ? 2 : 0);   // ★E41: ドン段変種の分だけ幅を広げ、priorの同点圧迫で基本候補を落とさない
       const all = candidateActions(side).filter(a => a.k !== 'stop');
       if (!all.length) return { scored: [], stop: true };
       const top = all.map(a => ({ a, p: priorScore(side, a) })).sort((x, y) => y.p - x.p).slice(0, W).map(x => x.a);
@@ -659,6 +666,8 @@
       } finally { if (typeof showThinking === 'function') showThinking(false); render(); }   // 思考終了→バッジ消去＋実盤面を再描画
     }
     AGENTS.puct = { takeTurn: puctTurn };   // P.agent='puct'（policy-guided 決定化ロールアウト探索）
+    // ★E41: puct+「リーダー攻撃の+1ドン上乗せ」変種（G._atkDonVarで候補生成が拡張。既定puctはバイト不変）
+    AGENTS.puctdon = { takeTurn: async (side) => { G._atkDonVar = 1; try { return await puctTurn(side); } finally { G._atkDonVar = 0; } } };
 
     /* ===== ハイブリッド: 戦略(プロファイル/Claude) × 戦術(puct探索) =====
        戦略オブジェクト(shape)を G._shape/G._planOverride に積んで puct を走らせる共有コア。

@@ -281,6 +281,61 @@ function chk(name, cond) { if (cond) pass++; else { fail++; console.log('  ✗ '
   const w12 = await playHeur3(52);
   chk('heur3 1局完走（勝者確定・フリーズ無し）', w12 === 'me' || w12 === 'cpu');
 
+  // 13) ★E41: puct攻撃候補の+1ドン変種（G._atkDonVar・既定バイト不変）
+  chk('エージェント登録: puctdon', !!AGENTS.puctdon);
+  G.players = {}; G.winner = null; seedRng(61); startGame('teach', 'teach');
+  // ★startGameの初期ターン連鎖を先に消化させる（meは人間のまま＝人間手番で停止する）。
+  //   これをしないと後続の await(sleep=setImmediate) に保留中の beginTurn が割り込み、付与ドンを回収してしまう。
+  for (let k = 0; k < 300 && !G.myActable && !G.winner; k++) await new Promise(r => setImmediate(r));
+  const P13 = G.players.me, O13 = G.players.cpu;
+  G.active = 'me'; P13.turnsTaken = 3; P13.leader.rested = false;
+  P13.don = { active: 5, rested: 0 }; O13.hand.length = 3;
+  P13.isCPU = true; O13.isCPU = true;
+  G._atkDonVar = 0;
+  const base13 = candidateActions('me').filter(a => a.k === 'attack' && a.extraDon);
+  chk('E41: フラグ無しでは extraDon 候補ゼロ（既定バイト不変）', base13.length === 0);
+  G._atkDonVar = 1;
+  const var13 = candidateActions('me').filter(a => a.k === 'attack' && a.extraDon && findCard(a.tuid) === O13.leader);
+  chk('E41: フラグonでリーダー攻撃の+1ドン変種が生成される', var13.length >= 1);
+  // applyAction が extraDon を1枚多く付与する
+  if (var13.length) {
+    const a13 = var13[0]; const at13 = findCard(a13.auid);
+    const donBefore = P13.don.active, attBefore = at13.attachedDon || 0;
+    const snap13 = cloneGameState(G), saved13 = Object.assign({}, G), rng13 = rngState();
+    loadGameState(determinize(snap13, 'me')); G._sim = true; G._noChain = true;
+    const at13s = findCard(a13.auid); const attB4 = at13s.attachedDon || 0; const donB4 = G.players.me.don.active;
+    const tg13 = findCard(a13.tuid);
+    const need13 = Math.max(0, Math.ceil((power(tg13) - power(at13s)) / 1000));
+    let donAfterAttach = null;
+    const _da13 = declareAttack; declareAttack = async function (a, t) { donAfterAttach = G.players.me.don.active; return _da13(a, t); };
+    await applyAction('me', a13);
+    declareAttack = _da13;
+    chk('E41: applyActionが+1ドン多く付与する', donAfterAttach === donB4 - (need13 + 1));
+    G._sim = false; G._noChain = false;
+    for (const k of Object.keys(G)) delete G[k]; Object.assign(G, saved13); rngState(rng13);
+    chk('E41: 復元後の実状態が不変', P13.don.active === donBefore && (findCard(a13.auid).attachedDon || 0) === attBefore);
+  } else { chk('E41: (候補なしスキップ)', true); chk('E41: (候補なしスキップ2)', true); }
+  G._atkDonVar = 0;
+
+  // 14) ★E42: プール期待値リーサル判定と トリガー有用性ゲート（heur2）
+  G.players = {}; G.winner = null; seedRng(71); startGame('teach', 'teach');
+  const P14 = G.players.me, O14 = G.players.cpu;
+  P14.isCPU = true; G.active = 'me'; G.turnSeq = 8; P14.turnsTaken = 3;
+  chk('E42a: threatCanLethal は bool', typeof threatCanLethal('me') === 'boolean');
+  // 相手ライフ0・盤面素通しならリーサル判定になる
+  O14.life.length = 0; O14.chars = []; O14.hand.length = 0; O14.deck.length = 20;
+  P14.leader.rested = false; P14.don.active = 3;
+  chk('E42a: 相手ライフ0・防御なし→リーサル真', threatCanLethal('me') === true);
+  // E42b: 相手キャラ対象のKOトリガーは、相手の場が空なら「発動しない」
+  const trigCard14 = { base: { no: 'X', name: 'テスト', fx: { trigger: [{ op: 'ko', maxCost: 4 }] } } };
+  O14.chars = [];
+  chk('E42b: 対象不在の除去トリガー→発動しない', triggerWorthUsing('me', trigCard14) === false);
+  O14.chars = [inst('OP16-110', 'cpu')];
+  chk('E42b: 対象がいれば発動する', triggerWorthUsing('me', trigCard14) === true);
+  const trigDraw14 = { base: { no: 'Y', name: 'テスト2', fx: { trigger: [{ op: 'draw', n: 2 }] } } };
+  O14.chars = [];
+  chk('E42b: draw系トリガーは常に発動', triggerWorthUsing('me', trigDraw14) === true);
+
   console.log('  AI基盤テスト: pass=' + pass + ' fail=' + fail);
   process.exit(fail ? 1 : 0);
 })();

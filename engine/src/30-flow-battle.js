@@ -480,6 +480,15 @@
       G.players[dSide]._teachSacUid = null;
       clearAtkAnnounce();
       checkWinByLife();
+      // バトル終了時フック（ST08-013ボン・クレー「相手のキャラとバトルしたバトル終了時」）: アタッカー生存かつ最終対象がキャラの時のみ
+      if (!G.winner && blkTarget && blkTarget.base.type === 'CHAR' && (attacker === G.players[aSide].leader || G.players[aSide].chars.includes(attacker)) && attacker.base.fx && attacker.base.fx.onBattleEndVsChar && !isNegated(attacker)) {
+        const beCfg = attacker.base.fx.onBattleEndVsChar;
+        const beOnce = Array.isArray(beCfg) && beCfg.some(x => x.once === 'turn');
+        if (!(beOnce && attacker._battleEndTurn === G.turnSeq)) {
+          if (beOnce) attacker._battleEndTurn = G.turnSeq;
+          await runFx(beCfg, { self: attacker, side: aSide, target: blkTarget });
+        }
+      }
       // ★状態を確定してから描画（render後にbusyを戻すと「処理中」表示のまま固まる＝アタック後ターン終了不能バグ）
       if (G.players[aSide].isCPU) { G.busy = true; } else { G.busy = false; G.myActable = true; }
       render();
@@ -753,7 +762,11 @@
       render();
     }
     async function askTrigger(side, card) {
-      if (G.players[side].isCPU) return true; // CPUは基本発動
+      if (G.players[side].isCPU) {
+        // ★E42b(heur2): 対象不在の除去系トリガーは空砲＝発動せず手札へ。既定CPUは従来どおり常に発動。
+        if (typeof isHeur2 === 'function' && isHeur2(side) && h2On('trigger') && typeof triggerWorthUsing === 'function' && !triggerWorthUsing(side, card)) { flog(side, `【トリガー】対象なし→「${card.base.name}」を手札に`); return false; }
+        return true; // CPUは基本発動
+      }
       const advice = await defenseAdvice(side, 'トリガー発動', '「' + card.base.name + '」を発動 or 手札に加える');
       return await new Promise(res => showPrompt({
         cls: 'defense',

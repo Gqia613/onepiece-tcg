@@ -16,6 +16,7 @@ const N = +(process.env.OPCG_N || 60);
 const AGENT = process.env.OPCG_AGENT || 'mcts';   // 評価するhero方策（mcts / vlook 等）。heuristicと同一seedで比較
 const BASE = process.env.OPCG_BASE || 'heuristic'; // ★E41: 基準アームの方策。puct系の上乗せ改良は OPCG_BASE=puct で同一プロセス内の直接ペア比較にする（DB変動に頑健）
 const THR = process.env.OPCG_THR || '';            // ★E40: heur3部品の単離（例 OPCG_THR=hold → holdのみon）。空=全部on
+const H2 = process.env.OPCG_H2 || '';              // ★E42: heur2部品の単離（lethal / trigger）。空=全部on
 const SEED0 = +(process.env.OPCG_SEED0 || 600000);
 const CHUNK = +(process.env.OPCG_CHUNK || 50);   // 1harnessあたりの試合数（mcts ~8s なので 50×8=400s<590s）
 // AGENT=hybrid のLLM戦略キャッシュ(fixture)。事前ウォーム(tools/llm-warm-cache.js)した戦略を流し込み、live問い合わせ無しで決定的に再生する。
@@ -33,6 +34,7 @@ humanPick = function (c) { return Promise.resolve(c[0] || null); };
 if (typeof loadLLMCache === 'function') loadLLMCache(` + LLM_CACHE_JSON + `);  // AGENT=hybrid用のLLM戦略キャッシュ(あれば。無ければnull=liveフォールバック)
 const HERO = ` + JSON.stringify(hero) + `, VILLAIN = ` + JSON.stringify(villain) + `, S0 = ` + s0 + `, N = ` + n + `, AGENT = ` + JSON.stringify(AGENT) + `, BASE = ` + JSON.stringify(BASE) + `, LIFE_AGGR = ` + (+process.env.OPCG_LIFE_AGGR || 0) + `, NOSKIP = ` + (process.env.OPCG_NOSKIP === '1') + `;
 G._thrParts = ` + (THR ? JSON.stringify(Object.fromEntries(THR.split(',').map(s => [s.trim(), 1]))) : 'null') + `;   // E40部品の単離（null=全部on）
+G._h2Parts = ` + (H2 ? JSON.stringify(Object.fromEntries(H2.split(',').map(s => [s.trim(), 1]))) : 'null') + `;    // E42部品の単離（null=全部on）
 const MCTS_R = ` + (+process.env.OPCG_MCTS_ROLLOUTS || 0) + `, MCTS_D = ` + (+process.env.OPCG_MCTS_DEPTH || 0) + `;   // 0=既定(8/4)のまま。E36: mctsの計算スケーリング測定用
 const SAVED_W = (typeof window !== 'undefined') ? window.AI_WEIGHTS : null;  // ロード済み学習重み（あれば）
 const HAS_LEARNED = !!(SAVED_W && (SAVED_W.byLeader || SAVED_W.w));
@@ -104,8 +106,8 @@ function signTestP(imp, reg) {
     }
     if (DUMP) dumpPairs.push({ hero, villain, rows });
     const effH = ((mhWin - hWin) / N * 100), pH = signTestP(impH, regH);
-    let line = '  ' + hero + ' vs ' + villain + ' (N=' + N + '): heuristic=' + (100 * hWin / N).toFixed(1) + '%  ' + AGENT + '=' + (100 * mhWin / N).toFixed(1)
-      + '%(対h ' + (effH >= 0 ? '+' : '') + effH.toFixed(1) + 'pt 改善' + impH + '/退行' + regH + ' p=' + pH.toFixed(3) + (pH < 0.05 ? '★' : '') + ')';
+    let line = '  ' + hero + ' vs ' + villain + ' (N=' + N + '): ' + BASE + '=' + (100 * hWin / N).toFixed(1) + '%  ' + AGENT + '=' + (100 * mhWin / N).toFixed(1)
+      + '%(対' + (BASE === 'heuristic' ? 'h' : BASE) + ' ' + (effH >= 0 ? '+' : '') + effH.toFixed(1) + 'pt 改善' + impH + '/退行' + regH + ' p=' + pH.toFixed(3) + (pH < 0.05 ? '★' : '') + ')';
     if (learned) {
       const effL = ((mlWin - hWin) / N * 100), effLvsH = ((mlWin - mhWin) / N * 100), p = signTestP(imp, reg), pL = signTestP(impL, regL);
       line += '  ' + AGENT + '学習=' + (100 * mlWin / N).toFixed(1) + '%(対h ' + (effL >= 0 ? '+' : '') + effL.toFixed(1) + 'pt 改善' + impL + '/退行' + regL + ' p=' + pL.toFixed(3) + (pL < 0.05 ? '★' : '') + ')'
