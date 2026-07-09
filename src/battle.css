@@ -6241,36 +6241,7 @@ button.hb-chip:not(.zero):not([disabled]):hover {
   }
 }
 
-/* ===== 18. マイデッキのヒーロー帯（自分のリーダーが並ぶ） ===== */
+/* ===== 18. マイデッキ ===== */
 .select-wrap.decks-wrap {
   padding-top: 12px;
 }
-
-.decks-hero {
-  display: flex;
-  justify-content: center;
-  align-items: flex-end;
-  height: 86px;
-  margin: -2px 0 4px;
-  pointer-events: none;
-  -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 12%, #000 88%, transparent 100%);
-  mask-image: linear-gradient(90deg, transparent 0, #000 12%, #000 88%, transparent 100%);
-}
-
-.dh-card {
-  width: 58px;
-  aspect-ratio: 5 / 7;
-  object-fit: cover;
-  border-radius: var(--cardr-sm);
-  border: 1px solid rgba(255, 255, 255, .18);
-  box-shadow: 0 10px 24px rgba(0, 0, 0, .65);
-  margin: 0 -8px;
-  opacity: .8;
-}
-
-.dh-card:nth-child(1) { transform: rotate(-14deg) translateY(14px) }
-.dh-card:nth-child(2) { transform: rotate(-8deg) translateY(6px) }
-.dh-card:nth-child(3) { transform: rotate(-2deg); z-index: 2 }
-.dh-card:nth-child(4) { transform: rotate(4deg) translateY(2px); z-index: 1 }
-.dh-card:nth-child(5) { transform: rotate(10deg) translateY(9px) }
-.dh-card:nth-child(6) { transform: rotate(16deg) translateY(18px) }
