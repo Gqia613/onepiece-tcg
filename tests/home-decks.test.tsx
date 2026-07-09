@@ -86,8 +86,14 @@ describe('Decks（マイデッキ/デッキ管理）', () => {
     render(<Decks />, '/decks');
     expect(document.body.textContent).not.toContain('まだ保存したデッキがありません');
     expect(document.body.textContent).toContain('テスト保存デッキ');
-    // クラウドデッキには削除（×）ボタンが付く
-    expect(document.querySelector('.deck-card button[title="このデッキを削除"]')).toBeTruthy();
+    // タイル上にはアイコンを出さない（操作はカードリストモーダル内に集約）
+    expect(document.querySelector('.deck-card button[title="このデッキを削除"]')).toBeFalsy();
+    // タップでモーダルを開くと、クラウドデッキには「編集」「削除」が出る
+    const card = Array.from(document.querySelectorAll('.deck-card')).find((c) => (c.textContent || '').includes('テスト保存デッキ'))!;
+    act(() => { fireEvent.click(card); });
+    const modalBtns = () => Array.from(document.querySelectorAll('.modal button')).map((b) => b.textContent || '');
+    expect(modalBtns()).toContain('編集');
+    expect(modalBtns()).toContain('削除');
     act(() => { engine.G.customDecks = []; useEngineStore.getState().bump(); });
   });
 

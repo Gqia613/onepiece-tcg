@@ -45,10 +45,13 @@ function Thumb({ no, name, count, cost, onZoom }: { no: string; name: string; co
   );
 }
 
-export function DeckListModal({ deck, C, onClose }: {
+export function DeckListModal({ deck, C, onClose, onEdit, editLabel, onDelete }: {
   deck: Deck | null;
   C: Record<string, any>;
   onClose: () => void;
+  onEdit?: () => void;   // ビルダーで開く（クラウド=編集 / プリセット=コピーして編集）
+  editLabel?: string;
+  onDelete?: () => void; // クラウド保存デッキのみ
 }) {
   const open = !!deck;
   const [zoom, setZoom] = useState<{ no: string; name: string } | null>(null); // タップ拡大中のカード
@@ -132,6 +135,14 @@ export function DeckListModal({ deck, C, onClose }: {
                 </div>
               </div>
             </div>
+
+            {/* 操作（編集/削除）: タイル上のアイコンを廃止し、モーダルに集約 */}
+            {(onEdit || onDelete) ? (
+              <div className="dsm-actions" style={{ justifyContent: 'flex-start', margin: '10px 0 2px' }}>
+                {onEdit ? <button className="dsm-pill gold" onClick={onEdit}>{editLabel || '編集'}</button> : null}
+                {onDelete ? <button className="dsm-pill danger" onClick={onDelete}>削除</button> : null}
+              </div>
+            ) : null}
 
             {section('CHAR', 'キャラクター')}
             {section('EVENT', 'イベント')}

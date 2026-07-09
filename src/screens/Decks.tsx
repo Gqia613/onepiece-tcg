@@ -20,6 +20,7 @@ export default function Decks() {
   const [msg, setMsg] = useState<{ text: string; err?: boolean } | null>(null);
   const [busy, setBusy] = useState(false);
   const [listDeck, setListDeck] = useState<Deck | null>(null); // カードリスト表示中のデッキ
+  const [delDeck, setDelDeck] = useState<Deck | null>(null);   // 削除確認モーダル対象
   if (!engine) return null;
   const G = engine.G;
 
@@ -46,8 +47,8 @@ export default function Decks() {
     }
   }
 
-  async function onDeleteDeck(id: string, name: string) {
-    if (!confirm(`「${name}」を削除しますか？`)) return;
+  // 削除はカードリストモーダル内の「削除」→確認モーダル（window.confirm廃止・DeckSelectと同デザイン）
+  async function doDeleteDeck(id: string) {
     await deleteCloudDeck(engine!, id);
     useEngineStore.getState().bump();
   }
@@ -60,6 +61,7 @@ export default function Decks() {
   // ビルダーで保存直後に遷移してきた場合、そのデッキをお祝いパルスでハイライト
   const savedId: string | undefined = (useLocation().state as any)?.savedId;
 
+  // タイル上のアイコン（カードリスト/編集/削除）は出さない＝タップでモーダルを開き、操作はモーダル内に集約
   const grid = (decks: Deck[]) => (
     <div className="deck-grid">
       {decks.map((d) => (
@@ -69,10 +71,6 @@ export default function Decks() {
           highlight={d.id === savedId}
           selected={false}
           onSelect={() => setListDeck(d)}
-          onDelete={(d as any).cloud ? () => onDeleteDeck(d.id, d.name) : undefined}
-          onShowList={() => setListDeck(d)}
-          onEdit={d.list ? () => openBuilder(d) : undefined}
-          editLabel={(d as any).cloud ? '編集' : 'コピーして編集'}
           hideTier
         />
       ))}
@@ -102,7 +100,7 @@ export default function Decks() {
         ) : null}
       </div>
 
-      <div className="sect-label">マイデッキ（クラウド保存 {custom.length}）</div>
+      <div className="sect-label">マイデッキ（{custom.length}）</div>
       {custom.length > 0 ? grid(custom) : (
         <div className="decks-empty">
           まだ保存したデッキがありません。
@@ -113,7 +111,34 @@ export default function Decks() {
       <div className="sect-label">プリセットデッキ（{presets.length}）</div>
       {grid(presets)}
 
-      <DeckListModal deck={listDeck} C={engine.C || {}} onClose={() => setListDeck(null)} />
+      <DeckListModal
+        deck={listDeck}
+        C={engine.C || {}}
+        onClose={() => setListDeck(null)}
+        onEdit={listDeck?.list ? () => { const d = listDeck; setListDeck(null); openBuilder(d); } : undefined}
+        editLabel={(listDeck as any)?.cloud ? '編集' : 'コピーして編集'}
+        onDelete={(listDeck as any)?.cloud ? () => setDelDeck(listDeck) : undefined}
+      />
+
+      {/* 削除確認（DeckSelectと同デザイン） */}
+      {delDeck ? (
+        <div className="ds-confirm-back" onClick={() => setDelDeck(null)}>
+          <div className="ds-confirm" onClick={(e) => e.stopPropagation()}>
+            <h3>デッキを削除</h3>
+            <p>「{delDeck.name}」を削除しますか？<br />この操作は取り消せません。</p>
+            <div className="ds-confirm-btns">
+              <button
+                className="dsc-del"
+                onClick={async () => {
+                  const d = delDeck; setDelDeck(null); setListDeck(null);
+                  await doDeleteDeck(d.id);
+                }}
+              >削除する</button>
+              <button className="dsc-cancel" onClick={() => setDelDeck(null)}>やめる</button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }
