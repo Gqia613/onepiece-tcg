@@ -5717,19 +5717,6 @@ button.hb-chip:not(.zero):not([disabled]):hover {
   background-clip: text;
   color: transparent;
   filter: drop-shadow(0 0 14px rgba(255, 200, 87, .65));
-  animation: vsPulse 1.6s ease-in-out infinite;
-}
-
-@keyframes vsPulse {
-
-  0%,
-  100% {
-    transform: scale(1)
-  }
-
-  50% {
-    transform: scale(1.12)
-  }
 }
 
 /* --- 設定（先攻/CPU）: 整列グリッド。ラベル幅を揃え、行ごとのガタつきを無くす --- */
@@ -5922,20 +5909,6 @@ button.hb-chip:not(.zero):not([disabled]):hover {
   transform: scale(1);
   filter: none;
   z-index: 2;
-  /* 遅延あり＝先に拡大トランジション(.28s)を見せてから浮遊を開始 */
-  animation: dscFloat 3.2s ease-in-out .35s infinite;
-}
-
-@keyframes dscFloat {
-
-  0%,
-  100% {
-    transform: scale(1) translateY(0)
-  }
-
-  50% {
-    transform: scale(1) translateY(-5px)
-  }
 }
 
 .dsc-item .art {
@@ -6293,12 +6266,11 @@ button.hb-chip:not(.zero):not([disabled]):hover {
   box-shadow: 0 10px 24px rgba(0, 0, 0, .65);
   margin: 0 -8px;
   opacity: .8;
-  animation: hfcFloat 6.5s ease-in-out infinite;
 }
 
-.dh-card:nth-child(1) { transform: rotate(-14deg) translateY(14px); animation-delay: 0s }
-.dh-card:nth-child(2) { transform: rotate(-8deg) translateY(6px); animation-delay: .9s }
-.dh-card:nth-child(3) { transform: rotate(-2deg); z-index: 2; animation-delay: 1.8s }
-.dh-card:nth-child(4) { transform: rotate(4deg) translateY(2px); z-index: 1; animation-delay: 2.7s }
-.dh-card:nth-child(5) { transform: rotate(10deg) translateY(9px); animation-delay: 3.6s }
-.dh-card:nth-child(6) { transform: rotate(16deg) translateY(18px); animation-delay: 4.5s }
+.dh-card:nth-child(1) { transform: rotate(-14deg) translateY(14px) }
+.dh-card:nth-child(2) { transform: rotate(-8deg) translateY(6px) }
+.dh-card:nth-child(3) { transform: rotate(-2deg); z-index: 2 }
+.dh-card:nth-child(4) { transform: rotate(4deg) translateY(2px); z-index: 1 }
+.dh-card:nth-child(5) { transform: rotate(10deg) translateY(9px) }
+.dh-card:nth-child(6) { transform: rotate(16deg) translateY(18px) }

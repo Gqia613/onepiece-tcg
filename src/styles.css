@@ -170,12 +170,11 @@ html, body, #root { height: 100%; margin: 0; }
   box-shadow: 0 20px 44px rgba(0, 0, 0, .7);
   opacity: .3;
   filter: saturate(.85) brightness(.72) blur(.6px);
-  animation: hfcFloat 8s ease-in-out infinite;
 }
 
-.afc0 { left: 6%; top: 12%; transform: rotate(-11deg); animation-delay: 0s }
-.afc1 { right: 7%; top: 18%; transform: rotate(9deg); animation-delay: 1.4s }
-.afc2 { left: 14%; bottom: 8%; transform: rotate(6deg); animation-delay: 2.6s }
+.afc0 { left: 6%; top: 12%; transform: rotate(-11deg) }
+.afc1 { right: 7%; top: 18%; transform: rotate(9deg) }
+.afc2 { left: 14%; bottom: 8%; transform: rotate(6deg) }
 
 /* パネルは装飾より前面に */
 .auth-panel { position: relative; z-index: 1; }
@@ -352,26 +351,13 @@ html, body, #root { height: 100%; margin: 0; }
   box-shadow: 0 16px 36px rgba(0, 0, 0, .7);
   opacity: .5;
   filter: saturate(.85) brightness(.72);
-  animation: hfcFloat 7s ease-in-out infinite;
 }
 
-.hfc0 { transform: rotate(-34deg); z-index: 0; animation-delay: 0s }
-.hfc1 { transform: rotate(-17deg); z-index: 1; animation-delay: 1.1s }
-.hfc2 { transform: rotate(0deg); z-index: 2; opacity: .55; animation-delay: 2.2s }
-.hfc3 { transform: rotate(17deg); z-index: 1; animation-delay: 3.3s }
-.hfc4 { transform: rotate(34deg); z-index: 0; animation-delay: 4.4s }
-
-@keyframes hfcFloat {
-
-  0%,
-  100% {
-    margin-top: 0
-  }
-
-  50% {
-    margin-top: -10px
-  }
-}
+.hfc0 { transform: rotate(-46deg); z-index: 0 }
+.hfc1 { transform: rotate(-23deg); z-index: 1 }
+.hfc2 { transform: rotate(0deg); z-index: 2; opacity: .55 }
+.hfc3 { transform: rotate(23deg); z-index: 1 }
+.hfc4 { transform: rotate(46deg); z-index: 0 }
 
 /* メニューカードのキャラクターアート（ルフィ/ゾロ/サンジ＝公式カード画像の上部を切り出し）。
    右側に傾けて重ね、左端をフェードマスクで本文と馴染ませる */
