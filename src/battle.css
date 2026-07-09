@@ -2627,7 +2627,8 @@ button.hb-chip:not(.zero):not([disabled]):hover {
   color: var(--muted);
 }
 
-/* 防御モーダル上部の「誰が誰にアタックしているか」ヘッダー（旧・浮動 #atkAnnounce をモーダルへ統合） */
+/* モーダル上部の「誰が誰にアタックしているか」ヘッダー（アタック進行中は全プロンプトに統合表示。
+   浮動 #atkAnnounce はプロンプトが無い時だけ＝重なり皆無） */
 .prompt-atkhead {
   display: flex;
   align-items: center;
@@ -2638,6 +2639,12 @@ button.hb-chip:not(.zero):not([disabled]):hover {
   border-radius: 12px;
   background: rgba(255, 106, 106, .08);
   border: 1px solid rgba(255, 106, 106, .3)
+}
+
+/* 自分のアタック中（アタック時効果の確認など）＝金色系。赤（脅威）は被弾時のみ */
+.prompt-atkhead.own {
+  background: rgba(255, 200, 87, .07);
+  border-color: rgba(255, 200, 87, .32)
 }
 
 .prompt-atkhead .pah-side {

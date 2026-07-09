@@ -47,11 +47,10 @@ export function AtkAnnounce() {
   if (!engine || !atk) return null;
   // トリガー公開演出中はアタック宣言を出さない（このアタックは解決済み）。
   if (trigger) return null;
-  // 防御(カウンター/ブロック)プロンプト表示中は、攻撃情報をモーダル上部(AttackHead)に統合表示するので
-  // 浮動ダイアログは出さない（情報の重複・重なりを避ける）。ただし「盤面を見る」(peek)でモーダルを退避中は
-  // モーダルが隠れるため、浮動ダイアログで攻撃情報を見せる。
-  const defense = !!prompt && (prompt.cls || '').includes('defense');
-  if (defense && !peek) return null;
+  // 何らかのプロンプト表示中は、攻撃情報をモーダル上部(AttackHead)に統合表示するので
+  // 浮動ダイアログは出さない（相手アタック時のリーダー効果確認などと重なってテキストが読めなくなる）。
+  // 「盤面を見る」(peek)でモーダルを退避中だけは、浮動ダイアログで攻撃情報を見せる。
+  if (prompt && !peek) return null;
   const { aSide, attacker, target, phase } = atk;
   if (!attacker || !target) return null;
 

@@ -15,8 +15,10 @@ import { IMG } from '../../engine/img';
 import { Icon } from '../ui/Icon';
 import type { PromptOption, Card } from '../../engine/types';
 
-// 防御(カウンター/ブロック)モーダルの上部に出す「誰が誰にアタックしているか」ヘッダー。
-// 旧: 別枠の浮動ダイアログ(AtkAnnounce)で表示 → 情報が重複し重なるため、モーダル内に統合。
+// アタック進行中にモーダル上部へ出す「誰が誰にアタックしているか」ヘッダー。
+// 旧: 別枠の浮動ダイアログ(AtkAnnounce)で表示 → モーダルと重なりテキストが読めないため、
+// アタック中は全プロンプトに統合表示し、浮動ダイアログはプロンプトが無い時だけ出す。
+// atk が無ければ何も描かない＝アタックと無関係なプロンプトには出ない。
 function AttackHead() {
   const atk = useEngineStore((s) => s.atk);
   const engine = useEngineStore((s) => s.engine);
@@ -28,7 +30,7 @@ function AttackHead() {
   const toN = target.base.type === 'LEADER' ? (opp ? 'あなたのリーダー' : '相手のリーダー') : target.base.name;
   const hideImg = (e: React.SyntheticEvent<HTMLImageElement>) => { e.currentTarget.style.visibility = 'hidden'; };
   return (
-    <div className="prompt-atkhead">
+    <div className={'prompt-atkhead' + (opp ? '' : ' own')}>
       <span className="pah-side pah-atk">
         <img className="pah-card" src={IMG(attacker.base.no)} referrerPolicy="no-referrer" decoding="async" alt="" onError={hideImg} />
         <span className="pah-nm">{attacker.base.name}</span>
@@ -116,7 +118,6 @@ function PromptCard({
   // 元 promptHTML: card 付きと無しを分離（順序保持のため元 index は使わず o を直接渡す）
   const cardOpts = opts.filter((o) => o.card);
   const plainOpts = opts.filter((o) => !o.card);
-  const isDefense = (prompt.cls || '').includes('defense'); // カウンター/ブロック＝攻撃ヘッダーを上部に出す
 
   const pick = (o: PromptOption) => {
     if (o.disabled) return;
@@ -137,7 +138,8 @@ function PromptCard({
       exit={{ x: '-50%', opacity: 0, scale: 0.92 }}
       transition={{ duration: 0.2, ease: 'easeOut' }}
     >
-      {isDefense && <AttackHead />}
+      {/* アタック進行中は常に攻撃情報をモーダル内に統合（atk が無ければ AttackHead は何も描かない） */}
+      <AttackHead />
       <h3 {...html(prompt.title || '')} />
       {prompt.text ? <p {...html(prompt.text)} /> : null}
 
