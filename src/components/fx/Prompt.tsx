@@ -158,9 +158,8 @@ function PromptCard({
     prompt.onPick?.(o.v);
   };
 
-  // マリガンは画面中央（CSSで top:50%）＝縦も translateY(-50%) が必要（Framer が transform を管理）。
+  // マリガンも配置は他プロンプトと共通（中身の手札フリップ演出だけ特別）。
   const isMulligan = (prompt.cls || '').includes('mulligan');
-  const baseY = isMulligan ? '-50%' : 0;
 
   // 元 promptHTML は title/text/o.t/o.card.sub を innerHTML で描画（HTML可・エンジン生成の制御済み文字列）。
   // React のデフォルトはエスケープなので、ここは HTML として描画して元の見た目（<b>色付き等）を再現する。
@@ -171,9 +170,9 @@ function PromptCard({
       className={'prompt show ' + (prompt.cls || '')}
       // .prompt は left:50% + translateX(-50%) で中央寄せ。Framer が transform を上書きするため
       // x:'-50%' を常に維持し scale/opacity のみアニメ（横中央がズレないように）。
-      initial={{ x: '-50%', y: baseY, opacity: 0, scale: 0.9 }}
-      animate={{ x: '-50%', y: baseY, opacity: 1, scale: 1 }}
-      exit={{ x: '-50%', y: baseY, opacity: 0, scale: 0.92 }}
+      initial={{ x: '-50%', opacity: 0, scale: 0.9 }}
+      animate={{ x: '-50%', opacity: 1, scale: 1 }}
+      exit={{ x: '-50%', opacity: 0, scale: 0.92 }}
       transition={{ duration: 0.2, ease: 'easeOut' }}
     >
       {/* アタック進行中は常に攻撃情報をモーダル内に統合（atk が無ければ AttackHead は何も描かない） */}

@@ -5480,22 +5480,11 @@ button.hb-chip:not(.zero):not([disabled]):hover {
   }
 }
 
-/* ===== 15. マリガン専用モーダル（画面中央・スタート手札のフリップ公開） ===== */
-/* ボトムシートだと手札が隠れて引いたカードが分からない → 中央に5枚を大きく見せる。
-   モバイル媒体クエリ(#promptHost .prompt のボトムシート化)より高い詳細度で上書き */
-#promptHost .prompt.mulligan,
+/* ===== 15. マリガン専用モーダル（配置は他プロンプトと共通・中身だけ手札フリップ公開） ===== */
+/* 位置はPC=上部中央/スマホ=ボトムシート（既存ルールを継承）。5枚が収まるよう横幅だけ広げる。
+   モバイルの width:100%(#promptHost .prompt=ID詳細度) はそのまま勝つ */
 .prompt.mulligan {
-  top: 50%;
-  bottom: auto;
-  left: 50%;
-  width: min(94vw, 640px);
-  max-width: 94vw;
-  min-width: 0;
-  border: 1px solid var(--gold);
-  border-radius: 18px;
-  padding: 18px 16px 16px;
-  max-height: none;
-  overflow: visible;
+  max-width: min(94vw, 640px);
   box-shadow: var(--elev-3), 0 0 60px -12px rgba(255, 200, 87, .55);
 }
 
