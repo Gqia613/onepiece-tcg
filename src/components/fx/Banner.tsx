@@ -7,6 +7,7 @@
 //   .flash クラスで CSS アニメを発火させる（マウント＝新要素なので 1 回再生され、HOLD_MS 後に unmount）。
 import { useRef, useState, useEffect } from 'react';
 import { useEngineStore } from '../../state/engineStore';
+import { playSfx } from '../../audio';
 import type { Side } from '../../engine/types';
 
 interface BannerItem {
@@ -44,6 +45,7 @@ export function Banner() {
     const text = active === 'me' ? 'あなたのターン' : '相手のターン';
     const key = ++seqRef.current;
     setItem({ key, text, side: active });
+    if (active === 'me') playSfx('turnstart'); // 自分のターン開始ジングル（muted/未unlockはplaySfx側で無音）
 
     if (toRef.current) clearTimeout(toRef.current);
     toRef.current = setTimeout(() => {

@@ -142,7 +142,8 @@ export type FxEvent =
   | { type: 'float'; id: number; uid: number; text: string; kind?: string }
   | { type: 'anim'; id: number; uid: number; cls: string }
   | { type: 'fxnote'; id: number; side: Side; label: string; name: string; no?: string }
-  | { type: 'banner'; id: number; text: string; cls: 'mine' | 'opp' };
+  | { type: 'banner'; id: number; text: string; cls: 'mine' | 'opp' }
+  | { type: 'sumcut'; id: number; no: string; name: string }; // 主役級（SEC/SP）登場ミニカットイン
 
 // ライフから公開されたトリガーカードの大写し演出（TriggerReveal オーバーレイ）。
 export interface TriggerRevealState {

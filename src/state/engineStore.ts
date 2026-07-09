@@ -12,6 +12,7 @@ interface EngineStore {
   fxQueue: FxEvent[];
   atk: AtkState | null;
   trigger: TriggerRevealState | null; // ライフ公開トリガーの大写し演出
+  lethal: Side | null; // リーサル（トドメ）カットイン表示中（値=とどめを刺された側）
   end: EndState | null;
   thinking: boolean;
   muted: boolean; // 効果音(SE)ミュート
@@ -36,6 +37,7 @@ interface EngineStore {
   removeFx: (id: number) => void;
   setAtk: (a: AtkState | null) => void;
   setTrigger: (t: TriggerRevealState | null) => void;
+  setLethal: (s: Side | null) => void;
   setEnd: (e: EndState | null) => void;
   setThinking: (on: boolean) => void;
   setMuted: (m: boolean) => void;
@@ -55,6 +57,7 @@ export const useEngineStore = create<EngineStore>((set, get) => ({
   fxQueue: [],
   atk: null,
   trigger: null,
+  lethal: null,
   end: null,
   thinking: false,
   muted: false,
@@ -79,6 +82,7 @@ export const useEngineStore = create<EngineStore>((set, get) => ({
   removeFx: (id) => set((s) => ({ fxQueue: s.fxQueue.filter((f) => f.id !== id) })),
   setAtk: (a) => set({ atk: a }),
   setTrigger: (t) => set({ trigger: t }),
+  setLethal: (s) => set({ lethal: s }),
   setEnd: (e) => set({ end: e }),
   setThinking: (on) => set({ thinking: on }),
   setMuted: (m) => set({ muted: m }),

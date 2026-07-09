@@ -12,10 +12,12 @@ export default function Battle() {
   if (!engine) return null;
   const G = engine.G;
 
+  const pinch = !!(G.inGame && !G.winner && G.players?.me?.life && G.players.me.life.length <= 1);
   const feltCls =
     'felt' +
     (pick ? ' picking' : '') +
     (G.attackSel ? ' selecting' : '') +
+    (pinch ? ' pinch' : '') + // 残ライフ1以下＝画面縁が赤く明滅（緊張の可視化）
     (pick && pick.uids && pick.uids.size >= 4 ? ' many-sel' : '');
 
   return (

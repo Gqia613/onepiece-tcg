@@ -2,7 +2,8 @@
 // bootstrap の footer が各フック束縛をここの実装へ再代入する。store は参照渡し（循環import回避）。
 import type { UIAdapter, PromptConfig } from './ui-adapter';
 import type { Card, PromptState, PickState, FxEvent, AtkState, EndState, TriggerRevealState } from './types';
-import { playSfx, setAudioMuted } from '../audio';
+import { playSfx, setAudioMuted, buzz } from '../audio';
+import { RARITY } from './rarity';
 
 // 必要最小の store 面（zustand の useEngineStore が構造的に満たす）
 export interface AdapterStoreApi {
@@ -17,6 +18,7 @@ export interface AdapterStoreApi {
     pushFx: (e: FxEvent) => void;
     setAtk: (a: AtkState | null) => void;
     setTrigger: (t: TriggerRevealState | null) => void;
+    setLethal: (side: 'me' | 'cpu' | null) => void;
     setEnd: (e: EndState | null) => void;
     setThinking: (on: boolean) => void;
     pushLog: (l: { cls: string; html: string }) => void;
@@ -54,9 +56,34 @@ export function makeReactAdapter(store: AdapterStoreApi): UIAdapter {
     raf(() => whenReady(pred, use, tries - 1));
   };
 
+  // uid からカード実体を引く（登場演出のレア度判定用。chars/stage のみ走査＝軽量）
+  const cardByUid = (uid: number): any => {
+    const g = S().engine?.G; if (!g) return null;
+    for (const sd of ['me', 'cpu'] as const) {
+      const P = g.players?.[sd]; if (!P) continue;
+      for (const c of P.chars || []) if (c.uid === uid) return c;
+      if (P.stage && P.stage.uid === uid) return P.stage;
+    }
+    return null;
+  };
+
   // カード位置にエフェクト（burst=KO粒子 / slash=斬撃 / ring=登場波紋 / spark=ドン輝き）
   const spawnAt = (uid: number, kind: string) => {
     if (sim()) return;
+    // 登場リングはレア度で昇格: SR=金リング+専用SE / SEC・SP=金リング+ミニカットイン+専用SE。
+    // エンジンのフック呼び出し（spawnAt(uid,'ring')）は不変＝アダプタ側だけの演出勾配。
+    if (kind === 'ring') {
+      const c = cardByUid(uid);
+      const r = c ? RARITY[c.no] || RARITY[String(c.no).replace(/_r\d+$/, '')] : undefined;
+      if (r === 'SEC' || r === 'SP') {
+        kind = 'ringsr';
+        if (!S().muted) playSfx('summonSec');
+        S().pushFx({ type: 'sumcut', id: ++fxId, no: c.no, name: c.base?.name || '' });
+      } else if (r === 'SR') {
+        kind = 'ringsr';
+        if (!S().muted) playSfx('summonRare');
+      }
+    }
     whenReady(() => byUid(uid) && felt(), () => {
       const f = felt(), el = byUid(uid); if (!f || !el) return;
       const fr = f.getBoundingClientRect(), r = el.getBoundingClientRect();
@@ -177,6 +204,16 @@ export function makeReactAdapter(store: AdapterStoreApi): UIAdapter {
       if (sim()) return;
       S().setTrigger(null);
     },
+    // リーサル（トドメの一撃）カットイン。エンジンは lose() 直前に await する。
+    // sim中は即解決（探索を遅延させない）。表示は LethalCutIn.tsx が store.lethal を購読。
+    lethalFx: (side: 'me' | 'cpu') => {
+      if (sim()) return Promise.resolve();
+      S().setLethal(side);
+      if (!S().muted) playSfx('finish');
+      buzz(100);
+      shakeScreen();
+      return new Promise<void>((res) => realSetTimeout(() => { S().setLethal(null); res(); }, 1350));
+    },
     showAtkAnnounce: (aSide, attacker, target) => {
       if (sim()) return;
       // 元 showAtkAnnounce(40-ui-render.js) は G._atkFrom/_atkTo を設定する（盤面カードの枠グロー用）。
@@ -191,9 +228,17 @@ export function makeReactAdapter(store: AdapterStoreApi): UIAdapter {
       clearAtkLine();
       S().setAtk(null);
     },
-    showEndScreen: (win, reason) => { S().setEnd({ win, reason }); if (!S().muted) playSfx(win ? 'win' : 'lose'); },
+    showEndScreen: (win, reason) => { S().setEnd({ win, reason }); buzz(win ? [30, 50, 100] : 60); if (!S().muted) playSfx(win ? 'win' : 'lose'); },
     showThinking: (on) => { S().setThinking(on); },
-    sfx: (name) => { if (sim() || S().muted) return; playSfx(name); },
+    sfx: (name) => {
+      if (sim()) return;
+      // クライマックスの触覚フィードバック（対応端末のみ・ミュートとは独立）
+      if (name === 'hit') buzz(30);
+      else if (name === 'ko') buzz(20);
+      else if (name === 'trigger') buzz([20, 40, 60]);
+      if (S().muted) return;
+      playSfx(name);
+    },
 
     // 盤面演出フック（bootstrap の HOOKS で raw の同名関数へ差し替わる）。
     spawnAt,

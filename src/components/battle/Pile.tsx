@@ -27,7 +27,7 @@ export function Pile({ side, kind }: { side: Side; kind: 'deck' | 'dondeck' | 't
     return (
       <div className="zone-side ga-deck">
         <div className="pile cardback">
-          <span className="pc">{P.deck.length}</span>
+          <span className={'pc' + (P.deck.length <= 2 ? ' crit' : P.deck.length <= 5 ? ' warn' : '')}>{P.deck.length}</span>
         </div>
       </div>
     );

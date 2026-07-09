@@ -16,6 +16,10 @@ function ac(): AudioContext | null {
   return ctx;
 }
 
+// 再生ごとのピッチ係数（±5%）。同じSEの連打が機械的に聞こえないようにする（ゲームフィールの定石）。
+// ジングル系（win/lose/reveal等）は音楽性を保つため 1.0 固定（playSfx が制御）。
+let pitchF = 1;
+
 function tone(freq: number, dur: number, type: OscillatorType, gain?: number, when?: number) {
   const c = ac();
   if (!c) return;
@@ -23,7 +27,7 @@ function tone(freq: number, dur: number, type: OscillatorType, gain?: number, wh
   const o = c.createOscillator();
   const g = c.createGain();
   o.type = type || 'sine';
-  o.frequency.setValueAtTime(freq, t);
+  o.frequency.setValueAtTime(freq * pitchF, t);
   g.gain.setValueAtTime(0.0001, t);
   g.gain.exponentialRampToValueAtTime(gain || 0.13, t + 0.012);
   g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
@@ -53,7 +57,18 @@ const lib: Record<string, () => void> = {
   },
   win: () => [523, 659, 784, 1047].forEach((f, i) => tone(f, 0.3, 'triangle', 0.13, i * 0.12)),
   lose: () => [392, 330, 262, 196].forEach((f, i) => tone(f, 0.34, 'sine', 0.11, i * 0.14)),
+  // 自分のターン開始ジングル（短い上昇2音・控えめ）
+  turnstart: () => { tone(587, 0.09, 'triangle', 0.08); tone(880, 0.14, 'sine', 0.07, 0.07); },
+  // レア（SR）登場: きらめく上昇3音
+  summonRare: () => [659, 880, 1319].forEach((f, i) => tone(f, 0.14, 'sine', 0.08, i * 0.06)),
+  // 主役級（SEC/L相当）登場: 溜め→輝きの和音
+  summonSec: () => { tone(220, 0.16, 'sawtooth', 0.06); [523, 784, 1047].forEach((f, i) => tone(f, 0.22, 'triangle', 0.09, 0.12 + i * 0.05)); tone(1568, 0.4, 'sine', 0.06, 0.3); },
+  // リーサル（トドメ）: 低音ブーム＋高音スティング
+  finish: () => { tone(60, 0.5, 'square', 0.16); tone(120, 0.3, 'sawtooth', 0.1, 0.02); tone(1760, 0.5, 'sine', 0.07, 0.16); },
 };
+
+// ピッチ固定で鳴らすジングル系（音楽的なフレーズはデチューンしない）
+const STABLE = new Set(['reveal', 'win', 'lose', 'turnstart', 'summonRare', 'summonSec', 'finish']);
 
 export function unlockAudio() {
   unlocked = true;
@@ -64,7 +79,14 @@ export function unlockAudio() {
 
 export function playSfx(name: string) {
   if (!unlocked || muted) return;
+  pitchF = STABLE.has(name) ? 1 : 0.95 + Math.random() * 0.1; // ±5%
   try { (lib[name] || (() => {}))(); } catch { /* ignore */ }
+  pitchF = 1;
+}
+
+// ハプティクス（対応端末のみ・非対応/拒否は無視）。演出のクライマックスで短く使う。
+export function buzz(pattern: number | number[]) {
+  try { (navigator as any).vibrate?.(pattern); } catch { /* ignore */ }
 }
 
 export function setAudioMuted(m: boolean) { muted = m; }

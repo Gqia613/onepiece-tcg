@@ -16,6 +16,7 @@ export interface UIAdapter {
   showAtkAnnounce?: (aSide: 'me' | 'cpu', attacker: any, target: any) => void;
   clearAtkAnnounce?: () => void;
   showEndScreen?: (win: boolean, reason?: string) => void;
+  lethalFx?: (side: any) => Promise<void> | void; // リーサル（トドメ）カットイン。既定はno-op
   showThinking?: (on: boolean) => void;
   sfx?: (name: string) => void;
   // 盤面演出（元 40-ui-render.js）。実DOM(.felt)へ一時要素を append する fire-and-forget。

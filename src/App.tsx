@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from './state/auth';
 import { useEngineStore } from './state/engineStore';
-import { setAudioMuted, unlockAudio, startBgm, stopBgm, setBgmVolume as applyBgmVolume } from './audio';
+import { setAudioMuted, unlockAudio, startBgm, stopBgm, setBgmVolume as applyBgmVolume, playSfx } from './audio';
 import Login from './screens/Login';
 import Home from './screens/Home';
 import Decks from './screens/Decks';
@@ -21,6 +21,8 @@ import { CardPreview } from './components/fx/CardPreview';
 import { AIIntent } from './components/fx/AIIntent';
 import { CardDetailModal } from './components/fx/CardDetailModal';
 import { TrashModal } from './components/fx/TrashModal';
+import { LethalCutIn } from './components/fx/LethalCutIn';
+import { SummonCutIn } from './components/fx/SummonCutIn';
 import { Icon } from './components/ui/Icon';
 import { loadCloudDecks } from './state/decks';
 import { LOGO_WHITE } from './engine/img';
@@ -101,6 +103,19 @@ function Shell({ username, logout }: { username: string; logout: () => void }) {
 
   // 画面遷移したらハンバーガーを閉じる
   useEffect(() => { setMenuOpen(false); }, [location.pathname]);
+
+  // ①最初の操作でオーディオをアンロック（従来は対戦開始まで全SE無音だった）
+  // ②UIボタン共通の控えめクリック音（ゲームフィール: 全操作に音の手応え。ピッチは±5%自動変化）
+  useEffect(() => {
+    const unlock = () => unlockAudio();
+    window.addEventListener('pointerdown', unlock, { once: true });
+    const onClick = (e: MouseEvent) => {
+      const t = e.target as HTMLElement | null;
+      if (t && t.closest && t.closest('button')) playSfx('click');
+    };
+    window.addEventListener('click', onClick);
+    return () => { window.removeEventListener('pointerdown', unlock); window.removeEventListener('click', onClick); };
+  }, []);
 
   // BGMのライフサイクル: 盤面表示中(かつ勝敗未確定・BGM ON)で再生、離脱/中断/勝敗でフェードアウト。
   // random は開始時に1回だけ抽選（version bump では再抽選しない＝ref ガードで多重startを防止）。
@@ -277,6 +292,8 @@ function Shell({ username, logout }: { username: string; logout: () => void }) {
       <FxLayer />
       <AtkAnnounce />
       <TriggerReveal />
+      <LethalCutIn />
+      <SummonCutIn />
       <Toast />
       <Banner />
       <Thinking />

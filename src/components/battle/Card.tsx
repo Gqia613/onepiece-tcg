@@ -60,6 +60,9 @@ export function Card({ card, ctx }: { card: TCard; ctx: CardCtx }) {
         await fx.start({ filter: ['brightness(1)', 'brightness(2.2)', 'brightness(1)'], transition: { duration: 0.5 } });
       } else if (cls === 'ko' || cls === 'koanim') {
         await fx.start({ scale: [1, 1.1, 0.9], transition: { duration: 0.3 } });
+      } else if (cls === 'counterflash') {
+        // カウンター発動: 青い防壁の発光（レビュー済みの内側レイヤ＝外側transformと競合しない）
+        await fx.start({ filter: ['none', 'drop-shadow(0 0 14px #57c8ff) brightness(1.55) saturate(1.3)', 'none'], transition: { duration: 0.45 } });
       }
     } catch { /* ignore */ }
     fx.start({ x: 0, y: 0, scale: 1, filter: 'none', transition: { duration: 0.12 } });

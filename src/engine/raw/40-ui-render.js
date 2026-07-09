@@ -224,6 +224,9 @@
       setTimeout(() => { document.querySelectorAll('.card.spot').forEach(e => e.classList.remove('spot')); }, 1500);
     }
     // 効果・トリガーの発生通知（画面上部のピル）。相手(CPU)の行動は読めるよう小休止を入れる。
+    // リーサル（トドメの一撃）演出フック。web(reactAdapter)がカットイン実装で差し替える。
+    // headless/既定は何もしない（_sim中も含め即解決＝テスト/探索を遅延させない）。
+    async function lethalFx(side) { if (G._sim) return; }
     let _fxNoteEl = null;
     function showFxNote(side, label, name, no) {
       if (G._sim) return;

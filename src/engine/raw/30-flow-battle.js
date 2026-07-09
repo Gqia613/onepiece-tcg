@@ -498,8 +498,10 @@
       const D = G.players[dSide];
       for (let t = 0; t < times; t++) {
         if (G.winner) return; // 勝敗確定後は追加ダメージ解決を打ち切る
-        animClass(D.leader.uid, 'dmg'); spawnAt(D.leader.uid, 'slash'); shakeScreen(); floatOn(D.leader.uid, '-1', 'dmg'); sfx('hit'); await sleep(300);
-        if (D.life.length === 0) { lose(dSide, 'ライフ0で被弾'); return; }
+        animClass(D.leader.uid, 'dmg'); spawnAt(D.leader.uid, 'slash'); shakeScreen(); floatOn(D.leader.uid, '-1', 'dmg'); sfx('hit');
+        if (t > 0) { floatOn(D.leader.uid, '×' + (t + 1) + ' COMBO!', 'dmg'); shakeScreen(); } // ダブルアタック2発目以降のコンボ強調
+        await sleep(300);
+        if (D.life.length === 0) { await lethalFx(dSide); lose(dSide, 'ライフ0で被弾'); return; } // ★トドメ＝リーサル演出（webが実装・headlessはno-op）
         const card = D.life.shift();
         const fu2b = card._faceUp && !isNegated(D.leader) && D.leader.base.fx && D.leader.base.fx.static && D.leader.base.fx.static.some(x => x.op === 'faceUpLifeToDeckBottom'); // ST13-003ルフィL
         if (banish) { D.trash.push(reset(card)); flog(dSide, 'ライフ1枚がバニッシュ（トラッシュ）'); }
@@ -614,6 +616,7 @@
           if (c.base.fx && c.base.fx.counter) {
             if ((c.base.cost || 0) > 0 && !payDon(dSide, c.base.cost)) { toast('ドンが足りません'); continue; }
             D.hand.splice(D.hand.indexOf(c), 1);
+            sfx('counter');
             await runFx(c.base.fx.counter.fx, { self: c, side: dSide, target });
             D.trash.push(reset(c)); flog(dSide, `カウンター「${c.base.name}」`);
             if (c.base.type === 'EVENT') await luffyReveal(dSide);
@@ -621,6 +624,7 @@
             const cv = counterVal(c, dSide);
             D.hand.splice(D.hand.indexOf(c), 1);
             addBuff(target, cv, 'battle'); floatOn(target.uid, `+${cv}`, 'buff');
+            sfx('counter'); animClass(target.uid, 'counterflash'); // カウンターの見せ場（青防壁フラッシュ）
             D.trash.push(reset(c)); flog(dSide, `手札からカウンター +${cv}`);
           }
           render();
@@ -702,7 +706,7 @@
       }
       if (mode === 'skip') return;
       const cval = (c) => counterVal(c, dSide); // 盤面のhandCounterBuffを加味した実効カウンター
-      const applyNum = async (c) => { const cv = cval(c); D.hand.splice(D.hand.indexOf(c), 1); addBuff(target, cv, 'battle'); D.trash.push(reset(c)); floatOn(target.uid, `+${cv}`, 'buff'); flog(dSide, `CPUカウンター +${cv}`); await sleep(140); };
+      const applyNum = async (c) => { const cv = cval(c); D.hand.splice(D.hand.indexOf(c), 1); addBuff(target, cv, 'battle'); D.trash.push(reset(c)); floatOn(target.uid, `+${cv}`, 'buff'); sfx('counter'); animClass(target.uid, 'counterflash'); flog(dSide, `CPUカウンター +${cv}`); await sleep(140); };
       // === efficient: 最小枚数・余剰最小でちょうど耐える（+2000級は致死ターン用に温存） ===
       if (mode === 'efficient') {
         const need = power(attacker) - power(target);
