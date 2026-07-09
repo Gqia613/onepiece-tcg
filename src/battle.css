@@ -5566,12 +5566,14 @@ button.hb-chip:not(.zero):not([disabled]):hover {
 
 /* ===== 16. デッキ選択 v3（固定1画面・VSステージ + リーダーカルーセル） ===== */
 /* 画面はスクロールしない: 縦フレックスでカルーセルが残り高さにフィットし、
-   下部アクションバー（おまかせ/対戦開始）が常に親指域に見えている */
+   下部アクションバー（おまかせ/対戦開始）が常に親指域に見えている。
+   ★高さは親(#screen=トップバー下の領域)基準。100dvh にするとトップバー分はみ出して
+   下端の対戦開始バーが切れるので使わない。万一収まらない環境ではクリップせずスクロール。 */
 .select-wrap.ds2 {
   height: 100%;
-  height: 100dvh;
-  overflow: hidden;
-  padding: 10px 14px 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 8px 14px 0;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -5801,8 +5803,9 @@ button.hb-chip:not(.zero):not([disabled]):hover {
   position: relative;
   width: 100%;
   max-width: 1000px;
-  flex: 1 1 auto;
-  min-height: 150px;
+  /* basis 0 ＝ 他要素が収まらない分を最優先で縮んで吸収（下のバーを絶対に押し出さない） */
+  flex: 1 1 0;
+  min-height: 96px;
 }
 
 /* 中央背後のオーラ（アクティブデッキの色） */
@@ -6113,4 +6116,52 @@ button.hb-chip:not(.zero):not([disabled]):hover {
   color: var(--ink);
   background: rgba(255, 255, 255, .05);
   cursor: pointer;
+}
+
+/* --- 低背端末（SE級・横向き含む）: 固定要素を圧縮してカルーセルの高さを確保 --- */
+@media (max-height: 720px) {
+  .select-wrap.ds2 {
+    gap: 4px;
+    padding-top: 4px;
+  }
+
+  .ds2-head .bd-note {
+    display: none;
+  }
+
+  .vs-slot {
+    width: clamp(56px, 15vw, 84px);
+  }
+
+  .vs-slot-lb b {
+    display: none;
+  }
+
+  .vs-emblem {
+    font-size: 24px;
+  }
+
+  .ds-step-tab {
+    min-height: 34px;
+    padding: 5px 10px;
+    font-size: 12px;
+  }
+
+  .dsm-actions {
+    min-height: 30px;
+  }
+
+  .dsm-pill {
+    min-height: 28px;
+    padding: 3px 11px;
+  }
+
+  .ds-actionbar {
+    padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .ds-random,
+  .btn-primary.ds-start {
+    min-height: 46px;
+  }
 }
