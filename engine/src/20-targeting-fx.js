@@ -122,17 +122,28 @@
     /* =========================================================================
        効果解決
        ========================================================================= */
+    // ★誘発キュー（公式の割り込み規則）: 効果の解決中に誘発した自動効果は、その効果の解決が「完全に終わってから」発動する。
+    //   例: 光月日和（ライフ→手札→手札をライフへ）の解決中に青黄ナミLの「ライフが離れた時」が誘発しても、日和の全処理後にドロー。
+    //   fire系フックは G._fxDepth>0 なら G._pendingReacts に予約し、最外のrunFx完了時に drainReacts が順次解決（連鎖誘発も同様に後回し）。
+    async function drainReacts() {
+      if (G._drainingReacts) return;
+      G._drainingReacts = true;
+      try { while (G._pendingReacts && G._pendingReacts.length) { const j = G._pendingReacts.shift(); try { await j(); } catch (e) { console.warn('誘発解決失敗', e); } } }
+      finally { G._drainingReacts = false; }
+    }
     async function runFx(ops, ctx) {
       if (!ops) return;
       // 発生源スタック（実ゲームのみ）。sim中は積まない＝人間プロンプト待機中の実フレームを汚さない
       const track = !(G && G._sim);
       if (track) _fxSrcStack.push((ctx && ctx.self) || null);
+      G._fxDepth = (G._fxDepth || 0) + 1;
       try {
         for (const op of ops) {
           try { const cont = await doOp(op, ctx); if (cont === false) break; }
           catch (e) { console.warn('op失敗', op, e); }
         }
-      } finally { if (track) _fxSrcStack.pop(); }
+      } finally { G._fxDepth = Math.max(0, (G._fxDepth || 0) - 1); if (track) _fxSrcStack.pop(); }
+      if (!G._fxDepth) await drainReacts();
     }
     async function doOp(op, ctx) {
       const side = ctx.side, o = opp(side), P = G.players[side], self = ctx.self;

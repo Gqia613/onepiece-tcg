@@ -61,6 +61,7 @@
       removeEndScreen();
       // 前ゲームでプロンプト待機中に離脱すると runFx が finally に到達せず発生源スタックが残留するため、開始時に必ず空にする
       if (typeof _fxSrcStack !== 'undefined') _fxSrcStack.length = 0;
+      G._pendingReacts = []; G._fxDepth = 0; G._drainingReacts = false; // 誘発キューを初期化（前ゲームの残留防止）
       G.players.me = buildPlayer('me', meDeck, false);
       G.players.cpu = buildPlayer('cpu', cpuDeck, true);
       G.firstPlayer = (G.firstPref === 'me' || G.firstPref === 'cpu') ? G.firstPref : (rng() < 0.5 ? 'me' : 'cpu'); // 選択画面の先攻設定を反映（既定=ランダム）

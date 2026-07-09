@@ -72,6 +72,7 @@
     }
     // 「キャラが自分の効果でレストになった時」誘発（OP10-036ペローナ＝自分のターン中ターン1回ドン1アクティブ）。side=効果を使った側。
     async function fireOwnRest(side) {
+      if ((G._fxDepth || 0) > 0) { (G._pendingReacts = G._pendingReacts || []).push(() => fireOwnRest(side)); return; } // 効果解決後に発動（公式の割り込み規則）
       const P = G.players[side];
       for (const c of [...P.chars, P.leader, P.stage]) {
         const cfg = c && c.base.fx && c.base.fx.onOwnRest;
@@ -107,7 +108,8 @@
     // 「ライフが離れた時」誘発（OP12-099カルガラ＝自分のターン中ライフ離脱で1ドロー）。side=ライフが離れた側。
     async function fireLifeLeft(side) {
       const P = G.players[side];
-      P._lifeLeftTurn = G.turnSeq; // このターンに side のライフが離れた（P-120サンジ「相手のライフが離れているターン中」コスト判定用）
+      P._lifeLeftTurn = G.turnSeq; // このターンに side のライフが離れた（P-120サンジ「相手のライフが離れているターン中」コスト判定用）※記録は即時
+      if ((G._fxDepth || 0) > 0) { (G._pendingReacts = G._pendingReacts || []).push(() => fireLifeLeft(side)); return; } // 誘発効果の発動は現在の効果解決後（例: 日和の全処理後にナミLのドロー）
       // ★リーダーも走査対象（OP11-041ナミL＝ライフ離脱時に手札7枚以下ならドロー）。cond対応。
       for (const c of [P.leader, ...P.chars.slice()]) {
         const cfg = c.base.fx && c.base.fx.onLifeLeave;
@@ -115,9 +117,18 @@
         if (cfg.when === 'selfTurn' && side !== G.active) continue;
         if (cfg.when === 'oppTurn' && side === G.active) continue;
         if (cfg.cond && !checkCond(cfg.cond, side, c)) continue;
-        if (cfg.once === 'turn') { if (c._lifeLeaveTurn === G.turnSeq) continue; c._lifeLeaveTurn = G.turnSeq; }
-        await fxNote(side, 'ライフ離脱時', c.base.name, c.base.no); // 発火を可視化（「発動していない」報告の切り分け用にも）
-        await runFx(cfg.fx, { self: c, side });
+        if (cfg.once === 'turn' && c._lifeLeaveTurn === G.turnSeq) continue;
+        // 「発動できる」= 任意の自動効果。人間には発動確認（辞退なら【ターン1回】未消費）。CPUは発動
+        if (cfg.optional && !P.isCPU) {
+          const yes = await confirmUse(side, 'ライフ離脱時', `「${c.base.name}」の効果を発動しますか？`, '発動する', '発動しない');
+          if (!yes) continue;
+        }
+        const prevSeq = c._lifeLeaveTurn;
+        if (cfg.once === 'turn') c._lifeLeaveTurn = G.turnSeq;
+        await fxNote(side, 'ライフ離脱時', c.base.name, c.base.no); // 発火を可視化
+        const rctx = { self: c, side };
+        await runFx(cfg.fx, rctx);
+        if (cfg.once === 'turn' && rctx._declined && !rctx._committed) c._lifeLeaveTurn = prevSeq; // 条件不成立=未発動なら【ターン1回】を消費しない
       }
       // 「相手のライフが離れた時」誘発（OP08-105ボニー＝攻撃側で相手のライフ離脱に反応）
       const A = G.players[opp(side)];
@@ -132,6 +143,7 @@
     }
     // 「自分の場のドン‼がドン‼デッキに戻された時」誘発（OP14-068トレーボル）。ターン1回ガード付き。
     async function fireDonReturned(side, n) {
+      if ((G._fxDepth || 0) > 0) { (G._pendingReacts = G._pendingReacts || []).push(() => fireDonReturned(side, n)); return; } // 効果解決後に発動
       const P = G.players[side];
       G._lastDonReturned = n || 1; // cond donReturnedAtLeast（EB02-035）が参照。発火処理後にクリア
       for (const c of [...P.chars.slice(), P.leader]) { // リーダーのonDonReturnedも誘発（OP09-061ルフィL）
@@ -245,6 +257,7 @@
     function draw(side, n) { const P = G.players[side]; for (let i = 0; i < n; i++) { if (P.deck.length === 0) { if (hasDeckOutWin(side)) { lose(opp(side), 'デッキ0で勝利'); return false; } if (hasDeckOutDelay(side)) return false; lose(side, 'デッキ切れ'); return false; } P.hand.push(P.deck.shift()); } if (n > 0 && G.phase && G.phase !== 'ドロー' && !G._inDrawHook) fireSimpleReact(side, 'onExtraDraw'); return true; } // ドローフェイズ以外で引いた時の誘発（OP05-053モザンビア）
     // 軽量な「〜した時」誘発（detached・ターン1回/when対応。powerMod等の即時buff用。OP05-053/107）
     function fireSimpleReact(side, key) {
+      if ((G._fxDepth || 0) > 0) { (G._pendingReacts = G._pendingReacts || []).push(() => { fireSimpleReact(side, key); }); return; } // 効果解決後に発動
       if (G.active !== side) return; G._inDrawHook = true;
       for (const c of G.players[side].chars) { const cfg = c.base.fx && c.base.fx[key]; if (!cfg || isNegated(c)) continue; if (cfg.once === 'turn') { const fk = '_react_' + key; if (c[fk] === G.turnSeq) continue; c[fk] = G.turnSeq; } try { runFx(cfg.fx, { self: c, side }); } catch (e) {} }
       G._inDrawHook = false;
