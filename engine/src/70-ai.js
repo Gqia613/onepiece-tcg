@@ -683,6 +683,41 @@
     // ★E43: puct+「公開済み手札の強制配置」決定化（G._beliefOnでdeterminizeが拡張。既定puctはバイト不変）
     AGENTS.bpuct = { takeTurn: async (side) => { G._beliefOn = 1; try { return await puctTurn(side); } finally { G._beliefOn = 0; } } };
 
+    /* ★E47: コンボライン候補化エージェント（lines-as-candidate）。docs/deck-lines.md のライン（DECK_PLANS.byLeader[*].lines）を
+       「強制実行」せず、mctsTurn と同じ非退行パターンで評価する: 自然手(null)と各ラインを決定化K回ロールアウト（境界価値）で採点し、
+       自然手を MARGIN 超で上回るラインがある時だけ G._lineExec に載せて実行（heuristicTurn 冒頭が consume-once で消化）。
+       ＝裏目るラインは自動で棄却され、下限は素のheuristicに固定される。既定CPU/puctはバイト不変。 */
+    async function lineTurn(side) {
+      if (G._sim) return heuristicTurn(side);
+      const lines = (typeof matchDeckLines === 'function') ? matchDeckLines(side) : [];
+      if (!lines.length) return heuristicTurn(side);
+      const K = 6, MARGIN = 0.05;
+      const snap = cloneGameState(G);
+      const saved = Object.assign({}, G), rngSave = rngState();
+      let natQ = 0, best = null;
+      try {
+        for (const ln of [null, ...lines]) {
+          let sum = 0;
+          for (let d = 0; d < K; d++) {
+            loadGameState(determinize(snap, side));
+            G.players.me.isCPU = true; G.players.cpu.isCPU = true;
+            G._sim = true; G._noChain = true; G._lineExec = ln;
+            try { await heuristicTurn(side); sum += await rolloutAfterTurn(side, 1); }
+            finally { G._sim = false; G._noChain = false; G._lineExec = null; }
+          }
+          const q = sum / K;
+          if (ln === null) natQ = q;
+          else if (!best || q > best.q) best = { ln, q };
+        }
+      } finally {
+        for (const k of Object.keys(G)) delete G[k]; Object.assign(G, saved); rngState(rngSave);
+        G._lineExec = null;
+      }
+      if (best && best.q > natQ + MARGIN) { G._lineExec = best.ln; flog(side, `【ライン】${best.ln.id} を選択`); }
+      try { await heuristicTurn(side); } finally { G._lineExec = null; }
+    }
+    AGENTS.lineh = { takeTurn: lineTurn };   // P.agent='lineh'（E47・コンボライン候補化）
+
     /* ===== ハイブリッド: 戦略(プロファイル/Claude) × 戦術(puct探索) =====
        戦略オブジェクト(shape)を G._shape/G._planOverride に積んで puct を走らせる共有コア。
        ・shape の評価シェイピングが境界評価 evalWinProb(=手作りeval) に効き、priorBias が候補ランクに効く。

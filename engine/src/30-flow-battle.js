@@ -116,6 +116,7 @@
         if (cfg.when === 'oppTurn' && side === G.active) continue;
         if (cfg.cond && !checkCond(cfg.cond, side, c)) continue;
         if (cfg.once === 'turn') { if (c._lifeLeaveTurn === G.turnSeq) continue; c._lifeLeaveTurn = G.turnSeq; }
+        await fxNote(side, 'ライフ離脱時', c.base.name, c.base.no); // 発火を可視化（「発動していない」報告の切り分け用にも）
         await runFx(cfg.fx, { self: c, side });
       }
       // 「相手のライフが離れた時」誘発（OP08-105ボニー＝攻撃側で相手のライフ離脱に反応）

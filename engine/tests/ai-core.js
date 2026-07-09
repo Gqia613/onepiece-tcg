@@ -391,6 +391,49 @@ function chk(name, cond) { if (cond) pass++; else { fail++; console.log('  ✗ '
   chk('E46: teachの既定(heuristic)はSTAGEを設置する(STAGE_PLAY採用)', !!P16b.stage && P16b.stage.uid === st16b.uid);
   G._sim = false; G._noChain = false;
 
+  // 17) ★E47: コンボライン（matchDeckLines / lineh / heuristicTurn冒頭のconsume-once実行）
+  chk('エージェント登録: lineh', !!AGENTS.lineh);
+  G.players = {}; G.winner = null; seedRng(101); startGame('teach', 'teach');
+  for (let k = 0; k < 300 && !G.myActable && !G.winner; k++) await new Promise(r => setImmediate(r));
+  const P17 = G.players.me;
+  P17.isCPU = true; G.active = 'me'; P17.turnsTaken = 1;
+  const sh17a = inst('OP16-108', 'me'), sh17b = inst('OP16-108', 'me');
+  P17.hand.length = 0; P17.hand.push(sh17a, inst('OP16-109', 'me'));   // 手札: シリュウ+捨てコスト用1枚
+  P17.trash.push(sh17b);                                                // トラッシュ: シリュウ2枚目
+  P17.don = { active: 6, rested: 0 };
+  const m17 = matchDeckLines('me');
+  chk('E47: shiryu-stackライン照合（手札+トラッシュ+ドン帯）', m17.some(l => l.id === 'shiryu-stack'));
+  P17.trash.length = 0;
+  chk('E47: トラッシュにシリュウ無し→照合しない', !matchDeckLines('me').some(l => l.id === 'shiryu-stack'));
+  P17.trash.push(sh17b);
+  // heuristicTurn冒頭のライン実行（consume-once）: シリュウが場に出る
+  G._lineExec = { id: 'shiryu-stack', seq: [{ k: 'char', no: 'OP16-108' }] };
+  G._sim = true; G._noChain = true;
+  await heuristicTurn('me');
+  G._sim = false; G._noChain = false;
+  chk('E47: ライン実行でシリュウが登場する', P17.chars.some(c => c.uid === sh17a.uid));
+  chk('E47: _lineExecはconsume-onceで消える', G._lineExec === null || G._lineExec === undefined);
+  // hancock: 芳香脚ラインは相手ライフ<=1でのみ照合
+  G.players = {}; G.winner = null; seedRng(102); startGame('hancock', 'hancock');
+  for (let k = 0; k < 300 && !G.myActable && !G.winner; k++) await new Promise(r => setImmediate(r));
+  const P17b = G.players.me, O17b = G.players.cpu;
+  P17b.isCPU = true; G.active = 'me'; P17b.don = { active: 6, rested: 0 };
+  P17b.hand.length = 0; P17b.hand.push(inst('OP07-057', 'me'));
+  O17b.life.length = 3;
+  chk('E47: 芳香脚ライン=相手ライフ3では照合しない', !matchDeckLines('me').some(l => l.id === 'houkou-lethal'));
+  O17b.life.length = 1;
+  chk('E47: 芳香脚ライン=相手ライフ1で照合する', matchDeckLines('me').some(l => l.id === 'houkou-lethal'));
+  // lineh で1局完走（評価→実行→復元が破綻しない）
+  async function playLineh(seed) {
+    G.players = {}; G.winner = null; G.inGame = false; seedRng(seed);
+    startGame('teach', 'teach'); G.players.me.isCPU = true; G.players.me.agent = 'lineh'; G.players.cpu.agent = 'heuristic';
+    let it = 0; while (!(G.winner && !G._sim) && it < 3000000) { await new Promise(r => setImmediate(r)); it++; }
+    for (let k = 0; k < 40; k++) await new Promise(r => setImmediate(r));
+    return G.winner;
+  }
+  const w17 = await playLineh(103);
+  chk('E47: lineh 1局完走（勝者確定・フリーズ無し）', w17 === 'me' || w17 === 'cpu');
+
   console.log('  AI基盤テスト: pass=' + pass + ' fail=' + fail);
   process.exit(fail ? 1 : 0);
 })();

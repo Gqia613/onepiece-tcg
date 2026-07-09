@@ -454,6 +454,26 @@
       }
       if (G._planOverride) plan = Object.assign(plan, G._planOverride); // MCTSが戦術方針(aggression/donReserve等)を上書きして探索する
       await sleep(350);
+      // 0) ★E47: コンボライン実行（lineTurnが評価で選んだ時だけ G._lineExec に載る。consume-once＝このターンの冒頭で一度だけ消化）。
+      //    各stepは合法性を確認してから applyAction（支払い/登場/効果解決は既存経路）。不成立stepはスキップ＝以降は通常のheuristic。
+      {
+        const lineRun = G._lineExec; G._lineExec = null;
+        if (lineRun && lineRun.seq && typeof applyAction === 'function' && P._noPlayTurn !== G.turnSeq) {
+          for (const st of lineRun.seq) {
+            if (G.winner) return;
+            let c = null;
+            if (st.k === 'act') c = [...P.chars, ...(P.stage ? [P.stage] : []), P.leader].find(x => x.base.no === st.no && x.base.fx && x.base.fx.act && x._actTurn !== G.turnSeq && !isNegated(x));
+            else c = P.hand.find(x => x.base.no === st.no);
+            if (!c) continue;
+            if (st.k === 'char' && (summonBanned(side, c) || effCost(side, c) > P.don.active || P.chars.length >= 5)) continue;
+            if (st.k === 'event' && (!c.base.fx || !c.base.fx.main || effCost(side, c) > P.don.active)) continue;
+            if (st.k === 'stage' && (c.base.cost || 0) > P.don.active) continue;
+            await applyAction(side, { k: st.k, uid: c.uid });
+            render(); await sleep(160);
+          }
+          if (G.winner) return;
+        }
+      }
       // 1) キャラ展開
       let g = 0;
       while (g++ < 12) {

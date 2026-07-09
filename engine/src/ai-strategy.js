@@ -49,7 +49,10 @@ window.DECK_PLANS = {
        (lucyCounter上限2/イベントプレイはゲート付き)ため「イベントを取る」はボディテンポの喪失。byPow(パワー貪欲)は
        heuristicTurnの実行能力と既に噛み合っており、サーチ差し替えの余地がlucyには無かった。 */
     /* 黒黄ティーチ: サーチプール45/50と広くbyPowでも大型ティーチは取れる。差分は「ゼハハ(ドン10バースト・byPowは
-       絶対取らないEVENT)をティーチと揃える」コンボ確保と、その2枚を捨て札から守ること。 */
+       絶対取らないEVENT)をティーチと揃える」コンボ確保と、その2枚を捨て札から守ること。
+       ※E39測定は中立(+0.8pt)＝wants/combos/holdsはopt-in(usePlan)のまま。
+       ※E47追記: deep-research(docs/deck-lines.md)ではゼハハは「確立された型」として日本語ソースで確認できず、
+         実際の幹は「6シリュウのライフ仕込み」と「10ドン帯の10cティーチ連打」だった。linesはそちらを採用。 */
     teach: {
       wants: [
         { no: 'OP16-116', w: 2, max: 2, minTurn: 4 },              // ゼハハ(ドン10: 手札ティーチ登場+相手ライフ奪取)
@@ -62,6 +65,30 @@ window.DECK_PLANS = {
       holds: [
         { no: 'OP16-116', keep: 1 },
         { type: 'CHAR', trait: '黒ひげ海賊団', minCost: 8, keep: 1 },
+      ],
+      // ★E47 lines（AGENTS.lineh 専用・強制実行しない=ロールアウト評価がMARGIN超の時だけ実行。出典 docs/deck-lines.md）
+      lines: [
+        { id: 'shiryu-stack', don: [6, 99],                        // 6シリュウ登場→(登場時効果)トラッシュのシリュウをライフ上へ=「一番強い動き」
+          need: { hand: [{ no: 'OP16-108' }], trash: [{ no: 'OP16-108' }], handMin: 2 },
+          seq: [{ k: 'char', no: 'OP16-108' }] },
+        { id: 'teach10-chain', don: [10, 99],                      // 10ドン帯=10cティーチ連打(起動の無効+12000ブロッカーで2アタック止め)
+          need: { hand: [{ no: 'OP09-093' }] },
+          seq: [{ k: 'char', no: 'OP09-093' }] },
+      ],
+    },
+    /* 青黄ハンコック(E47・linesのみ): トリガー登場をリーダードローに変換する受けデッキ。
+       カーブ「3→5→7→9」とゾンビ型ライフ仕込み・芳香脚リーサルが検証済みの幹（docs/deck-lines.md）。 */
+    hancock: {
+      lines: [
+        { id: 'hancock4-curve', don: [5, 6],                       // 5ドン帯は5ボルサリーノより4cハンコック優先(3→5→7→9の背骨)
+          need: { hand: [{ no: 'ST17-004' }] },
+          seq: [{ k: 'char', no: 'ST17-004' }] },
+        { id: 'namur-zoro', don: [7, 99],                          // ナミュール(draw2→2枚をデッキ上下へ)→4ゾロ(デッキ上1枚をライフへ)のゾンビ仕込み
+          need: { hand: [{ no: 'OP08-050' }, { no: 'OP15-113' }], handMin: 3 },
+          seq: [{ k: 'char', no: 'OP08-050' }, { k: 'char', no: 'OP15-113' }] },
+        { id: 'houkou-lethal', don: [4, 99],                       // 詰め: 相手ライフ<=1で芳香脚(+2000&ブロック不可)→リーダーへ
+          need: { hand: [{ no: 'OP07-057' }], oppLifeMax: 1 },
+          seq: [{ k: 'event', no: 'OP07-057' }] },
       ],
     },
     /* 赤青エース: ST22-015(白ひげイベント)が手札のニューゲートを踏み倒す黄金ルート。byPowはST22-015を絶対取らない。
@@ -155,6 +182,26 @@ function planPickSearch(side, cands, fallback) {
   const plan = planFor(side);
   if (plan) { const bp = planBestPick(side, cands, plan); if (bp) return bp; }
   return fallback();
+}
+/* ★E47: コンボライン照合（AGENTS.lineh 専用）。現在の状態で「実行可能なライン」を返す。
+   入力は全て自陣公開情報+相手ライフ枚数のみ。usePlanとは独立（linehエージェント自体がopt-in）。 */
+function matchDeckLines(side) {
+  const P = G.players[side];
+  const DP = (typeof window !== 'undefined' && window.DECK_PLANS) || null;
+  const plan = DP && DP.byLeader && DP.byLeader[leaderKeyOf(side)];
+  if (!plan || !plan.lines) return [];
+  const out = [];
+  for (const ln of plan.lines) {
+    if (ln.don && (P.don.active < ln.don[0] || P.don.active > ln.don[1])) continue;
+    const nd = ln.need || {};
+    if (nd.handMin && P.hand.length < nd.handMin) continue;
+    if (nd.oppLifeMax != null && G.players[opp(side)].life.length > nd.oppLifeMax) continue;
+    if (nd.hand && !nd.hand.every(r => P.hand.some(c => planCardMatch(c, r)))) continue;
+    if (nd.trash && !nd.trash.every(r => P.trash.some(c => planCardMatch(c, r)))) continue;
+    if (!(ln.seq || []).every(st => st.k === 'act' || P.hand.some(c => c.base.no === st.no))) continue;
+    out.push(ln);
+  }
+  return out.slice(0, 3);   // 評価コスト上限（1ターンに比較するライン候補は最大3）
 }
 // 捨て札保護: plan.holds に合致し、手札の同名枚数が keep 以下なら保護（=捨て札ソートの最後尾へ）。余剰コピーは保護しない。
 function planDiscardProtect(side, card) {
