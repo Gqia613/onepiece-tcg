@@ -31,6 +31,7 @@ export const Icon = {
   check: (p: P) => (<Svg {...p}><polyline points="20 6 9 17 4 12" /></Svg>),
   chevronDown: (p: P) => (<Svg {...p}><polyline points="6 9 12 15 18 9" /></Svg>),
   chevronRight: (p: P) => (<Svg {...p}><polyline points="9 18 15 12 9 6" /></Svg>),
+  chevronLeft: (p: P) => (<Svg {...p}><polyline points="15 18 9 12 15 6" /></Svg>),
   zap: (p: P) => (<Svg {...p}><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" /></Svg>),
   home: (p: P) => (<Svg {...p}><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /><polyline points="9 22 9 12 15 12 15 22" /></Svg>),
   flag: (p: P) => (<Svg {...p}><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" /><line x1="4" y1="22" x2="4" y2="15" /></Svg>),

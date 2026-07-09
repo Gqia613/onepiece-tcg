@@ -5706,6 +5706,8 @@ button.hb-chip:not(.zero):not([disabled]):hover {
   font-size: clamp(26px, 6vw, 40px);
   line-height: 1;
   letter-spacing: .04em;
+  /* italic字形のはみ出し分。background-clip:text は要素箱の外が透明になり右端が欠けるため */
+  padding: 0 .1em;
   color: var(--muted-2);
   transition: color .25s, filter .25s, transform .25s;
 }
@@ -5979,8 +5981,8 @@ button.hb-chip:not(.zero):not([disabled]):hover {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 24px;
-  line-height: 1;
+  padding: 0;
+  line-height: 0;
   color: var(--ink);
   background: rgba(4, 12, 22, .72);
   border: 1px solid var(--surface-edge);

@@ -180,7 +180,8 @@ export default function DeckSelect() {
 
   if (!G.sel) G.sel = { me: undefined, cpu: undefined };
   if (!G.firstPref) G.firstPref = 'random';
-  const cpuMode: 'normal' | 'claude' | 'strong' = G.cpuMode || 'normal';
+  // 「AI」は強さが「強い」と大差ないため選択肢から撤去（過去に選択済みの場合は強いとして扱う）
+  const cpuMode: 'normal' | 'strong' = G.cpuMode === 'claude' ? 'strong' : (G.cpuMode || 'normal');
 
   const setFirstPref = (v: 'random' | 'me' | 'cpu') => { G.firstPref = v; bump(); };
   const setCpuMode = (v: 'normal' | 'claude' | 'strong') => { G.cpuMode = v; bump(); };
@@ -270,7 +271,7 @@ export default function DeckSelect() {
       {/* 設定（先攻/CPU）— 整列グリッド */}
       <div className="ds-controls">
         {seg('先攻', [['random', 'ランダム'], ['me', 'あなた'], ['cpu', 'CPU']] as Array<['random' | 'me' | 'cpu', string]>, (G.firstPref || 'random') as 'random' | 'me' | 'cpu', setFirstPref)}
-        {seg('CPU', [['normal', '通常'], ['strong', '強い'], ['claude', 'AI']] as Array<['normal' | 'strong' | 'claude', string]>, cpuMode, setCpuMode)}
+        {seg('CPU', [['normal', '通常'], ['strong', '強い']] as Array<['normal' | 'strong', string]>, cpuMode, setCpuMode)}
       </div>
 
       {/* ===== ステップタブ（アンダーライン・金＝VSステージの選択中スロットと対応） + カテゴリ切替 ===== */}
@@ -297,7 +298,7 @@ export default function DeckSelect() {
 
       {/* ===== リーダーカルーセル（残り高さにフィット・中央=選択） ===== */}
       <div className="ds-rail-wrap" style={active ? ({ ['--aura' as any]: auraOf(active) }) : undefined}>
-        <button className="ds-arrow left" aria-label="前のデッキ" onClick={() => centerTo(activeIdx - 1)}>‹</button>
+        <button className="ds-arrow left" aria-label="前のデッキ" onClick={() => centerTo(activeIdx - 1)}><Icon.chevronLeft size={24} /></button>
         <div className="ds-rail" ref={railRef} onScroll={onRailScroll}>
           {ordered.map((d, i) => (
             <div
@@ -315,7 +316,7 @@ export default function DeckSelect() {
             </div>
           ))}
         </div>
-        <button className="ds-arrow right" aria-label="次のデッキ" onClick={() => centerTo(activeIdx + 1)}>›</button>
+        <button className="ds-arrow right" aria-label="次のデッキ" onClick={() => centerTo(activeIdx + 1)}><Icon.chevronRight size={24} /></button>
       </div>
 
       {/* 中央デッキの操作（説明は出さない） */}
