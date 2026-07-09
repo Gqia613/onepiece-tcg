@@ -5637,7 +5637,7 @@ button.hb-chip:not(.zero):not([disabled]):hover {
 .vs-card {
   position: relative;
   aspect-ratio: 5 / 7;
-  border-radius: var(--cardr-lg);
+  border-radius: var(--cardr-sm);
   background: #081221;
   border: 1px dashed var(--surface-edge);
   overflow: hidden;
@@ -5654,7 +5654,7 @@ button.hb-chip:not(.zero):not([disabled]):hover {
   position: absolute;
   inset: 0;
   background: #0a1722 center/cover no-repeat;
-  border-radius: var(--cardr-lg);
+  border-radius: var(--cardr-sm);
   box-shadow: inset 0 0 24px -8px var(--aura, transparent);
 }
 
