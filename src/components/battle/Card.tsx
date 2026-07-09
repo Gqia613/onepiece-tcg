@@ -80,6 +80,10 @@ export function Card({ card, ctx }: { card: TCard; ctx: CardCtx }) {
   (['blocker', 'rush', 'doubleAttack', 'banish'] as const).forEach((k) => {
     if ((b as any)[k] || (card.kwGrant || []).some((g) => g.kw === k)) kwChips.push(KW_SHORT[k]);
   });
+  // 状態チップ: 相手効果による一時状態は盤面から読み取れないため明示（「バニラがアタックできない」等の混乱防止）
+  if ((card as any).noAtkSeq != null) kwChips.push('攻撃不可');
+  if ((card as any).negSeq != null) kwChips.push('効果無効');
+  if ((card as any).frozen) kwChips.push('凍結');
 
   const colorHex = COLOR_HEX[(b.color && b.color[0]) as string] || '#1a2c3c';
   const src = imgStage === 0 ? IMG(card.no) : imgStage === 1 ? IMG_RAW(card.no) : '';
