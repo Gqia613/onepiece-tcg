@@ -149,6 +149,7 @@ node -e 'const fs=require("fs");fs.writeFileSync("/tmp/app.js",fs.readFileSync("
 
 ### 3.5 描画とフック
 - `render()` が `#screen.innerHTML` を毎回作り直す（盤面全体を再構築）。`document.body` 直付けの要素（勝敗画面・攻撃アナウンス）は再描画で消えないので、そこに置く。
+- **★誘発効果の割り込み規則（公式準拠・2026-07-09導入）**: 効果の解決中に誘発した自動効果（onLifeLeave等）は即時実行せず、`G._pendingReacts` に予約→**最外のrunFxが完了してから**順次発動（`runFx`が`G._fxDepth`で深度計測・`drainReacts`でドレイン）。例: 日和の「ライフ→手札→手札をライフへ」を全て終えてからナミLのドロー。キュー化済みフック: fireLifeLeft/fireSimpleReact/fireDonReturned/fireOwnRest。**未移行**: checkAllyLeave/checkAllyEnter/fireOnTrigger/onOppRested等（同規則が適用されるべき＝新フック追加時はキュー化パターンに従う）。「発動できる」の任意自動効果は cfg.optional:true で人間に発動確認（辞退・条件不成立は【ターン1回】未消費）。
 - バトルのフック順序（`declareAttack` で固定。崩さない）:
   `アタック宣言 →【アタック時】→ 対象変更(黒ひげ) → ブロック → カウンター → パワー比較 → ダメージ(ライフ/トリガー or KO/【KO時】)`
 
