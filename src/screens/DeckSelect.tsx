@@ -250,8 +250,8 @@ export default function DeckSelect() {
   return (
     <div className="select-wrap ds2">
       <div className="bd-head ds2-head">
-        <button className="bd-back" onClick={() => navigate('/')}>
-          <Icon.arrowLeft size={15} />戻る
+        <button className="bd-back" onClick={() => navigate('/')} aria-label="戻る" title="戻る">
+          <Icon.arrowLeft size={22} />
         </button>
         <span className="bd-title">対戦</span>
         <span className="bd-note">中央のデッキが選ばれます</span>

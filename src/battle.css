@@ -4194,7 +4194,7 @@ button.hb-chip:not(.zero):not([disabled]):hover {
   overflow-y: auto;
   max-width: 1180px;
   margin: 0 auto;
-  padding: 12px 12px 44px
+  padding: 12px 14px 44px
 }
 
 .bd-head {
@@ -4216,27 +4216,27 @@ button.hb-chip:not(.zero):not([disabled]):hover {
 .bd-back {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  justify-content: center;
+  width: 44px;
   min-height: 44px;
-  padding: 8px 18px 8px 14px;
-  font-size: 13px;
-  font-weight: 700;
-  border-radius: 999px;
-  border: 1px solid var(--surface-edge);
-  background: rgba(255, 255, 255, .05);
+  padding: 0;
+  margin-left: -10px;
+  /* アイコンの視覚位置を下のコンテンツ左端に揃える */
+  border: none;
+  background: none;
   color: var(--ink);
+  border-radius: 12px;
   cursor: pointer;
-  transition: border-color .15s, background .15s, color .15s, transform .1s;
+  transition: color .15s, background .15s, transform .1s;
 }
 
 .bd-back:hover {
-  border-color: var(--gold);
   color: var(--gold-soft);
-  background: rgba(255, 200, 87, .08);
+  background: rgba(255, 255, 255, .06);
 }
 
 .bd-back:active {
-  transform: scale(.94);
+  transform: scale(.88);
 }
 
 /* 画面タイトルの共通クラス（Decks/DeckSelect のインラインstyleを置き換え） */
@@ -5612,8 +5612,8 @@ button.hb-chip:not(.zero):not([disabled]):hover {
   width: 100%;
   max-width: 1000px;
   flex: 0 0 auto;
-  /* 縦リズム統一: 見出し下は container gap(6px) が担う */
-  margin-bottom: 0;
+  /* 縦リズム統一: margin 6px + container gap 6px = 他画面と同じ計12px */
+  margin-bottom: 6px;
 }
 
 /* --- VS ステージ --- */
@@ -6243,5 +6243,5 @@ button.hb-chip:not(.zero):not([disabled]):hover {
 
 /* ===== 18. マイデッキ ===== */
 .select-wrap.decks-wrap {
-  padding-top: 12px;
+  padding: 12px 14px 60px;
 }
