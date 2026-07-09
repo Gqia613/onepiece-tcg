@@ -6,13 +6,22 @@
 const { runHarness } = require('./_load-app');  // stubs+CARD_DB+CARD_FX+本体JS(src/00..60) の連結・実行を集約
 
 // ★cards-fx.js のキー重複ガード: JSオブジェクトは同キーを静かに後勝ち上書きする（前の定義が死ぬ）ので重複は必ずバグ。
+// 末尾の「audit駆動【トリガー】一括実装」ブロックは既存noへ trigger をマージする追記なので、意図的に既存キーを再掲する。
+// → 定義領域（マージマーカーより前）だけを重複検査し、マージ領域は「領域内で重複が無いこと」だけを別途確認する。
 { const fs = require('fs'), path = require('path');
-  const txt = fs.readFileSync(path.join(__dirname, '..', 'cards-fx.js'), 'utf8');
-  const re = /"([A-Z0-9]+-\d+[A-Za-z0-9_]*)"\s*:/g; let m; const cnt = {};
-  while ((m = re.exec(txt))) cnt[m[1]] = (cnt[m[1]] || 0) + 1;
+  const full = fs.readFileSync(path.join(__dirname, '..', 'cards-fx.js'), 'utf8');
+  const MARK = '/* ===== audit駆動【トリガー】一括実装';
+  const mi = full.indexOf(MARK);
+  const txt = mi >= 0 ? full.slice(0, mi) : full;         // CARD_FX 定義領域
+  const mergeTxt = mi >= 0 ? full.slice(mi) : '';         // trigger マージ領域
+  const scan = s => { const re = /"([A-Z0-9]+-\d+[A-Za-z0-9_]*)"\s*:/g; let m; const cnt = {}; while ((m = re.exec(s))) cnt[m[1]] = (cnt[m[1]] || 0) + 1; return cnt; };
+  const cnt = scan(txt);
   const dup = Object.keys(cnt).filter(k => cnt[k] > 1);
   if (dup.length) { console.log('  NG: cards-fx.js に重複キー（後勝ち上書きでバグ）: ' + dup.join(', ')); process.exit(1); }
-  console.log('  ✓ cards-fx.js キー重複なし (' + Object.keys(cnt).length + 'キー)');
+  const mcnt = scan(mergeTxt);
+  const mdup = Object.keys(mcnt).filter(k => mcnt[k] > 1);
+  if (mdup.length) { console.log('  NG: trigger マージ領域に重複キー: ' + mdup.join(', ')); process.exit(1); }
+  console.log('  ✓ cards-fx.js キー重複なし (定義 ' + Object.keys(cnt).length + 'キー / triggerマージ ' + Object.keys(mcnt).length + '件)');
 }
 
 // ★OP13/OP14 二重照合: 公式正本(tools/official-opNN.js) ⇔ CARD_DB.text 一致 ＋ 全120枚に実装(fx or 純ブロッカー/バニラ)があること。
@@ -717,7 +726,9 @@ humanPick=function(c){return Promise.resolve((c||[])[0]||null);};
     ok(C['OP07-057'].fx.trigger && C['OP07-057'].fx.trigger[0].op==='draw' && C['OP07-057'].fx.main.fx[0].filter.trait==='王下七武海', 'OP07-057: 【トリガー】1ドロー(公式)＋王下七武海フィルタ');
     ok(C['OP14-105'].fx.trigger && C['OP14-105'].fx.act.fx[0].op==='revealCost' && !(C['OP14-105'].fx.act.cost||{}).restSelf, 'OP14-105: 手札3公開コスト＋【トリガー】九蛇なら登場(公式)');
     ok(['OP07-115','OP06-104','OP14-108','OP14-107','OP14-112','OP14-104','OP14-114','OP14-113'].every(no=>!!C[no].fx.trigger), '公式トリガー実装(旧「架空除去」は誤削除だった): 8枚すべてに【トリガー】あり');
-    ok(!C['OP12-112'].fx, 'OP12-112: 正本「効果なし」＝fx無し(バニラ)');
+    // OP12-112 も同系（旧「架空除去」は誤り）。official-full.json の trigger 正本で復活: 多色リーダーなら2ドロー
+    { const tg=C['OP12-112'].fx&&C['OP12-112'].fx.trigger&&C['OP12-112'].fx.trigger[0];
+      ok(tg&&tg.op==='cond'&&tg.check.leaderMulticolor&&tg.then[0].op==='draw'&&tg.then[0].n===2, 'OP12-112: 【トリガー】多色リーダーで2ドロー(official-full.jsonで復活・旧「架空除去」は誤削除)'); }
     // === 軽微4枚の仕上げ（任意コスト化/自身コスト+2/ライフ公開バフ） ===
     // EB03-055 ロビン: ライフトラッシュ(任意コスト)→リーダー麦わらなら2枚ライフ追加。非麦わらでは追加なし
     G.players={me:mkP('OP15-058',false),cpu:mkP('OP11-041',true)}; G.active='me';
@@ -2013,6 +2024,96 @@ humanPick=function(c){return Promise.resolve((c||[])[0]||null);};
       ok(!!(C['OP16-103'].fx && C['OP16-103'].fx.trigger), 'OP16-103: 【トリガー】が実装されている');
       await runFx(C['OP16-103'].fx.trigger,{self:I('OP16-103','me'),side:'me'});
       ok(me.hand.length===hb+1 && me.chars.length===cc, 'OP16-103: トリガーはドロー＋弱体化のみ（キャラエリアに登場しない）'); delete C['__vo__']; }
+
+    // ===================================================================
+    // audit駆動【トリガー】一括実装の回帰（頻出テンプレート・docs/card-audit-workflow.md §5）
+    // ===================================================================
+    // 構造: 代表テンプレートに fx.trigger が配線されている
+    ok(['EB01-030','EB02-030','OP02-117','EB02-007','EB02-018','OP01-029','EB03-054','OP06-100','EB01-029','EB01-039','EB01-020','OP15-079','EB03-058'].every(no=>C[no]&&C[no].fx&&C[no].fx.trigger&&C[no].fx.trigger.length), 'トリガー一括: 代表13テンプレートに fx.trigger 配線');
+    // パラレル(_rN)は本体のtriggerを継承（薄いエントリを作らず親fxを共有）
+    ok(C['OP02-117_r1']&&C['OP02-117_r1'].fx&&C['OP02-117_r1'].fx.trigger&&C['OP06-100_r1'].fx&&C['OP06-100_r1'].fx.trigger, 'トリガー一括: パラレルが本体triggerを継承(OP02-117_r1/OP06-100_r1)');
+    // ★参照共有バグ回帰: 一部fxはno間でオブジェクト参照を共有する（例 OP01-016/EB02-017/PRB02-012, OP01-106/ST05-002）。
+    //   in-place代入だと公式にトリガーの無いnoへ漏れる → 浅いクローンにtriggerを載せ替え共有元を不変にする。公式trigger有りのnoだけがtriggerを持つ。
+    ok(!!C['PRB02-012'].fx.trigger && !(C['OP01-016'].fx&&C['OP01-016'].fx.trigger) && !(C['EB02-017'].fx&&C['EB02-017'].fx.trigger), 'トリガー一括: 参照共有でも公式trigger有りのnoだけがtrigger(OP01-016/EB02-017へ漏れない)');
+    ok(!!C['OP01-106'].fx.trigger && !(C['ST05-002'].fx&&C['ST05-002'].fx.trigger), 'トリガー一括: 同上(OP01-106有り/ST05-002無し)');
+    // reuse: main/onKO は既存fxのコピー
+    ok(JSON.stringify(C['EB01-020'].fx.trigger)===JSON.stringify(C['EB01-020'].fx.main.fx) && C['EB01-020'].fx.trigger!==C['EB01-020'].fx.main.fx, 'トリガーreuse:main は main.fx の独立コピー(EB01-020)');
+    ok(JSON.stringify(C['OP15-079'].fx.trigger)===JSON.stringify(C['OP15-079'].fx.onKO), 'トリガーreuse:onKO は onKO のコピー(OP15-079)');
+
+    // 機能: draw（EB02-030 【トリガー】カード1枚を引く）
+    { const me=LP('OP11-041'); me.deck=[I('OP11-041','me'),I('OP11-041','me')]; const hb=me.hand.length;
+      await runFx(C['EB02-030'].fx.trigger,{self:I('EB02-030','me'),side:'me'});
+      ok(me.hand.length===hb+1, 'トリガーdraw: EB02-030 で1ドロー'); }
+    // 機能: ko コスト（OP02-117 相手コスト3以下1枚KO・コスト5は対象外）
+    { const me=LP('OP11-041');
+      C['__k3__']={no:'__k3__',name:'k3',type:'CHAR',color:[],cost:3,power:3000,counter:0,traits:[]};
+      C['__k5__']={no:'__k5__',name:'k5',type:'CHAR',color:[],cost:5,power:5000,counter:0,traits:[]};
+      const k3=mkSyn('__k3__',C['__k3__']); k3.owner='cpu'; const k5=mkSyn('__k5__',C['__k5__']); k5.owner='cpu'; G.players.cpu.chars=[k3,k5];
+      await runFx(C['OP02-117'].fx.trigger,{self:I('OP02-117','me'),side:'me'});
+      ok(!G.players.cpu.chars.includes(k3) && G.players.cpu.chars.includes(k5), 'トリガーko(コスト): OP02-117 でコスト3をKO・コスト5は対象外'); delete C['__k3__']; delete C['__k5__']; }
+    // 機能: ko 現在パワー（EB02-007 相手パワー4000以下=maxEffPower。付与ドンで5000のキャラは対象外）
+    { const me=LP('OP11-041');
+      C['__p4__']={no:'__p4__',name:'p4',type:'CHAR',color:[],cost:2,power:4000,counter:0,traits:[]};
+      C['__p3d__']={no:'__p3d__',name:'p3d',type:'CHAR',color:[],cost:2,power:4000,counter:0,traits:[]};
+      const p4=mkSyn('__p4__',C['__p4__']); p4.owner='cpu'; const p4d=mkSyn('__p3d__',C['__p3d__']); p4d.owner='cpu'; p4d.attachedDon=1; // 現在5000
+      G.players.cpu.chars=[p4,p4d];
+      await runFx(C['EB02-007'].fx.trigger,{self:I('EB02-007','me'),side:'me'});
+      ok(!G.players.cpu.chars.includes(p4) && G.players.cpu.chars.includes(p4d), 'トリガーko(現在パワー): EB02-007 でP4000をKO・付与ドンでP5000は対象外'); delete C['__p4__']; delete C['__p3d__']; }
+    // 機能: restChar コスト（EB02-018 相手コスト4以下1枚レスト）
+    { const me=LP('OP11-041');
+      C['__c4__']={no:'__c4__',name:'c4',type:'CHAR',color:[],cost:4,power:4000,counter:0,traits:[]};
+      const c4=mkSyn('__c4__',C['__c4__']); c4.owner='cpu'; c4.rested=false; G.players.cpu.chars=[c4];
+      await runFx(C['EB02-018'].fx.trigger,{self:I('EB02-018','me'),side:'me'});
+      ok(c4.rested===true, 'トリガーrest: EB02-018 でコスト4以下をレスト'); delete C['__c4__']; }
+    // 機能: powerMod リーダーかキャラ+1000（OP01-029 リーダー選択）
+    { const me=LP('OP11-041'); me.chars=[]; const p0=power(me.leader);
+      await runFx(C['OP01-029'].fx.trigger,{self:I('OP01-029','me'),side:'me'});
+      ok(power(me.leader)===p0+1000, 'トリガーpow: OP01-029 で自リーダー+1000'); }
+    // ★review修正回帰: 「相手のリーダーかキャラ」は includeLeader を使う（leader:true は side:'self' 専用＝相手リーダーが対象に取れないバグ。counter系14箇所を一括修正）
+    { const me=LP('OP11-041'); G.players.cpu.chars=[]; const p0=power(G.players.cpu.leader);
+      await runFx(C['OP01-028'].fx.trigger,{self:I('OP01-028','me'),side:'me'});
+      ok(power(G.players.cpu.leader)===p0-2000, 'includeLeader修正: OP01-028トリガーが相手リーダー-2000（キャラ0でも対象に取れる）'); }
+    // ★OP07-075 ノロノロビーム: 「相手のリーダーとキャラ1枚まで」＝リーダーは無条件-2000（leaderBuff side:opp）＋キャラは選択
+    { const me=LP('OP11-041'); me.don.active=1; G.players.cpu.chars=[]; const p0=power(G.players.cpu.leader);
+      await runFx(C['OP07-075'].fx.counter.fx,{self:I('OP07-075','me'),side:'me'});
+      ok(power(G.players.cpu.leader)===p0-2000, 'OP07-075: 相手リーダーへ無条件-2000（leaderBuff side:opp）'); }
+    // ★OP12-018 覇王色の覇気: 「相手のリーダーとキャラすべて-1000」＝powerModのall分岐がincludeLeaderを無視していた修正
+    { const me=LP('OP11-041'); me.don.active=2; const cpu=G.players.cpu; cpu.chars=[]; const p0=power(cpu.leader);
+      await runFx(C['OP12-018'].fx.counter.fx,{self:I('OP12-018','me'),side:'me'});
+      ok(power(cpu.leader)===p0-1000, 'OP12-018: all+includeLeaderで相手リーダーにも-1000'); }
+    // 機能: discardCost→playSelf（EB03-054 手札1捨てて自身を登場）
+    { const me=LP('OP11-041'); me.hand=[I('OP11-041','me')]; me.chars=[]; const self=I('EB03-054','me');
+      await runFx(C['EB03-054'].fx.trigger,{self,side:'me'});
+      ok(me.chars.includes(self), 'トリガーdiscardCost→playSelf: EB03-054 が手札1捨てて登場'); }
+    // 機能: cond 相手ライフ以下→playSelf（OP06-100 相手ライフ3以下で登場）
+    { const me=LP('OP11-041'); G.players.cpu.life=[I('OP11-041','cpu'),I('OP11-041','cpu'),I('OP11-041','cpu')]; me.chars=[];
+      const self=I('OP06-100','me'); await runFx(C['OP06-100'].fx.trigger,{self,side:'me'});
+      ok(me.chars.includes(self), 'トリガーcond(相手ライフ≤3): OP06-100 が登場'); }
+    { const me=LP('OP11-041'); G.players.cpu.life=[I('OP11-041','cpu'),I('OP11-041','cpu'),I('OP11-041','cpu'),I('OP11-041','cpu')]; me.chars=[];
+      const self=I('OP06-100','me'); await runFx(C['OP06-100'].fx.trigger,{self,side:'me'});
+      ok(!me.chars.includes(self), 'トリガーcond(相手ライフ4): OP06-100 は登場しない'); }
+    // 機能: cond 自リーダー名→playSelf（EB03-058 ベガパンクリーダーなら登場）
+    { G.players={me:mkP('OP07-097',false),cpu:mkP('OP11-041',true)}; G.active='cpu'; G.turnSeq=5; G.winner=null;
+      const self=I('EB03-058','me'); G.players.me.chars=[];
+      await runFx(C['EB03-058'].fx.trigger,{self,side:'me'});
+      ok(G.players.me.chars.includes(self), 'トリガーcond(リーダー名): EB03-058 がベガパンクで登場'); }
+    { const me=LP('OP11-041'); me.chars=[]; const self=I('EB03-058','me');
+      await runFx(C['EB03-058'].fx.trigger,{self,side:'me'});
+      ok(!me.chars.includes(self), 'トリガーcond(リーダー名): EB03-058 は非ベガパンクで登場しない'); }
+    // 次tier: cond 特徴/特徴+ライフ合計 → playSelf ・ 手札捨て→ライフ追加（既存検証済opの組合せ）
+    ok(['EB04-055','OP03-033','OP03-118'].every(no=>C[no]&&C[no].fx&&C[no].fx.trigger&&C[no].fx.trigger.length), '次tier: 特徴/特徴+ライフ/手札捨て→ライフ に fx.trigger 配線');
+    // 機能: 特徴→playSelf（OP03-033 東の海リーダーで登場・非東の海では登場しない）
+    { G.players={me:mkP('OP03-021',false),cpu:mkP('OP11-041',true)}; G.active='cpu'; G.turnSeq=5; G.winner=null; // OP03-021=クロ(東の海)
+      const self=I('OP03-033','me'); G.players.me.chars=[];
+      await runFx(C['OP03-033'].fx.trigger,{self,side:'me'});
+      ok(G.players.me.chars.includes(self), 'トリガーcond(特徴): OP03-033 が東の海リーダーで登場'); }
+    { const me=LP('OP11-041'); me.chars=[]; const self=I('OP03-033','me');
+      await runFx(C['OP03-033'].fx.trigger,{self,side:'me'});
+      ok(!me.chars.includes(self), 'トリガーcond(特徴): OP03-033 は非東の海で登場しない'); }
+    // 機能: discardCost→lifeAddFromDeck（OP03-118 手札2捨て→デッキ上1枚をライフへ）
+    { const me=LP('OP11-041'); me.hand=[I('OP11-041','me'),I('OP11-041','me')]; me.deck=[I('OP11-041','me')]; me.life=[];
+      await runFx(C['OP03-118'].fx.trigger,{self:I('OP03-118','me'),side:'me'});
+      ok(me.hand.length===0 && me.life.length===1 && me.deck.length===0, 'トリガーdiscardCost→ライフ: OP03-118 手札2捨て→デッキ上1枚をライフに'); }
   }catch(e){ console.log('EXCEPTION:', e.message); fail++; }
   console.log('Phase3 fxテスト: pass='+pass+' fail='+fail);
   process.exit(fail?1:0);
