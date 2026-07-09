@@ -2183,6 +2183,13 @@ humanPick=function(c){return Promise.resolve((c||[])[0]||null);};
     ok(C['ST17-003'].fx.onPlay[0].pos==='top' && C['OP03-104'].fx.onPlay[0].op==='peekLifeTopPlace', 'ST17-003=上固定scry / OP03-104=peekLifeTopPlace');
     // EB01-011/EB02-025=コスト原子性（内部コスト成立後にrestThis）
     ok(JSON.stringify(C['EB01-011'].fx.act).includes('"op":"restThis"') && !JSON.stringify(C['EB01-011'].fx.act.cost).includes('restSelf'), 'EB01-011: レストは内部コスト成立後（原子性）');
+    // ★OP11-041ナミL: ライフ離脱フックの配線漏れ修正（lifeCost等8経路にfireLifeLeftを追加）
+    { G.players={me:mkP('OP11-041',false),cpu:mkP('OP01-001',true)}; G.active='me'; G.turnSeq=5; G.winner=null; const me=G.players.me;
+      me.life=[I('OP01-009','me'),I('OP01-010','me')]; me.deck=[I('OP01-018','me'),I('OP01-023','me')]; me.hand=[];
+      await doOp({op:'lifeCost',action:'toHand',pos:'choose',then:[]},{side:'me',self:me.leader});
+      ok(me.hand.length===2, 'ナミL: lifeCost(上か下→手札)でもライフ離脱ドローが発火（手札=ライフ1+ドロー1）');
+      await doOp({op:'lifeCost',action:'toHand',pos:'choose',then:[]},{side:'me',self:me.leader});
+      ok(me.hand.length===3, 'ナミL: 【ターン1回】＝同ターン2回目はドローしない'); }
     // ブロッカー持ちKO（ST01-016）: hasKwフィルタ
     { const me=LP('OP11-041');
       C['__bl__']={no:'__bl__',name:'bl',type:'CHAR',color:[],cost:2,power:2000,counter:0,traits:[],blocker:true};

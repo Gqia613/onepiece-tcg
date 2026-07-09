@@ -526,7 +526,7 @@
           for (let i = 0; i < (op.n || 1); i++) {
             if (!G.players[o].life.length) break;
             if (op.optional && !P.isCPU) { const go = (await showPrompt({ title: '相手ライフを手札に', text: '相手のライフ上1枚を相手の手札に加えますか？（相手に1枚渡す）', opts: [{ t: '加える', v: 'y', primary: true }, { t: '加えない', v: 'n', ghost: true }] })) === 'y'; if (!go) break; }
-            const c = G.players[o].life.shift(); G.players[o].hand.push(c); flog(side, `相手ライフ1枚を手札に送った`); await sleep(150);
+            const c = G.players[o].life.shift(); G.players[o].hand.push(c); flog(side, `相手ライフ1枚を手札に送った`); await fireLifeLeft(o); await sleep(150);
           }
           break;
         }
@@ -544,7 +544,7 @@
           const top = P.life[0]; flog(side, `ライフの上を公開: 「${top.base.name}」`);
           let rlPlayed = false;
           if (matchFilter(top, op.filter || {})) {
-            if (P.isCPU || await confirmUse(side, '登場', `公開した「${top.base.name}」を登場させますか？`, '登場させる', 'しない')) { P.life.shift(); top.owner = side; await summon(side, top, false); rlPlayed = true; }
+            if (P.isCPU || await confirmUse(side, '登場', `公開した「${top.base.name}」を登場させますか？`, '登場させる', 'しない')) { P.life.shift(); top.owner = side; await summon(side, top, false); rlPlayed = true; await fireLifeLeft(side); }
           }
           render();
           if (rlPlayed && op.then) await runFx(op.then, ctx); // 「登場させた場合」の後続（ST13-007/010/014）
@@ -597,6 +597,7 @@
             else if (pk === 'bot') { P.hand.push(P.life.pop()); flog(side, 'ライフ下を手札に'); }
             else break;
           }
+          await fireLifeLeft(side);
           if (P.hand.length) {
             if (P.isCPU) { const c = P.hand[P.hand.length - 1]; P.hand.pop(); P.life.unshift(faceDown(c)); flog(side, '手札1枚をライフ上に'); }
             else { const c = await chooseCard(side, P.hand, 'ライフの上に置く手札（任意）', 'ownBig', true); if (c) { P.hand.splice(P.hand.indexOf(c), 1); P.life.unshift(faceDown(c)); flog(side, '手札1枚をライフ上に'); } }
@@ -874,9 +875,9 @@
           if (act === 'toHand') {
             let fromBottom = false;
             if (pick2 && P.life.length >= 2 && !P.isCPU) fromBottom = (await showPrompt({ title: 'ライフを手札に', text: 'ライフの上か下、どちらの1枚を手札に加えますか？', opts: [{ t: 'ライフ上', v: 'top', primary: true }, { t: 'ライフ下', v: 'bot' }] })) === 'bot';
-            P.hand.push(fromBottom ? P.life.pop() : P.life.shift()); flog(side, `ライフ${fromBottom ? '下' : '上'}1枚を手札に加えた`); fireSimpleReact(side, 'onLifeToHand'); // OP05-107スペーシー
+            P.hand.push(fromBottom ? P.life.pop() : P.life.shift()); flog(side, `ライフ${fromBottom ? '下' : '上'}1枚を手札に加えた`); fireSimpleReact(side, 'onLifeToHand'); await fireLifeLeft(side); // OP05-107スペーシー
           }
-          else if (act === 'trash') { let fb = false; if (pick2 && P.life.length >= 2 && !P.isCPU) fb = (await showPrompt({ title: 'ライフをトラッシュ', text: 'ライフの上か下、どちらの1枚をトラッシュに置きますか？', opts: [{ t: 'ライフ上', v: 'top', primary: true }, { t: 'ライフ下', v: 'bottom' }] })) === 'bottom'; P.trash.push(fb ? P.life.pop() : P.life.shift()); flog(side, `ライフ${fb ? '下' : '上'}1枚をトラッシュ`); }
+          else if (act === 'trash') { let fb = false; if (pick2 && P.life.length >= 2 && !P.isCPU) fb = (await showPrompt({ title: 'ライフをトラッシュ', text: 'ライフの上か下、どちらの1枚をトラッシュに置きますか？', opts: [{ t: 'ライフ上', v: 'top', primary: true }, { t: 'ライフ下', v: 'bottom' }] })) === 'bottom'; P.trash.push(fb ? P.life.pop() : P.life.shift()); flog(side, `ライフ${fb ? '下' : '上'}1枚をトラッシュ`); await fireLifeLeft(side); }
           else if (act === 'faceUp') { P.life[0]._faceUp = true; flog(side, 'ライフ上を表向きにした'); }
           else if (act === 'faceDown') { P.life[0]._faceUp = false; flog(side, 'ライフ上を裏向きにした'); }
           render();
@@ -1147,7 +1148,7 @@
             let pickT;
             if (P.isCPU) pickT = RP.life[0];
             else { const v = await showPrompt({ title: 'ライフ確認', text: 'デッキの上に置くカードを選択', opts: RP.life.map((c, i) => ({ t: c.base.name, v: 'pick:' + i })) }); const idx = (typeof v === 'string' && v.indexOf('pick:') === 0) ? +v.slice(5) : 0; pickT = RP.life[idx]; }
-            RP.life.splice(RP.life.indexOf(pickT), 1); RP.deck.unshift(pickT); flog(side, 'ライフから1枚をデッキの上に置いた');
+            RP.life.splice(RP.life.indexOf(pickT), 1); RP.deck.unshift(pickT); flog(side, 'ライフから1枚をデッキの上に置いた'); await fireLifeLeft(op.side === 'opp' ? o : side);
           } // side:'opp'=相手のライフを見て並べ替え（EB01-052ヴィオラ）。並べ替えの選択者は効果の使用者
           if (RP.life.length <= 1) { if (RP.life.length) flog(side, who + 'のライフを確認'); break; }
           if (P.isCPU) { flog(side, `${who}のライフ${RP.life.length}枚を確認した`); break; }
@@ -1240,7 +1241,7 @@
         if (prot.pay === 'lifeToHand') { // 自分のライフ上1枚を手札に加えて肩代わり
           if (!ow.life.length) continue;
           if (!(await confirmUse(target.owner, `【${p.base.name}】身代わり`, `ライフ上1枚を手札に加えて「${target.base.name}」を守りますか？`, '守る（ライフ→手札）', '守らない', { noSrc: true }))) continue;
-          ow.hand.push(ow.life.shift()); flog(target.owner, `【${p.base.name}】ライフ上1枚を手札に加えて「${target.base.name}」を守った`); return true;
+          ow.hand.push(ow.life.shift()); flog(target.owner, `【${p.base.name}】ライフ上1枚を手札に加えて「${target.base.name}」を守った`); await fireLifeLeft(target.owner); return true;
         }
         if (prot.pay === 'leaderPowerMinus') { // 自分のリーダーをパワー-Nして肩代わり
           if (!(await confirmUse(target.owner, `【${p.base.name}】身代わり`, `自分のリーダーをパワー-${prot.amount || 2000}にして「${target.base.name}」を守りますか？`, `守る（リーダー-${prot.amount || 2000}）`, '守らない', { noSrc: true }))) continue;
@@ -1282,7 +1283,7 @@
           if (prot.unless && G.players[target.owner].chars.some(ch => matchFilter(ch, prot.unless))) continue;
           if (!ow.life.length) continue;
           if (!(await confirmUse(target.owner, `【${p.base.name}】身代わり`, `自分のライフ上1枚をトラッシュして「${target.base.name}」を場に残しますか？`, '残す（ライフ→トラッシュ）', '残さない', { cls: 'danger', noSrc: true }))) continue;
-          ow.trash.push(ow.life.shift()); flog(target.owner, `【${p.base.name}】ライフ1枚をトラッシュして「${target.base.name}」を場に残した`); render(); return true;
+          ow.trash.push(ow.life.shift()); flog(target.owner, `【${p.base.name}】ライフ1枚をトラッシュして「${target.base.name}」を場に残した`); await fireLifeLeft(target.owner); render(); return true;
         } else if (prot.pay === 'targetMinus') {
           // KOの代わりに対象のパワーを-Nにして場に残す（OP05-001サボL）。KO限定。
           if (cause !== 'ko') continue;
