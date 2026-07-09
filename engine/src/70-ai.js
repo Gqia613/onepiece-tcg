@@ -717,6 +717,11 @@
       try { await heuristicTurn(side); } finally { G._lineExec = null; }
     }
     AGENTS.lineh = { takeTurn: lineTurn };   // P.agent='lineh'（E47・コンボライン候補化）
+    // ★E49: 実験ライン(exp:1)込みで測定するエージェント。既定(lineh/heuristic経由)はexpラインを見ない＝採用測定用。
+    AGENTS.lineh2 = { takeTurn: async (side) => { G._lineExp = 1; try { return await lineTurn(side); } finally { G._lineExp = 0; } } };
+    // ★E48採用テーブル: 既定CPU(heuristic)でもラインを候補化するリーダー（AGENTS.heuristicのディスパッチが参照）。
+    //   黒ヤマト: モモの助コンボ不発(9cモモ0.03回/側)のユーザー観察→lines化で ミラーN=120×2帯 +3.3pt(6/2)/+6.7pt(9/1 p=0.021★)・合算15/3(p≈0.008)＝有意。
+    var LINE_PLAY = { '_OP16-079': 1 };
 
     /* ===== ハイブリッド: 戦略(プロファイル/Claude) × 戦術(puct探索) =====
        戦略オブジェクト(shape)を G._shape/G._planOverride に積んで puct を走らせる共有コア。

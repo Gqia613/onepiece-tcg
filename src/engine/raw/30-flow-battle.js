@@ -20,6 +20,7 @@
       if (summonBanned(side, card) && source !== 'trash') { flog(side, 'このターンはこのキャラを登場できない'); return; } // 登場ban（全面=OP14-024/020 / 元々コストN以上=OP13-023/118）。トラッシュからの蘇生など特殊経路は対象外
       if (P.chars.length >= 5) { if (!(await trashCharForRoom(side, false))) return; } // 5体なら枠を空ける（効果による登場でも適用）
       card.owner = side; card.rested = false; card.summonedTurn = G.turnSeq; card.attachedDon = 0; card.buffs = []; card.kwGrant = [];
+      card.negSeq = null; card.noAtkSeq = null; card.frozen = false; // ★登場するキャラは常に「新しいキャラ」＝以前の効果無効/アタック不可/ロックを引き継がない（トラッシュ→蘇生でアタック不可が残るバグの防止。OP16-098→OP16-096ヤマト等）
       { const L = P.leader; if (L && !isNegated(L) && L.base.fx && L.base.fx.static && L.base.fx.static.some(o => o.op === 'summonRested')) card.rested = true; } // 「自分のキャラはレストで登場する」（OP09-022リムL）
       P.chars.push(card);
       render(); animClass(card.uid, 'enter'); spawnAt(card.uid, 'ring'); sfx('summon'); await sleep(260);

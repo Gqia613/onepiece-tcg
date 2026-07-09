@@ -208,7 +208,7 @@
       collect(fx);
       const has = (...ops) => allOps.some(o => ops.includes(o.op));
       // 相手キャラ除去・妨害系 → 価値ある標的がいる時のみ
-      if (has('ko', 'bounce', 'deckBottom', 'restChar', 'koZero', 'lock', 'restImmune', 'setAttackBan', 'denyBlocker', 'negateChoose', 'selectKoIfCostEqualsDon')) return oppHasWorthyTarget(side);
+      if (has('ko', 'trashChar', 'bounce', 'deckBottom', 'restChar', 'koZero', 'lock', 'restImmune', 'setAttackBan', 'denyBlocker', 'negateChoose', 'selectKoIfCostEqualsDon')) return oppHasWorthyTarget(side);
       if (allOps.some(o => o.op === 'powerMod' && o.side === 'opp')) return oppHasWorthyTarget(side);
       // ドロー/サーチ/トラッシュ回収 → 手札が枯れ気味なら撃つ
       if (has('draw', 'search', 'trashToHand', 'lifeToHand', 'lifeSwap')) return G.players[side].hand.length <= 5;
@@ -364,7 +364,7 @@
       const allOps = []; const collect = arr => { for (const o of arr || []) { allOps.push(o); if (o.then) collect(o.then); if (o.fx) collect(o.fx); if (o.options) for (const op2 of o.options) collect(op2.fx); } };
       collect(fx);
       if (!allOps.length) return true;
-      const oppT = ['ko', 'koZero', 'bounce', 'deckBottom', 'restChar', 'lock', 'restImmune', 'setAttackBan', 'denyBlocker', 'negateChoose', 'koByTotalPower'];
+      const oppT = ['ko', 'trashChar', 'koZero', 'bounce', 'deckBottom', 'restChar', 'lock', 'restImmune', 'setAttackBan', 'denyBlocker', 'negateChoose', 'koByTotalPower'];
       const isOppRemoval = o => oppT.includes(o.op) || ((o.op === 'powerMod' || o.op === 'setPower') && o.side === 'opp');
       const removals = allOps.filter(isOppRemoval);
       const others = allOps.filter(o => !isOppRemoval(o) && o.op !== 'cond');
@@ -459,18 +459,21 @@
       {
         const lineRun = G._lineExec; G._lineExec = null;
         if (lineRun && lineRun.seq && typeof applyAction === 'function' && P._noPlayTurn !== G.turnSeq) {
-          for (const st of lineRun.seq) {
-            if (G.winner) return;
-            let c = null;
-            if (st.k === 'act') c = [...P.chars, ...(P.stage ? [P.stage] : []), P.leader].find(x => x.base.no === st.no && x.base.fx && x.base.fx.act && x._actTurn !== G.turnSeq && !isNegated(x));
-            else c = P.hand.find(x => x.base.no === st.no);
-            if (!c) continue;
-            if (st.k === 'char' && (summonBanned(side, c) || effCost(side, c) > P.don.active || P.chars.length >= 5)) continue;
-            if (st.k === 'event' && (!c.base.fx || !c.base.fx.main || effCost(side, c) > P.don.active)) continue;
-            if (st.k === 'stage' && (c.base.cost || 0) > P.don.active) continue;
-            await applyAction(side, { k: st.k, uid: c.uid });
-            render(); await sleep(160);
-          }
+          G._linePick = (lineRun.pick && lineRun.pick.slice()) || null;   // ★E49: ライン実行中だけ対象steering(蘇生/回収の優先no)
+          try {
+            for (const st of lineRun.seq) {
+              if (G.winner) return;
+              let c = null;
+              if (st.k === 'act') c = [...P.chars, ...(P.stage ? [P.stage] : []), P.leader].find(x => x.base.no === st.no && x.base.fx && x.base.fx.act && x._actTurn !== G.turnSeq && !isNegated(x));
+              else c = P.hand.find(x => x.base.no === st.no);
+              if (!c) continue;
+              if (st.k === 'char' && (summonBanned(side, c) || effCost(side, c) > P.don.active || P.chars.length >= 5)) continue;
+              if (st.k === 'event' && (!c.base.fx || !c.base.fx.main || effCost(side, c) > P.don.active)) continue;
+              if (st.k === 'stage' && (c.base.cost || 0) > P.don.active) continue;
+              await applyAction(side, { k: st.k, uid: c.uid });
+              render(); await sleep(160);
+            }
+          } finally { G._linePick = null; }
           if (G.winner) return;
         }
       }
@@ -606,7 +609,9 @@
     //   有意に勝った改良だけ本採用（フラグを外して既定化）する＝測定駆動の改良ループ。詳細 docs/ai-design.md §7。
     function isHeur2(side) { return !!(G.players[side] && G.players[side].agent === 'heur2'); }
     const AGENTS = {
-      heuristic: { takeTurn: heuristicTurn },
+      // ★E48: 既定CPUでも LINE_PLAY 掲載リーダー(黒ヤマト)はコンボライン候補化(lineTurn)を通す。
+      //   lineTurnは_sim中/ライン不一致では素のheuristicTurnと同一＝他リーダー・ロールアウトはバイト等価。
+      heuristic: { takeTurn: async (side) => (typeof LINE_PLAY !== 'undefined' && LINE_PLAY[leaderKeyOf(side)] && typeof lineTurn === 'function') ? lineTurn(side) : heuristicTurn(side) },
       random: { takeTurn: randomTurn },
       heur2: { takeTurn: heuristicTurn },   // 能動ターンは同じ。差は isHeur2 で分岐する各種ヒューリスティック改良
       // ★E39: DECK_PLANS有効のheuristic（測定用）。usePlanはプレーン値＝cloneを生き残り、ロールアウト内の自己モデルも一貫する。

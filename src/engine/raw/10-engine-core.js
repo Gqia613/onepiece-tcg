@@ -462,7 +462,7 @@
     }
     function clearNegation() {
       for (const s of ['me', 'cpu']) {
-        const P = G.players[s]; const f = c => { if (!c) return; if (c.negSeq != null && G.turnSeq > c.negSeq) c.negSeq = null; if (c.noAtkSeq != null && G.turnSeq > c.noAtkSeq) c.noAtkSeq = null; if (c._atkTaxSeq != null && G.turnSeq >= c._atkTaxSeq) { c._atkTaxSeq = null; c._atkTaxN = null; } if (c.restImmuneUntil != null && G.turnSeq > c.restImmuneUntil) c.restImmuneUntil = null; }; // negSeq/noAtkSeq: untilNextEnd/untilNextStart(=turnSeq+1)は相手の次ターンを通して継続＝restImmuneと同じ`>`で失効（`>=`だと相手ターン開始で1ターン早く切れた。OP09-093ティーチの効果無効＆アタック不可・setAttackBan等）。このターン中(=turnSeq)は`>`でも次ターン開始で失効し不変。
+        const P = G.players[s]; const f = c => { if (!c) return; if (c.negSeq != null && G.turnSeq >= c.negSeq) c.negSeq = null; if (c.noAtkSeq != null && G.turnSeq >= c.noAtkSeq) c.noAtkSeq = null; if (c._atkTaxSeq != null && G.turnSeq >= c._atkTaxSeq) { c._atkTaxSeq = null; c._atkTaxN = null; } if (c.restImmuneUntil != null && G.turnSeq > c.restImmuneUntil) c.restImmuneUntil = null; }; // ★clearNegation は endTurn(ターン終了時・turnSeqはそのターンのまま)で呼ばれる。negSeq/noAtkSeq は `>=` で失効＝「このターン中」(=turnSeq)は付与ターンの終了時に、「次の相手ターン終了時まで」(untilNextEnd=turnSeq+1)は相手の次ターンの終了時に失効（_atkTaxSeqと同じ比較）。旧`>`はendTurn呼び出しでは失効が1ターン遅れ、OP09-093ティーチのリーダー効果無効が相手ターンまで／アタック不可が次の自分ターンまで残るバグだった。
         f(P.leader); P.chars.forEach(f); if (P.stage) f(P.stage);
       }
     }

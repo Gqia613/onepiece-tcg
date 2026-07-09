@@ -434,6 +434,68 @@ function chk(name, cond) { if (cond) pass++; else { fail++; console.log('  ✗ '
   const w17 = await playLineh(103);
   chk('E47: lineh 1局完走（勝者確定・フリーズ無し）', w17 === 'me' || w17 === 'cpu');
 
+  // 18) ★E48: 黒ヤマトのモモの助コンボライン（5cモモ+しのぶ→起動→トラッシュの9cモモ登場・速攻）
+  G.players = {}; G.winner = null; seedRng(111); startGame('yamato', 'yamato');
+  for (let k = 0; k < 300 && !G.myActable && !G.winner; k++) await new Promise(r => setImmediate(r));
+  const P18 = G.players.me;
+  P18.isCPU = true; G.active = 'me'; P18.turnsTaken = 1;                 // アタック相を避ける（コンボ実行だけ検証）
+  const momo5 = inst('OP16-084', 'me'), shino = inst('OP16-087', 'me'), momo9 = inst('OP16-085', 'me');
+  P18.hand.length = 0; P18.hand.push(momo5, shino);
+  P18.trash.push(momo9);
+  P18.chars = []; P18.don = { active: 9, rested: 0 }; P18.donMax = 10;   // donTotal=9(起動条件)・支払7で足りる
+  const m18 = matchDeckLines('me');
+  chk('E48: momo-comboライン照合（手札2枚+トラッシュ9cモモ+ドン9）', m18.some(l => l.id === 'momo-combo'));
+  G._lineExec = m18.find(l => l.id === 'momo-combo');
+  G._sim = true; G._noChain = true;
+  await heuristicTurn('me');
+  G._sim = false; G._noChain = false;
+  chk('E48: コンボ実行で9cモモの助が登場する', P18.chars.some(c => c.uid === momo9.uid));
+  chk('E48: 5cモモの助は起動コストでトラッシュへ', P18.trash.some(c => c.uid === momo5.uid));
+  chk('E48: 登場した9cモモは速攻を得ている(リーダー効果)', (momo9.kwGrant || []).some(g => g.kw === 'rush'));
+  // 前提不足（トラッシュに9cモモ無し）では照合しない
+  G.players = {}; G.winner = null; seedRng(112); startGame('yamato', 'yamato');
+  for (let k = 0; k < 300 && !G.myActable && !G.winner; k++) await new Promise(r => setImmediate(r));
+  const P18b = G.players.me; P18b.isCPU = true; G.active = 'me';
+  P18b.hand.length = 0; P18b.hand.push(inst('OP16-084', 'me'), inst('OP16-087', 'me'));
+  P18b.trash.length = 0; P18b.don = { active: 9, rested: 0 }; P18b.donMax = 10;
+  chk('E48: トラッシュに9cモモ無し→照合しない', !matchDeckLines('me').some(l => l.id === 'momo-combo'));
+
+  // 18b) ★E48採用: 既定CPU(heuristic)がLINE_PLAY掲載リーダー(黒ヤマト)でラインを候補化する
+  chk('E48採用: LINE_PLAYに黒ヤマト掲載', typeof LINE_PLAY !== 'undefined' && LINE_PLAY['_OP16-079'] === 1);
+  chk('E48採用: AGENTS.heuristicはディスパッチラッパー(素のheuristicTurnでない)', AGENTS.heuristic.takeTurn !== heuristicTurn);
+  async function playYamatoDefault(seed) {
+    G.players = {}; G.winner = null; G.inGame = false; seedRng(seed);
+    startGame('yamato', 'yamato'); G.players.me.isCPU = true; G.players.me.agent = 'heuristic'; G.players.cpu.agent = 'heuristic';
+    let it = 0; while (!(G.winner && !G._sim) && it < 3000000) { await new Promise(r => setImmediate(r)); it++; }
+    for (let k = 0; k < 40; k++) await new Promise(r => setImmediate(r));
+    return G.winner;
+  }
+  const w18 = await playYamatoDefault(113);
+  chk('E48採用: 既定同士のヤマトミラー1局完走', w18 === 'me' || w18 === 'cpu');
+
+  // 19) ★E49: 縁切り経由のコンボライン（exp:1）と対象steering(G._linePick)
+  chk('エージェント登録: lineh2', !!AGENTS.lineh2);
+  G.players = {}; G.winner = null; seedRng(121); startGame('yamato', 'yamato');
+  for (let k = 0; k < 300 && !G.myActable && !G.winner; k++) await new Promise(r => setImmediate(r));
+  const P19 = G.players.me;
+  P19.isCPU = true; G.active = 'me'; P19.turnsTaken = 1;
+  const en19 = inst('OP16-099', 'me'), sh19 = inst('OP16-087', 'me');
+  const momo5t = inst('OP16-084', 'me'), momo9t = inst('OP16-085', 'me'), oden19 = inst('OP16-083', 'me');
+  P19.hand.length = 0; P19.hand.push(en19, sh19);
+  P19.trash.length = 0; P19.trash.push(momo5t, momo9t, oden19);   // ★おでん(6000)も混ぜ、steeringがパワー最大選択に勝つことを検証
+  P19.chars = []; P19.don = { active: 9, rested: 0 }; P19.donMax = 10;
+  const m19 = matchDeckLines('me');
+  chk('E49採用: enkiri-momoが既定で照合する（exp昇格済み）', m19.some(l => l.id === 'enkiri-momo'));
+  G._lineExec = m19.find(l => l.id === 'enkiri-momo');
+  G._sim = true; G._noChain = true;
+  await heuristicTurn('me');
+  G._sim = false; G._noChain = false;
+  chk('E49: steeringで縁切りは(おでんでなく)5cモモを蘇生し、コンボ完走で9cモモが登場', P19.chars.some(c => c.uid === momo9t.uid));
+  // 9cモモの登場時効果は「光月モモの助"以外"のコスト6以下ワノ国」を連鎖蘇生→おでんが盤面へ(速攻付き=フルコンボ)。
+  // steering自体の検証は「縁切りの1手目がおでんでなく5cモモを選んだこと」=9cモモ登場(コンボ成立)が証明している。
+  chk('E49: 連鎖蘇生でおでんも盤面へ(9cモモ登場時効果)', P19.chars.some(c => c.uid === oden19.uid));
+  chk('E49: _linePickは実行後にクリアされる', G._linePick == null);
+
   console.log('  AI基盤テスト: pass=' + pass + ' fail=' + fail);
   process.exit(fail ? 1 : 0);
 })();

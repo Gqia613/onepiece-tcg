@@ -10,6 +10,12 @@
       return await humanPick(cands, withFxSrc(text), optional, cls);
     }
     function cpuPick(cands, prefer) {
+      // ★E49: コンボライン実行中の対象steering。G._linePick(ラインが宣言した優先no)は line実行中だけ設定され、
+      //   自陣カードの選択(蘇生/回収/登場の対象)でのみ効く（相手対象の選択には影響しない）。未設定なら従来どおり。
+      if (G._linePick && G._linePick.length && cands.length && cands.every(c => c.owner === G.active)) {
+        const m = cands.find(c => G._linePick.indexOf(c.base.no) >= 0);
+        if (m) return m;
+      }
       const byPow = (a, b) => power(b) - power(a) || (b.base.cost || 0) - (a.base.cost || 0);
       let arr = cands.slice();
       if (prefer === 'ownSmall') arr.sort((a, b) => (a.base.counter || 0) - (b.base.counter || 0) || power(a) - power(b));
@@ -256,6 +262,22 @@
             if (!t) break; if (await protectFromEffect(t, 'ko', self)) continue; await koCard(t, 'oppEffect');
           }
           break;
+        }
+        // 「相手のキャラを（1枚まで/count枚）トラッシュに置く」。KOではない＝「相手の効果でKOされない」を貫通し【KO時】は誘発しない（公式: トラッシュに置くはKOと別。KOされない耐性を無視）。
+        // 「相手の効果で場を離れない」/身代わりは尊重し、場を離れた時の誘発は起こる（deckBottomと同じ非KO除去で行き先がトラッシュ）。OP09-009ベックマン/OP06-092ブルック/OP07-091ルフィ/OP08-079カイドウ/ST19-003たしぎ。
+        case 'trashChar': {
+          const doTrash = async (t) => {
+            if (await protectFromEffect(t, 'trash', self)) return false;
+            removeCharTo(t, G.players[t.owner].trash); flog(side, `「${t.base.name}」をトラッシュに置いた`);
+            await checkAllyLeave(t.owner, t, t.owner === side ? 'ownEffect' : 'oppEffect'); return true;
+          };
+          if (op.all) { for (const t of oppChars(side, opFilter(op)).slice()) await doTrash(t); render(); break; } // 条件一致の相手キャラすべてをトラッシュ
+          for (let i = 0; i < (op.count || 1); i++) {
+            const cands = oppChars(side, opFilter(op)); // 「KOされない」キャラも対象に含める（貫通）
+            const t = await chooseCard(side, cands, progText('トラッシュに置く相手キャラを選択', i, op.count || 1), 'oppBig', op.optional);
+            if (!t) break; await doTrash(t);
+          }
+          render(); break;
         }
         // 相手キャラを最大count枚、現在パワーの合計がmaxTotal以下になるようKO（OP09-018失せろ）
         case 'koByTotalPower': {
@@ -1083,7 +1105,7 @@
         // 相手が自身の手札 n枚を捨てる
         case 'oppDiscard': { const O = G.players[o]; const k = Math.min(op.n || 1, O.hand.length); for (let i = 0; i < k; i++) { let c; if (O.isCPU) c = O.hand.slice().sort((a, b) => (a.base.cost || 0) - (b.base.cost || 0))[0]; else c = await chooseFromHand(o, O.hand.slice(), `捨てる手札（${i + 1}/${k}）`); if (!c) break; O.hand.splice(O.hand.indexOf(c), 1); O.trash.push(reset(c)); } if (k) { flog(side, `相手は手札${k}枚を捨てた`); await fireHandDiscarded(o, k); } render(); break; }
         // 自分のトラッシュから filter一致のカードを count枚 手札に加える
-        case 'trashToHand': { for (let i = 0; i < (op.count || 1); i++) { const cands = P.trash.filter(c => matchFilter(c, op.filter || {})); if (!cands.length) break; const t = P.isCPU ? cands[0] : await chooseCard(side, cands, 'トラッシュから手札に加えるカード', 'ownBig', op.optional); if (!t) break; P.trash.splice(P.trash.indexOf(t), 1); P.hand.push(t); flog(side, `「${t.base.name}」を手札に加えた`); } render(); break; }
+        case 'trashToHand': { for (let i = 0; i < (op.count || 1); i++) { const cands = P.trash.filter(c => matchFilter(c, op.filter || {})); if (!cands.length) break; const t = P.isCPU ? ((G._linePick && G._linePick.length && cands.find(c => G._linePick.indexOf(c.base.no) >= 0)) || cands[0]) : await chooseCard(side, cands, 'トラッシュから手札に加えるカード', 'ownBig', op.optional); if (!t) break; P.trash.splice(P.trash.indexOf(t), 1); P.hand.push(t); flog(side, `「${t.base.name}」を手札に加えた`); } render(); break; } // E49: _linePick=ライン実行中の回収対象steering
         // 自分のデッキの上 n枚をトラッシュに置く（ミル）
         case 'deckToTrash': { if (op.optional && !(await confirmUse(side, 'デッキをトラッシュ', `デッキの上から${op.n || 1}枚をトラッシュに置きますか？`, '置く', '置かない'))) break; const k = Math.min(op.n || 1, P.deck.length); for (let i = 0; i < k; i++) P.trash.push(reset(P.deck.shift())); if (k) flog(side, `デッキ上${k}枚をトラッシュ`); render(); break; }
         // 自分の手札またはトラッシュから filter一致のキャラ1枚を登場
@@ -1228,12 +1250,12 @@
         if (st) for (const o of st) { if (o.op === 'koImmuneFromSourceAttr' && (!o.cond || checkCond(o.cond, target.owner, target)) && !((source.base.attribute || '').includes(o.lacksAttr))) { flog(target.owner, `「${target.base.name}」は属性${o.lacksAttr}を持たないキャラの効果ではKOされない`); return true; } }
       }
       // 「相手のキャラすべては、自分の効果で場を離れない」(OP14-079クロコダイル)。除去しようとする側(=opp(target.owner))の盤面に oppLeaveImmuneFromSelf があれば効果除去を無効化＝自分の効果で相手を場から離せない自己制約。
-      if (cause === 'ko' || cause === 'bounce' || cause === 'deckBottom') {
+      if (cause === 'ko' || cause === 'bounce' || cause === 'deckBottom' || cause === 'trash') {
         const remover = G.players[opp(target.owner)];
         if (remover && [remover.leader, ...remover.chars].some(p => p && !isNegated(p) && p.base.fx && p.base.fx.static && p.base.fx.static.some(o => o.op === 'oppLeaveImmuneFromSelf'))) { flog(target.owner, `「${target.base.name}」は相手の効果で場を離れない`); return true; }
       }
-      // 「相手の効果で場を離れない」自身の常在(condBuff immune): バウンス/デッキ送りも無効化（選択・無効化・パワー減少は通す）
-      if ((cause === 'bounce' || cause === 'deckBottom') && isLeaveImmune(target)) { flog(target.owner, `「${target.base.name}」は相手の効果で場を離れない`); return true; }
+      // 「相手の効果で場を離れない」自身の常在(condBuff immune): バウンス/デッキ送り/トラッシュ置きも無効化（選択・無効化・パワー減少は通す）
+      if ((cause === 'bounce' || cause === 'deckBottom' || cause === 'trash') && isLeaveImmune(target)) { flog(target.owner, `「${target.base.name}」は相手の効果で場を離れない`); return true; }
       const ow = G.players[target.owner];
       for (const p of [ow.leader, ...ow.chars]) { // リーダー提供の身代わりも拾う
         if (!p || isNegated(p)) continue; // 効果無効中のキャラは身代わり保護を提供しない

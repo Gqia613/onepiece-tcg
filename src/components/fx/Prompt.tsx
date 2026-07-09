@@ -92,12 +92,18 @@ export function Prompt() {
 
   // 「盤面を見る」導線: 防御選択（カウンター/ブロッカー）に加え、アタック進行中の
   // 全プロンプト（相手アタック時のリーダー効果確認など）でも盤面を確認できるようにする。
+  // さらに、カード画像付き選択肢を持つ効果のカード選択（山札/トラッシュからのサーチで
+  // 手札に加える札を選ぶ場面など）でも退避を許可する。これらはプロンプトが手札を覆う
+  // （特にモバイルのボトムシート）ため、退避して今の手札を確認できるようにする。
   const atk = useEngineStore((s) => s.atk);
   const isDefense = !!prompt && (prompt.cls || '').includes('defense');
+  const hasCardOpts = !!prompt && (prompt.opts || []).some((o) => o.card);
   const canPeek =
     !!prompt &&
     !(prompt.cls || '').includes('mulligan') &&
-    ((isDefense && (prompt.opts || []).some((o) => o.card)) || !!atk);
+    (hasCardOpts || !!atk);
+  // 退避ボタンの文言: 効果のカード選択（サーチ等）は「手札を見る」、防御やアタック確認は「盤面を見る」。
+  const peekLabel = !isDefense && hasCardOpts ? '手札を見る' : '盤面を見る';
 
   // 薄いスクリム: 純粋なボタン決断のときだけ。盤面タップが必要な場面
   // （pick/pendingChoice=光るカードをクリックで選択、trigger=カード大写しを背後に見せる）では出さない。
@@ -123,6 +129,7 @@ export function Prompt() {
             prompt={prompt}
             onImgError={onImgError}
             canPeek={canPeek}
+            peekLabel={peekLabel}
             onPeek={() => setPeek(true)}
           />
         )}
@@ -141,11 +148,13 @@ function PromptCard({
   prompt,
   onImgError,
   canPeek,
+  peekLabel,
   onPeek,
 }: {
   prompt: NonNullable<ReturnType<typeof useEngineStore.getState>['prompt']>;
   onImgError: (e: React.SyntheticEvent<HTMLImageElement>) => void;
   canPeek?: boolean;
+  peekLabel?: string;
   onPeek?: () => void;
 }) {
   const opts: PromptOption[] = prompt.opts || [];
@@ -183,10 +192,10 @@ function PromptCard({
       {/* マリガン: スタートの手札5枚をフリップ公開 */}
       {isMulligan && <MulliganHand />}
 
-      {/* 盤面を見たい時：選択を保留してプロンプトを退避（盤面が見える）。 */}
+      {/* 盤面/手札を見たい時：選択を保留してプロンプトを退避（盤面・手札が見える）。 */}
       {canPeek && (
         <button className="prompt-peek-btn" onClick={onPeek}>
-          盤面を見る
+          {peekLabel || '盤面を見る'}
         </button>
       )}
 

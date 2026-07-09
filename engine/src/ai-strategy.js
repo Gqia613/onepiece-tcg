@@ -76,6 +76,39 @@ window.DECK_PLANS = {
           seq: [{ k: 'char', no: 'OP09-093' }] },
       ],
     },
+    /* 黒ヤマト(E48・linesのみ・ユーザー観察由来): リーダー効果=トラッシュからのワノ国登場に【速攻】。
+       定石はコスト順プレイと乖離（P0の5cモモの助をscoreCharは最低評価→ミラー30局で9cモモ登場0.03回/側＝コンボ完全不発を実測）。
+       幹: ①5cモモ+しのぶ(+20)→起動→トラッシュの9cモモ登場(速攻・登場時さらに6c以下ワノ国蘇生)
+           ②6cヤマト→即起動(自壊)→トラッシュの8cヤマト登場(速攻)。8c/9cを先に捨てるのは既存ハードコードが担当。 */
+    '_OP16-079': {   // 黒ヤマト（非curatedリーダーは番号キー: leaderKeyOf(side)が '_OP16-079' を返す）
+      lines: [
+        { id: 'momo-combo', don: [7, 99],                          // 5cモモ+しのぶ同一ターン: しのぶ自壊で+20→起動条件(コスト20/ドン9)成立→9cモモ(速攻)
+          need: { hand: [{ no: 'OP16-084' }, { no: 'OP16-087' }], trash: [{ no: 'OP16-085' }], donTotalMin: 9 },
+          seq: [{ k: 'char', no: 'OP16-084' }, { k: 'char', no: 'OP16-087' }, { k: 'act', no: 'OP16-084' }] },
+        { id: 'momo-combo-standing', don: [2, 99],                 // 5cモモが既に盤面: しのぶだけ追加で起動
+          need: { hand: [{ no: 'OP16-087' }], board: [{ no: 'OP16-084' }], trash: [{ no: 'OP16-085' }], donTotalMin: 9 },
+          seq: [{ k: 'char', no: 'OP16-087' }, { k: 'act', no: 'OP16-084' }] },
+        { id: 'yamato-revive', don: [6, 99],                       // 6cヤマト登場→即起動(自壊)→トラッシュの8cヤマトを速攻登場
+          need: { hand: [{ no: 'OP16-098' }], trash: [{ name: 'ヤマト', minCost: 8 }] },
+          seq: [{ k: 'char', no: 'OP16-098' }, { k: 'act', no: 'OP16-098' }] },
+        /* ★E49採用(2026-07-10・ミラーN=120×2帯 +7.5pt(10/1 p=0.012★)/+9.2pt(11/0 p=0.001★)＝E48比の純上乗せで有意):
+           縁切り(OP16-099)＝ドン6レスト→ミル5→トラッシュのコスト6以下ワノ国を蘇生(リーダー効果で速攻)を起点に、
+           トラッシュからコンボを組み立てる型(ユーザー指摘「トラッシュの5cモモをイベントで蘇生できる」由来)。
+           pick=ライン実行中の蘇生/回収対象steering(G._linePick・既定のパワー最大選択を上書き)。再測定はOPCG_AGENT=lineh2。 */
+        { id: 'enkiri-momo', don: [9, 99],                 // 縁切りでトラッシュの5cモモ蘇生→しのぶ(+20)→起動→9cモモ(速攻)
+          need: { hand: [{ no: 'OP16-099' }, { no: 'OP16-087' }], trash: [{ no: 'OP16-084' }, { no: 'OP16-085' }], donTotalMin: 9 },
+          pick: ['OP16-084'],
+          seq: [{ k: 'event', no: 'OP16-099' }, { k: 'char', no: 'OP16-087' }, { k: 'act', no: 'OP16-084' }] },
+        { id: 'enkiri-yamato', don: [7, 99],               // 縁切りでトラッシュの6cヤマト蘇生(速攻)→即起動(自壊)→8cヤマトも速攻
+          need: { hand: [{ no: 'OP16-099' }], trash: [{ no: 'OP16-098' }, { name: 'ヤマト', minCost: 8 }] },
+          pick: ['OP16-098'],
+          seq: [{ k: 'event', no: 'OP16-099' }, { k: 'act', no: 'OP16-098' }] },
+        { id: 'yamato97-shinobu', don: [8, 99],            // 8cヤマト(回収型)でトラッシュのしのぶ回収→コスト2以下登場→+20→盤面の5cモモ起動→9cモモ
+          need: { hand: [{ no: 'OP16-097' }], trash: [{ no: 'OP16-087' }, { no: 'OP16-085' }], board: [{ no: 'OP16-084' }], donTotalMin: 9 },
+          pick: ['OP16-087'],
+          seq: [{ k: 'char', no: 'OP16-097' }, { k: 'act', no: 'OP16-084' }] },
+      ],
+    },
     /* 青黄ハンコック(E47・linesのみ): トリガー登場をリーダードローに変換する受けデッキ。
        カーブ「3→5→7→9」とゾンビ型ライフ仕込み・芳香脚リーサルが検証済みの幹（docs/deck-lines.md）。 */
     hancock: {
@@ -118,13 +151,13 @@ function planFor(side) {
   if (!DP || !DP.byLeader) return null;
   return DP.byLeader[leaderKeyOf(side)] || null;
 }
-// カード照合の小さなDSL: {no} / {name} / {type,trait,minCost,maxCost}（属性は完全一致・traitは配列includes）
+// カード照合の小さなDSL: {no} / {name,type,trait,minCost,maxCost} の複合AND（E48でnameを他条件と複合可能に。name単独指定の既存データは挙動不変）
 function planCardMatch(card, ref) {
   if (!card || !card.base || !ref) return false;
   const b = card.base;
   if (ref.no) return b.no === ref.no;
-  if (ref.name) return (b.name || '') === ref.name;
-  return (!ref.type || b.type === ref.type)
+  return (!ref.name || (b.name || '') === ref.name)
+    && (!ref.type || b.type === ref.type)
     && (!ref.trait || (b.traits || []).includes(ref.trait))
     && (!ref.minCost || (b.cost || 0) >= ref.minCost)
     && (!ref.maxCost || (b.cost || 0) <= ref.maxCost);
@@ -192,11 +225,14 @@ function matchDeckLines(side) {
   if (!plan || !plan.lines) return [];
   const out = [];
   for (const ln of plan.lines) {
+    if (ln.exp && !G._lineExp) continue;   // E49: 実験ライン（exp:1）は G._lineExp(AGENTS.lineh2)時のみ。採用時にexpを外して昇格
     if (ln.don && (P.don.active < ln.don[0] || P.don.active > ln.don[1])) continue;
     const nd = ln.need || {};
     if (nd.handMin && P.hand.length < nd.handMin) continue;
     if (nd.oppLifeMax != null && G.players[opp(side)].life.length > nd.oppLifeMax) continue;
+    if (nd.donTotalMin && donTotal(side) < nd.donTotalMin) continue;   // E48: 「場のドンN枚以上」条件（起動条件と対）
     if (nd.hand && !nd.hand.every(r => P.hand.some(c => planCardMatch(c, r)))) continue;
+    if (nd.board && !nd.board.every(r => P.chars.some(c => planCardMatch(c, r)))) continue;   // E48: 盤面前提（既に出ているコンボ土台）
     if (nd.trash && !nd.trash.every(r => P.trash.some(c => planCardMatch(c, r)))) continue;
     if (!(ln.seq || []).every(st => st.k === 'act' || P.hand.some(c => c.base.no === st.no))) continue;
     out.push(ln);

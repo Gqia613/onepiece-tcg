@@ -1413,7 +1413,7 @@ window.CARD_FX = {
   // OP09-008 ビルディング・スネイク: 【起動メイン】このキャラをデッキ下：相手キャラ1枚を-3000
   "OP09-008": {"act":{"label":"自身をデッキ下:相手-3000","cost":{},"fx":[{"op":"selfToBottomCost","then":[{"op":"powerMod","side":"opp","amount":-3000,"duration":"turn","count":1,"optional":true}]}]}},
   // OP09-009 ベン・ベックマン: 【登場時】相手のパワー6000以下1枚をトラッシュ(KO)
-  "OP09-009": {"onPlay":[{"op":"ko","side":"opp","filter":{"maxEffPower":6000},"count":1,"optional":true}]},
+  "OP09-009": {"onPlay":[{"op":"trashChar","side":"opp","filter":{"maxEffPower":6000},"count":1,"optional":true}]},
   // OP09-010 ボンク・パンチ: 【登場時】手札から「モンスター」1枚を登場 ／【ドン×1】【アタック時】+2000
   "OP09-010": {"onPlay":[{"op":"playSpecificFromHand","name":"モンスター","optional":true}],"onAttack":[{"op":"cond","check":{"donX1":true},"then":[{"op":"powerMod","side":"self","target":"self","amount":2000,"duration":"turn"}]}]},
   // OP09-011 ホンゴウ: 【起動メイン】レスト：赤髪リーダーなら相手キャラ1枚を-2000
@@ -1722,7 +1722,7 @@ window.CARD_FX = {
   // OP08-077 覇海: 【メイン】ドン-2：百獣かビッグマムリーダーなら相手コスト6以下2枚KO
   "OP08-077": {"main":{"fx":[{"op":"donMinus","n":2},{"op":"cond","check":{"or":[{"leaderTraitIncludes":"百獣海賊団"},{"leaderTraitIncludes":"ビッグ・マム海賊団"}]},"then":[{"op":"ko","side":"opp","filter":{"maxCost":6},"count":2,"optional":true}]}]}},
   // OP08-079 カイドウ(c9): 【起動メイン】【ターン1回】手札1枚捨て：登場ターンなら相手コスト7以下1枚KO→相手1枚捨て
-  "OP08-079": {"act":{"label":"手札1捨て:登場ターンなら相手7以下KO＋相手捨て","cost":{},"fx":[{"op":"discardCost","count":1,"optional":true,"then":[{"op":"cond","check":{"selfSummonedThisTurn":true},"then":[{"op":"ko","side":"opp","filter":{"maxCost":7},"count":1,"optional":true},{"op":"oppDiscard","n":1}]}]}]}},
+  "OP08-079": {"act":{"label":"手札1捨て:登場ターンなら相手7以下をトラッシュ＋相手捨て","cost":{},"fx":[{"op":"discardCost","count":1,"optional":true,"then":[{"op":"cond","check":{"selfSummonedThisTurn":true},"then":[{"op":"trashChar","side":"opp","filter":{"maxCost":7},"count":1,"optional":true},{"op":"oppDiscard","n":1}]}]}]}},
   // OP08-080 クイーン(c1): 【登場時】デッキ上5枚から「クイーン」以外の百獣1枚を手札に
   "OP08-080": {"onPlay":[{"op":"search","look":5,"count":1,"filter":{"traitIncludes":"百獣海賊団"},"exclude":"クイーン","optional":true}]},
   // OP08-081 ゲルニカ: 【アタック時】トラッシュから『CP』3枚をデッキ下：相手のコスト0キャラ1枚KO
@@ -1955,7 +1955,7 @@ window.CARD_FX = {
   // OP07-090 モルガンズ: 【登場時】相手は手札1枚捨て(公開)→相手は1ドロー
   "OP07-090": {"onPlay":[{"op":"oppDiscard","n":1},{"op":"oppDraw","n":1}]},
   // OP07-091 モンキー・D・ルフィ(c5): 【アタック時】相手コスト2以下1枚KO→トラッシュのコスト4以上を3枚デッキ下で+1000(近似)
-  "OP07-091": {"onAttack":[{"op":"ko","side":"opp","filter":{"maxCost":2},"count":1,"optional":true},{"op":"trashToBottomCost","n":3,"filter":{"minCost":4,"type":"CHAR"},"then":[{"op":"powerMod","side":"self","target":"self","amount":1000,"duration":"turn"}]}]},
+  "OP07-091": {"onAttack":[{"op":"trashChar","side":"opp","filter":{"maxCost":2},"count":1,"optional":true},{"op":"trashToBottomCost","n":3,"filter":{"minCost":4,"type":"CHAR"},"then":[{"op":"powerMod","side":"self","target":"self","amount":1000,"duration":"turn"}]}]},
   // OP07-092 ヨセフ: 【登場時】トラッシュの『CP』2枚をデッキ下：相手コスト1以下1枚KO
   "OP07-092": {"onPlay":[{"op":"trashToBottomCost","n":2,"filter":{"traitIncludes":"CP"},"then":[{"op":"ko","side":"opp","filter":{"maxCost":1},"count":1,"optional":true}]}]},
   // OP07-093 ロブ・ルッチ(c5): 【登場時】トラッシュ3枚をデッキ下：相手1枚捨て→相手トラッシュ1枚をデッキ下
@@ -2156,7 +2156,7 @@ window.CARD_FX = {
   // OP06-091 ビクトリア・シンドリー: 【登場時】スリラーバークリーダーならデッキ上5枚トラッシュ
   "OP06-091": {"onPlay":[{"op":"cond","check":{"leaderTraitIncludes":"スリラーバーク海賊団"},"then":[{"op":"deckToTrash","n":5}]}]},
   // OP06-092 ブルック(c6): 【登場時】相手コスト4以下1枚KO か 相手はトラッシュ3枚をデッキ下
-  "OP06-092": {"onPlay":[{"op":"chooseOption","options":[{"label":"相手コスト4以下1枚KO","fx":[{"op":"ko","side":"opp","filter":{"maxCost":4},"count":1,"optional":true}]},{"label":"相手はトラッシュ3枚をデッキ下","fx":[{"op":"oppTrashToBottom","n":3}]}]}]},
+  "OP06-092": {"onPlay":[{"op":"chooseOption","options":[{"label":"相手コスト4以下1枚をトラッシュ","fx":[{"op":"trashChar","side":"opp","filter":{"maxCost":4},"count":1,"optional":true}]},{"label":"相手はトラッシュ3枚をデッキ下","fx":[{"op":"oppTrashToBottom","n":3}]}]}]},
   // OP06-093 ペローナ(c4): 【登場時】相手手札5枚以上なら 相手1枚捨て か 相手キャラ1枚コスト-3
   "OP06-093": {"onPlay":[{"op":"cond","check":{"oppHandAtLeast":5},"then":[{"op":"chooseOption","options":[{"label":"相手は手札1枚を捨てる","fx":[{"op":"oppDiscard","n":1}]},{"label":"相手キャラ1枚をコスト-3","fx":[{"op":"addCostBuff","side":"opp","count":1,"amount":-3,"duration":"turn","optional":true}]}]}]}]},
   // OP06-095 影の集合地: 【メイン】/【カウンター】リーダー+1000→コスト2以下スリラーバークを任意KO、1枚ごとリーダー+1000(近似:1枚)
@@ -3804,7 +3804,7 @@ window.CARD_FX = {
   "ST18-005": {"onPlay":[{"op":"donMinus","n":1},{"op":"playCharFromHand","filter":{"color":"紫","traitIncludes":"麦わらの一味","maxCost":5},"count":1,"optional":true}]},
   "ST19-001": {"onPlay":[{"op":"discardCost","count":1,"optional":true,"filter":{"color":"黒","traitIncludes":"海軍"},"then":[{"op":"setAttackBan","filter":{"maxCost":4},"count":2,"duration":"untilNextEnd","optional":true}]}]},
   "ST19-002": {"onPlay":[{"op":"discardCost","count":2,"optional":true,"filter":{"color":"黒","traitIncludes":"海軍"},"then":[{"op":"cond","check":{"leaderTraitIncludes":"海軍"},"then":[{"op":"draw","n":3}]}]}]},
-  "ST19-003": {"onPlay":[{"op":"cond","check":{"leaderNameIncludes":"スモーカー"},"then":[{"op":"addCostBuff","side":"opp","count":1,"amount":-4,"duration":"turn","optional":true}]}],"act":{"label":"登場ターン:相手コスト0をトラッシュ","cost":{},"fx":[{"op":"cond","check":{"selfSummonedThisTurn":true},"then":[{"op":"ko","side":"opp","filter":{"cost":0},"count":1,"optional":true}]}]}},
+  "ST19-003": {"onPlay":[{"op":"cond","check":{"leaderNameIncludes":"スモーカー"},"then":[{"op":"addCostBuff","side":"opp","count":1,"amount":-4,"duration":"turn","optional":true}]}],"act":{"label":"登場ターン:相手コスト0をトラッシュ","cost":{},"fx":[{"op":"cond","check":{"selfSummonedThisTurn":true},"then":[{"op":"trashChar","side":"opp","filter":{"cost":0},"count":1,"optional":true}]}]}},
   "ST19-004": {"static":[{"op":"staticCost","amount":4,"cond":{"and":[{"donX1":true},{"oppTurn":true}]}}],"act":{"label":"トラッシュ1枚デッキ下:リーダーかキャラにレストのドン1","cost":{},"fx":[{"op":"trashToDeckCost","n":1,"then":[{"op":"donAttach","target":"chooseOwn","n":1}]}]}},
   "ST19-005": {"act":{"label":"トラッシュ1枚デッキ下:相手コスト-1","cost":{},"fx":[{"op":"trashToDeckCost","n":1,"then":[{"op":"addCostBuff","side":"opp","count":1,"amount":-1,"duration":"turn","optional":true}]}]}},
   "ST20-001": {"act":{"label":"ライフ表向き:リーダーかキャラにレストのドン1","cost":{},"fx":[{"op":"flipLifeCost","then":[{"op":"donAttach","target":"chooseOwn","n":1}]}]}},

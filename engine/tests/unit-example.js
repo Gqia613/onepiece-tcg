@@ -45,18 +45,53 @@ function setupG(leaderNo){G.active='me';G.turnSeq=5;G.winner=null;const mkP=(ln,
       ok(hasKw(ally,'blocker')===true, '例3b: 外部付与ブロッカーは無効化中も残る');
     }
 
-    // 例3c: OP09-093ティーチの「次の相手のターン終了時まで 効果無効＆アタック不可」が1ターン早く切れない回帰。
-    //       negSeq/noAtkSeq(=turnSeq+1)は clearNegation の 大なり(restImmuneと同じ)で失効＝相手ターンを通して継続。
+    // 例3c: OP09-093ティーチの効果無効＆アタック不可の失効タイミング。
+    //       ★clearNegation は endTurn(ターン終了時・turnSeqはそのターンのまま)で呼ばれ、negSeq/noAtkSeqは 大なりイコール で失効する。
+    //       「次の相手のターン終了時まで」(untilNextEnd=turnSeq+1)は相手の次ターンの"終了時"に、「このターン中」(=turnSeq)は付与ターンの"終了時"に失効。
+    //       旧の大なりはendTurn呼び出しでは失効が1ターン遅れ、リーダー無効が相手ターンまで／アタック不可が次の自分ターンまで残るバグだった。
     setupG('OP15-058'); { const P3=G.players.me; const c=mkc('OP15-067'); P3.chars=[c];
-      G.turnSeq=10; c.negSeq=G.turnSeq+1; c.noAtkSeq=G.turnSeq+1; // ティーチが負荷(untilNextEnd)
-      G.turnSeq=11; clearNegation(); // 相手(所有者)の次ターン開始
-      ok(isNegated(c)===true && cantAttackNeg(c)===true, '例3c: 相手の次ターン中も効果無効＆アタック不可が継続');
-      G.turnSeq=12; clearNegation(); // その次のターン開始
-      ok(isNegated(c)===false && cantAttackNeg(c)===false, '例3c: 相手ターン終了後に失効');
-      // 「このターン中」(=turnSeq)の無効化は次ターン開始で失効（退行なし）
-      const c2=mkc('OP15-061'); P3.chars.push(c2); G.turnSeq=10; c2.negSeq=G.turnSeq;
-      G.turnSeq=11; clearNegation();
-      ok(isNegated(c2)===false, '例3c: このターン中の無効化は次ターン開始で失効(退行なし)');
+      G.turnSeq=10; c.negSeq=G.turnSeq+1; c.noAtkSeq=G.turnSeq+1; // ティーチが付与(untilNextEnd)・付与ターン=10
+      clearNegation(); // endTurn(ターン10=付与ターン): まだ継続
+      ok(isNegated(c)===true && cantAttackNeg(c)===true, '例3c: 付与ターン終了時は効果無効＆アタック不可が継続');
+      G.turnSeq=11; clearNegation(); // endTurn(ターン11=相手の次ターン): ここで失効
+      ok(isNegated(c)===false && cantAttackNeg(c)===false, '例3c: 相手の次ターン終了時に失効');
+      // 「このターン中」(=turnSeq)の無効化は付与ターンの終了時(endTurn)に失効
+      const c2=mkc('OP15-061'); P3.chars.push(c2); G.turnSeq=20; c2.negSeq=G.turnSeq;
+      clearNegation(); // endTurn(ターン20=付与ターン): このターン中は即失効
+      ok(isNegated(c2)===false, '例3c: このターン中の無効化は付与ターンの終了時に失効');
+    }
+
+    // 例3c2(bug修正): 10ティーチOP09-093のリーダー効果無効(このターン中)は「自分のターン終了時」に失効する(endTurn経由の実挙動)。
+    //       以前は相手のターンを通して残り、次の自分のターンまで反映されていた。
+    setupG('OP09-081','OP16-080'); { const A=G.players.me, B=G.players.cpu; G.active='me'; G.turnSeq=30; B.chars=[];
+      await doOp({op:'negateEffect'},{side:'me',self:A.leader}); // 相手キャラ0=リーダー無効(このターン中)のみ
+      ok(isNegated(B.leader)===true, '例3c2: 適用直後は相手リーダー効果無効');
+      G.winner='me'; // endTurn内のbeginTurn連鎖を止める(clearNegationはその前に走る)
+      await endTurn('me');
+      ok(isNegated(B.leader)===false, '例3c2: 自分のターン終了時に相手リーダーの無効が失効(このターン中)');
+      G.winner=null;
+    }
+
+    // 例3c3(bug修正): 蘇生キャラは「新しいキャラ」＝以前のアタック不可/効果無効を引き継がない(トラッシュ→登場でリセット)。
+    //       黒8ヤマト(OP16-096)がアタック不可のままトラッシュにあっても、6ヤマト(OP16-098)の変身で登場した時はリセットされる。
+    setupG('OP16-079'); { const P=G.players.me; P.isCPU=true;
+      const y8=mkc('OP16-096'); y8.owner='me'; y8.noAtkSeq=G.turnSeq+1; y8.negSeq=G.turnSeq+1; P.trash=[y8]; P.chars=[];
+      await doOp({op:'reviveFromTrash',filter:{cost:8,color:'黒',nameIncludes:'ヤマト'}},{self:mkc('OP16-098'),side:'me'});
+      const rev=P.chars.find(c=>c.no==='OP16-096');
+      ok(!!rev && cantAttackNeg(rev)===false && isNegated(rev)===false, '例3c3: 蘇生した8コスト黒ヤマトはアタック不可/効果無効を引き継がない');
+    }
+
+    // 例3c4(bug修正): 「トラッシュに置く」(trashChar)は「相手の効果でKOされない」(OP09-086バージェス)を貫通する。KOではないので【KO時】は誘発しない。
+    setupG('OP16-080'); { const O=G.players.cpu; O.leader=mkc('OP09-081'); // 黒ひげL(バージェスの+1000条件)
+      const burg=mkc('OP09-086'); burg.owner='cpu'; O.chars=[burg];
+      O.trash=[mkc('OP15-067'),mkc('OP15-067'),mkc('OP15-067'),mkc('OP15-067')]; // trash4→+1000=6000
+      ok(power(burg)===6000 && isKoImmune(burg)===true, '例3c4前提: バージェス6000・相手効果でKOされない');
+      await doOp({op:'ko',side:'opp',filter:{maxEffPower:6000},count:1},{side:'me',self:G.players.me.leader});
+      ok(O.chars.includes(burg), '例3c4: koではバージェスをKOできない(従来通り)');
+      await doOp({op:'trashChar',side:'opp',filter:{maxEffPower:6000},count:1,optional:true},{side:'me',self:G.players.me.leader});
+      ok(!O.chars.includes(burg) && O.trash.some(c=>c.uid===burg.uid), '例3c4: trashCharはKOされないを貫通してトラッシュに置く');
+      // ベックマンOP09-009のfxがtrashChar化されている(ko取り違えの回帰)
+      ok(C['OP09-009'].fx.onPlay[0].op==='trashChar', '例3c4: OP09-009ベックマンのonPlayはtrashChar(トラッシュに置く)');
     }
 
     // 例3d: mergeCardDBのキーワード派生=テキストの「他キャラへ付与(◯◯は【KW】を得る)/参照(【KW】を持つ)」は自身のキーワードにしない。
@@ -364,5 +399,6 @@ function setupG(leaderNo){G.active='me';G.turnSeq=5;G.winner=null;const mkP=(ln,
   process.exit(fail?1:0);
 })();
 `;
+// ★書き込み完了(コールバック)を待ってから終了＝パイプ経由で親(test.js)が読む時の欠落を防ぐ（process.exit/自然終了によるstdout切り捨て対策）。
 try{ process.stdout.write(runHarness('unit', harness)); }
 catch(e){ process.stdout.write((e.stdout||'')+(e.stderr||'')); process.exit(1); }
