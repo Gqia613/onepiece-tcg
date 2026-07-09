@@ -11,19 +11,25 @@ export function SummonCutIn() {
   const fxQueue = useEngineStore((s) => s.fxQueue);
   const removeFx = useEngineStore((s) => s.removeFx);
   const seen = useRef<Set<number>>(new Set());
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [item, setItem] = useState<Item | null>(null);
 
+  // ★消滅タイマーは ref で管理する。effect の return でクリーンアップすると、
+  //   直後の removeFx による fxQueue 変化で effect が再実行され、タイマーが
+  //   解除されてカットインが出っぱなしになる（実バグ）。解除は unmount 時のみ。
   useEffect(() => {
     for (const f of fxQueue) {
       if (f.type !== 'sumcut' || seen.current.has(f.id)) continue;
       seen.current.add(f.id);
       removeFx(f.id);
       setItem({ id: f.id, no: f.no, name: f.name });
-      const t = setTimeout(() => setItem((cur) => (cur && cur.id === f.id ? null : cur)), 1100);
-      return () => clearTimeout(t);
+      if (timer.current) clearTimeout(timer.current);
+      timer.current = setTimeout(() => { timer.current = null; setItem(null); }, 1100);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fxQueue]);
+
+  useEffect(() => () => { if (timer.current) clearTimeout(timer.current); }, []);
 
   return (
     <AnimatePresence>
