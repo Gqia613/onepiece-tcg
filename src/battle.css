@@ -5734,19 +5734,30 @@ button.hb-chip:not(.zero):not([disabled]):hover {
   }
 }
 
-/* --- ステップタブ --- */
+/* --- ボタン群の統一デザイン ---
+   先攻/CPU(.seg)・ステップタブ(.ds-step)・カテゴリ(.ds-cat)を同じ「結合ピル＋シアン活性」に揃える */
+.ds2 .seg-btn {
+  min-height: 36px;
+  padding: 6px 14px;
+  display: inline-flex;
+  align-items: center;
+}
+
+/* --- ステップタブ（.segと同じ結合ピル・幅広） --- */
 .ds-step {
   flex: 0 0 auto;
   display: flex;
-  gap: 8px;
+  gap: 0;
   width: 100%;
-  max-width: 640px;
-  justify-content: center;
+  max-width: 560px;
+  border: 1px solid var(--surface-edge);
+  border-radius: 999px;
+  overflow: hidden;
+  background: rgba(0, 0, 0, .4);
 }
 
 .ds-step-tab {
   flex: 1 1 0;
-  max-width: 280px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -5756,21 +5767,27 @@ button.hb-chip:not(.zero):not([disabled]):hover {
   font-size: 12.5px;
   font-weight: 700;
   color: var(--muted);
-  background: rgba(255, 255, 255, .04);
-  border: 1px solid var(--surface-edge);
-  border-radius: 999px;
+  background: transparent;
+  border: none;
   cursor: pointer;
-  transition: .18s;
+  transition: .15s;
+}
+
+.ds-step-tab:not(:last-child) {
+  border-right: 1px solid var(--surface-edge);
+}
+
+.ds-step-tab:hover {
+  color: var(--ink);
 }
 
 .ds-step-tab.on {
-  color: #14202e;
-  background: linear-gradient(180deg, var(--self-glow), var(--self-accent));
-  border-color: transparent;
-  box-shadow: 0 4px 16px -6px var(--self-accent);
+  background: linear-gradient(180deg, #33b6ef, #1d84c4);
+  color: #04121f;
+  box-shadow: 0 0 12px -3px var(--self-accent);
 }
 
-/* --- カテゴリ切替（マイデッキ/プリセット） --- */
+/* --- カテゴリ切替（マイデッキ/プリセット・同じ結合ピル） --- */
 .ds-cat {
   flex: 0 0 auto;
   display: flex;
@@ -5778,13 +5795,13 @@ button.hb-chip:not(.zero):not([disabled]):hover {
   border: 1px solid var(--surface-edge);
   border-radius: 999px;
   overflow: hidden;
-  background: rgba(0, 0, 0, .35);
+  background: rgba(0, 0, 0, .4);
 }
 
 .ds-cat-btn {
-  min-height: 30px;
-  padding: 4px 16px;
-  font-size: 11.5px;
+  min-height: 32px;
+  padding: 5px 18px;
+  font-size: 12px;
   font-weight: 700;
   color: var(--muted);
   background: transparent;
@@ -5793,9 +5810,18 @@ button.hb-chip:not(.zero):not([disabled]):hover {
   transition: .15s;
 }
 
+.ds-cat-btn:not(:last-child) {
+  border-right: 1px solid var(--surface-edge);
+}
+
+.ds-cat-btn:hover {
+  color: var(--ink);
+}
+
 .ds-cat-btn.on {
-  color: #1a1205;
-  background: linear-gradient(180deg, var(--gold-soft), var(--gold-dim));
+  background: linear-gradient(180deg, #33b6ef, #1d84c4);
+  color: #04121f;
+  box-shadow: 0 0 12px -3px var(--self-accent);
 }
 
 /* --- リーダーカルーセル（残り高さにフィット・中央=選択） --- */

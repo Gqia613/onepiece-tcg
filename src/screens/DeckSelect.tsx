@@ -147,17 +147,28 @@ export default function DeckSelect() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [engine]);
 
-  // ステップ/カテゴリ変更時: そのステップで選択済みのデッキへ寄せる（別カテゴリのデッキならタブも追随）
+  // ステップ切替時: そのステップで選択済みのデッキの位置へ寄せる。
+  // 別カテゴリのデッキならタブも追随（★catの変更では発火しない＝手動のタブ切替を打ち消さない）
   useEffect(() => {
     const selId = G?.sel?.[step];
     if (!selId) return;
-    const inOrdered = ordered.findIndex((d) => d.id === selId);
-    if (inOrdered >= 0) { centerTo(inOrdered, false, false); return; }
+    const inCur = ordered.findIndex((d) => d.id === selId);
+    if (inCur >= 0) { centerTo(inCur, false, false); return; }
     const other: 'custom' | 'preset' = cat === 'custom' ? 'preset' : 'custom';
     const otherList = other === 'custom' ? customList : presetList;
-    if (otherList.some((d) => d.id === selId)) setCat(other);
+    if (otherList.some((d) => d.id === selId)) setCat(other); // ↓のcat effectが位置合わせする
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [step, cat, ordered.length]);
+  }, [step]);
+
+  // カテゴリ切替（手動/自動とも）: 選択中デッキがこのカテゴリにあればそこへ、
+  // 無ければ先頭デッキを中央に置いて選択し直す（「中央のデッキ＝選択」の原則を維持）
+  useEffect(() => {
+    if (!ordered.length) return;
+    const selId = G?.sel?.[step];
+    const i = selId ? ordered.findIndex((d) => d.id === selId) : -1;
+    centerTo(i >= 0 ? i : 0, false, i < 0);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cat, ordered.length]);
 
   // デッキ数の変化（カスタム削除など）で activeIdx が範囲外にならないように
   useEffect(() => {
@@ -215,7 +226,7 @@ export default function DeckSelect() {
 
   const switchCat = (c: 'custom' | 'preset') => {
     catTouched.current = true;
-    if (c !== cat) { setCat(c); setActiveIdx(0); }
+    if (c !== cat) setCat(c); // 位置合わせと選択の付け替えは cat effect が行う
   };
 
   const seg = <V extends string>(
