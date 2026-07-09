@@ -9,6 +9,8 @@ export interface AdapterStoreApi {
   getState: () => {
     engine: any;
     muted: boolean;
+    prompt: PromptState | null; // staleness ガード用（現行プロンプトの照合）
+    pick: PickState | null;
     bump: () => void;
     setPrompt: (p: PromptState | null) => void;
     setPick: (p: PickState | null) => void;
@@ -220,14 +222,20 @@ export function makeReactAdapter(store: AdapterStoreApi): UIAdapter {
         const id = ++promptId;
         const origOnPick = cfg.onPick;
         const g = S().engine?.G;
-        const close = () => { if (g) g.promptState = null; };
         if (g) g.promptState = { title: cfg.title, text: cfg.text, opts: cfg.opts || [], cls: cfg.cls || '' };
         S().setPrompt({
           ...cfg,
           id,
           onPick: (v: any) => {
-            close();
-            S().setPrompt(null);
+            // staleness ガード: このプロンプトが別のプロンプトに上書きされた後
+            // （AnimatePresence の exit 中は旧ボタンがまだタップできる）に押されても、
+            // 現行プロンプト（後発）の表示や G.promptState ミラーを壊さない。
+            // 自身の Promise は必ず resolve する（フリーズ厳禁）。
+            const cur = S().prompt;
+            if (!cur || cur.id === id) {
+              if (g) g.promptState = null;
+              S().setPrompt(null);
+            }
             try { origOnPick && origOnPick(v); } catch { /* ignore */ }
             resolve(v);
           },
@@ -243,9 +251,15 @@ export function makeReactAdapter(store: AdapterStoreApi): UIAdapter {
         const uids = new Set<number>(list.map((c: any) => c.uid));
         const g = S().engine?.G;
         const finish = (card: Card | null) => {
-          if (g) { g.pendingChoice = null; g.promptState = null; }
-          S().setPick(null);
-          S().setPrompt(null);
+          // staleness ガード: 自分が現行の pick/prompt のときだけ表示とミラーを消す
+          // （後発プロンプト出現後に旧UIから finish が呼ばれても後発を壊さない）。resolve は必ず行う。
+          if (g && g.pendingChoice && g.pendingChoice.res === finish) g.pendingChoice = null;
+          if (S().pick?.id === id) S().setPick(null);
+          const cur = S().prompt;
+          if (!cur || cur.id === 100000 + id) {
+            if (g) g.promptState = null;
+            S().setPrompt(null);
+          }
           resolve(card);
         };
         // G.pendingChoice もミラー（エンジン側ガード・整合のため）

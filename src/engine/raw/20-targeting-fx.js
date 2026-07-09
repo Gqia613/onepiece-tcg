@@ -7,7 +7,7 @@
       if (cands.length === 0) return null;
       if (G.players[side].isCPU) return cpuPick(cands, prefer);
       if (cands.length === 1 && !optional) return cands[0];
-      return await humanPick(cands, text, optional, cls);
+      return await humanPick(cands, withFxSrc(text), optional, cls);
     }
     function cpuPick(cands, prefer) {
       const byPow = (a, b) => power(b) - power(a) || (b.base.cost || 0) - (a.base.cost || 0);
@@ -64,14 +64,36 @@
           || (x.base.counter || 0) - (y.base.counter || 0) || (x.base.cost || 0) - (y.base.cost || 0));
         return a[0];
       }
-      return await humanPick(cands, text, !!optional, cls);
+      return await humanPick(cands, withFxSrc(text), !!optional, cls);
     }
 
+    /* ---- 効果の「発生源」提示（UIの文脈付記。挙動は不変） ----
+       runFx が解決中の効果の self（発生源カード）をスタックに積み、confirmUse／対象選択の
+       文言に「リーダー効果『○○』／『○○』の効果」を中央化して自動付記する。
+       AI探索(G._sim)中は積まない＝実ゲームの待機中プロンプトと干渉しない。 */
+    let _fxSrcStack = [];
+    function _fxSrc() { for (let i = _fxSrcStack.length - 1; i >= 0; i--) { if (_fxSrcStack[i]) return _fxSrcStack[i]; } return null; }
+    function fxSrcLabel(src) {
+      if (!src || !src.base || !src.base.name) return '';
+      return src.base.type === 'LEADER' ? 'リーダー効果『' + src.base.name + '』' : '『' + src.base.name + '』の効果';
+    }
+    function fxSrcTag(explicit) {
+      const lbl = fxSrcLabel(explicit || _fxSrc());
+      return lbl ? '<span class="pp-src">' + lbl + '</span>' : '';
+    }
+    // 対象選択の文言に発生源を前置（発生源が取れない時は素の text のまま）
+    function withFxSrc(text) { const tag = fxSrcTag(); return tag ? tag + (text || '対象を選んでください') : text; }
+
     /* 任意コスト/効果の発動確認: CPUは常に実行(true)、人間にはY/Nプロンプト。
-       従来の「let go=true; if(!isCPU) go=(await showPrompt(...))==='y'」と等価。 */
-    async function confirmUse(side, title, text, yes, no) {
+       従来の「let go=true; if(!isCPU) go=(await showPrompt(...))==='y'」と等価。
+       o(任意): { cls:'danger'=不可逆コストの強調, src:発生源カードの明示指定, noSrc:発生源バッジ抑止 } */
+    async function confirmUse(side, title, text, yes, no, o) {
       if (G.players[side].isCPU) return true;
-      return (await showPrompt({ title, text, opts: [{ t: yes, v: 'y', primary: true }, { t: no || '使わない', v: 'n', ghost: true }] })) === 'y';
+      return (await showPrompt({
+        cls: (o && o.cls) || '',
+        title, text: ((o && o.noSrc) ? '' : fxSrcTag(o && o.src)) + (text || ''),
+        opts: [{ t: yes, v: 'y', primary: true }, { t: no || '使わない', v: 'n', ghost: true }]
+      })) === 'y';
     }
     // duration文字列 → 内部buffタグ（パワー/コスト/キーワード付与の失効管理）。def=未指定時の既定タグ('turnEnd'|'turn'等)
     function durTag(d, def) {
@@ -88,10 +110,15 @@
        ========================================================================= */
     async function runFx(ops, ctx) {
       if (!ops) return;
-      for (const op of ops) {
-        try { const cont = await doOp(op, ctx); if (cont === false) break; }
-        catch (e) { console.warn('op失敗', op, e); }
-      }
+      // 発生源スタック（実ゲームのみ）。sim中は積まない＝人間プロンプト待機中の実フレームを汚さない
+      const track = !(G && G._sim);
+      if (track) _fxSrcStack.push((ctx && ctx.self) || null);
+      try {
+        for (const op of ops) {
+          try { const cont = await doOp(op, ctx); if (cont === false) break; }
+          catch (e) { console.warn('op失敗', op, e); }
+        }
+      } finally { if (track) _fxSrcStack.pop(); }
     }
     async function doOp(op, ctx) {
       const side = ctx.side, o = opp(side), P = G.players[side], self = ctx.self;
@@ -391,7 +418,7 @@
         // 手札N枚をデッキの下に置くコスト（OP09-060カライ・バリ島）。払えたら then。
         case 'handToBottomCost': {
           const n = op.n || 1; if (P.hand.length < n) break;
-          if (!(await confirmUse(side, '手札をデッキ下', `手札${n}枚をデッキの下に置いて効果を使いますか？`, '置いて使う'))) break;
+          if (!(await confirmUse(side, '手札をデッキ下', `手札${n}枚をデッキの下に置いて効果を使いますか？`, '置いて使う', undefined, { cls: 'danger' }))) break;
           for (let i = 0; i < n; i++) { const c = P.isCPU ? P.hand.slice().sort((a, b) => (a.base.counter || 0) - (b.base.counter || 0))[0] : await chooseFromHand(side, P.hand.slice(), `デッキの下に置く手札（${i + 1}/${n}）`); if (!c) break; P.hand.splice(P.hand.indexOf(c), 1); P.deck.push(c); }
           flog(side, `手札${n}枚をデッキの下へ`); await runFx(op.then, ctx); break;
         }
@@ -462,7 +489,7 @@
         // このキャラを持ち主のデッキの下に置くコスト（OP10-026/027錦えもん）。払えたら then 実行。
         case 'selfToBottomCost': {
           if (!P.chars.includes(self)) break;
-          if (!(await confirmUse(side, '自身をデッキ下', `「${self.base.name}」をデッキの下に置いて効果を使いますか？`, '置いて使う'))) break;
+          if (!(await confirmUse(side, '自身をデッキ下', `「${self.base.name}」をデッキの下に置いて効果を使いますか？`, '置いて使う', undefined, { cls: 'danger' }))) break;
           P.don.rested += self.attachedDon || 0; removeChar(self); P.deck.push(reset(self)); flog(side, `「${self.base.name}」をデッキの下に置いた`);
           await checkAllyLeave(side, self, 'ownEffect'); await runFx(op.then, ctx); break;
         }
@@ -538,7 +565,7 @@
           if (op.cpuSkip && P.isCPU) break; // CPUは使わない任意コスト（手札を大量に切る割に薄い効果＝モリア【アタック時】等）。confirmUseがCPU常true対策。
           const matches = P.hand.filter(c => matchFilter(c, op.filter));
           if (matches.length < cnt) { ctx._declined = true; break; }
-          if (!(await confirmUse(side, '手札を捨てる', `手札${cnt}枚を捨てて効果を使いますか？`, '捨てて使う'))) { ctx._declined = true; break; }
+          if (!(await confirmUse(side, '手札を捨てる', `手札${cnt}枚を捨てて効果を使いますか？`, '捨てて使う', undefined, { cls: 'danger' }))) { ctx._declined = true; break; }
           let toDiscard;
           if (P.isCPU) toDiscard = matches.slice().sort((a, b) => ((a.base.cost || 0) - (b.base.cost || 0)) || ((a.base.counter || 0) - (b.base.counter || 0))).slice(0, cnt);
           else {
@@ -653,7 +680,7 @@
           const inChars = P.chars.includes(self), isStage = P.stage === self;
           if (!inChars && !isStage) break;
           if (op.cpuSkip && P.isCPU) break; // CPUは反射的に自壊しない任意コスト（confirmUse常true対策。ST22-002イゾウの相手アタック時等）
-          if (!(await confirmUse(side, '自身をトラッシュ', `「${self.base.name}」をトラッシュに置いて効果を使いますか？`, '置いて使う'))) break;
+          if (!(await confirmUse(side, '自身をトラッシュ', `「${self.base.name}」をトラッシュに置いて効果を使いますか？`, '置いて使う', undefined, { cls: 'danger' }))) break;
           P.don.rested += self.attachedDon || 0;
           if (inChars) removeChar(self); if (isStage) P.stage = null;
           P.trash.push(reset(self)); flog(side, `「${self.base.name}」をトラッシュに置いた`);
@@ -725,7 +752,7 @@
           if (act === 'toHand' && P._noLifeToHandTurn === G.turnSeq) { flog(side, 'このターンは効果でライフを手札に加えられない'); break; }
           if (!P.life.length) break; // ライフが無ければ払えない＝不発
           const pick2 = op.pos === 'choose' && act === 'toHand'; // 「ライフの上か下から1枚」＝上下を選べる
-          { const lbl = act === 'toHand' ? '手札に加え' : act === 'trash' ? 'トラッシュに置き' : act === 'faceUp' ? '表向きにし' : '裏向きにし'; const where = pick2 ? '上か下から1枚' : '上から1枚'; if (!(await confirmUse(side, 'ライフをコストに', `ライフの${where}を${lbl}て効果を使いますか？`, '使う'))) break; }
+          { const lbl = act === 'toHand' ? '手札に加え' : act === 'trash' ? 'トラッシュに置き' : act === 'faceUp' ? '表向きにし' : '裏向きにし'; const where = pick2 ? '上か下から1枚' : '上から1枚'; if (!(await confirmUse(side, 'ライフをコストに', `ライフの${where}を${lbl}て効果を使いますか？`, '使う', undefined, { cls: 'danger' }))) break; }
           if (act === 'toHand') {
             let fromBottom = false;
             if (pick2 && P.life.length >= 2 && !P.isCPU) fromBottom = (await showPrompt({ title: 'ライフを手札に', text: 'ライフの上か下、どちらの1枚を手札に加えますか？', opts: [{ t: 'ライフ上', v: 'top', primary: true }, { t: 'ライフ下', v: 'bot' }] })) === 'bot';
@@ -742,7 +769,7 @@
         case 'deckBottomOwnCharCost': {
           const cands = ownChars(side, opFilter(op));
           if (!cands.length) break;
-          if (!(await confirmUse(side, '自キャラをデッキ下', '自分のキャラ1枚をデッキの下に置いて効果を使いますか？', '置いて使う'))) break;
+          if (!(await confirmUse(side, '自キャラをデッキ下', '自分のキャラ1枚をデッキの下に置いて効果を使いますか？', '置いて使う', undefined, { cls: 'danger' }))) break;
           const t = P.isCPU ? cands.slice().sort((a, b) => scoreChar(a) - scoreChar(b))[0] : await chooseCard(side, cands, 'デッキ下に置くキャラを選択（コスト）', 'ownSmall', true);
           if (!t) break; removeCharTo(t, P.deck); flog(side, `「${t.base.name}」をデッキの下に置いた`); await checkAllyLeave(side, t, 'ownEffect');
           await runFx(op.then, ctx); break;
@@ -1056,24 +1083,24 @@
         if (prot.once === 'turn') p._protTurn = G.turnSeq;
         if (prot.pay === 'lifeToHand') { // 自分のライフ上1枚を手札に加えて肩代わり
           if (!ow.life.length) continue;
-          if (!(await confirmUse(target.owner, `【${p.base.name}】身代わり`, `ライフ上1枚を手札に加えて「${target.base.name}」を守りますか？`, '守る（ライフ→手札）', '守らない'))) continue;
+          if (!(await confirmUse(target.owner, `【${p.base.name}】身代わり`, `ライフ上1枚を手札に加えて「${target.base.name}」を守りますか？`, '守る（ライフ→手札）', '守らない', { noSrc: true }))) continue;
           ow.hand.push(ow.life.shift()); flog(target.owner, `【${p.base.name}】ライフ上1枚を手札に加えて「${target.base.name}」を守った`); return true;
         }
         if (prot.pay === 'leaderPowerMinus') { // 自分のリーダーをパワー-Nして肩代わり
-          if (!(await confirmUse(target.owner, `【${p.base.name}】身代わり`, `自分のリーダーをパワー-${prot.amount || 2000}にして「${target.base.name}」を守りますか？`, `守る（リーダー-${prot.amount || 2000}）`, '守らない'))) continue;
+          if (!(await confirmUse(target.owner, `【${p.base.name}】身代わり`, `自分のリーダーをパワー-${prot.amount || 2000}にして「${target.base.name}」を守りますか？`, `守る（リーダー-${prot.amount || 2000}）`, '守らない', { noSrc: true }))) continue;
           addBuff(ow.leader, -(prot.amount || 2000), 'turnEnd'); floatOn(ow.leader.uid, `-${prot.amount || 2000}`, 'dmg');
           flog(target.owner, `【${p.base.name}】リーダーのパワーを下げて「${target.base.name}」を守った`); return true;
         }
         if (prot.pay === 'toLifeFaceDown') { // 代わりに target を持ち主のライフの上に裏向きで加える（OP11-101カポネ・ベッジ＝超新星を守る）。p自身は対象外
           if (p === target) continue;
-          if (!(await confirmUse(target.owner, `【${p.base.name}】身代わり`, `「${target.base.name}」をライフの上に裏向きで加えますか？`, '加える（ライフ裏向き）', '加えない'))) continue;
+          if (!(await confirmUse(target.owner, `【${p.base.name}】身代わり`, `「${target.base.name}」をライフの上に裏向きで加えますか？`, '加える（ライフ裏向き）', '加えない', { noSrc: true }))) continue;
           if (ow.chars.includes(target)) removeChar(target); else continue;
           ow.life.unshift(faceDown(reset(target))); flog(target.owner, `【${p.base.name}】「${target.base.name}」をライフの上に裏向きで加えた`); render(); return true;
         }
         if (prot.pay === 'restOwnCards') {
           const n = prot.n || 2; const pool = [ow.leader, ...ow.chars].filter(c => c && c !== target && !c.rested && !(prot.excludeLeader && c === ow.leader) && (!prot.filter || matchFilter(c, prot.filter))); // excludeLeader=「自分のキャラ」限定（リーダー除外。OP14-034）。filter=レスト対象の限定（OP11-110フカボシ＝魚人島/しらほし）
           if (pool.length < n) continue;
-          if (!(await confirmUse(target.owner, `【${p.base.name}】身代わり`, `自分のカード${n}枚をレストにして「${target.base.name}」を守りますか？`, `守る（${n}枚レスト）`, '守らない'))) continue;
+          if (!(await confirmUse(target.owner, `【${p.base.name}】身代わり`, `自分のカード${n}枚をレストにして「${target.base.name}」を守りますか？`, `守る（${n}枚レスト）`, '守らない', { noSrc: true }))) continue;
           let picks;
           if (ow.isCPU) picks = pool.slice().sort((a, b) => power(a) - power(b)).slice(0, n);
           else { picks = []; for (let i = 0; i < n; i++) { const pk = await chooseCard(target.owner, pool.filter(c => !picks.includes(c)), `レストにするカード（${i + 1}/${n}）`, 'ownSmall', false); if (!pk) break; picks.push(pk); } if (picks.length < n) continue; }
@@ -1082,7 +1109,7 @@
         } else if (prot.pay === 'restSelf') {
           // 代わりにこのキャラ(p=身代わり元)をレストにして target を場に残す（OP12-027コウシロウ）。p===target/既にレストなら不可
           if (p === target || p.rested) continue;
-          if (!(await confirmUse(target.owner, `【${p.base.name}】身代わり`, `「${p.base.name}」をレストにして「${target.base.name}」を場に残しますか？`, '残す（このキャラをレスト）', '残さない'))) continue;
+          if (!(await confirmUse(target.owner, `【${p.base.name}】身代わり`, `「${p.base.name}」をレストにして「${target.base.name}」を場に残しますか？`, '残す（このキャラをレスト）', '残さない', { noSrc: true }))) continue;
           p.rested = true; flog(target.owner, `【${p.base.name}】自身をレストにして「${target.base.name}」を場に残した`); render(); return true;
         } else if (prot.pay === 'free') {
           // コスト無しで場を離れない（OP10-118ルフィ＝ターン1回相手の効果でKOされない。once:'turn'は上のゲートで消化済）
@@ -1091,14 +1118,14 @@
           // 代わりに（このキャラ以外の）自分のキャラ1枚を持ち主のデッキ下に置いて target を場に残す（OP07-042モリア）
           const cands = ow.chars.filter(c => c !== target && (!prot.filter || matchFilter(c, prot.filter)));
           if (!cands.length) continue;
-          if (!(await confirmUse(target.owner, `【${p.base.name}】身代わり`, `自分のキャラ1枚をデッキ下に置いて「${target.base.name}」を場に残しますか？`, '残す（他キャラをデッキ下）', '残さない'))) continue;
+          if (!(await confirmUse(target.owner, `【${p.base.name}】身代わり`, `自分のキャラ1枚をデッキ下に置いて「${target.base.name}」を場に残しますか？`, '残す（他キャラをデッキ下）', '残さない', { noSrc: true }))) continue;
           const dt = ow.isCPU ? cands.slice().sort((a, b) => scoreChar(a) - scoreChar(b))[0] : await chooseCard(target.owner, cands, 'デッキ下に置く自分のキャラを選択', 'ownSmall', false); if (!dt) continue;
           removeCharTo(dt, ow.deck); flog(target.owner, `【${p.base.name}】「${dt.base.name}」をデッキ下に置いて「${target.base.name}」を場に残した`); await checkAllyLeave(target.owner, dt, 'ownEffect'); render(); return true;
         } else if (prot.pay === 'selfLifeTrash') {
           // 場を離れる代わりに自分のライフ上1枚をトラッシュ（OP05-100エネル）。ライフが無ければ守れない。除外条件(prot.unless)が満たされると無効。
           if (prot.unless && G.players[target.owner].chars.some(ch => matchFilter(ch, prot.unless))) continue;
           if (!ow.life.length) continue;
-          if (!(await confirmUse(target.owner, `【${p.base.name}】身代わり`, `自分のライフ上1枚をトラッシュして「${target.base.name}」を場に残しますか？`, '残す（ライフ→トラッシュ）', '残さない'))) continue;
+          if (!(await confirmUse(target.owner, `【${p.base.name}】身代わり`, `自分のライフ上1枚をトラッシュして「${target.base.name}」を場に残しますか？`, '残す（ライフ→トラッシュ）', '残さない', { cls: 'danger', noSrc: true }))) continue;
           ow.trash.push(ow.life.shift()); flog(target.owner, `【${p.base.name}】ライフ1枚をトラッシュして「${target.base.name}」を場に残した`); render(); return true;
         } else if (prot.pay === 'targetMinus') {
           // KOの代わりに対象のパワーを-Nにして場に残す（OP05-001サボL）。KO限定。
@@ -1109,7 +1136,7 @@
           // 代わりに相手のキャラ1枚をレストにして target を場に残す（OP07-029ホーキンス）
           const cands = G.players[opp(target.owner)].chars.filter(c => !c.rested && !isRestImmune(c) && !isOppRestImmune(c));
           if (!cands.length) continue;
-          if (!(await confirmUse(target.owner, `【${p.base.name}】身代わり`, `相手のキャラ1枚をレストにして「${target.base.name}」を場に残しますか？`, '残す（相手をレスト）', '残さない'))) continue;
+          if (!(await confirmUse(target.owner, `【${p.base.name}】身代わり`, `相手のキャラ1枚をレストにして「${target.base.name}」を場に残しますか？`, '残す（相手をレスト）', '残さない', { noSrc: true }))) continue;
           const rt = G.players[target.owner].isCPU ? cands[0] : await chooseCard(target.owner, cands, 'レストにする相手キャラを選択', 'oppBig', false); if (!rt) continue;
           rt.rested = true; flog(target.owner, `【${p.base.name}】相手の「${rt.base.name}」をレストにして「${target.base.name}」を場に残した`); render(); return true;
         } else if (prot.pay === 'trashSelfDraw') {
@@ -1121,34 +1148,34 @@
         } else if (prot.pay === 'restActiveDon') {
           // 代わりにアクティブのドンN枚をレストにして target を場に残す（OP10-074ピーカ）
           const n = prot.n || 2; if (ow.don.active < n) continue;
-          if (!(await confirmUse(target.owner, `【${p.base.name}】身代わり`, `アクティブのドン${n}枚をレストにして「${target.base.name}」を場に残しますか？`, `残す（ドン${n}レスト）`, '残さない'))) continue;
+          if (!(await confirmUse(target.owner, `【${p.base.name}】身代わり`, `アクティブのドン${n}枚をレストにして「${target.base.name}」を場に残しますか？`, `残す（ドン${n}レスト）`, '残さない', { noSrc: true }))) continue;
           ow.don.active -= n; ow.don.rested += n; flog(target.owner, `【${p.base.name}】ドン${n}枚をレストにして「${target.base.name}」を場に残した`); render(); return true;
         } else if (prot.pay === 'bounceSelf') {
           // 代わりにこのキャラ(p=身代わり元)を持ち主の手札に戻して target を場に残す（OP10-049サボ）。p===target不可
           if (p === target) continue;
-          if (!(await confirmUse(target.owner, `【${p.base.name}】身代わり`, `「${p.base.name}」を手札に戻して「${target.base.name}」を場に残しますか？`, '残す（このキャラを手札へ）', '残さない'))) continue;
+          if (!(await confirmUse(target.owner, `【${p.base.name}】身代わり`, `「${p.base.name}」を手札に戻して「${target.base.name}」を場に残しますか？`, '残す（このキャラを手札へ）', '残さない', { noSrc: true }))) continue;
           bounceCard(p); flog(target.owner, `【${p.base.name}】自身を手札に戻して「${target.base.name}」を場に残した`); await checkAllyLeave(p.owner, p, 'ownEffect'); render(); return true;
         } else if (prot.pay === 'koSelf') {
           // このキャラ(p)自身をKO(代わりにトラッシュへ)して target を守る。p===target は不可
           if (p === target) continue;
-          if (!(await confirmUse(target.owner, `【${p.base.name}】身代わり`, `「${p.base.name}」をKOして「${target.base.name}」を守りますか？`, '守る（このキャラをKO）', '守らない'))) continue;
+          if (!(await confirmUse(target.owner, `【${p.base.name}】身代わり`, `「${p.base.name}」をKOして「${target.base.name}」を守りますか？`, '守る（このキャラをKO）', '守らない', { cls: 'danger', noSrc: true }))) continue;
           removeCharTo(p, ow.trash);
           flog(target.owner, `【${p.base.name}】自身をKOして「${target.base.name}」を守った`); return true;
         } else if (prot.pay === 'selfPowerMinus') {
           // 代わりにこのキャラ(p=身代わり元)を、このターン中パワー-N（OP13-017ドラゴン: 革命軍を守りドラゴン自身が-2000）
-          if (!(await confirmUse(target.owner, `【${p.base.name}】身代わり`, `「${p.base.name}」をパワー-${prot.amount || 2000}にして「${target.base.name}」を場に残しますか？`, `残す（${p.base.name}-${prot.amount || 2000}）`, '残さない'))) continue;
+          if (!(await confirmUse(target.owner, `【${p.base.name}】身代わり`, `「${p.base.name}」をパワー-${prot.amount || 2000}にして「${target.base.name}」を場に残しますか？`, `残す（${p.base.name}-${prot.amount || 2000}）`, '残さない', { noSrc: true }))) continue;
           addBuff(p, -(prot.amount || 2000), 'turn'); floatOn(p.uid, `-${prot.amount || 2000}`, 'dmg');
           flog(target.owner, `【${p.base.name}】自身をパワー-${prot.amount || 2000}にして「${target.base.name}」を場に残した`); return true;
         } else if (prot.pay === 'flipLifeUp') {
           // 代わりに自分のライフの上から1枚を表向きにして target を場に残す（OP13-109ボニー）。
           if (!ow.life.length) continue;
-          if (!(await confirmUse(target.owner, `【${p.base.name}】身代わり`, `ライフの上から1枚を表向きにして「${target.base.name}」を場に残しますか？`, '残す（ライフ表向き）', '残さない'))) continue;
+          if (!(await confirmUse(target.owner, `【${p.base.name}】身代わり`, `ライフの上から1枚を表向きにして「${target.base.name}」を場に残しますか？`, '残す（ライフ表向き）', '残さない', { noSrc: true }))) continue;
           ow.life[0]._faceUp = true; flog(target.owner, `【${p.base.name}】ライフ1枚を表向きにして「${target.base.name}」を場に残した`); render(); return true;
         } else if (prot.pay === 'discardFromHand') {
           const f = prot.discardFilter || {}; const dn = prot.n || 1; // prot.n枚を捨てて守る（ST22-005おでん=2枚）
           const cands = ow.hand.filter(h => matchFilter(h, f));
           if (cands.length < dn) continue;
-          if (!(await confirmUse(target.owner, `【${p.base.name}】身代わり`, `手札${dn}枚を捨てて「${target.base.name}」を守りますか？`, '守る（手札を捨てる）', '守らない'))) continue;
+          if (!(await confirmUse(target.owner, `【${p.base.name}】身代わり`, `手札${dn}枚を捨てて「${target.base.name}」を守りますか？`, '守る（手札を捨てる）', '守らない', { cls: 'danger', noSrc: true }))) continue;
           const picks = [];
           if (ow.isCPU) picks.push(...cands.slice().sort((a, b) => (a.base.cost || 0) - (b.base.cost || 0)).slice(0, dn));
           else { for (let i = 0; i < dn; i++) { const d = await chooseFromHand(target.owner, cands.filter(c => !picks.includes(c)), `「${target.base.name}」を守るため捨てるカードを選択（${i + 1}/${dn}）`); if (!d) break; picks.push(d); } if (picks.length < dn) continue; }
@@ -1158,13 +1185,13 @@
           const P = G.players[target.owner];
           if (P.don.active <= 0 && P.don.rested <= 0) continue; // 戻せるドンが無ければこの供給元では守れない
           // 任意効果（「できる」）: 人間には発動可否を確認
-          if (!(await confirmUse(target.owner, `【${p.base.name}】身代わり`, `ドン1枚をドンデッキに戻して「${target.base.name}」を守りますか？`, '守る（ドン-1）', '守らない'))) continue;
+          if (!(await confirmUse(target.owner, `【${p.base.name}】身代わり`, `ドン1枚をドンデッキに戻して「${target.base.name}」を守りますか？`, '守る（ドン-1）', '守らない', { noSrc: true }))) continue;
           if (P.don.active > 0) P.don.active--; else P.don.rested--; // active→restの順で1枚ドンデッキへ
           flog(target.owner, `【${p.base.name}】ドンを戻し「${target.base.name}」を守った`); return true;
         } else if (prot.pay === 'trashToDeck') {
           const n = prot.n || 3; // 自分のトラッシュから n枚を好きな順でデッキの下に置いて守る
           if (ow.trash.length < n) continue;
-          if (!(await confirmUse(target.owner, `【${p.base.name}】身代わり`, `トラッシュ${n}枚をデッキの下に置いて「${target.base.name}」を守りますか？`, `守る（トラッシュ${n}枚→デッキ下）`, '守らない'))) continue;
+          if (!(await confirmUse(target.owner, `【${p.base.name}】身代わり`, `トラッシュ${n}枚をデッキの下に置いて「${target.base.name}」を守りますか？`, `守る（トラッシュ${n}枚→デッキ下）`, '守らない', { noSrc: true }))) continue;
           for (let i = 0; i < n; i++) { const c = ow.trash.shift(); if (c) ow.deck.push(reset(c)); }
           flog(target.owner, `【${p.base.name}】トラッシュ${n}枚をデッキ下に置き「${target.base.name}」を守った`); return true;
         } else if (prot.pay === 'charToBottom') {

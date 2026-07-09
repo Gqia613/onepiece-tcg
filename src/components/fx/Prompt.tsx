@@ -48,6 +48,10 @@ export function Prompt() {
   const prompt = useEngineStore((s) => s.prompt);
   const peek = useEngineStore((s) => s.promptPeek);
   const setPeek = useEngineStore((s) => s.setPromptPeek);
+  const pick = useEngineStore((s) => s.pick);
+  const trigger = useEngineStore((s) => s.trigger);
+  const engine = useEngineStore((s) => s.engine);
+  useEngineStore((s) => s.version); // pendingChoice の変化（render→bump）を拾う
 
   // 画像読み込み失敗時に .oc-art へ noimg を付与（元: onerror で parentNode.classList.add('noimg')）
   const onImgError = (e: React.SyntheticEvent<HTMLImageElement>) => {
@@ -59,9 +63,24 @@ export function Prompt() {
   // 「盤面を見る」導線を出せるのは、カードを見比べたい防御選択（カウンター/ブロッカー）だけ。
   const canPeek = !!prompt && (prompt.cls || '').includes('defense') && (prompt.opts || []).some((o) => o.card);
 
+  // 薄いスクリム: 純粋なボタン決断のときだけ。盤面タップが必要な場面
+  // （pick/pendingChoice=光るカードをクリックで選択、trigger=カード大写しを背後に見せる）では出さない。
+  const pendingChoice = !!(engine && engine.G && engine.G.pendingChoice);
+  const showScrim = !!prompt && !(peek && canPeek) && !pick && !pendingChoice && !trigger;
+
   return (
     <div id="promptHost">
       <AnimatePresence>
+        {showScrim && (
+          <motion.div
+            key="scrim"
+            className="prompt-scrim"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.18 }}
+          />
+        )}
         {prompt && !(peek && canPeek) && (
           <PromptCard
             key={prompt.id}
@@ -129,6 +148,9 @@ function PromptCard({
         </button>
       )}
 
+      {/* 候補が多いカード選択は件数を明示（縦スクロールで全候補に到達できる） */}
+      {cardOpts.length >= 4 && <div className="opt-count">候補 {cardOpts.length}件（スクロールで全て表示）</div>}
+
       {cardOpts.length > 0 && (
         <div className="opt-cards">
           {cardOpts.map((o, i) => (
@@ -152,6 +174,9 @@ function PromptCard({
           ))}
         </div>
       )}
+
+      {/* テキストボタン候補が多い場合（例: ドン付与枚数）も件数を明示 */}
+      {plainOpts.length >= 5 && <div className="opt-count">選択肢 {plainOpts.length}件（スクロールで全て表示）</div>}
 
       {plainOpts.length > 0 && (
         <div className="opts">

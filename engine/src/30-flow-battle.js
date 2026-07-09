@@ -366,7 +366,7 @@
       if (attacker._atkTaxSeq != null) {
         const AP = G.players[attacker.owner], taxN = attacker._atkTaxN || 2;
         let paid = AP.hand.length >= taxN;
-        if (paid && !AP.isCPU) paid = await confirmUse(attacker.owner, '攻撃税', `手札${taxN}枚を捨ててアタックしますか？（捨てないとアタックできません）`, '捨てて攻撃');
+        if (paid && !AP.isCPU) paid = await confirmUse(attacker.owner, '攻撃税', `手札${taxN}枚を捨ててアタックしますか？（捨てないとアタックできません）`, '捨てて攻撃', undefined, { cls: 'danger' });
         if (!paid) { flog(attacker.owner, `攻撃税(手札${taxN}捨て)を払えず/払わずアタック中止`); if (AP.isCPU) { G.busy = true; } else { G.busy = false; G.myActable = true; } render(); return; }
         if (AP.isCPU) { const disc = AP.hand.slice().sort((a, b) => ((a.base.counter || 0) - (b.base.counter || 0)) || ((a.base.cost || 0) - (b.base.cost || 0))).slice(0, taxN); for (const c of disc) { AP.hand.splice(AP.hand.indexOf(c), 1); AP.trash.push(reset(c)); } }
         else { for (let i = 0; i < taxN; i++) { const c = await chooseFromHand(attacker.owner, AP.hand, `⚠ 攻撃税で捨てる（${i + 1}/${taxN}）`, null, false, 'danger'); if (!c) break; AP.hand.splice(AP.hand.indexOf(c), 1); AP.trash.push(reset(c)); } }

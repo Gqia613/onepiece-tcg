@@ -59,10 +59,33 @@ export function Controls() {
       );
     }
 
-    // 通常のメイン：ヒントバーは表示せず、ターン終了ボタンのみ
+    // 通常のメイン：ヒントバーは表示せず、ターン終了ボタンのみ。
+    // 誤タップ救済: 即終了せず毎回確認する（未使用ドン/攻撃可能キャラが残っていれば警告を添える）。
+    // engine.confirmUse は adapter の showPrompt を使うためエンジン非改変で確認ゲートを挟める。
+    const confirmEndTurn = async () => {
+      if (G.busy || G.active !== 'me' || !G.myActable || G.promptState || G.pendingChoice) return;
+      const warns: string[] = [];
+      try {
+        const don = G.players.me.don?.active || 0;
+        if (don > 0) warns.push(`アクティブなドン!!が <b>${don}枚</b> 残っています`);
+      } catch { /* ignore */ }
+      try {
+        const P = G.players.me;
+        let atk = 0;
+        for (const c of [P.leader, ...P.chars]) {
+          if (c && engine.canCardAttack(c) && engine.legalTargets('me', c).length > 0) atk++;
+        }
+        if (atk > 0) warns.push(`アタック可能なカードが <b>${atk}枚</b> あります`);
+      } catch { /* ignore */ }
+      const text =
+        (warns.length ? '<span class="pp-warn">⚠ ' + warns.join('<br>⚠ ') + '</span>' : '') +
+        '相手のターンに移ります。';
+      const ok = await engine.confirmUse('me', 'ターンを終了しますか？', text, 'ターンを終了する', 'まだ続ける');
+      if (ok) engine.uiEndTurn();
+    };
     return (
       <div className="controls">
-        <button className="phasebtn go" onClick={() => engine.uiEndTurn()}>
+        <button className="phasebtn go" onClick={() => { void confirmEndTurn(); }}>
           ターン終了
         </button>
       </div>

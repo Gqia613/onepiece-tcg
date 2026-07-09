@@ -2490,6 +2490,15 @@ button.hb-chip:not(.zero):not([disabled]):hover {
   pointer-events: none
 }
 
+/* 決断中の薄いスクリム（視線をモーダルへ）。pointer-events:none＝盤面クリック選択(pick)や
+   ハイライトの邪魔をしない。盤面タップが必要な場面(pick/pendingChoice/トリガー大写し)では出さない */
+.prompt-scrim {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at center, rgba(2, 8, 16, .30) 0%, rgba(2, 8, 16, .52) 80%);
+  pointer-events: none;
+}
+
 #promptHost .prompt {
   top: 58px;
   pointer-events: auto
@@ -2572,6 +2581,52 @@ button.hb-chip:not(.zero):not([disabled]):hover {
   font-weight: 400
 }
 
+/* 効果の発生源バッジ（confirmUse/対象選択に中央化して付記される「リーダー効果『○○』/『○○』の効果」）
+   display:table＝インライン文中でも独立行・中央寄せになる */
+.prompt .pp-src {
+  display: table;
+  margin: 0 auto 8px;
+  padding: 3px 12px;
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--gold-soft);
+  background: rgba(255, 200, 87, .10);
+  border: 1px solid rgba(255, 200, 87, .38);
+  border-radius: 999px;
+  letter-spacing: .02em;
+}
+
+/* 手札プレイ確認のカード画像（決断の対象を一目で） */
+.prompt .pp-card {
+  display: block;
+  width: 92px;
+  aspect-ratio: 5 / 7;
+  object-fit: cover;
+  margin: 2px auto 8px;
+  border-radius: 8px;
+  border: 1px solid #ffffff30;
+  box-shadow: 0 6px 18px #000a;
+  background: #0c1a25;
+}
+
+/* ターン終了確認などの警告行 */
+.prompt .pp-warn {
+  display: block;
+  margin: 0 0 8px;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--gold-soft);
+  line-height: 1.7;
+}
+
+/* カード候補が多い選択（4枚以上）の件数明示 */
+.prompt .opt-count {
+  margin: 0 0 6px;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--muted);
+}
+
 /* 防御モーダル上部の「誰が誰にアタックしているか」ヘッダー（旧・浮動 #atkAnnounce をモーダルへ統合） */
 .prompt-atkhead {
   display: flex;
@@ -2637,6 +2692,11 @@ button.hb-chip:not(.zero):not([disabled]):hover {
 }
 
 .opt {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  /* タップ最小高44px（誤タップ防止） */
   background: rgba(255, 255, 255, .07);
   border: 1px solid var(--surface-edge);
   color: var(--ink);
@@ -2674,6 +2734,22 @@ button.hb-chip:not(.zero):not([disabled]):hover {
   pointer-events: none
 }
 
+/* 不可逆コスト（手札破棄/ライフ使用/自壊など）: 実行=赤primary・取消と縦に分離 */
+.prompt.danger .opts {
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.prompt.danger .opt.primary {
+  background: linear-gradient(180deg, var(--danger-glow), var(--danger));
+  color: #fff;
+  box-shadow: 0 4px 14px -4px rgba(255, 92, 82, .55);
+}
+
+.prompt.danger .opt.ghost {
+  margin-top: 6px;
+}
+
 .prompt .opt-cards {
   display: flex;
   flex-wrap: wrap;
@@ -2681,7 +2757,9 @@ button.hb-chip:not(.zero):not([disabled]):hover {
   justify-content: center;
   margin: 2px 0 8px;
   max-height: 48vh;
-  overflow: auto
+  overflow-y: auto;
+  overflow-x: hidden
+  /* 横スクロール禁止（候補が多くても縦で全て到達） */
 }
 
 .opt-card {
@@ -5285,3 +5363,79 @@ button.hb-chip:not(.zero):not([disabled]):hover {
   animation: promptIn .22s cubic-bezier(.2, .85, .3, 1.1);
 }
 .peek-back:hover { filter: brightness(1.08); }
+
+/* ===== 14. スマホ最適化: プロンプトを親指到達域のボトムシートへ ===== */
+/* 既存 @media(max-width:680px) の .prompt 上書き（top:8px/48px・width94%）より後に置き、
+   ここで最終的にボトムシート型へ確定させる（PCは従来の中央上寄せのまま） */
+@media(max-width:680px) {
+
+  #promptHost .prompt,
+  .prompt {
+    box-sizing: border-box;
+    /* width:100%+padding が画面からはみ出さない（横スクロール禁止） */
+    top: auto;
+    bottom: 0;
+    left: 50%;
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    border-radius: 18px 18px 0 0;
+    border-left: none;
+    border-right: none;
+    border-bottom: none;
+    padding: 14px 16px calc(16px + env(safe-area-inset-bottom, 0px));
+    max-height: 74vh;
+    max-height: 74dvh;
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+
+  /* 要点が一読で分かる文字サイズ・コントラスト */
+  .prompt h3 {
+    font-size: 17px;
+  }
+
+  .prompt p {
+    font-size: 14px;
+    color: #eaf2fb;
+  }
+
+  .prompt .pp-hint {
+    font-size: 12px;
+  }
+
+  /* 選択肢は縦積みフル幅・タップ高48px。取消(ghost)は末尾＋ギャップで物理的に分離 */
+  .prompt .opts {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .opt {
+    box-sizing: border-box;
+    width: 100%;
+    min-height: 48px;
+    padding: 12px 16px;
+    font-size: 15px;
+  }
+
+  .opt.ghost {
+    margin-top: 8px;
+  }
+
+  /* カード候補: 全体の max-height と二重スクロールにならないよう内側は控えめに */
+  .prompt .opt-cards {
+    max-height: 42vh;
+    max-height: 42dvh;
+  }
+
+  .prompt-peek-btn {
+    min-height: 44px;
+    padding: 8px 18px;
+    font-size: 13px;
+  }
+
+  .peek-back {
+    bottom: calc(18px + env(safe-area-inset-bottom, 0px));
+  }
+}

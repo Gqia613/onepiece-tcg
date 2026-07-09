@@ -64,7 +64,7 @@
     async function attachDonFlow(card) {
       const P = G.players.me;
       if (P.don.active < 1) { toast('アクティブなドンがありません'); return; }
-      if (P.don.active === 1) { card.attachedDon++; P.don.active--; donFly('me', card.uid); floatOn(card.uid, 'ドン+1', 'buff'); render(); return; }
+      // ★1枚のみでも即付与しない: 多枚数時と同じ確認フロー（誤タップ救済＝「やめる」で取消可能）
       const max = P.don.active;
       const base = power(card);
       const opts = [];
@@ -125,6 +125,7 @@
     }
     function backToSelect() {
       removeEndScreen(); if (typeof clearBanner === 'function') clearBanner(); if (typeof clearPromptHost === 'function') clearPromptHost();
+      if (typeof _fxSrcStack !== 'undefined') _fxSrcStack.length = 0; // 待機中プロンプト孤児化で残った発生源スタックを掃除（次ゲームへの誤バッジ防止）
       G.inGame = false; G.winner = null; G.log = []; G._hints = null; G._aiIntent = null; G._lastCpuSummary = null; G.attackSel = null; G.pendingChoice = null; G.promptState = null; G.busy = false; G.myActable = false;
       ['turnpill', 'aiToggleWrap', 'menuBtn', 'sideToggle', 'hudMe', 'hudCpu'].forEach(id => { const e = document.getElementById(id); if (e) e.style.display = 'none'; });
       closeHam();
