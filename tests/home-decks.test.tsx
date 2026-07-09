@@ -33,7 +33,7 @@ describe('Home（タイトル/ハブ画面）', () => {
     expect(document.querySelectorAll('.home-card').length).toBe(3);
     // メインラベルは日本語1行に統合（旧BATTLE/MY DECKS/BUILDERの英語は撤去）
     expect(document.body.textContent).toContain('CPU対戦');
-    expect(document.body.textContent).toContain('デッキ管理');
+    expect(document.body.textContent).toContain('マイデッキ');
     expect(document.body.textContent).toContain('デッキ作成');
   });
 

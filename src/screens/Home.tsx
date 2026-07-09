@@ -66,7 +66,7 @@ export default function Home() {
           <img className="hc-chara" aria-hidden="true" src={IMG('OP01-025')} referrerPolicy="no-referrer" decoding="async" alt=""
             onError={(e) => { e.currentTarget.style.display = 'none'; }} />
           <span className="hc-icon"><Icon.layers size={28} /></span>
-          <span className="hc-en">デッキ管理</span>
+          <span className="hc-en">マイデッキ</span>
           <span className="hc-desc">保存済みデッキの閲覧・編集・削除、JSONのインポート。</span>
           <span className="hc-go"><Icon.chevronRight size={16} /></span>
         </button>

@@ -2,7 +2,7 @@
 // クラウド保存デッキの閲覧・編集・削除・JSONインポートと、プリセットの閲覧/コピー編集をまとめる。
 // グリッドやカードの見た目は battle.css の .select-wrap / .deck-grid / .sect-label を再利用。
 import { useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useEngineStore } from '../state/engineStore';
 import type { Deck } from '../engine/types';
 import { DeckCard } from '../components/deck/DeckCard';
@@ -57,12 +57,16 @@ export default function Decks() {
     navigate('/builder');
   };
 
+  // ビルダーで保存直後に遷移してきた場合、そのデッキをお祝いパルスでハイライト
+  const savedId: string | undefined = (useLocation().state as any)?.savedId;
+
   const grid = (decks: Deck[]) => (
     <div className="deck-grid">
       {decks.map((d) => (
         <DeckCard
           key={d.id}
           deck={d}
+          highlight={d.id === savedId}
           selected={false}
           onSelect={() => setListDeck(d)}
           onDelete={(d as any).cloud ? () => onDeleteDeck(d.id, d.name) : undefined}

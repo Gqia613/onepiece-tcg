@@ -30,9 +30,10 @@ const CopyIcon = () => (
   </svg>
 );
 
-export function DeckCard({ deck, selected, onSelect, onDelete, onShowList, onEdit, editLabel, hideTier, noPop }: {
+export function DeckCard({ deck, selected, onSelect, onDelete, onShowList, onEdit, editLabel, hideTier, noPop, highlight }: {
   deck: Deck;
   selected: boolean;
+  highlight?: boolean; // 保存直後などの一回きりのお祝いパルス
   onSelect: () => void;
   onDelete?: () => void; // クラウド保存デッキのみ削除可
   onShowList?: () => void; // カードリストをモーダル表示
@@ -49,7 +50,7 @@ export function DeckCard({ deck, selected, onSelect, onDelete, onShowList, onEdi
 
   return (
     <motion.div
-      className={'deck-card' + (selected ? ' sel' : '')}
+      className={'deck-card' + (selected ? ' sel' : '') + (highlight ? ' just-saved' : '')}
       style={{ position: 'relative' }}
       onClick={onSelect}
       whileHover={{ scale: 1.03 }}

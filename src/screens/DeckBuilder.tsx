@@ -155,7 +155,9 @@ export default function DeckBuilder() {
     if (r.ok) {
       if (r.deck) { engine!.G.sel = engine!.G.sel || {}; engine!.G.sel.me = r.deck.id; }
       useEngineStore.getState().bump();
-      close(); // 保存後は元の画面（マイデッキ/対戦セットアップ）へ戻る
+      // 保存後は必ずマイデッキへ（ホーム発でも）。savedId で新デッキのお祝いパルスを発火
+      setBuilderOpen(false);
+      navigate('/decks', { state: { savedId: r.deck?.id } });
     } else {
       setMsg({ text: r.error || '保存に失敗しました', err: true });
     }
