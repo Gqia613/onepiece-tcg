@@ -1,0 +1,83 @@
+#!/usr/bin/env node
+/* tools/scrape-official-full.js — 公式カードリストから「全フィールド」を取得し official-full.json を生成する完全正本スナップショット。
+   使い方: node tools/scrape-official-full.js
+   - 従来の official-opNN.js（効果テキストのみ）/ scrape-cards.js（textのみ・triggerを取り逃す）を補完する完全版。
+   - 取得項目: 番号/名前/レアリティ/種別/コスト(またはライフ)/属性/パワー/カウンター/色/ブロックアイコン/特徴/テキスト/★トリガー(別div)/入手情報/シリーズID。
+   - 公式HTMLの <div class="trigger"> は <div class="text"> と別ブロック（cards.js のトリガー句欠落の根本原因）。
+   - 出力: tools/official-full.json（1カード1行のJSON。audit-cards.js が照合の正本として読む）。
+   依存: Node.js + curl のみ。新弾が出たら SERIES に ID を足して再実行。 */
+const cp = require('child_process'), fs = require('fs'), path = require('path');
+const OUT = path.resolve(__dirname, 'official-full.json');
+// scrape-cards.js と同じ全シリーズID（OP01-16 / EB / PRB / ST / プロモ・限定）
+const SERIES = [
+  550101, 550102, 550103, 550104, 550105, 550106, 550107, 550108, 550109, 550110, 550111, 550112, 550113, 550114, 550115, 550116,
+  550201, 550202, 550203, 550204, 550301, 550302,
+  550001, 550002, 550003, 550004, 550005, 550006, 550007, 550008, 550009, 550010, 550011, 550012, 550013, 550014, 550015, 550016, 550017, 550018, 550019, 550020, 550021, 550022, 550023, 550024, 550025, 550026, 550027, 550028, 550029, 550030,
+  550701, 550801, 550901
+];
+const UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15) AppleWebKit/537.36 Chrome/120 Safari/537.36';
+function fetchSeries(id) {
+  try { return cp.execSync(`curl -sL -m 40 --compressed -A ${JSON.stringify(UA)} ${JSON.stringify('https://www.onepiece-cardgame.com/cardlist/?series=' + id)}`, { maxBuffer: 1 << 26, encoding: 'utf8' }); }
+  catch (e) { return ''; }
+}
+// scrape-cards.js と同一の正規化（cards.js の text と公平に比較できるようにする）
+const txt = s => (s || '').replace(/<br[^>]*>/g, ' ').replace(/<[^>]+>/g, '').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&').replace(/&nbsp;/g, ' ').replace(/\s+/g, ' ').trim();
+const num = s => { s = (s || '').replace(/[^\d]/g, ''); return s === '' ? null : +s; };
+function parse(block, seriesId) {
+  const b = block.replace(/\s+/g, ' ');
+  const no = (b.match(/id="([^"]+)"/) || [])[1]; if (!no) return null;
+  const info = (b.match(/<div class="infoCol">([\s\S]*?)<\/div>/) || [])[1] || '';
+  const spans = [...info.matchAll(/<span>([^<]*)<\/span>/g)].map(m => m[1].trim());
+  const rarity = spans[1] || '';
+  const typeRaw = spans[2] || '';
+  const type = { LEADER: 'LEADER', CHARACTER: 'CHAR', EVENT: 'EVENT', STAGE: 'STAGE' }[typeRaw] || typeRaw;
+  const name = txt((b.match(/<div class="cardName">([\s\S]*?)<\/div>/) || [])[1]);
+  const costM = b.match(/<div class="cost"><h3>([^<]*)<\/h3>([\s\S]*?)<\/div>/);
+  const costVal = costM ? num(costM[2]) : null;
+  const attribute = (b.match(/class="attribute"[\s\S]{0,200}?alt="([^"]+)"/) || [])[1] || null;
+  const power = num((b.match(/<div class="power"><h3>[^<]*<\/h3>([\s\S]*?)<\/div>/) || [])[1]);
+  const counterRaw = txt((b.match(/<div class="counter"><h3>[^<]*<\/h3>([\s\S]*?)<\/div>/) || [])[1]);
+  const colorRaw = txt((b.match(/<div class="color"><h3>[^<]*<\/h3>([\s\S]*?)<\/div>/) || [])[1]);
+  const blockIcon = txt((b.match(/<div class="block"><h3>[\s\S]*?<\/h3>([\s\S]*?)<\/div>/) || [])[1]) || null;
+  const feature = txt((b.match(/<div class="feature"><h3>[^<]*<\/h3>([\s\S]*?)<\/div>/) || [])[1]);
+  const text = txt((b.match(/<div class="text"><h3>[^<]*<\/h3>([\s\S]*?)<\/div>/) || [])[1]);
+  const trigger = txt((b.match(/<div class="trigger"><h3>[^<]*<\/h3>([\s\S]*?)<\/div>/) || [])[1]);
+  const set = txt((b.match(/<div class="getInfo"><h3>[^<]*<\/h3>([\s\S]*?)<\/div>/) || [])[1]);
+  const c = {
+    no, name, rarity, type,
+    color: colorRaw ? colorRaw.split('/').map(s => s.trim()).filter(Boolean) : [],
+    traits: feature && feature !== '-' ? feature.split('/').map(s => s.trim()).filter(Boolean) : [],
+    attribute: attribute === '-' ? null : attribute,
+    power: power || 0,
+    counter: (counterRaw === '-' || !counterRaw) ? 0 : num(counterRaw),
+    blockIcon: blockIcon === '-' ? null : blockIcon,
+    text: (text === '-' ? '' : text),
+    trigger: (trigger === '-' ? '' : trigger),
+    set, series: seriesId
+  };
+  if (type === 'LEADER') c.life = (costVal != null ? costVal : 5); else c.cost = (costVal != null ? costVal : 0);
+  return c;
+}
+const byNo = {}; let totalBlocks = 0; const failed = [];
+for (const id of SERIES) {
+  let html = fetchSeries(id);
+  if (!html || html.length < 2000) { cp.execSync('sleep 2'); html = fetchSeries(id); } // 1回だけリトライ
+  if (!html || html.length < 2000) { failed.push(id); console.error('skip(取得失敗)', id); continue; }
+  const blocks = html.match(/<dl class="modalCol"[\s\S]*?<\/dl>/g) || [];
+  totalBlocks += blocks.length;
+  let added = 0;
+  for (const blk of blocks) {
+    const c = parse(blk, id); if (!c) continue;
+    const base = c.no.replace(/_p\d+$/, ''); c.no = base;
+    if (!byNo[base]) { byNo[base] = c; added++; }
+  }
+  console.error(`series ${id}: blocks=${blocks.length} 新規=${added} 累計=${Object.keys(byNo).length}`);
+  cp.execSync('sleep 0.25');
+}
+const cards = Object.values(byNo).sort((a, b) => a.no < b.no ? -1 : 1);
+const body = cards.map(c => '  ' + JSON.stringify(c)).join(',\n');
+fs.writeFileSync(OUT, '[\n' + body + '\n]\n');
+const byType = {}; for (const c of cards) byType[c.type] = (byType[c.type] || 0) + 1;
+const withTrigger = cards.filter(c => c.trigger).length;
+console.log(`完了: ブロック${totalBlocks} / ユニーク${cards.length} / 種別 ${JSON.stringify(byType)} / トリガー持ち ${withTrigger}枚 → ${OUT} (${(fs.statSync(OUT).size / 1024 | 0)}KB)`);
+if (failed.length) console.log('★取得失敗シリーズ(要再実行): ' + failed.join(', '));

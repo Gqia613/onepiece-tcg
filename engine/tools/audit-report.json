@@ -1,0 +1,6398 @@
+{
+ "generatedAt": "2026-07-09T06:02:20.798Z",
+ "officialCards": 3065,
+ "dbCards": 3063,
+ "fxEntries": 2275,
+ "summary": {
+  "totalIssues": 618,
+  "byKind": {
+   "trigger_unimplemented": 525,
+   "text_mismatch": 84,
+   "trigger_extra": 1,
+   "field_mismatch": 6,
+   "missing_in_db": 2
+  },
+  "bySet": {
+   "EB01": {
+    "total": 15,
+    "trigger_unimplemented": 15
+   },
+   "EB02": {
+    "total": 13,
+    "text_mismatch": 1,
+    "trigger_unimplemented": 12
+   },
+   "EB03": {
+    "total": 8,
+    "trigger_unimplemented": 6,
+    "text_mismatch": 2
+   },
+   "EB04": {
+    "total": 10,
+    "trigger_unimplemented": 9,
+    "text_mismatch": 1
+   },
+   "OP01": {
+    "total": 21,
+    "trigger_unimplemented": 20,
+    "trigger_extra": 1
+   },
+   "OP02": {
+    "total": 26,
+    "trigger_unimplemented": 26
+   },
+   "OP03": {
+    "total": 48,
+    "trigger_unimplemented": 48
+   },
+   "OP04": {
+    "total": 39,
+    "trigger_unimplemented": 38,
+    "text_mismatch": 1
+   },
+   "OP05": {
+    "total": 28,
+    "trigger_unimplemented": 28
+   },
+   "OP06": {
+    "total": 46,
+    "trigger_unimplemented": 43,
+    "text_mismatch": 3
+   },
+   "OP07": {
+    "total": 41,
+    "trigger_unimplemented": 38,
+    "text_mismatch": 3
+   },
+   "OP08": {
+    "total": 30,
+    "trigger_unimplemented": 26,
+    "field_mismatch": 1,
+    "text_mismatch": 3
+   },
+   "OP09": {
+    "total": 41,
+    "trigger_unimplemented": 34,
+    "text_mismatch": 6,
+    "field_mismatch": 1
+   },
+   "OP10": {
+    "total": 23,
+    "trigger_unimplemented": 22,
+    "text_mismatch": 1
+   },
+   "OP11": {
+    "total": 19,
+    "trigger_unimplemented": 16,
+    "text_mismatch": 3
+   },
+   "OP12": {
+    "total": 17,
+    "trigger_unimplemented": 15,
+    "text_mismatch": 2
+   },
+   "OP13": {
+    "total": 22,
+    "text_mismatch": 6,
+    "trigger_unimplemented": 16
+   },
+   "OP14": {
+    "total": 9,
+    "text_mismatch": 9
+   },
+   "OP15": {
+    "total": 33,
+    "text_mismatch": 29,
+    "trigger_unimplemented": 4
+   },
+   "OP16": {
+    "total": 19,
+    "trigger_unimplemented": 11,
+    "text_mismatch": 8
+   },
+   "P": {
+    "total": 19,
+    "trigger_unimplemented": 12,
+    "field_mismatch": 4,
+    "text_mismatch": 1,
+    "missing_in_db": 2
+   },
+   "PRB02": {
+    "total": 4,
+    "text_mismatch": 1,
+    "trigger_unimplemented": 3
+   },
+   "ST01": {
+    "total": 9,
+    "trigger_unimplemented": 9
+   },
+   "ST02": {
+    "total": 6,
+    "trigger_unimplemented": 6
+   },
+   "ST03": {
+    "total": 5,
+    "trigger_unimplemented": 5
+   },
+   "ST04": {
+    "total": 3,
+    "trigger_unimplemented": 3
+   },
+   "ST05": {
+    "total": 6,
+    "trigger_unimplemented": 6
+   },
+   "ST06": {
+    "total": 4,
+    "trigger_unimplemented": 4
+   },
+   "ST07": {
+    "total": 8,
+    "trigger_unimplemented": 8
+   },
+   "ST08": {
+    "total": 3,
+    "trigger_unimplemented": 3
+   },
+   "ST09": {
+    "total": 5,
+    "trigger_unimplemented": 5
+   },
+   "ST10": {
+    "total": 2,
+    "trigger_unimplemented": 2
+   },
+   "ST11": {
+    "total": 1,
+    "trigger_unimplemented": 1
+   },
+   "ST12": {
+    "total": 2,
+    "trigger_unimplemented": 2
+   },
+   "ST13": {
+    "total": 4,
+    "trigger_unimplemented": 4
+   },
+   "ST14": {
+    "total": 4,
+    "trigger_unimplemented": 4
+   },
+   "ST17": {
+    "total": 1,
+    "text_mismatch": 1
+   },
+   "ST20": {
+    "total": 4,
+    "trigger_unimplemented": 4
+   },
+   "ST21": {
+    "total": 2,
+    "trigger_unimplemented": 2
+   },
+   "ST22": {
+    "total": 4,
+    "text_mismatch": 2,
+    "trigger_unimplemented": 2
+   },
+   "ST23": {
+    "total": 1,
+    "text_mismatch": 1
+   },
+   "ST28": {
+    "total": 1,
+    "trigger_unimplemented": 1
+   },
+   "ST29": {
+    "total": 10,
+    "trigger_unimplemented": 10
+   },
+   "ST30": {
+    "total": 2,
+    "trigger_unimplemented": 2
+   }
+  }
+ },
+ "issues": [
+  {
+   "no": "EB01-010",
+   "set": "EB01",
+   "name": "お前がおれに!!!勝てるわけねェだろうが!!!!",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】相手の元々のパワー5000以下のキャラ1枚までを、KOする。",
+   "current": null
+  },
+  {
+   "no": "EB01-020",
+   "set": "EB01",
+   "name": "シャンブルズ",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】このカードの【メイン】効果を発動する。",
+   "current": null
+  },
+  {
+   "no": "EB01-028",
+   "set": "EB01",
+   "name": "ゴムゴムのチャンピオン回転弾",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】コスト3以下のキャラ1枚までを、持ち主のデッキの下に戻す。",
+   "current": null
+  },
+  {
+   "no": "EB01-029",
+   "set": "EB01",
+   "name": "わりいおれ死んだ",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】コスト8以下のキャラ1枚までを、持ち主の手札に戻す。",
+   "current": null
+  },
+  {
+   "no": "EB01-030",
+   "set": "EB01",
+   "name": "ローグタウン",
+   "type": "STAGE",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】このカードを登場させる。",
+   "current": null
+  },
+  {
+   "no": "EB01-035",
+   "set": "EB01",
+   "name": "ミス・マンデー",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】ドン!!-1(自分の場のドン!!を指定の数ドン!!デッキに戻すことができる)：このカードを登場させる。",
+   "current": null
+  },
+  {
+   "no": "EB01-038",
+   "set": "EB01",
+   "name": "オカマ道",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】ドン‼-1：カード2枚を引く。",
+   "current": null
+  },
+  {
+   "no": "EB01-038_r1",
+   "set": "EB01",
+   "name": "オカマ道",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】ドン‼-1：カード2枚を引く。",
+   "current": null
+  },
+  {
+   "no": "EB01-039",
+   "set": "EB01",
+   "name": "降三世 引奈落",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】ドン!!デッキからドン!!1枚までを、アクティブで追加する。",
+   "current": null
+  },
+  {
+   "no": "EB01-051",
+   "set": "EB01",
+   "name": "指銃",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】このカードの【メイン】効果を発動する。",
+   "current": null
+  },
+  {
+   "no": "EB01-051_r1",
+   "set": "EB01",
+   "name": "指銃",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】このカードの【メイン】効果を発動する。",
+   "current": null
+  },
+  {
+   "no": "EB01-053",
+   "set": "EB01",
+   "name": "ガスティーノ",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】相手のリーダーかキャラ合計2枚までを、このターン中、パワー-3000。",
+   "current": null
+  },
+  {
+   "no": "EB01-059",
+   "set": "EB01",
+   "name": "雷迎",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】お互いのライフの合計枚数以下のコストを持つ相手のキャラ1枚までを、KOする。",
+   "current": null
+  },
+  {
+   "no": "EB01-060",
+   "set": "EB01",
+   "name": "我が神なり",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】カード2枚を引き、自分の手札1枚を捨てる。",
+   "current": null
+  },
+  {
+   "no": "EB01-060_r1",
+   "set": "EB01",
+   "name": "我が神なり",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】カード2枚を引き、自分の手札1枚を捨てる。",
+   "current": null
+  },
+  {
+   "no": "EB02-006",
+   "set": "EB02",
+   "name": "ヤマト",
+   "type": "CHAR",
+   "kind": "text_mismatch",
+   "field": "text",
+   "official": "【起動メイン】【ターン1回】自分のリーダーが特徴《ワノ国》を持つか「ポートガス・D・エース」の場合、自分のリーダー1枚にレストのドン‼1枚までを、付与する。その後、このキャラは、このターン中、【速攻】を得る。",
+   "current": "【起動】【ターン1】リーダーにドン1付与し、自身【速攻】"
+  },
+  {
+   "no": "EB02-007",
+   "set": "EB02",
+   "name": "刻蹄・桜吹雪",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】相手のパワー4000以下のキャラ1枚までを、KOする。",
+   "current": null
+  },
+  {
+   "no": "EB02-008",
+   "set": "EB02",
+   "name": "最高到達点",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】このカードの【メイン】効果を発動する。",
+   "current": null
+  },
+  {
+   "no": "EB02-018",
+   "set": "EB02",
+   "name": "バギー",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】相手のコスト4以下のキャラ1枚までを、レストにする。",
+   "current": null
+  },
+  {
+   "no": "EB02-020",
+   "set": "EB02",
+   "name": "ウィーアー！",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】このカードの【メイン】効果を発動する。",
+   "current": null
+  },
+  {
+   "no": "EB02-021",
+   "set": "EB02",
+   "name": "ゴムゴムの巨人の銃",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】相手のコスト4以下のキャラ1枚までを、レストにする。",
+   "current": null
+  },
+  {
+   "no": "EB02-030",
+   "set": "EB02",
+   "name": "仲間の夢を笑われた時だ!!!!",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】カード1枚を引く。",
+   "current": null
+  },
+  {
+   "no": "EB02-031",
+   "set": "EB02",
+   "name": "Hope",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】このカードの【メイン】効果を発動する。",
+   "current": null
+  },
+  {
+   "no": "EB02-040",
+   "set": "EB02",
+   "name": "BRAND NEW WORLD",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】このカードの【メイン】効果を発動する。",
+   "current": null
+  },
+  {
+   "no": "EB02-050",
+   "set": "EB02",
+   "name": "ココロのちず",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】このカードの【メイン】効果を発動する。",
+   "current": null
+  },
+  {
+   "no": "EB02-055",
+   "set": "EB02",
+   "name": "ジンベエ",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】自分のリーダーが特徴《魚人族》か《人魚族》を持ち、自分のライフが2枚以下の場合、このカードを登場させる。",
+   "current": null
+  },
+  {
+   "no": "EB02-056",
+   "set": "EB02",
+   "name": "ベガパンク",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】カード1枚を引く。",
+   "current": null
+  },
+  {
+   "no": "EB02-058",
+   "set": "EB02",
+   "name": "あーーっす！",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】このカードの【メイン】効果を発動する。",
+   "current": null
+  },
+  {
+   "no": "EB03-011",
+   "set": "EB03",
+   "name": "いつかまた会えたら!!!もう一度 仲間と呼んでくれますか!!!?",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】相手のキャラ1枚までを、このターン中、パワー-2000。",
+   "current": null
+  },
+  {
+   "no": "EB03-020",
+   "set": "EB03",
+   "name": "出た!負け惜しみ～",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】自分のキャラ1枚までを、アクティブにする。",
+   "current": null
+  },
+  {
+   "no": "EB03-053",
+   "set": "EB03",
+   "name": "ナミ",
+   "type": "CHAR",
+   "kind": "text_mismatch",
+   "field": "text",
+   "official": "【登場時】自分のリーダーにレストのドン‼1枚までを、付与する。その後、相手のライフが3枚以上の場合、相手のライフの上から1枚までを、持ち主の手札に加える。 【KO時】自分のライフの上から1枚を表向きにできる：自分の手札からパワー6000以下のキャラカード1枚までを、登場させる。",
+   "current": "【登場時】リーダーにレストのドン1枚付与、相手ライフ3以上なら相手ライフ上1枚を手札に 【KO時】自ライフ上1枚を表向きにして手札からパワー6000以下を登場"
+  },
+  {
+   "no": "EB03-054",
+   "set": "EB03",
+   "name": "ニコ・ロビン",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】自分の手札1枚を捨てることができる：このカードを登場させる。",
+   "current": null
+  },
+  {
+   "no": "EB03-055",
+   "set": "EB03",
+   "name": "ニコ・ロビン",
+   "type": "CHAR",
+   "kind": "text_mismatch",
+   "field": "text",
+   "official": "【登場時】自分のライフの上から1枚をトラッシュに置くことができる：自分のリーダーが特徴《麦わらの一味》を持つ場合、自分のデッキの上から2枚までを、ライフの上に加える。 【相手のターン中】【KO時】相手に1ダメージを与えてもよい。",
+   "current": "【登場時】自分のライフ上1枚をトラッシュにできる:リーダーが麦わらの一味ならデッキ上2枚をライフに加える 【相手のターン中】【KO時】相手に1ダメージ"
+  },
+  {
+   "no": "EB03-058",
+   "set": "EB03",
+   "name": "リリス",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】自分のリーダーが「ベガパンク」の場合、このカードを登場させる。",
+   "current": null
+  },
+  {
+   "no": "EB03-059",
+   "set": "EB03",
+   "name": "S-スネーク",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】相手の「モンキー・Ｄ・ルフィ」以外のコスト6以下のキャラ1枚までは、このターン中、アタックできない。",
+   "current": null
+  },
+  {
+   "no": "EB03-060",
+   "set": "EB03",
+   "name": "私のしもべになる？",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】このカードの【メイン】効果を発動する。",
+   "current": null
+  },
+  {
+   "no": "EB04-020",
+   "set": "EB04",
+   "name": "鮫瓦正拳",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】相手のコスト4以下のキャラ1枚までを、レストにする。",
+   "current": null
+  },
+  {
+   "no": "EB04-027",
+   "set": "EB04",
+   "name": "ボア・ハンコック",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】自分の手札からパワー5000以下の【トリガー】を持つキャラカード1枚までを、登場させる。",
+   "current": null
+  },
+  {
+   "no": "EB04-028",
+   "set": "EB04",
+   "name": "アイスタイム",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】コスト5以下のキャラ1枚までを、持ち主の手札に戻す。",
+   "current": null
+  },
+  {
+   "no": "EB04-041",
+   "set": "EB04",
+   "name": "ステルス・ブラック",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】カード2枚を引き、自分の手札1枚を捨てる。",
+   "current": null
+  },
+  {
+   "no": "EB04-049",
+   "set": "EB04",
+   "name": "指銃 黄蓮",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】このカードの【メイン】効果を発動する。",
+   "current": null
+  },
+  {
+   "no": "EB04-051",
+   "set": "EB04",
+   "name": "エメト",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】相手のキャラすべてを、このターン中、パワー-3000。その後、自分のライフが0枚の場合、このカードを登場させる。",
+   "current": null
+  },
+  {
+   "no": "EB04-055",
+   "set": "EB04",
+   "name": "バーソロミュー・くま",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】自分のリーダーが特徴《革命軍》を持ち、お互いのライフの合計枚数が5枚以下の場合、このカードを登場させる。",
+   "current": null
+  },
+  {
+   "no": "EB04-058",
+   "set": "EB04",
+   "name": "ボルサリーノ",
+   "type": "CHAR",
+   "kind": "text_mismatch",
+   "field": "text",
+   "official": "【ブロッカー】(相手のアタックの後、このカードをレストにし、アタックの対象をこのカードにできる) 【登場時】自分のライフが2枚以下の場合、自分のデッキの上から1枚までを、ライフの上に加える。",
+   "current": "【ブロッカー】【登場時】自分のライフが2枚以下ならデッキ上1枚をライフの上に加える"
+  },
+  {
+   "no": "EB04-059",
+   "set": "EB04",
+   "name": "黒縄・大龍巻",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】カード2枚を引き、自分の手札1枚を捨てる。",
+   "current": null
+  },
+  {
+   "no": "EB04-060",
+   "set": "EB04",
+   "name": "ゴムゴムの鷹銃乱打",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】カード2枚を引き、自分の手札1枚を捨てる。",
+   "current": null
+  },
+  {
+   "no": "OP01-009",
+   "set": "OP01",
+   "name": "キャロット",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】このカードを登場させる。",
+   "current": null
+  },
+  {
+   "no": "OP01-026",
+   "set": "OP01",
+   "name": "ゴムゴムの火拳銃",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】相手のリーダーかキャラ1枚までを、このターン中、パワー-10000。",
+   "current": null
+  },
+  {
+   "no": "OP01-028",
+   "set": "OP01",
+   "name": "必殺緑星ラフレシア",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】このカードの【カウンター】効果を発動する。",
+   "current": null
+  },
+  {
+   "no": "OP01-029",
+   "set": "OP01",
+   "name": "ラディカルビ～～～ム‼‼",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】自分のリーダーかキャラ1枚までを、このターン中、パワー+1000。",
+   "current": null
+  },
+  {
+   "no": "OP01-029_r1",
+   "set": "OP01",
+   "name": "ラディカルビ～～～ム‼‼",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】自分のリーダーかキャラ1枚までを、このターン中、パワー+1000。",
+   "current": null
+  },
+  {
+   "no": "OP01-030",
+   "set": "OP01",
+   "name": "2年後に‼!シャボンディ諸島で!!!",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】このカードの【メイン】効果を発動する。",
+   "current": null
+  },
+  {
+   "no": "OP01-037",
+   "set": "OP01",
+   "name": "河松",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】このカードを登場させる。",
+   "current": null
+  },
+  {
+   "no": "OP01-057",
+   "set": "OP01",
+   "name": "桃源白滝",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】相手のレストのコスト4以下のキャラ1枚までを、KOする。",
+   "current": null
+  },
+  {
+   "no": "OP01-058",
+   "set": "OP01",
+   "name": "磁気弦",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】相手のキャラ1枚までを、レストにする。",
+   "current": null
+  },
+  {
+   "no": "OP01-071",
+   "set": "OP01",
+   "name": "ジンベエ",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】このカードを登場させる。",
+   "current": null
+  },
+  {
+   "no": "OP01-082",
+   "set": "OP01",
+   "name": "モネ",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】このカードを登場させる。",
+   "current": null
+  },
+  {
+   "no": "OP01-086",
+   "set": "OP01",
+   "name": "超過鞭糸",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】コスト4以下のキャラ1枚までを、持ち主の手札に戻す。",
+   "current": null
+  },
+  {
+   "no": "OP01-086_r1",
+   "set": "OP01",
+   "name": "超過鞭糸",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】コスト4以下のキャラ1枚までを、持ち主の手札に戻す。",
+   "current": null
+  },
+  {
+   "no": "OP01-087",
+   "set": "OP01",
+   "name": "オフィサーエージェント",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】このカードの【カウンター】効果を発動する。",
+   "current": null
+  },
+  {
+   "no": "OP01-088",
+   "set": "OP01",
+   "name": "砂漠の宝刀",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】カード2枚を引き、自分の手札1枚を捨てる。",
+   "current": null
+  },
+  {
+   "no": "OP01-104",
+   "set": "OP01",
+   "name": "スピード",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】このカードを登場させる。",
+   "current": null
+  },
+  {
+   "no": "OP01-106",
+   "set": "OP01",
+   "name": "バジル・ホーキンス",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】このカードを登場させる。",
+   "current": null
+  },
+  {
+   "no": "OP01-115",
+   "set": "OP01",
+   "name": "象の鼻息",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】このカードの【メイン】効果を発動する。",
+   "current": null
+  },
+  {
+   "no": "OP01-116",
+   "set": "OP01",
+   "name": "人造悪魔の実SMILE",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】このカードの【メイン】効果を発動する。",
+   "current": null
+  },
+  {
+   "no": "OP01-118",
+   "set": "OP01",
+   "name": "ウル頭銃",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】ドン‼デッキからドン‼1枚までをアクティブで追加する。",
+   "current": null
+  },
+  {
+   "no": "OP01-119",
+   "set": "OP01",
+   "name": "雷鳴八卦",
+   "type": "EVENT",
+   "kind": "trigger_extra",
+   "field": "trigger",
+   "official": "",
+   "current": "fx.triggerあり"
+  },
+  {
+   "no": "OP02-021",
+   "set": "OP02",
+   "name": "海震",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】相手のリーダーかキャラ1枚までを、このターン中、パワー-3000。",
+   "current": null
+  },
+  {
+   "no": "OP02-022",
+   "set": "OP02",
+   "name": "白ひげ海賊団",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】このカードの【メイン】効果を発動する。",
+   "current": null
+  },
+  {
+   "no": "OP02-023",
+   "set": "OP02",
+   "name": "バカな息子をそれでも愛そう…",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】自分のリーダー1枚までを、このターン中、パワー+1000。",
+   "current": null
+  },
+  {
+   "no": "OP02-023_r1",
+   "set": "OP02",
+   "name": "バカな息子をそれでも愛そう…",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】自分のリーダー1枚までを、このターン中、パワー+1000。",
+   "current": null
+  },
+  {
+   "no": "OP02-024",
+   "set": "OP02",
+   "name": "モビー・ディック号",
+   "type": "STAGE",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】このカードを登場させる。",
+   "current": null
+  },
+  {
+   "no": "OP02-045",
+   "set": "OP02",
+   "name": "三刀流 鬼斬り",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】相手のリーダーかコスト5以下のキャラ1枚までを、レストにする。",
+   "current": null
+  },
+  {
+   "no": "OP02-046",
+   "set": "OP02",
+   "name": "悪魔風脚 野獣肉シュート",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】自分の手札からコスト4以下の元々の効果のないキャラカード1枚までを、登場させる。",
+   "current": null
+  },
+  {
+   "no": "OP02-047",
+   "set": "OP02",
+   "name": "桃源十拳",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】相手のレストのコスト3以下のキャラ1枚までを、KOする。",
+   "current": null
+  },
+  {
+   "no": "OP02-066",
+   "set": "OP02",
+   "name": "インペルダウンオールスター",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】カード2枚を引く。",
+   "current": null
+  },
+  {
+   "no": "OP02-067",
+   "set": "OP02",
+   "name": "唐草瓦正拳",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】このカードの【メイン】効果を発動する。",
+   "current": null
+  },
+  {
+   "no": "OP02-068",
+   "set": "OP02",
+   "name": "ゴムゴムの雨",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】コスト2以下のキャラ1枚までを、持ち主の手札に戻す。",
+   "current": null
+  },
+  {
+   "no": "OP02-068_r1",
+   "set": "OP02",
+   "name": "ゴムゴムの雨",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】コスト2以下のキャラ1枚までを、持ち主の手札に戻す。",
+   "current": null
+  },
+  {
+   "no": "OP02-069",
+   "set": "OP02",
+   "name": "DEATH WINK",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】コスト7以下のキャラ1枚までを、持ち主の手札に戻す。",
+   "current": null
+  },
+  {
+   "no": "OP02-075",
+   "set": "OP02",
+   "name": "シキ",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】ドン‼-1(自分の場のドン‼を指定の数ドン‼デッキに戻すことができる)：このカードを登場させる。",
+   "current": null
+  },
+  {
+   "no": "OP02-089",
+   "set": "OP02",
+   "name": "地獄の審判",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】相手の場にドン‼が6枚以上ある場合、相手は自身の場のドン‼1枚をドン‼デッキに戻す。",
+   "current": null
+  },
+  {
+   "no": "OP02-089_r1",
+   "set": "OP02",
+   "name": "地獄の審判",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】相手の場にドン‼が6枚以上ある場合、相手は自身の場のドン‼1枚をドン‼デッキに戻す。",
+   "current": null
+  },
+  {
+   "no": "OP02-090",
+   "set": "OP02",
+   "name": "毒竜",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】相手の場にドン‼が6枚以上ある場合、相手は自身の場のドン‼1枚をドン‼デッキに戻す。",
+   "current": null
+  },
+  {
+   "no": "OP02-091",
+   "set": "OP02",
+   "name": "毒の道",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】相手の場にドン‼が6枚以上ある場合、相手は自身の場のドン‼1枚をドン‼デッキに戻す。",
+   "current": null
+  },
+  {
+   "no": "OP02-104",
+   "set": "OP02",
+   "name": "戦桃丸",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】このカードを登場させる。",
+   "current": null
+  },
+  {
+   "no": "OP02-113",
+   "set": "OP02",
+   "name": "ヘルメッポ",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】このカードを登場させる。",
+   "current": null
+  },
+  {
+   "no": "OP02-113_r1",
+   "set": "OP02",
+   "name": "ヘルメッポ",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】このカードを登場させる。",
+   "current": null
+  },
+  {
+   "no": "OP02-117",
+   "set": "OP02",
+   "name": "氷河時代",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】相手のコスト3以下のキャラ1枚までを、KOする。",
+   "current": null
+  },
+  {
+   "no": "OP02-117_r1",
+   "set": "OP02",
+   "name": "氷河時代",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】相手のコスト3以下のキャラ1枚までを、KOする。",
+   "current": null
+  },
+  {
+   "no": "OP02-117_r2",
+   "set": "OP02",
+   "name": "氷河時代",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】相手のコスト3以下のキャラ1枚までを、KOする。",
+   "current": null
+  },
+  {
+   "no": "OP02-118",
+   "set": "OP02",
+   "name": "八尺瓊勾玉",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】相手のコスト3以下のステージ1枚までを、KOする。",
+   "current": null
+  },
+  {
+   "no": "OP02-119",
+   "set": "OP02",
+   "name": "流星火山",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】カード2枚を引き、自分の手札1枚を捨てる。",
+   "current": null
+  },
+  {
+   "no": "OP03-016",
+   "set": "OP03",
+   "name": "炎帝",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】相手のパワー6000以下のキャラ1枚までを、KOする。",
+   "current": null
+  },
+  {
+   "no": "OP03-017",
+   "set": "OP03",
+   "name": "十字火",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】このカードの【メイン】効果を発動する。",
+   "current": null
+  },
+  {
+   "no": "OP03-018",
+   "set": "OP03",
+   "name": "火拳",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】相手のパワー5000以下のキャラ1枚までを、KOする。",
+   "current": null
+  },
+  {
+   "no": "OP03-019",
+   "set": "OP03",
+   "name": "火達磨",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】相手のリーダーかキャラ1枚までを、このターン中、パワー-10000。",
+   "current": null
+  },
+  {
+   "no": "OP03-026",
+   "set": "OP03",
+   "name": "クロオビ",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】このカードを登場させる。",
+   "current": null
+  },
+  {
+   "no": "OP03-029",
+   "set": "OP03",
+   "name": "チュウ",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】このカードを登場させる。",
+   "current": null
+  },
+  {
+   "no": "OP03-030",
+   "set": "OP03",
+   "name": "ナミ",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】このカードを登場させる。",
+   "current": null
+  },
+  {
+   "no": "OP03-033",
+   "set": "OP03",
+   "name": "はっちゃん",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】自分のリーダーが特徴《東の海》を持つ場合、このカードを登場させる。",
+   "current": null
+  },
+  {
+   "no": "OP03-036",
+   "set": "OP03",
+   "name": "杓死",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】相手のレストのコスト3以下のキャラ1枚までを、KOする。",
+   "current": null
+  },
+  {
+   "no": "OP03-037",
+   "set": "OP03",
+   "name": "歯ガム",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】自分の手札からコスト4以下の【トリガー】を持つキャラカード1枚までを、登場させる。",
+   "current": null
+  },
+  {
+   "no": "OP03-038",
+   "set": "OP03",
+   "name": "猛毒ガス弾『M・H・５』",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】相手のコスト5以下のキャラ1枚までを、レストにする。",
+   "current": null
+  },
+  {
+   "no": "OP03-039",
+   "set": "OP03",
+   "name": "ワン・ツー・ジャンゴ",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】相手のコスト4以下のキャラ1枚までを、レストにする。",
+   "current": null
+  },
+  {
+   "no": "OP03-054",
+   "set": "OP03",
+   "name": "ウソーーップ輪ごーむっ!!!",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】カード1枚を引き、自分のデッキの上から1枚をトラッシュに置いてもよい。",
+   "current": null
+  },
+  {
+   "no": "OP03-055",
+   "set": "OP03",
+   "name": "ゴムゴムの大槌",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】コスト4以下のキャラ1枚までを、持ち主の手札に戻す。",
+   "current": null
+  },
+  {
+   "no": "OP03-055_r1",
+   "set": "OP03",
+   "name": "ゴムゴムの大槌",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】コスト4以下のキャラ1枚までを、持ち主の手札に戻す。",
+   "current": null
+  },
+  {
+   "no": "OP03-056",
+   "set": "OP03",
+   "name": "サンジのピラフ",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】このカードの【メイン】効果を発動する。",
+   "current": null
+  },
+  {
+   "no": "OP03-056_r1",
+   "set": "OP03",
+   "name": "サンジのピラフ",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】このカードの【メイン】効果を発動する。",
+   "current": null
+  },
+  {
+   "no": "OP03-057",
+   "set": "OP03",
+   "name": "三・千・世・界",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】コスト3以下のキャラ1枚までを、持ち主のデッキの下に置く。",
+   "current": null
+  },
+  {
+   "no": "OP03-057_r1",
+   "set": "OP03",
+   "name": "三・千・世・界",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】コスト3以下のキャラ1枚までを、持ち主のデッキの下に置く。",
+   "current": null
+  },
+  {
+   "no": "OP03-072",
+   "set": "OP03",
+   "name": "ゴムゴムのJET銃乱打",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】ドン!!デッキからドン!!1枚までを、アクティブで追加する。",
+   "current": null
+  },
+  {
+   "no": "OP03-072_r1",
+   "set": "OP03",
+   "name": "ゴムゴムのJET銃乱打",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】ドン‼デッキからドン‼1枚までを、アクティブで追加する。",
+   "current": null
+  },
+  {
+   "no": "OP03-073",
+   "set": "OP03",
+   "name": "船底解体斬り",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】このカードの【メイン】効果を発動する。",
+   "current": null
+  },
+  {
+   "no": "OP03-074",
+   "set": "OP03",
+   "name": "独楽結び",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】このカードの【メイン】効果を発動する。",
+   "current": null
+  },
+  {
+   "no": "OP03-094",
+   "set": "OP03",
+   "name": "空気開扉",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】自分のトラッシュからコスト3以下の黒のキャラカード1枚までを、登場させる。",
+   "current": null
+  },
+  {
+   "no": "OP03-094_r1",
+   "set": "OP03",
+   "name": "空気開扉",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】自分のトラッシュからコスト3以下の黒のキャラカード1枚までを、登場させる。",
+   "current": null
+  },
+  {
+   "no": "OP03-095",
+   "set": "OP03",
+   "name": "石鹼羊",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】相手は自身の手札1枚を捨てる。",
+   "current": null
+  },
+  {
+   "no": "OP03-096",
+   "set": "OP03",
+   "name": "嵐脚 周断",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】カード2枚を引く。",
+   "current": null
+  },
+  {
+   "no": "OP03-097",
+   "set": "OP03",
+   "name": "六王銃",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】カード1枚を引く。その後、相手のコスト1以下のキャラ1枚までを、KOする。",
+   "current": null
+  },
+  {
+   "no": "OP03-097_r1",
+   "set": "OP03",
+   "name": "六王銃",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】カード1枚を引く。その後、相手のコスト1以下のキャラ1枚までを、KOする。",
+   "current": null
+  },
+  {
+   "no": "OP03-098",
+   "set": "OP03",
+   "name": "エニエス・ロビー",
+   "type": "STAGE",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】このカードを登場させる",
+   "current": null
+  },
+  {
+   "no": "OP03-100",
+   "set": "OP03",
+   "name": "キングバーム",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】自分のライフの上か下から1枚をトラッシュに置くことができる：このカードを登場させる。",
+   "current": null
+  },
+  {
+   "no": "OP03-108",
+   "set": "OP03",
+   "name": "シャーロット・クラッカー",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】自分の手札1枚を捨てることができる：このカードを登場させる。",
+   "current": null
+  },
+  {
+   "no": "OP03-108_r1",
+   "set": "OP03",
+   "name": "シャーロット・クラッカー",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】自分の手札1枚を捨てることができる：このカードを登場させる。",
+   "current": null
+  },
+  {
+   "no": "OP03-110",
+   "set": "OP03",
+   "name": "シャーロット・スムージー",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】自分の手札1枚を捨てることができる：このカードを登場させる。",
+   "current": null
+  },
+  {
+   "no": "OP03-110_r1",
+   "set": "OP03",
+   "name": "シャーロット・スムージー",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】自分の手札1枚を捨てることができる：このカードを登場させる。",
+   "current": null
+  },
+  {
+   "no": "OP03-110_r2",
+   "set": "OP03",
+   "name": "シャーロット・スムージー",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】自分の手札1枚を捨てることができる：このカードを登場させる。",
+   "current": null
+  },
+  {
+   "no": "OP03-113",
+   "set": "OP03",
+   "name": "シャーロット・ペロスペロー",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】自分の手札1枚を捨てることができる：このカードを登場させる。",
+   "current": null
+  },
+  {
+   "no": "OP03-113_r1",
+   "set": "OP03",
+   "name": "シャーロット・ペロスペロー",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】自分の手札1枚を捨てることができる：このカードを登場させる。",
+   "current": null
+  },
+  {
+   "no": "OP03-116",
+   "set": "OP03",
+   "name": "しらほし",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】このカードを登場させる。",
+   "current": null
+  },
+  {
+   "no": "OP03-116_r1",
+   "set": "OP03",
+   "name": "しらほし",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】このカードを登場させる。",
+   "current": null
+  },
+  {
+   "no": "OP03-117",
+   "set": "OP03",
+   "name": "ナポレオン",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】このカードを登場させる。",
+   "current": null
+  },
+  {
+   "no": "OP03-118",
+   "set": "OP03",
+   "name": "威国",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】自分の手札2枚を捨てることができる：自分のデッキの上から1枚までを、ライフの上に加える。",
+   "current": null
+  },
+  {
+   "no": "OP03-118_r1",
+   "set": "OP03",
+   "name": "威国",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】自分の手札2枚を捨てることができる：自分のデッキの上から1枚までを、ライフの上に加える。",
+   "current": null
+  },
+  {
+   "no": "OP03-119",
+   "set": "OP03",
+   "name": "斬・切・餅",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】自分の手札からコスト4以下の【トリガー】を持つキャラカード1枚までを、登場させる。",
+   "current": null
+  },
+  {
+   "no": "OP03-120",
+   "set": "OP03",
+   "name": "熱海温泉",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】このカードの【メイン】効果を発動する。",
+   "current": null
+  },
+  {
+   "no": "OP03-121",
+   "set": "OP03",
+   "name": "雷霆",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】相手のコスト5以下のキャラ1枚までを、KOする。",
+   "current": null
+  },
+  {
+   "no": "OP03-121_r1",
+   "set": "OP03",
+   "name": "雷霆",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】相手のコスト5以下のキャラ1枚までを、KOする。",
+   "current": null
+  },
+  {
+   "no": "OP03-121_r2",
+   "set": "OP03",
+   "name": "雷霆",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】相手のコスト5以下のキャラ1枚までを、KOする。",
+   "current": null
+  },
+  {
+   "no": "OP04-016",
+   "set": "OP04",
+   "name": "反行儀キックコース",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】相手のリーダーかキャラ1枚までを、このターン中、パワー-3000。",
+   "current": null
+  },
+  {
+   "no": "OP04-016_r1",
+   "set": "OP04",
+   "name": "反行儀キックコース",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】相手のリーダーかキャラ1枚までを、このターン中、パワー-3000。",
+   "current": null
+  },
+  {
+   "no": "OP04-018",
+   "set": "OP04",
+   "name": "魅惑のメマーイダンス",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】このカードの【メイン】効果を発動する。",
+   "current": null
+  },
+  {
+   "no": "OP04-035",
+   "set": "OP04",
+   "name": "蜘蛛の巣がき",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】自分のリーダー1枚までを、このターン中、パワー+2000。",
+   "current": null
+  },
+  {
+   "no": "OP04-036",
+   "set": "OP04",
+   "name": "ドンキホーテファミリー",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】このカードの【カウンター】効果を発動する。",
+   "current": null
+  },
+  {
+   "no": "OP04-036_r1",
+   "set": "OP04",
+   "name": "ドンキホーテファミリー",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】このカードの【カウンター】効果を発動する。",
+   "current": null
+  },
+  {
+   "no": "OP04-037",
+   "set": "OP04",
+   "name": "羽撃糸",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】相手のレストのコスト4以下のキャラ1枚までを、KOする。",
+   "current": null
+  },
+  {
+   "no": "OP04-038",
+   "set": "OP04",
+   "name": "弱ェ奴は死に方も選べねェ!!!",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】自分のドン!!5枚までを、アクティブにする。",
+   "current": null
+  },
+  {
+   "no": "OP04-052",
+   "set": "OP04",
+   "name": "ブラックマリア",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】このカードを登場させる。",
+   "current": null
+  },
+  {
+   "no": "OP04-055",
+   "set": "OP04",
+   "name": "疫災弾",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】このカードの【メイン】効果を発動する。",
+   "current": null
+  },
+  {
+   "no": "OP04-056",
+   "set": "OP04",
+   "name": "ゴムゴムの業火拳銃",
+   "type": "EVENT",
+   "kind": "text_mismatch",
+   "field": "text",
+   "official": "【メイン】キャラ1枚までを、持ち主のデッキの下に置く。",
+   "current": "【メイン】キャラ1枚までを、持ち主のデッキの下に置く"
+  },
+  {
+   "no": "OP04-057",
+   "set": "OP04",
+   "name": "龍巻壊風",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】コスト6以下のキャラ1枚までを、持ち主の手札に戻す。",
+   "current": null
+  },
+  {
+   "no": "OP04-064",
+   "set": "OP04",
+   "name": "ミス・オールサンデー",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】ドン!!-2(自分の場のドン!!を指定の数ドン!!デッキに戻すことができる)：このカードを登場させる。",
+   "current": null
+  },
+  {
+   "no": "OP04-065",
+   "set": "OP04",
+   "name": "ミス・ゴールデンウィーク(マリアンヌ)",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】ドン!!-1(自分の場のドン!!を指定の数ドン!!デッキに戻すことができる)：このカードを登場させる。",
+   "current": null
+  },
+  {
+   "no": "OP04-066",
+   "set": "OP04",
+   "name": "ミス・バレンタイン(ミキータ)",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】ドン!!-1(自分の場のドン!!を指定の数ドン!!デッキに戻すことができる)：このカードを登場させる。",
+   "current": null
+  },
+  {
+   "no": "OP04-067",
+   "set": "OP04",
+   "name": "ミス・メリークリスマス(ドロフィー)",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】ドン!!-1(自分の場のドン!!を指定の数ドン!!デッキに戻すことができる)：このカードを登場させる。",
+   "current": null
+  },
+  {
+   "no": "OP04-069",
+   "set": "OP04",
+   "name": "Mｒ.2・ボン・クレー(ベンサム)",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】ドン!!-1：このカードを登場させる。",
+   "current": null
+  },
+  {
+   "no": "OP04-073",
+   "set": "OP04",
+   "name": "Mr.13&ミス・フライデー",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】このカードを登場させる。",
+   "current": null
+  },
+  {
+   "no": "OP04-074",
+   "set": "OP04",
+   "name": "カラーズトラップ",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】ドン!!デッキからドン!!1枚までを、アクティブで追加する。",
+   "current": null
+  },
+  {
+   "no": "OP04-075",
+   "set": "OP04",
+   "name": "鼻空想砲",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】ドン!!デッキからドン!!1枚までを、アクティブで追加する。",
+   "current": null
+  },
+  {
+   "no": "OP04-076",
+   "set": "OP04",
+   "name": "弱ェってのは…罪なもんだ…",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】ドン!!デッキからドン!!1枚までを、アクティブで追加する。",
+   "current": null
+  },
+  {
+   "no": "OP04-093",
+   "set": "OP04",
+   "name": "ゴムゴムの大猿王銃",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】カード3枚を引き、自分の手札2枚を捨てる。",
+   "current": null
+  },
+  {
+   "no": "OP04-094",
+   "set": "OP04",
+   "name": "雷の破壊剣",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】自分のリーダーをレストにできる：相手のコスト5以下のキャラ1枚までを、KOする。",
+   "current": null
+  },
+  {
+   "no": "OP04-095",
+   "set": "OP04",
+   "name": "バ～～～～リアッ!!",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】カード2枚を引き、自分の手札1枚を捨てる。",
+   "current": null
+  },
+  {
+   "no": "OP04-095_r1",
+   "set": "OP04",
+   "name": "バ～～～～リアッ!!",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】カード2枚を引き、自分の手札1枚を捨てる。",
+   "current": null
+  },
+  {
+   "no": "OP04-099",
+   "set": "OP04",
+   "name": "おリン",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】自分のライフが1枚以下の場合、このカードを登場させる。",
+   "current": null
+  },
+  {
+   "no": "OP04-100",
+   "set": "OP04",
+   "name": "カポネ・ベッジ",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】相手のリーダーかキャラ1枚までは、このターン中、アタックできない。",
+   "current": null
+  },
+  {
+   "no": "OP04-100_r1",
+   "set": "OP04",
+   "name": "カポネ・ベッジ",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】相手のリーダーかキャラ1枚までは、このターン中、アタックできない。",
+   "current": null
+  },
+  {
+   "no": "OP04-101",
+   "set": "OP04",
+   "name": "カルメル",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】このカードを登場させる。その後、相手のコスト2以下のキャラ1枚までを、KOする。",
+   "current": null
+  },
+  {
+   "no": "OP04-103",
+   "set": "OP04",
+   "name": "光月日和",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】このカードを登場させる。",
+   "current": null
+  },
+  {
+   "no": "OP04-104",
+   "set": "OP04",
+   "name": "サンジ",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】自分の手札1枚を捨てることができる：このカードを登場させる。",
+   "current": null
+  },
+  {
+   "no": "OP04-104_r1",
+   "set": "OP04",
+   "name": "サンジ",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】自分の手札1枚を捨てることができる：このカードを登場させる。",
+   "current": null
+  },
+  {
+   "no": "OP04-106",
+   "set": "OP04",
+   "name": "シャーロット・ババロア",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】自分の手札1枚を捨てることができる：このカードを登場させる。",
+   "current": null
+  },
+  {
+   "no": "OP04-108",
+   "set": "OP04",
+   "name": "シャーロット・モスカート",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】自分の手札1枚を捨てることができる：このカードを登場させる。",
+   "current": null
+  },
+  {
+   "no": "OP04-111",
+   "set": "OP04",
+   "name": "ヘラ",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】このカードを登場させる。",
+   "current": null
+  },
+  {
+   "no": "OP04-113",
+   "set": "OP04",
+   "name": "ラビヤン",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】このカードを登場させる。",
+   "current": null
+  },
+  {
+   "no": "OP04-115",
+   "set": "OP04",
+   "name": "銃・擬鬼",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】自分のリーダーかキャラ1枚までを、このターン中、パワー+1000。",
+   "current": null
+  },
+  {
+   "no": "OP04-116",
+   "set": "OP04",
+   "name": "悪魔風脚 ほほ肉シュート",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】カード1枚を引く。",
+   "current": null
+  },
+  {
+   "no": "OP04-117",
+   "set": "OP04",
+   "name": "天上の火",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】自分のライフの上か下から1枚を手札に加えることができる：自分の手札1枚までを、ライフの上に加える。",
+   "current": null
+  },
+  {
+   "no": "OP05-011",
+   "set": "OP05",
+   "name": "バーソロミュー・くま",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】自分のリーダーが多色の場合、このカードを登場させる。",
+   "current": null
+  },
+  {
+   "no": "OP05-016",
+   "set": "OP05",
+   "name": "モーリー",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】自分の手札1枚を捨てることができる：自分のリーダーが多色の場合、このカードを登場させる。",
+   "current": null
+  },
+  {
+   "no": "OP05-017",
+   "set": "OP05",
+   "name": "リンドバーグ",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】自分の手札1枚を捨てることができる：自分のリーダーが多色の場合、このカードを登場させる。",
+   "current": null
+  },
+  {
+   "no": "OP05-018",
+   "set": "OP05",
+   "name": "エンポリオ・テンションホルモン",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】自分の手札からパワー5000以下の特徴《革命軍》を持つキャラカード1枚までを、登場させる。",
+   "current": null
+  },
+  {
+   "no": "OP05-019",
+   "set": "OP05",
+   "name": "火拳",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】このカードの【メイン】効果を発動する。",
+   "current": null
+  },
+  {
+   "no": "OP05-020",
+   "set": "OP05",
+   "name": "四千枚瓦正拳",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】自分のリーダーかキャラ1枚までを、このターン中、パワー+1000。",
+   "current": null
+  },
+  {
+   "no": "OP05-037",
+   "set": "OP05",
+   "name": "勝者だけが正義だ!!!!",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】相手のコスト4以下のキャラ1枚までを、レストにする。",
+   "current": null
+  },
+  {
+   "no": "OP05-037_r1",
+   "set": "OP05",
+   "name": "勝者だけが正義だ!!!!",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】相手のコスト4以下のキャラ1枚までを、レストにする。",
+   "current": null
+  },
+  {
+   "no": "OP05-038",
+   "set": "OP05",
+   "name": "舞踏石",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】相手のリーダーかコスト3以下のキャラ1枚までを、レストにする。",
+   "current": null
+  },
+  {
+   "no": "OP05-039",
+   "set": "OP05",
+   "name": "ベタベットン流星",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】相手のレストのコスト5以下のキャラ1枚までを、KOする。",
+   "current": null
+  },
+  {
+   "no": "OP05-057",
+   "set": "OP05",
+   "name": "犬噛紅蓮",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】コスト3以下のキャラ1枚までを、持ち主の手札に戻す。",
+   "current": null
+  },
+  {
+   "no": "OP05-057_r1",
+   "set": "OP05",
+   "name": "犬噛紅蓮",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】コスト3以下のキャラ1枚までを、持ち主の手札に戻す。",
+   "current": null
+  },
+  {
+   "no": "OP05-058",
+   "set": "OP05",
+   "name": "命がも゛ったいだいっ!!!!",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】コスト2以下のキャラすべてを、持ち主のデッキの下に置く。",
+   "current": null
+  },
+  {
+   "no": "OP05-059",
+   "set": "OP05",
+   "name": "始めよう”暴力の世界”!!!",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】自分のリーダーが多色の場合、カード2枚を引く。",
+   "current": null
+  },
+  {
+   "no": "OP05-073",
+   "set": "OP05",
+   "name": "ミス・ダブルフィンガー(ザラ)",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】ドン!!-1(自分の場のドン!!を指定の数ドン!!デッキに戻すことができる)：このカードを登場させる。",
+   "current": null
+  },
+  {
+   "no": "OP05-073_r1",
+   "set": "OP05",
+   "name": "ミス・ダブルフィンガー(ザラ)",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】ドン!!-1(自分の場のドン!!を指定の数ドン!!デッキに戻すことができる)：このカードを登場させる。",
+   "current": null
+  },
+  {
+   "no": "OP05-076",
+   "set": "OP05",
+   "name": "海は海賊が相手だ!!!",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】このカードの【メイン】効果を発動する。",
+   "current": null
+  },
+  {
+   "no": "OP05-078",
+   "set": "OP05",
+   "name": "磁気魔人",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】ドン!!デッキからドン!!1枚までを、アクティブで追加する。",
+   "current": null
+  },
+  {
+   "no": "OP05-094",
+   "set": "OP05",
+   "name": "高級仕立パッチ★ワーク",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】カード2枚を引き、自分の手札1枚を捨てる。",
+   "current": null
+  },
+  {
+   "no": "OP05-096",
+   "set": "OP05",
+   "name": "5億で買うえ～～!!!",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】相手のコスト6以下のキャラ1枚までを、KOするか、持ち主の手札に戻す。",
+   "current": null
+  },
+  {
+   "no": "OP05-105",
+   "set": "OP05",
+   "name": "サトリ",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】自分の手札1枚を捨てることができる：このカードを登場させる。",
+   "current": null
+  },
+  {
+   "no": "OP05-105_r1",
+   "set": "OP05",
+   "name": "サトリ",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】自分の手札1枚を捨てることができる：このカードを登場させる。",
+   "current": null
+  },
+  {
+   "no": "OP05-106",
+   "set": "OP05",
+   "name": "シュラ",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】このカードを登場させる。",
+   "current": null
+  },
+  {
+   "no": "OP05-114",
+   "set": "OP05",
+   "name": "神の裁き",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】相手のライフの枚数以下のコストを持つ相手のキャラ1枚までを、KOする。",
+   "current": null
+  },
+  {
+   "no": "OP05-114_r1",
+   "set": "OP05",
+   "name": "神の裁き",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】相手のライフの枚数以下のコストを持つ相手のキャラ1枚までを、KOする。",
+   "current": null
+  },
+  {
+   "no": "OP05-115",
+   "set": "OP05",
+   "name": "2億V雷神",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】自分の手札2枚を捨てることができる：自分のデッキの上から1枚までを、ライフの上に加える。",
+   "current": null
+  },
+  {
+   "no": "OP05-115_r1",
+   "set": "OP05",
+   "name": "2億V雷神",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】自分の手札2枚を捨てることができる：自分のデッキの上から1枚までを、ライフの上に加える。",
+   "current": null
+  },
+  {
+   "no": "OP05-116",
+   "set": "OP05",
+   "name": "3000万V雷鳥",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】このカードの【メイン】効果を発動する。",
+   "current": null
+  },
+  {
+   "no": "OP06-013",
+   "set": "OP06",
+   "name": "モンキー・D・ルフィ",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】このカードの【登場時】効果を発動する。",
+   "current": null
+  },
+  {
+   "no": "OP06-018",
+   "set": "OP06",
+   "name": "ゴムゴムの大猿王銃乱打",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】相手のパワー5000以下のキャラ1枚までを、KOする。",
+   "current": null
+  },
+  {
+   "no": "OP06-019",
+   "set": "OP06",
+   "name": "青龍印 流水",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】相手のパワー4000以下のキャラ1枚までを、KOする。",
+   "current": null
+  },
+  {
+   "no": "OP06-023",
+   "set": "OP06",
+   "name": "アーロン",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】相手のコスト4以下のキャラ1枚までを、レストにする。",
+   "current": null
+  },
+  {
+   "no": "OP06-023_r1",
+   "set": "OP06",
+   "name": "アーロン",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】相手のコスト4以下のキャラ1枚までを、レストにする。",
+   "current": null
+  },
+  {
+   "no": "OP06-031",
+   "set": "OP06",
+   "name": "はっちゃん",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】自分の手札からコスト3以下の特徴《魚人族》か《人魚族》を持つキャラカード1枚までを、登場させる。",
+   "current": null
+  },
+  {
+   "no": "OP06-038",
+   "set": "OP06",
+   "name": "一大・三千・大千・世界",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】相手のレストのコスト3以下のキャラ1枚までを、KOする。",
+   "current": null
+  },
+  {
+   "no": "OP06-038_r1",
+   "set": "OP06",
+   "name": "一大・三千・大千・世界",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】相手のレストのコスト3以下のキャラ1枚までを、KOする。",
+   "current": null
+  },
+  {
+   "no": "OP06-039",
+   "set": "OP06",
+   "name": "お前じゃ退屈凌ぎにもなりゃしねェ!!!",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】このカードの【メイン】効果を発動する。",
+   "current": null
+  },
+  {
+   "no": "OP06-040",
+   "set": "OP06",
+   "name": "矢武鮫",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】このカードの【メイン】効果を発動する。",
+   "current": null
+  },
+  {
+   "no": "OP06-041",
+   "set": "OP06",
+   "name": "方舟ノア",
+   "type": "STAGE",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】このカードを登場させる。",
+   "current": null
+  },
+  {
+   "no": "OP06-056",
+   "set": "OP06",
+   "name": "天叢雲剣",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】このカードの【メイン】効果を発動する。",
+   "current": null
+  },
+  {
+   "no": "OP06-056_r1",
+   "set": "OP06",
+   "name": "天叢雲剣",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】このカードの【メイン】効果を発動する。",
+   "current": null
+  },
+  {
+   "no": "OP06-056_r2",
+   "set": "OP06",
+   "name": "天叢雲剣",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】このカードの【メイン】効果を発動する。",
+   "current": null
+  },
+  {
+   "no": "OP06-057",
+   "set": "OP06",
+   "name": "おれは女の涙を疑わねェっ!!!!",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】自分の手札からコスト2のキャラカード1枚までを、登場させる。",
+   "current": null
+  },
+  {
+   "no": "OP06-058",
+   "set": "OP06",
+   "name": "重力刀 猛虎",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】コスト5以下のキャラ1枚までを、持ち主のデッキの下に置く。",
+   "current": null
+  },
+  {
+   "no": "OP06-058_r1",
+   "set": "OP06",
+   "name": "重力刀 猛虎",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】コスト5以下のキャラ1枚までを、持ち主のデッキの下に置く。",
+   "current": null
+  },
+  {
+   "no": "OP06-059",
+   "set": "OP06",
+   "name": "ホワイトスネーク",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】自分のデッキの上から5枚を見て、好きな順番に並び替え、デッキの上か下に置く。",
+   "current": null
+  },
+  {
+   "no": "OP06-059_r1",
+   "set": "OP06",
+   "name": "ホワイトスネーク",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】自分のデッキの上から5枚を見て、好きな順番に並び替え、デッキの上か下に置く。",
+   "current": null
+  },
+  {
+   "no": "OP06-077",
+   "set": "OP06",
+   "name": "混色バグ",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】相手のコスト4以下のキャラ1枚までを、持ち主のデッキの下に置く。",
+   "current": null
+  },
+  {
+   "no": "OP06-078",
+   "set": "OP06",
+   "name": "GERMA 66",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】カード1枚を引く。",
+   "current": null
+  },
+  {
+   "no": "OP06-078_r1",
+   "set": "OP06",
+   "name": "GERMA 66",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】カード1枚を引く。",
+   "current": null
+  },
+  {
+   "no": "OP06-095",
+   "set": "OP06",
+   "name": "影の集合地",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】カード2枚を引き、自分の手札1枚を捨てる。",
+   "current": null
+  },
+  {
+   "no": "OP06-096",
+   "set": "OP06",
+   "name": "…なにも!!!な゛かった…!!!!",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】このカードの【カウンター】効果を発動する。",
+   "current": null
+  },
+  {
+   "no": "OP06-097",
+   "set": "OP06",
+   "name": "ネガティブホロウ",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】このカードの【メイン】効果を発動する。",
+   "current": null
+  },
+  {
+   "no": "OP06-100",
+   "set": "OP06",
+   "name": "イヌアラシ",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】相手のライフが3枚以下の場合、このカードを登場させる。",
+   "current": null
+  },
+  {
+   "no": "OP06-100_r1",
+   "set": "OP06",
+   "name": "イヌアラシ",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】相手のライフが3枚以下の場合、このカードを登場させる。",
+   "current": null
+  },
+  {
+   "no": "OP06-100_r2",
+   "set": "OP06",
+   "name": "イヌアラシ",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】相手のライフが3枚以下の場合、このカードを登場させる。",
+   "current": null
+  },
+  {
+   "no": "OP06-101",
+   "set": "OP06",
+   "name": "おナミ",
+   "type": "CHAR",
+   "kind": "text_mismatch",
+   "field": "text",
+   "official": "【登場時】自分のリーダーかキャラ1枚までは、このターン中、【バニッシュ】を得る。 (このカードがダメージを与えた場合、トリガーは発動せずそのカードはトラッシュに置かれる)",
+   "current": "【登場時】自分のリーダーかキャラ1枚は、このターン中【バニッシュ】を得る 【トリガー】相手のコスト5以下のキャラ1枚までをKO"
+  },
+  {
+   "no": "OP06-102",
+   "set": "OP06",
+   "name": "カマキリ",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】自分のライフが2枚以下の場合、このカードを登場させる。",
+   "current": null
+  },
+  {
+   "no": "OP06-103",
+   "set": "OP06",
+   "name": "河松",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】相手のライフが3枚以下の場合、このカードを登場させる。",
+   "current": null
+  },
+  {
+   "no": "OP06-103_r1",
+   "set": "OP06",
+   "name": "河松",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】相手のライフが3枚以下の場合、このカードを登場させる。",
+   "current": null
+  },
+  {
+   "no": "OP06-104",
+   "set": "OP06",
+   "name": "菊之丞",
+   "type": "CHAR",
+   "kind": "text_mismatch",
+   "field": "text",
+   "official": "【KO時】相手のライフが3枚以下の場合、自分のデッキの上から1枚までを、ライフの上に加える。",
+   "current": "【KO時】相手のライフが3枚以下の場合、デッキ上1枚をライフに加える"
+  },
+  {
+   "no": "OP06-106",
+   "set": "OP06",
+   "name": "光月日和",
+   "type": "CHAR",
+   "kind": "text_mismatch",
+   "field": "text",
+   "official": "【登場時】自分のライフの上か下から1枚を手札に加えることができる：自分の手札1枚までを、ライフの上に加える。",
+   "current": "【登場時】自分のライフの上か下から1枚を手札に加えることができる：自分の手札1枚までを、ライフの上に加える"
+  },
+  {
+   "no": "OP06-108",
+   "set": "OP06",
+   "name": "天狗山飛徹",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】自分の特徴《ワノ国》を持つ、リーダーかキャラ1枚までを、このターン中、パワー+2000。",
+   "current": null
+  },
+  {
+   "no": "OP06-109",
+   "set": "OP06",
+   "name": "傳ジロー",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】相手のライフが3枚以下の場合、このカードを登場させる。",
+   "current": null
+  },
+  {
+   "no": "OP06-109_r1",
+   "set": "OP06",
+   "name": "傳ジロー",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】相手のライフが3枚以下の場合、このカードを登場させる。",
+   "current": null
+  },
+  {
+   "no": "OP06-110",
+   "set": "OP06",
+   "name": "ネコマムシ",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】相手のライフが3枚以下の場合、このカードを登場させる。",
+   "current": null
+  },
+  {
+   "no": "OP06-110_r1",
+   "set": "OP06",
+   "name": "ネコマムシ",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】相手のライフが3枚以下の場合、このカードを登場させる。",
+   "current": null
+  },
+  {
+   "no": "OP06-110_r2",
+   "set": "OP06",
+   "name": "ネコマムシ",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】相手のライフが3枚以下の場合、このカードを登場させる。",
+   "current": null
+  },
+  {
+   "no": "OP06-111",
+   "set": "OP06",
+   "name": "ブラハム",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】自分のライフが2枚以下の場合、このカードを登場させる。",
+   "current": null
+  },
+  {
+   "no": "OP06-112",
+   "set": "OP06",
+   "name": "雷ぞう",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】相手のライフが3枚以下の場合、このカードを登場させる。",
+   "current": null
+  },
+  {
+   "no": "OP06-112_r1",
+   "set": "OP06",
+   "name": "雷ぞう",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】相手のライフが3枚以下の場合、このカードを登場させる。",
+   "current": null
+  },
+  {
+   "no": "OP06-115",
+   "set": "OP06",
+   "name": "お前が消えろ",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】自分のライフが0枚の場合、自分のデッキの上から1枚までを、ライフの上に加える。その後、自分の手札1枚を捨てる。",
+   "current": null
+  },
+  {
+   "no": "OP06-115_r1",
+   "set": "OP06",
+   "name": "お前が消えろ",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】自分のライフが0枚の場合、自分のデッキの上から1枚までを、ライフの上に加える。その後、自分の手札1枚を捨てる。",
+   "current": null
+  },
+  {
+   "no": "OP06-116",
+   "set": "OP06",
+   "name": "排撃",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】カード1枚を引く。",
+   "current": null
+  },
+  {
+   "no": "OP07-008",
+   "set": "OP07",
+   "name": "タナカさん",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】このカードを登場させる。",
+   "current": null
+  },
+  {
+   "no": "OP07-016",
+   "set": "OP07",
+   "name": "銀河・WINK",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】このカードの【メイン】効果を発動する。",
+   "current": null
+  },
+  {
+   "no": "OP07-017",
+   "set": "OP07",
+   "name": "竜の息吹",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】このカードの【メイン】効果を発動する。",
+   "current": null
+  },
+  {
+   "no": "OP07-017_r1",
+   "set": "OP07",
+   "name": "竜の息吹",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】このカードの【メイン】効果を発動する。",
+   "current": null
+  },
+  {
+   "no": "OP07-018",
+   "set": "OP07",
+   "name": "KEEP OUT",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】このカードの【カウンター】効果を発動する。",
+   "current": null
+  },
+  {
+   "no": "OP07-035",
+   "set": "OP07",
+   "name": "因果晒し",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】相手のレストのコスト4以下のキャラ1枚までを、KOする。",
+   "current": null
+  },
+  {
+   "no": "OP07-036",
+   "set": "OP07",
+   "name": "鬼気 九刀流 阿修羅 魔九閃",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】相手のコスト4以下のキャラ1枚までを、レストにする。",
+   "current": null
+  },
+  {
+   "no": "OP07-037",
+   "set": "OP07",
+   "name": "ピザお～か～わ～り～!!!",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】カード1枚を引く。",
+   "current": null
+  },
+  {
+   "no": "OP07-037_r1",
+   "set": "OP07",
+   "name": "ピザお～か～わ～り～!!!",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】カード1枚を引く。",
+   "current": null
+  },
+  {
+   "no": "OP07-054",
+   "set": "OP07",
+   "name": "マーガレット",
+   "type": "CHAR",
+   "kind": "text_mismatch",
+   "field": "text",
+   "official": "【ブロッカー】(相手のアタックの後、このカードをレストにし、アタックの対象をこのカードにできる) 【登場時】カード1枚を引く。",
+   "current": "【ブロッカー】【登場時】カード1枚を引く"
+  },
+  {
+   "no": "OP07-055",
+   "set": "OP07",
+   "name": "蛇ダンス",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】自分のキャラ1枚を持ち主の手札に戻すことができる：相手のコスト5以下のキャラ1枚までを、持ち主の手札に戻す。",
+   "current": null
+  },
+  {
+   "no": "OP07-056",
+   "set": "OP07",
+   "name": "虜の矢",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】カード2枚を引き、自分の手札2枚を好きな順番でデッキの下に置く。",
+   "current": null
+  },
+  {
+   "no": "OP07-056_r1",
+   "set": "OP07",
+   "name": "虜の矢",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】カード2枚を引き、自分の手札2枚を好きな順番でデッキの下に置く。",
+   "current": null
+  },
+  {
+   "no": "OP07-057",
+   "set": "OP07",
+   "name": "芳香脚",
+   "type": "EVENT",
+   "kind": "text_mismatch",
+   "field": "text",
+   "official": "【メイン】自分の特徴《王下七武海》を持つ、リーダーかキャラ1枚までを選び、このターン中、パワー+2000。その後、相手は、このターン中、選んだカードがアタックする場合【ブロッカー】を発動できない。",
+   "current": "【メイン】自分の王下七武海のリーダーかキャラ1枚を+2000し、このターン中そのカードのアタックを相手はブロックできない"
+  },
+  {
+   "no": "OP07-076",
+   "set": "OP07",
+   "name": "ノロノロビームソード",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】ドン‼デッキからドン‼1枚までを、アクティブで追加する。",
+   "current": null
+  },
+  {
+   "no": "OP07-076_r1",
+   "set": "OP07",
+   "name": "ノロノロビームソード",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】ドン‼デッキからドン‼1枚までを、アクティブで追加する。",
+   "current": null
+  },
+  {
+   "no": "OP07-077",
+   "set": "OP07",
+   "name": "&quot;ひとつなぎの大秘宝&quot;を獲りに行くぞ!!!",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】このカードの【メイン】効果を発動する。",
+   "current": null
+  },
+  {
+   "no": "OP07-078",
+   "set": "OP07",
+   "name": "メガトン九尾ラッシュ",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】ドン‼デッキからドン‼1枚までを、アクティブで追加する。",
+   "current": null
+  },
+  {
+   "no": "OP07-094",
+   "set": "OP07",
+   "name": "剃",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】自分のキャラ1枚までを、持ち主の手札に戻す。",
+   "current": null
+  },
+  {
+   "no": "OP07-095",
+   "set": "OP07",
+   "name": "鉄塊",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】自分のリーダーかキャラ1枚までを、このターン中、パワー+1000。",
+   "current": null
+  },
+  {
+   "no": "OP07-096",
+   "set": "OP07",
+   "name": "嵐脚",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】相手のコスト3以下のキャラ1枚までを、KOする。",
+   "current": null
+  },
+  {
+   "no": "OP07-098",
+   "set": "OP07",
+   "name": "アトラス",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】自分のリーダーが「ベガパンク」の場合、このカードを登場させる。",
+   "current": null
+  },
+  {
+   "no": "OP07-099",
+   "set": "OP07",
+   "name": "ウソップ",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】自分の特徴《エッグヘッド》を持つ、リーダーかキャラ1枚までを、次の自分のターン終了時まで、パワー+2000。",
+   "current": null
+  },
+  {
+   "no": "OP07-100",
+   "set": "OP07",
+   "name": "エジソン",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】自分のリーダーが「ベガパンク」の場合、このカードを登場させる。",
+   "current": null
+  },
+  {
+   "no": "OP07-101",
+   "set": "OP07",
+   "name": "シャカ",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】自分のリーダーが「ベガパンク」の場合、このカードを登場させる。",
+   "current": null
+  },
+  {
+   "no": "OP07-102",
+   "set": "OP07",
+   "name": "ジンベエ",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】相手のコスト4以下のキャラ1枚までを、持ち主の手札に戻し、このカードを手札に加える。",
+   "current": null
+  },
+  {
+   "no": "OP07-103",
+   "set": "OP07",
+   "name": "トニートニー・チョッパー",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】自分の特徴《エッグヘッド》を持つキャラ1枚までは、このターン中、【ブロッカー】を得る。その後、このカードを手札に加える。",
+   "current": null
+  },
+  {
+   "no": "OP07-104",
+   "set": "OP07",
+   "name": "ニコ・ロビン",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】自分のリーダーが特徴《エッグヘッド》を持つ場合、カード2枚を引く。",
+   "current": null
+  },
+  {
+   "no": "OP07-105",
+   "set": "OP07",
+   "name": "ピタゴラス",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】自分のリーダーが「ベガパンク」の場合、このカードを登場させる。",
+   "current": null
+  },
+  {
+   "no": "OP07-107",
+   "set": "OP07",
+   "name": "フランキー",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】カード1枚を引く。その後、自分のライフが1枚以下の場合、このカードを登場させる。",
+   "current": null
+  },
+  {
+   "no": "OP07-107_r1",
+   "set": "OP07",
+   "name": "フランキー",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】カード1枚を引く。その後、自分のライフが1枚以下の場合、このカードを登場させる。",
+   "current": null
+  },
+  {
+   "no": "OP07-109",
+   "set": "OP07",
+   "name": "モンキー・D・ルフィ",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】相手のコスト4以下のキャラ1枚までを、KOする。",
+   "current": null
+  },
+  {
+   "no": "OP07-109_r1",
+   "set": "OP07",
+   "name": "モンキー・Ｄ・ルフィ",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】相手のコスト4以下のキャラ1枚までを、KOする。",
+   "current": null
+  },
+  {
+   "no": "OP07-110",
+   "set": "OP07",
+   "name": "ヨーク",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】自分のリーダーが「ベガパンク」の場合、このカードを登場させる。",
+   "current": null
+  },
+  {
+   "no": "OP07-111",
+   "set": "OP07",
+   "name": "リリス",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】自分のリーダーが「ベガパンク」の場合、このカードを登場させる。",
+   "current": null
+  },
+  {
+   "no": "OP07-113",
+   "set": "OP07",
+   "name": "ロロノア・ゾロ",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】自分のリーダーが特徴《エッグヘッド》を持つ場合、相手のリーダーかキャラ1枚までを、レストにする。",
+   "current": null
+  },
+  {
+   "no": "OP07-114",
+   "set": "OP07",
+   "name": "世界最大の頭脳を持つ男",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】カード1枚を引く。",
+   "current": null
+  },
+  {
+   "no": "OP07-114_r1",
+   "set": "OP07",
+   "name": "世界最大の頭脳を持つ男",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】カード1枚を引く。",
+   "current": null
+  },
+  {
+   "no": "OP07-115",
+   "set": "OP07",
+   "name": "助けてクエーサ～!!!",
+   "type": "EVENT",
+   "kind": "text_mismatch",
+   "field": "text",
+   "official": "【カウンター】自分のライフが2枚以下の場合、自分のリーダーかキャラ1枚までを、このバトル中、パワー+3000。",
+   "current": "【カウンター】自分のライフが2枚以下の場合、自分のリーダーかキャラ1枚を+3000"
+  },
+  {
+   "no": "OP07-116",
+   "set": "OP07",
+   "name": "焔裂き",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】相手のコスト4以下のキャラ1枚までを、レストにする。",
+   "current": null
+  },
+  {
+   "no": "OP07-117",
+   "set": "OP07",
+   "name": "エッグヘッド",
+   "type": "STAGE",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】このカードを登場させる。",
+   "current": null
+  },
+  {
+   "no": "OP08-017",
+   "set": "OP08",
+   "name": "おれは決して お前を撃たねェ!!!!",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】自分のリーダーかキャラ1枚までを、このターン中、パワー+1000。",
+   "current": null
+  },
+  {
+   "no": "OP08-018",
+   "set": "OP08",
+   "name": "刻蹄『桜』",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】相手のリーダーかキャラ1枚までを、このターン中、パワー-3000。",
+   "current": null
+  },
+  {
+   "no": "OP08-019",
+   "set": "OP08",
+   "name": "バクバク食",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】相手のパワー5000以下のキャラ1枚までを、KOする。",
+   "current": null
+  },
+  {
+   "no": "OP08-036",
+   "set": "OP08",
+   "name": "エレクトリカルルナ",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】相手のキャラ1枚までを、レストにする。",
+   "current": null
+  },
+  {
+   "no": "OP08-037",
+   "set": "OP08",
+   "name": "ガルチュー",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】カード1枚を引く。",
+   "current": null
+  },
+  {
+   "no": "OP08-038",
+   "set": "OP08",
+   "name": "敵に“仲間”は売らんぜよ!!!",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】相手のコスト3以下のキャラ1枚までを、レストにする。",
+   "current": null
+  },
+  {
+   "no": "OP08-043",
+   "set": "OP08",
+   "name": "エドワード・ニューゲート",
+   "type": "CHAR",
+   "kind": "field_mismatch",
+   "field": "color",
+   "official": "青",
+   "current": "赤"
+  },
+  {
+   "no": "OP08-043",
+   "set": "OP08",
+   "name": "エドワード・ニューゲート",
+   "type": "CHAR",
+   "kind": "text_mismatch",
+   "field": "text",
+   "official": "【登場時】自分のリーダーが『白ひげ海賊団』を含む特徴を持ち、自分のライフが2枚以下の場合、相手のキャラすべては、次の相手のターン終了時まで、アタックする際、自身の手札2枚を捨てなければアタックすることができない。",
+   "current": "【登場時】白ひげリーダーでライフ2以下なら、相手キャラ全ては次の相手ターン終了まで手札2枚を捨てなければアタック不可"
+  },
+  {
+   "no": "OP08-047",
+   "set": "OP08",
+   "name": "ジョズ",
+   "type": "CHAR",
+   "kind": "text_mismatch",
+   "field": "text",
+   "official": "【登場時】このキャラ以外の自分のキャラ1枚を持ち主の手札に戻すことができる：コスト6以下のキャラ1枚までを、持ち主の手札に戻す。",
+   "current": "【登場時】自キャラ1枚(自身以外)を持ち主の手札に戻す:コスト6以下1枚を持ち主の手札に戻す"
+  },
+  {
+   "no": "OP08-050",
+   "set": "OP08",
+   "name": "ナミュール",
+   "type": "CHAR",
+   "kind": "text_mismatch",
+   "field": "text",
+   "official": "【ブロッカー】(相手のアタックの後、このカードをレストにし、アタックの対象をこのカードにできる) 【登場時】カード2枚を引き、自分の手札2枚を好きな順番で並び替え、デッキの上か下に置く。",
+   "current": "【ブロッカー】【登場時】カード2枚を引き、自分の手札2枚をデッキの上か下に置く"
+  },
+  {
+   "no": "OP08-053",
+   "set": "OP08",
+   "name": "愛してくれて………ありがとう!!!",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】カード1枚を引く。",
+   "current": null
+  },
+  {
+   "no": "OP08-056",
+   "set": "OP08",
+   "name": "モビー・ディック号",
+   "type": "STAGE",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】このカードを登場させる。",
+   "current": null
+  },
+  {
+   "no": "OP08-068",
+   "set": "OP08",
+   "name": "シャーロット・ペロスペロー",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】ドン‼-1(自分の場のドン‼を指定の数ドン‼デッキに戻すことができる)：このカードを登場させる。",
+   "current": null
+  },
+  {
+   "no": "OP08-075",
+   "set": "OP08",
+   "name": "キャンディメイデン",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】ドン‼デッキからドン‼1枚までを、アクティブで追加する。",
+   "current": null
+  },
+  {
+   "no": "OP08-076",
+   "set": "OP08",
+   "name": "しぬほど…おいしい♡",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】ドン‼デッキからドン‼1枚までを、アクティブで追加する。",
+   "current": null
+  },
+  {
+   "no": "OP08-076_r1",
+   "set": "OP08",
+   "name": "しぬほど…おいしい♡",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】ドン‼デッキからドン‼1枚までを、アクティブで追加する。",
+   "current": null
+  },
+  {
+   "no": "OP08-091",
+   "set": "OP08",
+   "name": "フーズ・フー",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】相手のコスト3以下のキャラ1枚までを、KOする。",
+   "current": null
+  },
+  {
+   "no": "OP08-094",
+   "set": "OP08",
+   "name": "炎皇",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】このカードの【メイン】効果を発動する。",
+   "current": null
+  },
+  {
+   "no": "OP08-095",
+   "set": "OP08",
+   "name": "鉄塊 牙閃",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】自分のリーダーかキャラ1枚までを、このターン中、パワー+2000。",
+   "current": null
+  },
+  {
+   "no": "OP08-096",
+   "set": "OP08",
+   "name": "人の夢は!!!終わらねェ!!!!",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】自分のトラッシュからコスト3以下の黒のキャラカード1枚までを、登場させる。",
+   "current": null
+  },
+  {
+   "no": "OP08-097",
+   "set": "OP08",
+   "name": "ヘリケラトプス",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】相手のコスト3以下のキャラ1枚までを、KOする。",
+   "current": null
+  },
+  {
+   "no": "OP08-104",
+   "set": "OP08",
+   "name": "シャーロット・ポワール",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】自分の手札1枚を捨てることができる：このカードを登場させる。その後、カード1枚を引く。",
+   "current": null
+  },
+  {
+   "no": "OP08-105",
+   "set": "OP08",
+   "name": "ジュエリー・ボニー",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】カード2枚を引き、自分の手札1枚を捨てる。",
+   "current": null
+  },
+  {
+   "no": "OP08-106",
+   "set": "OP08",
+   "name": "ナミ",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】このカードの【登場時】効果を発動する。",
+   "current": null
+  },
+  {
+   "no": "OP08-111",
+   "set": "OP08",
+   "name": "S-シャーク",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】自分の手札1枚を捨てることができる：自分のライフが2枚以下の場合、このカードを登場させる。",
+   "current": null
+  },
+  {
+   "no": "OP08-112",
+   "set": "OP08",
+   "name": "S-スネーク",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】このカードの【登場時】効果を発動する。",
+   "current": null
+  },
+  {
+   "no": "OP08-113",
+   "set": "OP08",
+   "name": "S-ベア",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】自分の手札1枚を捨てることができる：自分のライフが2枚以下の場合、このカードを登場させ、相手のコスト3以下のキャラ1枚までを、KOする。",
+   "current": null
+  },
+  {
+   "no": "OP08-114",
+   "set": "OP08",
+   "name": "S-ホーク",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】自分の手札1枚を捨てることができる：自分のライフが2枚以下の場合、このカードを登場させる。",
+   "current": null
+  },
+  {
+   "no": "OP08-115",
+   "set": "OP08",
+   "name": "大地は敗けない!!!",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】カード2枚を引き、自分の手札1枚を捨てる。",
+   "current": null
+  },
+  {
+   "no": "OP08-117",
+   "set": "OP08",
+   "name": "燃焼剣",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】自分のライフの上から1枚を手札に加えることができる：自分の手札1枚までを、ライフの上に加える。",
+   "current": null
+  },
+  {
+   "no": "OP09-019",
+   "set": "OP09",
+   "name": "おれは友達を傷つける奴は許さない!!!!",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】カード1枚を引く。",
+   "current": null
+  },
+  {
+   "no": "OP09-020",
+   "set": "OP09",
+   "name": "来い…!!!おれ達が相手をしてやる!!!",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】カード1枚を引く。",
+   "current": null
+  },
+  {
+   "no": "OP09-020_r1",
+   "set": "OP09",
+   "name": "来い…!!!おれ達が相手をしてやる!!!",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】カード1枚を引く。",
+   "current": null
+  },
+  {
+   "no": "OP09-039",
+   "set": "OP09",
+   "name": "ゴムゴムの「四本樹」JET十字架ショックバズーカ",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】相手のレストのコスト4以下のキャラ1枚までを、KOする。",
+   "current": null
+  },
+  {
+   "no": "OP09-040",
+   "set": "OP09",
+   "name": "雷光槍フリップ煩悩鳳ショット",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】相手のコスト4以下のキャラ1枚までを、レストにする。",
+   "current": null
+  },
+  {
+   "no": "OP09-041",
+   "set": "OP09",
+   "name": "魂のフランキー風速計BOXING喪剣",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】相手のコスト4以下のキャラ1枚までを、レストにする。",
+   "current": null
+  },
+  {
+   "no": "OP09-057",
+   "set": "OP09",
+   "name": "クロスギルド",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】このカードの【メイン】効果を発動する。",
+   "current": null
+  },
+  {
+   "no": "OP09-057_r1",
+   "set": "OP09",
+   "name": "クロスギルド",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】このカードの【メイン】効果を発動する。",
+   "current": null
+  },
+  {
+   "no": "OP09-058",
+   "set": "OP09",
+   "name": "特製マギー玉",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】コスト3以下のキャラ1枚までを、持ち主の手札に戻す。",
+   "current": null
+  },
+  {
+   "no": "OP09-059",
+   "set": "OP09",
+   "name": "湯けむり殺人事件",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】カード1枚を引く。",
+   "current": null
+  },
+  {
+   "no": "OP09-077",
+   "set": "OP09",
+   "name": "ゴムゴムの雷",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】ドン!!デッキからドン!!1枚までを、アクティブで追加する。",
+   "current": null
+  },
+  {
+   "no": "OP09-077_r1",
+   "set": "OP09",
+   "name": "ゴムゴムの雷",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】ドン!!デッキからドン!!1枚までを、アクティブで追加する。",
+   "current": null
+  },
+  {
+   "no": "OP09-077_r2",
+   "set": "OP09",
+   "name": "ゴムゴムの雷",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】ドン‼デッキからドン‼1枚までを、アクティブで追加する。",
+   "current": null
+  },
+  {
+   "no": "OP09-079",
+   "set": "OP09",
+   "name": "ゴムゴムの縄跳び",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】ドン!!デッキからドン!!1枚までを、アクティブで追加する。",
+   "current": null
+  },
+  {
+   "no": "OP09-079_r1",
+   "set": "OP09",
+   "name": "ゴムゴムの縄跳び",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】ドン‼デッキからドン‼1枚までを、アクティブで追加する。",
+   "current": null
+  },
+  {
+   "no": "OP09-086",
+   "set": "OP09",
+   "name": "ジーザス・バージェス",
+   "type": "CHAR",
+   "kind": "text_mismatch",
+   "field": "text",
+   "official": "このキャラは相手の効果でKOされない。 自分のリーダーが特徴《黒ひげ海賊団》を持つ場合、このキャラは、自分のトラッシュ4枚につき、パワー+1000。",
+   "current": "このキャラは相手の効果ではKOされない。リーダーが黒ひげ海賊団なら自分のトラッシュ4枚につきパワー+1000"
+  },
+  {
+   "no": "OP09-093",
+   "set": "OP09",
+   "name": "マーシャル・D・ティーチ",
+   "type": "CHAR",
+   "kind": "field_mismatch",
+   "field": "traits",
+   "official": "四皇/黒ひげ海賊団",
+   "current": "王下七武海/黒ひげ海賊団"
+  },
+  {
+   "no": "OP09-093",
+   "set": "OP09",
+   "name": "マーシャル・D・ティーチ",
+   "type": "CHAR",
+   "kind": "text_mismatch",
+   "field": "text",
+   "official": "【ブロッカー】 【起動メイン】【ターン1回】自分のリーダーが特徴《黒ひげ海賊団》を持ち、このキャラが登場したターンの場合、相手のリーダー1枚までを、このターン中、効果を無効にする。その後、相手のキャラ1枚までを、次の相手のターン終了時まで、効果を無効にし、そのキャラはアタックできない。",
+   "current": "【ブロッカー】【登場時(登場ターン専用の起動メインを再現)】リーダーが黒ひげ海賊団なら、相手リーダー1枚をこのターン中効果無効。その後、相手キャラ1枚を次の相手ターン終了時まで効果無効にし、そのキャラはアタックできない"
+  },
+  {
+   "no": "OP09-095",
+   "set": "OP09",
+   "name": "ラフィット",
+   "type": "CHAR",
+   "kind": "text_mismatch",
+   "field": "text",
+   "official": "【起動メイン】自分のドン‼1枚とこのキャラをレストにできる：自分のデッキの上から5枚を見て、特徴《黒ひげ海賊団》を持つカード1枚までを公開し、手札に加える。その後、残りを好きな順番でデッキの下に置く。",
+   "current": "【起動メイン】自分のドン1枚とこのキャラをレスト:デッキ上5枚から黒ひげ1枚を手札に加え、残りをデッキの下"
+  },
+  {
+   "no": "OP09-096",
+   "set": "OP09",
+   "name": "おれの時代だァ!!!!",
+   "type": "EVENT",
+   "kind": "text_mismatch",
+   "field": "text",
+   "official": "【メイン】自分のデッキの上から3枚を見て、「おれの時代だァ!!!!」以外の特徴《黒ひげ海賊団》を持つカード1枚までを公開し、手札に加える。その後、残りをトラッシュに置く。",
+   "current": "【メイン】デッキ上3枚から「おれの時代だァ!!!!」以外の黒ひげ1枚を手札に加え、残りをトラッシュ 【トリガー】同効果"
+  },
+  {
+   "no": "OP09-097",
+   "set": "OP09",
+   "name": "闇水",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】相手のリーダーかキャラ1枚までを、このターン中、効果を無効にする。",
+   "current": null
+  },
+  {
+   "no": "OP09-097_r1",
+   "set": "OP09",
+   "name": "闇水",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】相手のリーダーかキャラ1枚までを、このターン中、効果を無効にする。",
+   "current": null
+  },
+  {
+   "no": "OP09-098",
+   "set": "OP09",
+   "name": "闇穴道",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】相手のリーダーかキャラ1枚までを、このターン中、効果を無効にする。",
+   "current": null
+  },
+  {
+   "no": "OP09-098_r1",
+   "set": "OP09",
+   "name": "闇穴道",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】相手のリーダーかキャラ1枚までを、このターン中、効果を無効にする。",
+   "current": null
+  },
+  {
+   "no": "OP09-099",
+   "set": "OP09",
+   "name": "ハチノス",
+   "type": "STAGE",
+   "kind": "text_mismatch",
+   "field": "text",
+   "official": "【起動メイン】自分の手札1枚を捨て、このステージをレストにできる：自分のデッキの上から3枚を見て、特徴《黒ひげ海賊団》を持つカード1枚までを公開し、手札に加える。その後、残りを好きな順番でデッキの下に置く。",
+   "current": "【起動メイン】手札1枚を捨てこのステージをレスト:デッキ上3枚から黒ひげ1枚を手札に、残りをデッキ下"
+  },
+  {
+   "no": "OP09-100",
+   "set": "OP09",
+   "name": "カラス",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】自分のリーダーが特徴《革命軍》を持ち、お互いのライフの合計枚数が5枚以下の場合、このカードを登場させる。",
+   "current": null
+  },
+  {
+   "no": "OP09-102",
+   "set": "OP09",
+   "name": "クローバー博士",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】このカードの【登場時】効果を発動する。",
+   "current": null
+  },
+  {
+   "no": "OP09-104",
+   "set": "OP09",
+   "name": "サボ",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】自分のリーダーが多色の場合、カード2枚を引く。",
+   "current": null
+  },
+  {
+   "no": "OP09-105",
+   "set": "OP09",
+   "name": "サンジ",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】自分のリーダーが特徴《エッグヘッド》を持つ場合、自分のデッキの上から1枚までを、ライフの上に加える。その後、自分の手札2枚を捨てる。",
+   "current": null
+  },
+  {
+   "no": "OP09-106",
+   "set": "OP09",
+   "name": "ニコ・オルビア",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】自分のリーダーが「ニコ・ロビン」の場合、カード3枚を引き、自分の手札2枚を捨てる。",
+   "current": null
+  },
+  {
+   "no": "OP09-107",
+   "set": "OP09",
+   "name": "ニコ・ロビン",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】自分の手札からコスト3以下の黄のキャラカード1枚までを、登場させる。",
+   "current": null
+  },
+  {
+   "no": "OP09-108",
+   "set": "OP09",
+   "name": "バーソロミュー・くま",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】自分のリーダーが特徴《革命軍》を持ち、お互いのライフの合計枚数が5枚以下の場合、このカードを登場させる。",
+   "current": null
+  },
+  {
+   "no": "OP09-109",
+   "set": "OP09",
+   "name": "ハグワール・D・サウロ",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】自分のリーダーが「ニコ・ロビン」の場合、このカードを登場させる。",
+   "current": null
+  },
+  {
+   "no": "OP09-110",
+   "set": "OP09",
+   "name": "ピエール",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】このカードを登場させる。",
+   "current": null
+  },
+  {
+   "no": "OP09-111",
+   "set": "OP09",
+   "name": "ブルック",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】自分のリーダーが特徴《エッグヘッド》を持ち、相手の手札が6枚以上の場合、相手は自身の手札2枚を捨てる。",
+   "current": null
+  },
+  {
+   "no": "OP09-112",
+   "set": "OP09",
+   "name": "ベロ・ベティ",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】自分のリーダーが特徴《革命軍》を持ち、お互いのライフの合計枚数が5枚以下の場合、このカードを登場させる。",
+   "current": null
+  },
+  {
+   "no": "OP09-114",
+   "set": "OP09",
+   "name": "リンドバーグ",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】お互いのライフの合計枚数が5枚以下の場合、このカードを登場させる。",
+   "current": null
+  },
+  {
+   "no": "OP09-115",
+   "set": "OP09",
+   "name": "アイス塊「両棘矛」",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】カード1枚を引く。",
+   "current": null
+  },
+  {
+   "no": "OP09-116",
+   "set": "OP09",
+   "name": "”奇跡”ナメんじゃないよォ!!!!",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】自分の手札からコスト4以下の特徴《革命軍》を持つキャラカード1枚までを、登場させる。",
+   "current": null
+  },
+  {
+   "no": "OP09-117",
+   "set": "OP09",
+   "name": "デレシ!!",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】カード1枚を引く。",
+   "current": null
+  },
+  {
+   "no": "OP09-118",
+   "set": "OP09",
+   "name": "ゴール・D・ロジャー",
+   "type": "CHAR",
+   "kind": "text_mismatch",
+   "field": "text",
+   "official": "【速攻】(このカードは登場したターンにアタックできる) 相手が【ブロッカー】を発動した時、自分か相手のライフが0枚の場合、自分はゲームに勝利する。",
+   "current": "【速攻】相手が【ブロッカー】発動時、どちらかのライフが0なら勝利"
+  },
+  {
+   "no": "OP10-018",
+   "set": "OP10",
+   "name": "カマクラ十草紙",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】自分のリーダーかキャラ1枚までを、このターン中、パワー+1000。",
+   "current": null
+  },
+  {
+   "no": "OP10-018_r1",
+   "set": "OP10",
+   "name": "カマクラ十草紙",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】自分のリーダーかキャラ1枚までを、このターン中、パワー+1000。",
+   "current": null
+  },
+  {
+   "no": "OP10-020",
+   "set": "OP10",
+   "name": "ゴムゴムのUFO",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】相手のパワー3000以下のキャラ1枚までを、KOする。",
+   "current": null
+  },
+  {
+   "no": "OP10-039",
+   "set": "OP10",
+   "name": "ゴムゴムの龍火炎銃巻き星",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】相手のコスト5以下のキャラ1枚までを、レストにする。",
+   "current": null
+  },
+  {
+   "no": "OP10-041",
+   "set": "OP10",
+   "name": "ラジオナイフ",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】相手のコスト4以下のキャラ1枚までを、レストにする。",
+   "current": null
+  },
+  {
+   "no": "OP10-045",
+   "set": "OP10",
+   "name": "キャベンディッシュ",
+   "type": "CHAR",
+   "kind": "text_mismatch",
+   "field": "text",
+   "official": "【アタック時】【ターン1回】カード2枚を引き、自分の手札1枚を捨てる。",
+   "current": "【アタック時】【ターン1回】2ドロー、手札1枚を捨てる"
+  },
+  {
+   "no": "OP10-059",
+   "set": "OP10",
+   "name": "おまえ…タチ…わ…おれ…が…み…ち…び…く…!!!",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】このカードの【メイン】効果を発動する。",
+   "current": null
+  },
+  {
+   "no": "OP10-060",
+   "set": "OP10",
+   "name": "バリバリの銃",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】このカードの【メイン】効果を発動する。",
+   "current": null
+  },
+  {
+   "no": "OP10-061",
+   "set": "OP10",
+   "name": "必殺!!遠距離“蓑虫星”",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】コスト2以下のキャラ1枚までを、持ち主の手札に戻す。",
+   "current": null
+  },
+  {
+   "no": "OP10-079",
+   "set": "OP10",
+   "name": "神誅殺",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】ドン!!デッキからドン!!1枚までを、アクティブで追加する。",
+   "current": null
+  },
+  {
+   "no": "OP10-079_r1",
+   "set": "OP10",
+   "name": "神誅殺",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】ドン‼デッキからドン‼1枚までを、アクティブで追加する。",
+   "current": null
+  },
+  {
+   "no": "OP10-080",
+   "set": "OP10",
+   "name": "小熊玩具",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】ドン!!デッキからドン!!1枚までを、アクティブで追加する。",
+   "current": null
+  },
+  {
+   "no": "OP10-096",
+   "set": "OP10",
+   "name": "王下七武海はもう要らねェ…!!!",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】相手のコスト4以下の特徴《王下七武海》を持つキャラ1枚までを、KOする。",
+   "current": null
+  },
+  {
+   "no": "OP10-097",
+   "set": "OP10",
+   "name": "ゴムゴムの犀榴弾砲",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】カード2枚を引き、自分の手札1枚を捨てる。",
+   "current": null
+  },
+  {
+   "no": "OP10-098",
+   "set": "OP10",
+   "name": "解放",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】相手のリーダーとキャラ1枚ずつまでを、このターン中、効果を無効にする。",
+   "current": null
+  },
+  {
+   "no": "OP10-100",
+   "set": "OP10",
+   "name": "イナズマ",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】自分のリーダーが特徴《革命軍》を持ち、お互いのライフの合計枚数が5枚以下の場合、このカードを登場させる。",
+   "current": null
+  },
+  {
+   "no": "OP10-109",
+   "set": "OP10",
+   "name": "バジル・ホーキンス",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】カード2枚を引き、自分の手札1枚を捨てる。",
+   "current": null
+  },
+  {
+   "no": "OP10-109_r1",
+   "set": "OP10",
+   "name": "バジル・ホーキンス",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】カード2枚を引き、自分の手札1枚を捨てる。",
+   "current": null
+  },
+  {
+   "no": "OP10-110",
+   "set": "OP10",
+   "name": "ヒート＆ワイヤー",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】自分のライフが2枚以下の場合、このカードを登場させる。",
+   "current": null
+  },
+  {
+   "no": "OP10-113",
+   "set": "OP10",
+   "name": "ロロノア・ゾロ",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】自分の手札1枚を捨てることができる：自分のリーダーが特徴《超新星》を持つ場合、このカードを登場させる。",
+   "current": null
+  },
+  {
+   "no": "OP10-115",
+   "set": "OP10",
+   "name": "“新世界”で会おうぜ",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】相手のライフの枚数以下のコストを持つ相手のキャラ1枚までを、KOする。",
+   "current": null
+  },
+  {
+   "no": "OP10-116",
+   "set": "OP10",
+   "name": "電磁砲",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】カード2枚を引き、自分の手札1枚を捨てる。",
+   "current": null
+  },
+  {
+   "no": "OP10-117",
+   "set": "OP10",
+   "name": "ROOM",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】カード1枚を引く。",
+   "current": null
+  },
+  {
+   "no": "OP11-018",
+   "set": "OP11",
+   "name": "実直拳骨",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】相手のパワー6000以下のキャラ1枚までを、KOする。",
+   "current": null
+  },
+  {
+   "no": "OP11-019",
+   "set": "OP11",
+   "name": "粘土の巣",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】自分のリーダーかキャラ1枚までを、このターン中、パワー+1000。",
+   "current": null
+  },
+  {
+   "no": "OP11-020",
+   "set": "OP11",
+   "name": "X狩場",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】相手のパワー4000以下のキャラ1枚までを、KOする。",
+   "current": null
+  },
+  {
+   "no": "OP11-023",
+   "set": "OP11",
+   "name": "アーロン",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】相手のコスト4以下のキャラ1枚までを、レストにする。",
+   "current": null
+  },
+  {
+   "no": "OP11-028",
+   "set": "OP11",
+   "name": "近海の主",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】相手のレストのコスト3以下のキャラ1枚までを、KOする。",
+   "current": null
+  },
+  {
+   "no": "OP11-037",
+   "set": "OP11",
+   "name": "“古代兵器”「ポセイドン」",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】カード1枚を引く。",
+   "current": null
+  },
+  {
+   "no": "OP11-039",
+   "set": "OP11",
+   "name": "武頼貫",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】相手のコスト4以下のキャラ1枚までを、レストにする。",
+   "current": null
+  },
+  {
+   "no": "OP11-054",
+   "set": "OP11",
+   "name": "ナミ",
+   "type": "CHAR",
+   "kind": "text_mismatch",
+   "field": "text",
+   "official": "【ブロッカー】(相手のアタックの後、このカードをレストにし、アタックの対象をこのカードにできる) 【登場時】自分のリーダーが多色の場合、カード3枚を引き、自分の手札2枚を好きな順番に並び替え、デッキの上か下に置く。",
+   "current": "【ブロッカー】【登場時】3ドロー、手札2枚をデッキ上か下"
+  },
+  {
+   "no": "OP11-059",
+   "set": "OP11",
+   "name": "ゴムゴムの王蛇",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】コスト2以下のキャラ1枚までを、持ち主の手札に戻す。",
+   "current": null
+  },
+  {
+   "no": "OP11-060",
+   "set": "OP11",
+   "name": "式をブッ壊そう!!!",
+   "type": "EVENT",
+   "kind": "text_mismatch",
+   "field": "text",
+   "official": "【メイン】自分のリーダーが多色の場合、自分のデッキの上から5枚を見て、「式をブッ壊そう!!!」以外の特徴《麦わらの一味》を持つカード1枚までを公開し、手札に加える。その後、残りを好きな順番でデッキの下に置く。",
+   "current": "【メイン】リーダーが多色なら、デッキ上5枚から「式をブッ壊そう!!!」以外の麦わらの一味1枚を手札に加え、残りをデッキの下 【トリガー】同じ効果"
+  },
+  {
+   "no": "OP11-061",
+   "set": "OP11",
+   "name": "ゴムゴムのJET大蛇砲",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】コスト1以下のキャラ1枚までを、持ち主のデッキの下に置く。",
+   "current": null
+  },
+  {
+   "no": "OP11-075",
+   "set": "OP11",
+   "name": "ハグワール・D・サウロ",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】このカードの【登場時】効果を発動する。",
+   "current": null
+  },
+  {
+   "no": "OP11-079",
+   "set": "OP11",
+   "name": "男の勝負に…!!!薄っぺらい援護などするな!!!!",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】カード1枚を引く。",
+   "current": null
+  },
+  {
+   "no": "OP11-081",
+   "set": "OP11",
+   "name": "皇帝剣破々刃",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】ドン‼デッキからドン‼1枚までを、アクティブで追加する。",
+   "current": null
+  },
+  {
+   "no": "OP11-098",
+   "set": "OP11",
+   "name": "海底落下",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】自分のリーダーかキャラ1枚までを、このターン中、パワー+1000。",
+   "current": null
+  },
+  {
+   "no": "OP11-099",
+   "set": "OP11",
+   "name": "ぼくは!!!海軍将校になる男です!!!!",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】このカードの【メイン】効果を発動する。",
+   "current": null
+  },
+  {
+   "no": "OP11-106",
+   "set": "OP11",
+   "name": "ゼウス",
+   "type": "CHAR",
+   "kind": "text_mismatch",
+   "field": "text",
+   "official": "【登場時】自分のライフの上か下から1枚を手札に加えることができる：相手のコスト5以下のキャラ1枚までを、KOする。",
+   "current": "【登場時】自分のライフの上か下から1枚を手札に加えることができる：相手のコスト5以下のキャラ1枚までを、KOする"
+  },
+  {
+   "no": "OP11-115",
+   "set": "OP11",
+   "name": "タイプじゃないんですっ…………!!",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】相手のコスト2以下のキャラ1枚までを、KOする。",
+   "current": null
+  },
+  {
+   "no": "OP11-116",
+   "set": "OP11",
+   "name": "人魚柔術 ウルトラマリン",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】相手のコスト4以下のキャラ1枚までを、持ち主のライフの上か下に表向きで加える。",
+   "current": null
+  },
+  {
+   "no": "OP12-039",
+   "set": "OP12",
+   "name": "ルフィは海賊王になる男だ!!!",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】自分のリーダーかキャラ1枚までを、このターン中、パワー+1000。",
+   "current": null
+  },
+  {
+   "no": "OP12-057",
+   "set": "OP12",
+   "name": "アイス塊暴雉嘴",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】自分の手札1枚を捨てることができる：カード1枚を引く。",
+   "current": null
+  },
+  {
+   "no": "OP12-058",
+   "set": "OP12",
+   "name": "…おれは白ひげを王にする",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】カード1枚を引く。",
+   "current": null
+  },
+  {
+   "no": "OP12-071",
+   "set": "OP12",
+   "name": "シャーロット・プリン",
+   "type": "CHAR",
+   "kind": "text_mismatch",
+   "field": "text",
+   "official": "【登場時】自分のデッキの上から4枚を見て、「サンジ」かイベント1枚までを公開し、手札に加える。その後、残りを好きな順番でデッキの下に置く。",
+   "current": "【登場時】デッキ上4枚からイベント1枚を手札に"
+  },
+  {
+   "no": "OP12-075",
+   "set": "OP12",
+   "name": "ミス・オールサンデー",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】ドン‼-1：このカードを登場させる。",
+   "current": null
+  },
+  {
+   "no": "OP12-077",
+   "set": "OP12",
+   "name": "“お前の影響で出る音は全て消えるの術”だ",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】カード1枚を引く。",
+   "current": null
+  },
+  {
+   "no": "OP12-080",
+   "set": "OP12",
+   "name": "バラティエ",
+   "type": "STAGE",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】このカードを登場させる。",
+   "current": null
+  },
+  {
+   "no": "OP12-096",
+   "set": "OP12",
+   "name": "熊の衝撃",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】カード1枚を引き、自分のデッキの上から1枚をトラッシュに置く。",
+   "current": null
+  },
+  {
+   "no": "OP12-097",
+   "set": "OP12",
+   "name": "軍隊長集結",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】このカードの【メイン】効果を発動する。",
+   "current": null
+  },
+  {
+   "no": "OP12-098",
+   "set": "OP12",
+   "name": "夢打撃処裏拳",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】カード1枚を引き、自分のデッキの上から1枚をトラッシュに置く。",
+   "current": null
+  },
+  {
+   "no": "OP12-101",
+   "set": "OP12",
+   "name": "ジュエリー・ボニー",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】自分のリーダーが特徴《超新星》を持つ場合、このカードを登場させる。",
+   "current": null
+  },
+  {
+   "no": "OP12-104",
+   "set": "OP12",
+   "name": "戦桃丸",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】相手のコスト4以下のキャラ1枚までを、KOする。",
+   "current": null
+  },
+  {
+   "no": "OP12-109",
+   "set": "OP12",
+   "name": "パシフィスタ",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】相手のコスト1以下のキャラ1枚までを、KOし、このカードを手札に加える。",
+   "current": null
+  },
+  {
+   "no": "OP12-112",
+   "set": "OP12",
+   "name": "ベビー５",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】自分のリーダーが多色の場合、カード2枚を引く。",
+   "current": null
+  },
+  {
+   "no": "OP12-113",
+   "set": "OP12",
+   "name": "ロロノア・ゾロ",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】相手のコスト1以下のキャラ1枚までを、KOし、このカードを手札に加える。",
+   "current": null
+  },
+  {
+   "no": "OP12-116",
+   "set": "OP12",
+   "name": "鐘を鳴らして君を待つ!!!!",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】カード1枚を引く。",
+   "current": null
+  },
+  {
+   "no": "OP12-119",
+   "set": "OP12",
+   "name": "バーソロミュー・くま",
+   "type": "CHAR",
+   "kind": "text_mismatch",
+   "field": "text",
+   "official": "【登場時】自分の手札1枚を捨てることができる：自分のデッキの上から1枚までを、ライフの上に加える。その後、このキャラは、次の相手のエンドフェイズ終了時まで、コスト+2。 【相手のターン中】【KO時】自分のデッキの上から1枚までを、ライフの上に加える。",
+   "current": "【登場時】手札1枚を捨てて、デッキ上1枚をライフに加え自身コスト+2(次相手ターン終了まで) 【相手のターン中】【KO時】デッキ上1枚をライフに加える"
+  },
+  {
+   "no": "OP13-002",
+   "set": "OP13",
+   "name": "ポートガス・Ｄ・エース",
+   "type": "LEADER",
+   "kind": "text_mismatch",
+   "field": "text",
+   "official": "【相手のアタック時】【ターン1回】自分の手札1枚を捨てることができる：相手のリーダーかキャラ1枚までを、このバトル中、パワー-2000。 【ドン‼×1】【ターン1回】自分がダメージを受けた時か自分の元々のパワー6000以上のキャラがKOされた時、カード1枚を引く。",
+   "current": "【相手のアタック時】【ターン1】手札1枚捨て:相手1枚-2000。【ドン×1】【ターン1】ダメージ受けた時/自分の元6000以上KO時:1ドロー"
+  },
+  {
+   "no": "OP13-014",
+   "set": "OP13",
+   "name": "ポートガス・Ｄ・ルージュ",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】自分の「ポートガス・Ｄ・エース」1枚までを、このターン中、パワー+3000。",
+   "current": null
+  },
+  {
+   "no": "OP13-016",
+   "set": "OP13",
+   "name": "モンキー・Ｄ・ガープ",
+   "type": "CHAR",
+   "kind": "text_mismatch",
+   "field": "text",
+   "official": "【登場時】自分のリーダーが「サボ」か「ポートガス・D・エース」か「モンキー・Ｄ・ルフィ」の場合、自分のデッキの上から4枚を見て、コスト3以上のカード1枚までを公開し、手札に加える。その後、残りを好きな順番でデッキの下に置く。",
+   "current": "【登場時】デッキ上4枚からコスト3以上1枚を手札に"
+  },
+  {
+   "no": "OP13-020",
+   "set": "OP13",
+   "name": "拳・骨・隕石",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】このカードの【メイン】効果を発動する。",
+   "current": null
+  },
+  {
+   "no": "OP13-021",
+   "set": "OP13",
+   "name": "ゴムゴムの銃乱打",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】相手のキャラ1枚までを、このターン中、パワー-2000。",
+   "current": null
+  },
+  {
+   "no": "OP13-038",
+   "set": "OP13",
+   "name": "ゴムゴムの象銃",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】相手のコスト5以下のキャラ1枚までを、レストにする。",
+   "current": null
+  },
+  {
+   "no": "OP13-039",
+   "set": "OP13",
+   "name": "ゴムゴムの蛇銃",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】このカードの【カウンター】効果を発動する。",
+   "current": null
+  },
+  {
+   "no": "OP13-042",
+   "set": "OP13",
+   "name": "エドワード・ニューゲート",
+   "type": "CHAR",
+   "kind": "text_mismatch",
+   "field": "text",
+   "official": "【ブロッカー】 【登場時】カード2枚を引き、自分の手札1枚を捨てる。その後、自分のリーダーとキャラ1枚にレストのドン‼2枚ずつまでを、付与する。",
+   "current": "【ブロッカー】【登場時】2ドロー手札1枚捨て、リーダーとキャラにドン2ずつ付与"
+  },
+  {
+   "no": "OP13-043",
+   "set": "OP13",
+   "name": "お玉",
+   "type": "CHAR",
+   "kind": "text_mismatch",
+   "field": "text",
+   "official": "【登場時】自分のライフが3枚以下の場合、カード2枚を引き、自分の手札1枚を捨てる。",
+   "current": "【登場時】ライフ3以下:2ドロー手札1枚捨て"
+  },
+  {
+   "no": "OP13-054",
+   "set": "OP13",
+   "name": "ヤマト",
+   "type": "CHAR",
+   "kind": "text_mismatch",
+   "field": "text",
+   "official": "【登場時】自分のライフが3枚以下の場合、カード2枚を引く。その後、自分のリーダーにレストのドン‼1枚までを、付与する。",
+   "current": "【登場時】ライフ3以下:2ドロー、リーダーにレストのドン1付与"
+  },
+  {
+   "no": "OP13-057",
+   "set": "OP13",
+   "name": "“力”に屈したら男に生まれた意味がねェだろう",
+   "type": "EVENT",
+   "kind": "text_mismatch",
+   "field": "text",
+   "official": "【メイン】自分のドン‼1枚をレストにできる：自分のライフが1枚以下の場合、相手は、このターン中、自分のリーダーがアタックする際【ブロッカー】を発動できない。 【カウンター】自分のリーダーを、このバトル中、パワー+3000。",
+   "current": "【メイン】ライフ1以下:相手はリーダーへのアタックにブロッカー不可 【カウンター】+2000"
+  },
+  {
+   "no": "OP13-059",
+   "set": "OP13",
+   "name": "ブリリアント・パンク",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】カード1枚を引く。",
+   "current": null
+  },
+  {
+   "no": "OP13-096",
+   "set": "OP13",
+   "name": "“五老星”ここに!!!",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】このカードの【メイン】効果を発動する。",
+   "current": null
+  },
+  {
+   "no": "OP13-102",
+   "set": "OP13",
+   "name": "エジソン",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】カード1枚を引き、相手のコスト3以下のキャラ1枚までを、レストにする。",
+   "current": null
+  },
+  {
+   "no": "OP13-106",
+   "set": "OP13",
+   "name": "コニー",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】このカードを登場させる。",
+   "current": null
+  },
+  {
+   "no": "OP13-108",
+   "set": "OP13",
+   "name": "ジュエリー・ボニー",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】自分のライフが1枚以下の場合、相手のコスト7以下のキャラ1枚までを、レストにする。",
+   "current": null
+  },
+  {
+   "no": "OP13-109",
+   "set": "OP13",
+   "name": "ジュエリー・ボニー",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】カード2枚を引き、自分の手札1枚を捨てる。",
+   "current": null
+  },
+  {
+   "no": "OP13-113",
+   "set": "OP13",
+   "name": "リリス",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】このカードの【登場時】効果を発動する。",
+   "current": null
+  },
+  {
+   "no": "OP13-114",
+   "set": "OP13",
+   "name": "S-スネーク",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】自分の手札1枚を捨てることができる：このカードを登場させる。",
+   "current": null
+  },
+  {
+   "no": "OP13-115",
+   "set": "OP13",
+   "name": "「紙絵」“残身”",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】カード1枚を引く。",
+   "current": null
+  },
+  {
+   "no": "OP13-116",
+   "set": "OP13",
+   "name": "この海で一番自由な奴が海賊王だ!!!",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】このカードの【メイン】効果を発動する。",
+   "current": null
+  },
+  {
+   "no": "OP13-117",
+   "set": "OP13",
+   "name": "ゴムゴムの白いスタンプ",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】カード1枚を引く。",
+   "current": null
+  },
+  {
+   "no": "OP14-101",
+   "set": "OP14",
+   "name": "オーズ",
+   "type": "CHAR",
+   "kind": "text_mismatch",
+   "field": "text",
+   "official": "",
+   "current": "（テキストなし）"
+  },
+  {
+   "no": "OP14-103",
+   "set": "OP14",
+   "name": "グロリオーサ(ニョン婆)",
+   "type": "CHAR",
+   "kind": "text_mismatch",
+   "field": "text",
+   "official": "【登場時】自分のライフの上か下から1枚を手札に加えることができる：自分の手札1枚までを、ライフの上に加える。",
+   "current": "【登場時】ライフの上か下から1枚を手札に加える:手札1枚までをライフの上に加える"
+  },
+  {
+   "no": "OP14-104",
+   "set": "OP14",
+   "name": "ゲッコー・モリア",
+   "type": "CHAR",
+   "kind": "text_mismatch",
+   "field": "text",
+   "official": "【登場時】自分のトラッシュからコスト4以下の特徴《スリラーバーク海賊団》を持つキャラカード1枚までを、ライフの上に表向きで加えるか登場させる。",
+   "current": "【登場時】トラッシュからコスト4以下のスリラーバーク1枚をライフ上に加えるか登場"
+  },
+  {
+   "no": "OP14-105",
+   "set": "OP14",
+   "name": "ゴルゴン三姉妹",
+   "type": "CHAR",
+   "kind": "text_mismatch",
+   "field": "text",
+   "official": "【起動メイン】【ターン1回】自分の手札から特徴《アマゾン・リリー》か《九蛇海賊団》を持つカード3枚を公開することができる：自分のリーダーとキャラすべてにレストのドン‼1枚ずつまでを、付与する。",
+   "current": "【起動メイン】ターン1回 手札からアマゾン/九蛇3枚公開:リーダーとキャラ全てにレストのドン1枚ずつ付与"
+  },
+  {
+   "no": "OP14-107",
+   "set": "OP14",
+   "name": "シャクヤク",
+   "type": "CHAR",
+   "kind": "text_mismatch",
+   "field": "text",
+   "official": "【登場時】相手のライフが3枚以下の場合、カード2枚を引き、自分の手札2枚を捨てる。",
+   "current": "【登場時】相手のライフが3枚以下の場合、カード2枚を引き、自分の手札2枚を捨てる"
+  },
+  {
+   "no": "OP14-108",
+   "set": "OP14",
+   "name": "シルバーズ・レイリー",
+   "type": "CHAR",
+   "kind": "text_mismatch",
+   "field": "text",
+   "official": "【登場時】自分のリーダーが多色で、相手のライフが3枚以下の場合、相手の元々のパワー7000以下のキャラ1枚までを、KOする。",
+   "current": "【登場時】自分のリーダーが多色で相手のライフが3枚以下の場合、相手の元々のパワー7000以下のキャラ1枚をKO"
+  },
+  {
+   "no": "OP14-112",
+   "set": "OP14",
+   "name": "ボア・ハンコック",
+   "type": "CHAR",
+   "kind": "text_mismatch",
+   "field": "text",
+   "official": "【登場時】自分のリーダーが特徴《王下七武海》を持つ場合、自分のデッキの上から1枚までを、ライフの上に加える。その後、相手のライフの上から1枚までを、持ち主の手札に加える。",
+   "current": "【登場時】リーダーが王下七武海なら、デッキ上1枚をライフに加え、相手ライフ上1枚を相手の手札に加える"
+  },
+  {
+   "no": "OP14-113",
+   "set": "OP14",
+   "name": "マーガレット",
+   "type": "CHAR",
+   "kind": "text_mismatch",
+   "field": "text",
+   "official": "【登場時】自分のデッキの上から5枚を見て、特徴《アマゾン・リリー》か《九蛇海賊団》を持つカード1枚までを公開し、手札に加える。その後、残りを好きな順番でデッキの下に置き、自分の手札1枚を捨てる。",
+   "current": "【登場時】デッキ上5枚からアマゾン・リリーか九蛇海賊団1枚を手札に加え、残りをデッキの下、手札1枚を捨てる"
+  },
+  {
+   "no": "OP14-114",
+   "set": "OP14",
+   "name": "ラン",
+   "type": "CHAR",
+   "kind": "text_mismatch",
+   "field": "text",
+   "official": "【起動メイン】【ターン1回】自分の特徴《九蛇海賊団》を持つ、リーダーかキャラ1枚にレストのドン‼1枚までを、付与する。",
+   "current": "【起動メイン】【ターン1回】自分の九蛇海賊団のリーダーかキャラ1枚にレストのドン1枚を付与"
+  },
+  {
+   "no": "OP15-002",
+   "set": "OP15",
+   "name": "ルーシー",
+   "type": "LEADER",
+   "kind": "text_mismatch",
+   "field": "text",
+   "official": "【アタック時】/【相手のアタック時】自分の手札からイベントかステージカードを任意の枚数捨ててもよい。捨てたカード1枚につき、このリーダーは、このバトル中、パワー+1000。 【起動メイン】【ターン1回】このターン中、自分が元々のコスト3以上のイベントを発動している場合、カード1枚を引く。",
+   "current": "【アタック時/相手のアタック時】手札のイベント/ステージを任意枚捨て、1枚につきリーダー+1000。【起動】コスト3以上イベント使用時:1ドロー"
+  },
+  {
+   "no": "OP15-020",
+   "set": "OP15",
+   "name": "火拳",
+   "type": "EVENT",
+   "kind": "text_mismatch",
+   "field": "text",
+   "official": "【メイン】自分のリーダーを、このターン中、パワー+3000し、相手のキャラ1枚までを、次の相手のエンドフェイズ終了時まで、パワー-8000。その後、自分の手札2枚を捨ててもよい。そうした場合、相手のパワー0以下のキャラ1枚までを、KOする。",
+   "current": "【メイン】自リーダー+3000、相手キャラ-8000、手札2枚捨ててパワー0以下をKO"
+  },
+  {
+   "no": "OP15-021",
+   "set": "OP15",
+   "name": "見てろよ!エース!!!",
+   "type": "EVENT",
+   "kind": "text_mismatch",
+   "field": "text",
+   "official": "手札のこのカードは、自分のトラッシュにイベントが4枚以上ある場合、コスト-3。 【メイン】/【カウンター】相手のキャラ1枚までを、このターン中、パワー-3000。",
+   "current": "トラッシュにイベント4枚以上でコスト-3。【メイン/カウンター】相手キャラ-3000"
+  },
+  {
+   "no": "OP15-040",
+   "set": "OP15",
+   "name": "ヴィオラ",
+   "type": "CHAR",
+   "kind": "text_mismatch",
+   "field": "text",
+   "official": "【登場時】自分のデッキの上から3枚を見て、特徴《ドレスローザ》を持つカード1枚までを公開し、手札に加える。その後、残りを好きな順番でデッキの下に置く。",
+   "current": "【登場時】デッキ上3枚からドレスローザ1枚を手札に"
+  },
+  {
+   "no": "OP15-042",
+   "set": "OP15",
+   "name": "キュロス",
+   "type": "CHAR",
+   "kind": "text_mismatch",
+   "field": "text",
+   "official": "【登場時】自分の手札1枚を捨てることができる：自分のリーダーが「レベッカ」の場合、このキャラは、このターン中、【速攻】を得る。 【KO時】このキャラカードをトラッシュから手札に加える。",
+   "current": "【登場時】手札1枚を捨てる:リーダーが「レベッカ」なら速攻 【KO時】このカードをトラッシュから手札に加える"
+  },
+  {
+   "no": "OP15-044",
+   "set": "OP15",
+   "name": "コアラ",
+   "type": "CHAR",
+   "kind": "text_mismatch",
+   "field": "text",
+   "official": "【ブロッカー】 【KO時】自分のデッキの上から3枚を見て、特徴《ドレスローザ》を持つイベント1枚までを公開し、手札に加える。その後、残りを好きな順番でデッキの下に置く。",
+   "current": "【ブロッカー】【KO時】デッキ上3枚からドレスローザのイベント1枚"
+  },
+  {
+   "no": "OP15-046",
+   "set": "OP15",
+   "name": "サボ",
+   "type": "CHAR",
+   "kind": "text_mismatch",
+   "field": "text",
+   "official": "【ブロッカー】 【登場時】自分のリーダーが特徴《ドレスローザ》を持つ場合、自分の手札から特徴《ドレスローザ》を持つイベント1枚までを、発動する。",
+   "current": "【ブロッカー】【登場時】手札のドレスローザのイベント1枚を発動"
+  },
+  {
+   "no": "OP15-047",
+   "set": "OP15",
+   "name": "サンジ",
+   "type": "CHAR",
+   "kind": "text_mismatch",
+   "field": "text",
+   "official": "【ブロッカー】(相手のアタックの後、このカードをレストにし、アタックの対象をこのカードにできる) 【登場時】自分のキャラ1枚までは、このターン中、【ブロック不可】を得る。 (このカードはブロックされない)",
+   "current": "【ブロッカー】【登場時】自キャラ1枚に【ブロック不可】"
+  },
+  {
+   "no": "OP15-052",
+   "set": "OP15",
+   "name": "レオ",
+   "type": "CHAR",
+   "kind": "text_mismatch",
+   "field": "text",
+   "official": "自分の元々のパワー7000以下のキャラが相手の効果で場を離れる場合、代わりに自分のキャラ1枚を持ち主のデッキの下に置くことができる。",
+   "current": "自分の元々のパワー7000以下のキャラが相手の効果で場を離れる場合、代わりに自分のキャラ1枚を持ち主のデッキの下に置くことができる"
+  },
+  {
+   "no": "OP15-053",
+   "set": "OP15",
+   "name": "レベッカ",
+   "type": "CHAR",
+   "kind": "text_mismatch",
+   "field": "text",
+   "official": "【ドン‼×1】このキャラは【ブロッカー】を得る。 【登場時】自分のデッキの上から3枚を見て、特徴《ドレスローザ》を持つカード1枚までを公開し、手札に加える。その後、残りを好きな順番でデッキの下に置く。",
+   "current": "ドン付与1以上で【ブロッカー】。【登場時】デッキ上3枚からドレスローザ1枚"
+  },
+  {
+   "no": "OP15-054",
+   "set": "OP15",
+   "name": "誰にも渡さねェよ!“あいつ”の形見だ",
+   "type": "EVENT",
+   "kind": "text_mismatch",
+   "field": "text",
+   "official": "【メイン】自分のリーダーが「ルーシー」の場合、以下から1つを選ぶ。 ・カード2枚を引き、自分の手札1枚を捨てる。その後、自分の手札からコスト4以下の特徴《ドレスローザ》を持つキャラカード1枚までを、登場させる。 ・ステージ1枚までを、持ち主の手札に戻す。",
+   "current": "【メイン】2ドロー手札1枚捨て、コスト4以下のドレスローザを登場"
+  },
+  {
+   "no": "OP15-056",
+   "set": "OP15",
+   "name": "“メラメラの実”はおれが食っていいか？",
+   "type": "EVENT",
+   "kind": "text_mismatch",
+   "field": "text",
+   "official": "【メイン】カード2枚を引く。その後、自分のリーダー「ルーシー」は、このターン中、【ダブルアタック】を得て、パワー+3000。 (このカードが与えるダメージは2になる)",
+   "current": "【メイン】2ドロー、リーダー「ルーシー」に【ダブルアタック】+3000"
+  },
+  {
+   "no": "OP15-056",
+   "set": "OP15",
+   "name": "“メラメラの実”はおれが食っていいか？",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】カード2枚を引く。",
+   "current": null
+  },
+  {
+   "no": "OP15-057",
+   "set": "OP15",
+   "name": "ドレスローザ王国",
+   "type": "STAGE",
+   "kind": "text_mismatch",
+   "field": "text",
+   "official": "【登場時】自分のリーダーが特徴《ドレスローザ》を持つ場合、カード1枚を引く。 【相手のアタック時】このステージをレストにし、自分の手札からイベントかステージカード1枚を捨てることができる：自分のリーダーかキャラ1枚までを、このバトル中、パワー+2000。",
+   "current": "【登場時】ドレスローザリーダーなら1ドロー（ルーシーのカウンター資源にも）"
+  },
+  {
+   "no": "OP15-058",
+   "set": "OP15",
+   "name": "エネル",
+   "type": "LEADER",
+   "kind": "text_mismatch",
+   "field": "text",
+   "official": "ルール上、自分のドン‼デッキは6枚になる。 【起動メイン】【ターン1回】自分の第2ターン以降の場合、ドン‼デッキからドン‼1枚までをアクティブで追加し、さらに4枚までをレストで追加する。その後、自分のキャラ1枚にレストのドン‼4枚までを、付与する。",
+   "current": "ルール上ドン‼デッキは6枚。【起動メイン】【ターン1回】第2T以降:ドン‼1枚アクティブ+4枚レスト追加、キャラ1枚にレスト4枚付与。"
+  },
+  {
+   "no": "OP15-060",
+   "set": "OP15",
+   "name": "エネル",
+   "type": "CHAR",
+   "kind": "text_mismatch",
+   "field": "text",
+   "official": "自分の場のドン‼が6枚以下の場合、このキャラは相手の効果で場を離れず、パワー+2000。 【起動メイン】ドン‼-1：このキャラは、次の相手のエンドフェイズ終了時まで、【ブロッカー】を得る。その後、自分の手札1枚を捨てる。",
+   "current": "ドン6以下:相手効果で離れず+2000。【起動】ドン-1:【ブロッカー】獲得し手札1枚捨て"
+  },
+  {
+   "no": "OP15-061",
+   "set": "OP15",
+   "name": "オーム",
+   "type": "CHAR",
+   "kind": "text_mismatch",
+   "field": "text",
+   "official": "【登場時】ドン‼-1：カード1枚を引く。 【アタック時】自分の場のドン‼が6枚以下の場合、相手のキャラ1枚までを、このターン中、パワー-1000。",
+   "current": "【登場時】ドン-1:1ドロー 【アタック時】ドン6以下:相手キャラ-1000"
+  },
+  {
+   "no": "OP15-063",
+   "set": "OP15",
+   "name": "ゲダツ",
+   "type": "CHAR",
+   "kind": "text_mismatch",
+   "field": "text",
+   "official": "【登場時】ドン‼-1：カード1枚を引く。 【KO時】自分の場のドン‼が6枚以下の場合、相手のパワー2000以下のキャラ1枚までを、KOする。",
+   "current": "【登場時】ドン-1:1ドロー 【KO時】ドン6以下:相手パワー2000以下を1体KO"
+  },
+  {
+   "no": "OP15-066",
+   "set": "OP15",
+   "name": "サトリ",
+   "type": "CHAR",
+   "kind": "text_mismatch",
+   "field": "text",
+   "official": "【登場時】ドン‼-1：カード1枚を引く。 【アタック時】自分の場のドン‼が6枚以下の場合、自分のデッキの上から2枚を見て、好きな順番に並び替え、デッキの上か下に置く。",
+   "current": "【登場時】ドン-1:1ドロー 【アタック時】ドン6以下:デッキトップ2枚操作"
+  },
+  {
+   "no": "OP15-067",
+   "set": "OP15",
+   "name": "シュラ",
+   "type": "CHAR",
+   "kind": "text_mismatch",
+   "field": "text",
+   "official": "自分の場のドン‼が6枚以下の場合、このキャラは【速攻】を得る。 (このカードは登場したターンにアタックできる) 【登場時】ドン‼-1：カード1枚を引く。",
+   "current": "ドン6以下で【速攻】。【登場時】ドン-1:1ドロー"
+  },
+  {
+   "no": "OP15-069",
+   "set": "OP15",
+   "name": "ノラ",
+   "type": "CHAR",
+   "kind": "text_mismatch",
+   "field": "text",
+   "official": "自分の元々のパワー7000以下のキャラが相手の効果で場を離れる場合、代わりに自分の場のドン‼1枚をドン‼デッキに戻すことができる。",
+   "current": "自分の元々パワー7000以下のキャラが相手効果で場を離れる時、代わりに自分の場のドン1枚をドンデッキに戻せる"
+  },
+  {
+   "no": "OP15-070",
+   "set": "OP15",
+   "name": "フザ",
+   "type": "CHAR",
+   "kind": "text_mismatch",
+   "field": "text",
+   "official": "自分の「シュラ」すべてとこのキャラは【ブロック不可】を得る。 (このカードはブロックされない) 【相手のターン中】自分の「シュラ」すべてとこのキャラを、元々のパワー6000にする。",
+   "current": "自分の「シュラ」すべてと自身は【ブロック不可】。【相手のターン中】自分の「シュラ」すべてと自身を元々のパワー6000にする"
+  },
+  {
+   "no": "OP15-074",
+   "set": "OP15",
+   "name": "放電",
+   "type": "EVENT",
+   "kind": "text_mismatch",
+   "field": "text",
+   "official": "【メイン】ドン‼-1：自分のリーダーが「エネル」の場合、カード1枚を引く。その後、自分のキャラ1枚までを、次の相手のエンドフェイズ終了時まで、コスト+2。 【カウンター】自分の「エネル」1枚までを、このバトル中、パワー+2000。",
+   "current": "【メイン】ドン-1:リーダーがエネルなら1ドロー、その後自キャラ1枚を次の相手エンドまでコスト+2 【カウンター】自分のエネル1枚を+2000"
+  },
+  {
+   "no": "OP15-075",
+   "set": "OP15",
+   "name": "神の裁き",
+   "type": "EVENT",
+   "kind": "text_mismatch",
+   "field": "text",
+   "official": "【メイン】ドン‼-1：自分のリーダーが「エネル」の場合、自分のリーダーかキャラ1枚までを、このターン中、パワー+1000。その後、相手のパワー3000以下のキャラ1枚までを、KOする。 【カウンター】自分の「エネル」1枚までを、このバトル中、パワー+2000。",
+   "current": "【メイン】ドン-1:自リーダー/キャラ+1000、相手3000以下KO 【カウンター】+2000"
+  },
+  {
+   "no": "OP15-076",
+   "set": "OP15",
+   "name": "雷獣",
+   "type": "EVENT",
+   "kind": "text_mismatch",
+   "field": "text",
+   "official": "【メイン】ドン‼-1：自分のリーダーが「エネル」の場合、カード1枚を引く。その後、相手のキャラ1枚までを、このターン中、パワー-1000。 【カウンター】自分の「エネル」1枚までを、このバトル中、パワー+2000。",
+   "current": "【メイン】ドン-1:1ドロー+相手キャラ-1000 【カウンター】エネルに+2000"
+  },
+  {
+   "no": "OP15-077",
+   "set": "OP15",
+   "name": "雷龍",
+   "type": "EVENT",
+   "kind": "text_mismatch",
+   "field": "text",
+   "official": "【メイン】ドン‼-1：カード1枚を引く。その後、相手のレストのパワー6000以下のキャラ1枚までは、次の相手のリフレッシュフェイズでアクティブにならない。",
+   "current": "【メイン】ドン-1:1ドロー+相手レスト6000以下を次もレスト固定"
+  },
+  {
+   "no": "OP15-078",
+   "set": "OP15",
+   "name": "万雷",
+   "type": "EVENT",
+   "kind": "text_mismatch",
+   "field": "text",
+   "official": "【メイン】ドン‼-2：カード1枚を引く。その後、相手のパワー5000以下のキャラ1枚までを、レストにする。 【カウンター】自分のリーダーかキャラ1枚までを、このバトル中、パワー+1000。その後、自分の場のドン‼が6枚以下の場合、カード1枚を引く。",
+   "current": "【メイン】ドン-2:1ドロー+相手5000以下をレスト 【カウンター】+1000し1ドロー"
+  },
+  {
+   "no": "OP15-079",
+   "set": "OP15",
+   "name": "アブサロム",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】このカードの【KO時】効果を発動する。",
+   "current": null
+  },
+  {
+   "no": "OP15-103",
+   "set": "OP15",
+   "name": "ゲンボウ",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】カード1枚を引く。その後、自分のライフが2枚以下の場合、このカードを登場させる。",
+   "current": null
+  },
+  {
+   "no": "OP15-106",
+   "set": "OP15",
+   "name": "タコバルーン",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】カード1枚を引く。その後、自分の手札からコスト2以下の黄の、キャラカードかステージカード1枚までを、登場させる。",
+   "current": null
+  },
+  {
+   "no": "OP15-113",
+   "set": "OP15",
+   "name": "ロロノア・ゾロ",
+   "type": "CHAR",
+   "kind": "text_mismatch",
+   "field": "text",
+   "official": "【登場時】自分の手札1枚を捨てることができる：自分のデッキの上から1枚までを、ライフの上に加える。",
+   "current": "【登場時】自分の手札1枚を捨てられる:デッキの上から1枚をライフの上に加える"
+  },
+  {
+   "no": "OP15-118",
+   "set": "OP15",
+   "name": "エネル",
+   "type": "CHAR",
+   "kind": "text_mismatch",
+   "field": "text",
+   "official": "自分の場のドン‼が6枚以下の場合、このキャラは相手の効果で場を離れず、パワー+2000。 【登場時】ドン‼-1：自分のデッキの上から5枚を見て、カード1枚までを手札に加える。その後、残りを好きな順番でデッキの下に置き、自分の手札1枚を捨てる。",
+   "current": "ドン6以下:相手効果で離れず+2000。【登場時】デッキ上5枚から1枚手札に、手札1枚捨て"
+  },
+  {
+   "no": "OP15-119",
+   "set": "OP15",
+   "name": "モンキー・Ｄ・ルフィ",
+   "type": "CHAR",
+   "kind": "text_mismatch",
+   "field": "text",
+   "official": "自分の場のドン‼が6枚以上ある場合、このキャラは【速攻】を得る。 相手がイベントか【ブロッカー】を発動した時、自分のライフの上から1枚までを公開する。公開したカードのコスト1につき、このキャラは、このターン中、パワー+1000。",
+   "current": "自分の場のドン6枚以上で【速攻】。相手がイベントかブロッカーを発動した時、自分のライフ上1枚を公開しコスト1につきこのターン中パワー+1000"
+  },
+  {
+   "no": "OP16-019",
+   "set": "OP16",
+   "name": "おれ達の力を見せてやれ!!!",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】自分のリーダーを、このターン中、パワー+1000。",
+   "current": null
+  },
+  {
+   "no": "OP16-039",
+   "set": "OP16",
+   "name": "ゴムゴムのツインJET銃",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】相手のリーダーをレストにする。",
+   "current": null
+  },
+  {
+   "no": "OP16-080",
+   "set": "OP16",
+   "name": "マーシャル・Ｄ・ティーチ",
+   "type": "LEADER",
+   "kind": "text_mismatch",
+   "field": "text",
+   "official": "【相手のターン中】自分のキャラすべてを、コスト+1。 【相手のアタック時】【ターン1回】自分の手札から【トリガー】を持つカード1枚を捨てることができる：そのアタックの対象をこのリーダーか自分の特徴《黒ひげ海賊団》を持つキャラにする。",
+   "current": "【相手のターン中】自分のキャラ全体コスト+1 【相手のアタック時】【ターン1回】手札のトリガー1枚を捨て、アタックの対象をこのリーダーか黒ひげ海賊団キャラに変更"
+  },
+  {
+   "no": "OP16-103",
+   "set": "OP16",
+   "name": "ヴァン・オーガー",
+   "type": "CHAR",
+   "kind": "text_mismatch",
+   "field": "text",
+   "official": "【相手のターン中】【KO時】自分のリーダーが特徴《黒ひげ海賊団》を持つ場合、カード1枚を引き、相手のリーダーかキャラ1枚までを、このターン中、パワー-3000。",
+   "current": "【相手のターン中】【KO時】リーダーが黒ひげなら1ドロー、相手のリーダーかキャラ1枚をこのターン中パワー-3000"
+  },
+  {
+   "no": "OP16-104",
+   "set": "OP16",
+   "name": "カタリーナ・デボン",
+   "type": "CHAR",
+   "kind": "text_mismatch",
+   "field": "text",
+   "official": "【アタック時】相手のキャラ1枚までを選ぶ。このキャラの元々のパワーは、このターン中、選んだキャラと同じパワーになる。",
+   "current": "【アタック時】相手キャラ1枚を選び、このキャラの元々のパワーをこのターン中その値にする 【トリガー】1ドロー＋トラッシュのコスト1黒ひげ1枚を登場"
+  },
+  {
+   "no": "OP16-105",
+   "set": "OP16",
+   "name": "ゲッコー・モリア",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】自分のライフが1枚以下の場合、自分のトラッシュからコスト4以下の、「アブサロム」と「ドクトル・ホグバック」と「ペローナ」それぞれ1枚ずつまでを、登場させる。",
+   "current": null
+  },
+  {
+   "no": "OP16-106",
+   "set": "OP16",
+   "name": "サンファン・ウルフ",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】このカードの【KO時】効果を発動する。",
+   "current": null
+  },
+  {
+   "no": "OP16-107",
+   "set": "OP16",
+   "name": "ジーザス・バージェス",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】自分の手札1枚を捨てることができる：このカードを登場させる。",
+   "current": null
+  },
+  {
+   "no": "OP16-108",
+   "set": "OP16",
+   "name": "シリュウ",
+   "type": "CHAR",
+   "kind": "text_mismatch",
+   "field": "text",
+   "official": "【登場時】自分の手札1枚を捨てることができる：自分のトラッシュからコスト6以下の特徴《黒ひげ海賊団》を持つカード1枚までを、ライフの上に表向きで加える。",
+   "current": "【登場時】手札1枚を捨て、トラッシュのコスト6以下黒ひげ1枚をライフ上に追加 【トリガー】2ドロー"
+  },
+  {
+   "no": "OP16-109",
+   "set": "OP16",
+   "name": "ドクQ",
+   "type": "CHAR",
+   "kind": "text_mismatch",
+   "field": "text",
+   "official": "【KO時】自分のリーダーが特徴《黒ひげ海賊団》を持つ場合、カード1枚を引き、相手のコスト1以下のキャラ2枚までを、KOする。",
+   "current": "【KO時】リーダーが黒ひげなら1ドローし相手コスト1以下2枚までKO 【トリガー】同効果"
+  },
+  {
+   "no": "OP16-110",
+   "set": "OP16",
+   "name": "バスコ・ショット",
+   "type": "CHAR",
+   "kind": "text_mismatch",
+   "field": "text",
+   "official": "【KO時】カード1枚を引き、相手のコスト6以下のキャラ1枚までを、レストにする。",
+   "current": "【KO時】1ドローし相手コスト6以下1枚をレスト 【トリガー】同効果"
+  },
+  {
+   "no": "OP16-111",
+   "set": "OP16",
+   "name": "ボア・サンダーソニア",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】自分のライフが2枚以下の場合、このカードを登場させる。",
+   "current": null
+  },
+  {
+   "no": "OP16-113",
+   "set": "OP16",
+   "name": "ボア・マリーゴールド",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】自分のリーダーが特徴《九蛇海賊団》を持つ場合、このカードを登場させる。",
+   "current": null
+  },
+  {
+   "no": "OP16-114",
+   "set": "OP16",
+   "name": "ラフィット",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】このカードの【KO時】効果を発動する。",
+   "current": null
+  },
+  {
+   "no": "OP16-115",
+   "set": "OP16",
+   "name": "闇水",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】相手のリーダーかキャラ1枚までを、このターン中、効果を無効にする。",
+   "current": null
+  },
+  {
+   "no": "OP16-116",
+   "set": "OP16",
+   "name": "ゼハハハハハハ!!!",
+   "type": "EVENT",
+   "kind": "text_mismatch",
+   "field": "text",
+   "official": "【メイン】自分の場のドン!!が10枚ある場合、自分の手札から「マーシャル・Ｄ・ティーチ」1枚までを、登場させる。その後、相手のライフの上から1枚までを、持ち主の手札に加える。",
+   "current": "【メイン】場のドン10枚なら手札からティーチ1枚を登場し相手ライフ1枚を手札へ 【トリガー】カード2枚を引き手札1枚を捨てる"
+  },
+  {
+   "no": "OP16-117",
+   "set": "OP16",
+   "name": "闇穴道",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】自分のトラッシュから特徴《黒ひげ海賊団》を持つカード1枚までを、手札に加える。",
+   "current": null
+  },
+  {
+   "no": "OP16-119",
+   "set": "OP16",
+   "name": "マーシャル・Ｄ・ティーチ",
+   "type": "CHAR",
+   "kind": "text_mismatch",
+   "field": "text",
+   "official": "【登場時】自分のデッキの上から3枚を見て、カード1枚までを、ライフの上に加える。その後、残りを好きな順番でデッキの下に置く。",
+   "current": "【登場時】デッキ上3枚から1枚をライフの上に加える"
+  },
+  {
+   "no": "OP16-119",
+   "set": "OP16",
+   "name": "マーシャル・Ｄ・ティーチ",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】相手のキャラ1枚までを、このターン中、効果を無効にする。その後、相手のコスト5以下のキャラ1枚までを、KOする。",
+   "current": null
+  },
+  {
+   "no": "P-002",
+   "set": "P",
+   "name": "冒険のにおいがするっ!!!",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】このカードの【メイン】効果を発動する。",
+   "current": null
+  },
+  {
+   "no": "P-014",
+   "set": "P",
+   "name": "コビー",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】このカードを登場させる。",
+   "current": null
+  },
+  {
+   "no": "P-014_r1",
+   "set": "P",
+   "name": "コビー",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】このカードを登場させる。",
+   "current": null
+  },
+  {
+   "no": "P-024",
+   "set": "P",
+   "name": "海賊王に!!!おれはなるっ!!!!",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】自分のリーダーかキャラ1枚までを、このターン中、パワー+1000。",
+   "current": null
+  },
+  {
+   "no": "P-042",
+   "set": "P",
+   "name": "ロロノア・ゾロ",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】相手のコスト4以下のキャラ1枚までを、KOする。",
+   "current": null
+  },
+  {
+   "no": "P-057",
+   "set": "P",
+   "name": "ウタカタララバイ",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】このカードの【メイン】効果を発動する。",
+   "current": null
+  },
+  {
+   "no": "P-058",
+   "set": "P",
+   "name": "風のゆくえ",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】自分の特徴《FILM》を持つキャラすべてを、アクティブにする。",
+   "current": null
+  },
+  {
+   "no": "P-081",
+   "set": "P",
+   "name": "ジュラキュール・ミホーク",
+   "type": "CHAR",
+   "kind": "field_mismatch",
+   "field": "attribute",
+   "official": "斬",
+   "current": null
+  },
+  {
+   "no": "P-081_r1",
+   "set": "P",
+   "name": "ジュラキュール・ミホーク",
+   "type": "CHAR",
+   "kind": "field_mismatch",
+   "field": "attribute",
+   "official": "斬",
+   "current": null
+  },
+  {
+   "no": "P-082",
+   "set": "P",
+   "name": "クロコダイル",
+   "type": "CHAR",
+   "kind": "field_mismatch",
+   "field": "attribute",
+   "official": "特",
+   "current": null
+  },
+  {
+   "no": "P-082_r1",
+   "set": "P",
+   "name": "クロコダイル",
+   "type": "CHAR",
+   "kind": "field_mismatch",
+   "field": "attribute",
+   "official": "特",
+   "current": null
+  },
+  {
+   "no": "P-088",
+   "set": "P",
+   "name": "トラファルガー・ロー",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】自分のリーダーが特徴《超新星》を持ち、お互いのライフの合計枚数が5枚以下の場合、このカードを登場させる。",
+   "current": null
+  },
+  {
+   "no": "P-088_r1",
+   "set": "P",
+   "name": "トラファルガー・ロー",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】自分のリーダーが特徴《超新星》を持ち、お互いのライフの合計枚数が5枚以下の場合、このカードを登場させる。",
+   "current": null
+  },
+  {
+   "no": "P-096",
+   "set": "P",
+   "name": "少女",
+   "type": "CHAR",
+   "kind": "text_mismatch",
+   "field": "text",
+   "official": "【登場時】カード1枚を引き、自分の手札1枚を捨てる。 【起動メイン】【ターン1回】自分の「ナミ」1枚にレストのドン‼1枚までを、付与する。",
+   "current": "【登場時】カード1枚を引き、自分の手札1枚を捨てる 【起動メイン】ターン1回：自分の「ナミ」1枚にレストのドン1枚までを付与"
+  },
+  {
+   "no": "P-106",
+   "set": "P",
+   "name": "モンキー・D・ルフィ",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】カード1枚を引き、相手のコスト2以下のキャラ1枚までを、KOする。",
+   "current": null
+  },
+  {
+   "no": "P-113",
+   "set": "P",
+   "name": "ジュエリー・ボニー",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】相手のコスト3以下のキャラ1枚までを、KOする。",
+   "current": null
+  },
+  {
+   "no": "P-115",
+   "set": "P",
+   "name": "ボア・ハンコック",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】自分の手札からパワー5000以下の黄の【トリガー】を持つキャラカード1枚までを、登場させる。",
+   "current": null
+  },
+  {
+   "no": "P-150",
+   "set": "P",
+   "name": "クザン",
+   "type": "CHAR",
+   "kind": "missing_in_db",
+   "field": null,
+   "official": null,
+   "current": null
+  },
+  {
+   "no": "P-151",
+   "set": "P",
+   "name": "スモーカー",
+   "type": "CHAR",
+   "kind": "missing_in_db",
+   "field": null,
+   "official": null,
+   "current": null
+  },
+  {
+   "no": "PRB02-008",
+   "set": "PRB02",
+   "name": "マルコ",
+   "type": "CHAR",
+   "kind": "text_mismatch",
+   "field": "text",
+   "official": "【ブロッカー】(相手のアタックの後、このカードをレストにし、アタックの対象をこのカードにできる) 【KO時】カード2枚を引く。",
+   "current": "【ブロッカー】【KO時】2ドロー"
+  },
+  {
+   "no": "PRB02-012",
+   "set": "PRB02",
+   "name": "ナミ",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】このカードを登場させる。",
+   "current": null
+  },
+  {
+   "no": "PRB02-016",
+   "set": "PRB02",
+   "name": "お玉",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】相手のコスト4以下のキャラ1枚までを、レストにする。",
+   "current": null
+  },
+  {
+   "no": "PRB02-017",
+   "set": "PRB02",
+   "name": "ボア・ハンコック",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】相手のコスト4以下のキャラ1枚までを、KOする。",
+   "current": null
+  },
+  {
+   "no": "ST01-002",
+   "set": "ST01",
+   "name": "ウソップ",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】このカードを登場させる。",
+   "current": null
+  },
+  {
+   "no": "ST01-002_r1",
+   "set": "ST01",
+   "name": "ウソップ",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】このカードを登場させる。",
+   "current": null
+  },
+  {
+   "no": "ST01-014",
+   "set": "ST01",
+   "name": "毛皮強化",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】自分のリーダーかキャラ1枚までを、このターン中、パワー+1000。",
+   "current": null
+  },
+  {
+   "no": "ST01-014_r2",
+   "set": "ST01",
+   "name": "毛皮強化",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】自分のリーダーかキャラ1枚までを、このターン中、パワー+1000。",
+   "current": null
+  },
+  {
+   "no": "ST01-014_r3",
+   "set": "ST01",
+   "name": "毛皮強化",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】自分のリーダーかキャラ1枚までを、このターン中、パワー+1000。",
+   "current": null
+  },
+  {
+   "no": "ST01-015",
+   "set": "ST01",
+   "name": "ゴムゴムのJET銃",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】このカードの【メイン】効果を発動する。",
+   "current": null
+  },
+  {
+   "no": "ST01-015_r2",
+   "set": "ST01",
+   "name": "ゴムゴムのJET銃",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】このカードの【メイン】効果を発動する。",
+   "current": null
+  },
+  {
+   "no": "ST01-016",
+   "set": "ST01",
+   "name": "悪魔風脚",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】相手のコスト3以下の【ブロッカー】を持つキャラ1枚までを、KOする。",
+   "current": null
+  },
+  {
+   "no": "ST01-016_r1",
+   "set": "ST01",
+   "name": "悪魔風脚",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】相手のコスト3以下の【ブロッカー】を持つキャラ1枚までを、KOする。",
+   "current": null
+  },
+  {
+   "no": "ST02-005",
+   "set": "ST02",
+   "name": "キラー",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】このカードを登場させる。",
+   "current": null
+  },
+  {
+   "no": "ST02-005_r1",
+   "set": "ST02",
+   "name": "キラー",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】このカードを登場させる。",
+   "current": null
+  },
+  {
+   "no": "ST02-015",
+   "set": "ST02",
+   "name": "メス",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】自分のドン!!2枚までを、アクティブにする。",
+   "current": null
+  },
+  {
+   "no": "ST02-015_r1",
+   "set": "ST02",
+   "name": "メス",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】自分のドン!!2枚までを、アクティブにする。",
+   "current": null
+  },
+  {
+   "no": "ST02-017",
+   "set": "ST02",
+   "name": "藁備手刀",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】自分の手札のコスト2以下の特徴《超新星》を持つカード1枚までを、登場させる。",
+   "current": null
+  },
+  {
+   "no": "ST02-017_r1",
+   "set": "ST02",
+   "name": "藁備手刀",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】自分の手札のコスト2以下の特徴《超新星》を持つカード1枚までを、登場させる。",
+   "current": null
+  },
+  {
+   "no": "ST03-010",
+   "set": "ST03",
+   "name": "バーソロミュー・くま",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】このカードを登場させる。",
+   "current": null
+  },
+  {
+   "no": "ST03-013",
+   "set": "ST03",
+   "name": "ボア・ハンコック",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】このカードを登場させる。",
+   "current": null
+  },
+  {
+   "no": "ST03-013_r1",
+   "set": "ST03",
+   "name": "ボア・ハンコック",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】このカードを登場させる。",
+   "current": null
+  },
+  {
+   "no": "ST03-015",
+   "set": "ST03",
+   "name": "砂嵐",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】このカードの【メイン】効果を発動する。",
+   "current": null
+  },
+  {
+   "no": "ST03-016",
+   "set": "ST03",
+   "name": "つっぱり圧力砲",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】このカードの【カウンター】効果を発動する。",
+   "current": null
+  },
+  {
+   "no": "ST04-010",
+   "set": "ST04",
+   "name": "フーズ・フー",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】このカードを登場させる。",
+   "current": null
+  },
+  {
+   "no": "ST04-014",
+   "set": "ST04",
+   "name": "大看板”災害”",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】このカードの【メイン】効果を発動する。",
+   "current": null
+  },
+  {
+   "no": "ST04-015",
+   "set": "ST04",
+   "name": "無頼男爆弾",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】ドン!!デッキからドン!!1枚までをアクティブで追加する。",
+   "current": null
+  },
+  {
+   "no": "ST05-009",
+   "set": "ST05",
+   "name": "スカーレット",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】このカードを登場させる。",
+   "current": null
+  },
+  {
+   "no": "ST05-009_r1",
+   "set": "ST05",
+   "name": "スカーレット",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】このカードを登場させる。",
+   "current": null
+  },
+  {
+   "no": "ST05-016",
+   "set": "ST05",
+   "name": "獅子威し御所地巻き",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】ドン‼デッキからドン‼1枚までをアクティブで追加する。",
+   "current": null
+  },
+  {
+   "no": "ST05-016_r1",
+   "set": "ST05",
+   "name": "獅子威し御所地巻き",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】ドン‼デッキからドン‼1枚までをアクティブで追加する。",
+   "current": null
+  },
+  {
+   "no": "ST05-017",
+   "set": "ST05",
+   "name": "鎧合体",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】ドン‼デッキからドン‼1枚までをアクティブで追加する。",
+   "current": null
+  },
+  {
+   "no": "ST05-017_r1",
+   "set": "ST05",
+   "name": "鎧合体",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】ドン‼デッキからドン‼1枚までをアクティブで追加する。",
+   "current": null
+  },
+  {
+   "no": "ST06-014",
+   "set": "ST06",
+   "name": "衝撃波",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】相手のコスト4以下のキャラ1枚までを、KOする。",
+   "current": null
+  },
+  {
+   "no": "ST06-014_r1",
+   "set": "ST06",
+   "name": "衝撃波",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】相手のコスト4以下のキャラ1枚までを、KOする。",
+   "current": null
+  },
+  {
+   "no": "ST06-015",
+   "set": "ST06",
+   "name": "大噴火",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】相手は自身の手札1枚を選び、捨てる。",
+   "current": null
+  },
+  {
+   "no": "ST06-016",
+   "set": "ST06",
+   "name": "ホワイト・アウト",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】カード1枚を引き、自分のキャラは、このターン中、KOされない。",
+   "current": null
+  },
+  {
+   "no": "ST07-007",
+   "set": "ST07",
+   "name": "シャーロット・ブリュレ",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】このカードを登場させる。",
+   "current": null
+  },
+  {
+   "no": "ST07-007_r1",
+   "set": "ST07",
+   "name": "シャーロット・ブリュレ",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】このカードを登場させる。",
+   "current": null
+  },
+  {
+   "no": "ST07-009",
+   "set": "ST07",
+   "name": "シャーロット・モンドール",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】自分の手札1枚を捨てることができる：このカードを登場させる。",
+   "current": null
+  },
+  {
+   "no": "ST07-011",
+   "set": "ST07",
+   "name": "ゼウス",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】このカードを登場させる。",
+   "current": null
+  },
+  {
+   "no": "ST07-013",
+   "set": "ST07",
+   "name": "プロメテウス",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】このカードを登場させる。",
+   "current": null
+  },
+  {
+   "no": "ST07-015",
+   "set": "ST07",
+   "name": "ソウル・ポーカス",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】このカードの【メイン】効果を発動する。",
+   "current": null
+  },
+  {
+   "no": "ST07-016",
+   "set": "ST07",
+   "name": "力餅",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】カード1枚を引き、自分か相手のライフの上から1枚までを見て、ライフの上か下に置く。",
+   "current": null
+  },
+  {
+   "no": "ST07-017",
+   "set": "ST07",
+   "name": "クイーン・ママ・シャンテ号",
+   "type": "STAGE",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】このカードを登場させる。",
+   "current": null
+  },
+  {
+   "no": "ST08-007",
+   "set": "ST08",
+   "name": "ネフェルタリ・ビビ",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】このカードを登場させる。",
+   "current": null
+  },
+  {
+   "no": "ST08-014",
+   "set": "ST08",
+   "name": "ゴムゴムの鐘",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】自分のトラッシュのコスト2以下の黒のキャラカード1枚までを、手札に加える。",
+   "current": null
+  },
+  {
+   "no": "ST08-015",
+   "set": "ST08",
+   "name": "ゴムゴムの銃",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】カード1枚を引く。",
+   "current": null
+  },
+  {
+   "no": "ST09-002",
+   "set": "ST09",
+   "name": "雨月天ぷら",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】相手のコスト2以下のキャラ1枚までを、レストにし、このカードを手札に加える。",
+   "current": null
+  },
+  {
+   "no": "ST09-009",
+   "set": "ST09",
+   "name": "風月おむすび",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】相手のコスト1以下のキャラ1枚までを、KOし、このカードを手札に加える。",
+   "current": null
+  },
+  {
+   "no": "ST09-014",
+   "set": "ST09",
+   "name": "鳴鏑",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】自分の手札2枚を捨てることができる：自分のデッキの上から1枚までを、ライフの上に加える。",
+   "current": null
+  },
+  {
+   "no": "ST09-014_r1",
+   "set": "ST09",
+   "name": "鳴鏑",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】自分の手札2枚を捨てることができる：自分のデッキの上から1枚までを、ライフの上に加える。",
+   "current": null
+  },
+  {
+   "no": "ST09-015",
+   "set": "ST09",
+   "name": "雷鳴八卦",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】カード1枚を引く。",
+   "current": null
+  },
+  {
+   "no": "ST10-016",
+   "set": "ST10",
+   "name": "ゴムゴムの猿王銃乱打",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】自分のリーダー1枚までを、次の自分のターン終了時まで、パワー+1000。",
+   "current": null
+  },
+  {
+   "no": "ST10-017",
+   "set": "ST10",
+   "name": "磁気万力",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】ドン‼デッキからドン‼1枚までを、アクティブで追加する。",
+   "current": null
+  },
+  {
+   "no": "ST11-005",
+   "set": "ST11",
+   "name": "私は最強",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】自分のリーダーかキャラ1枚までを、このターン中、パワー+1000。",
+   "current": null
+  },
+  {
+   "no": "ST12-002",
+   "set": "ST12",
+   "name": "くいな",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】このカードを登場させる。",
+   "current": null
+  },
+  {
+   "no": "ST12-016",
+   "set": "ST12",
+   "name": "獅子歌歌",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】このカードの【メイン】効果を発動する。",
+   "current": null
+  },
+  {
+   "no": "ST13-017",
+   "set": "ST13",
+   "name": "「火炎」竜王",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】自分のライフの上か下から1枚を手札に加えることができる：自分の手札1枚までを、ライフの上に加える。",
+   "current": null
+  },
+  {
+   "no": "ST13-018",
+   "set": "ST13",
+   "name": "ゴムゴムのJET槍",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】自分のライフの上か下から1枚を手札に加えることができる：自分の手札1枚までを、ライフの上に加える。",
+   "current": null
+  },
+  {
+   "no": "ST13-019",
+   "set": "ST13",
+   "name": "3兄弟の絆",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】このカードの【メイン】効果を発動する。",
+   "current": null
+  },
+  {
+   "no": "ST13-019_r1",
+   "set": "ST13",
+   "name": "3兄弟の絆",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】このカードの【メイン】効果を発動する。",
+   "current": null
+  },
+  {
+   "no": "ST14-014",
+   "set": "ST14",
+   "name": "ゴムゴムの巨人の回転弾",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】自分のトラッシュからコスト2以下のキャラカード1枚までを、手札に加える。",
+   "current": null
+  },
+  {
+   "no": "ST14-015",
+   "set": "ST14",
+   "name": "ゴムゴムの悪魔風三刀流羊肉JET六百煩悩攻城砲",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】自分のコスト8以上のキャラがいる場合、相手のコスト5以下のキャラ1枚までを、KOする。",
+   "current": null
+  },
+  {
+   "no": "ST14-016",
+   "set": "ST14",
+   "name": "仲間がいる゛よ!!!!",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】相手のコスト3以下のキャラ1枚までを、KOする。",
+   "current": null
+  },
+  {
+   "no": "ST14-016_r1",
+   "set": "ST14",
+   "name": "仲間がいる゛よ!!!!",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】相手のコスト3以下のキャラ1枚までを、KOする。",
+   "current": null
+  },
+  {
+   "no": "ST17-004",
+   "set": "ST17",
+   "name": "ボア・ハンコック",
+   "type": "CHAR",
+   "kind": "text_mismatch",
+   "field": "text",
+   "official": "【ブロッカー】(相手のアタックの後、このカードをレストにし、アタックの対象をこのカードにできる) 【登場時】自分のデッキの上から3枚を見て、好きな順番に並び替え、デッキの上か下に置く。その後、自分の特徴《王下七武海》を持つ、リーダーかキャラ1枚にレストのドン‼1枚までを、付与する。",
+   "current": "【ブロッカー】【登場時】デッキ上3枚を見て好きな順で上か下に置き、その後王下七武海のリーダーかキャラ1枚にレストのドン1枚付与"
+  },
+  {
+   "no": "ST20-002",
+   "set": "ST20",
+   "name": "シャーロット・クラッカー",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】自分の手札1枚を捨てることができる：このカードを登場させる。",
+   "current": null
+  },
+  {
+   "no": "ST20-003",
+   "set": "ST20",
+   "name": "シャーロット・ブリュレ",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】自分か相手のライフの上から1枚までを見て、ライフの上か下に置く。その後、このカードを手札に加える。",
+   "current": null
+  },
+  {
+   "no": "ST20-003_r1",
+   "set": "ST20",
+   "name": "シャーロット・ブリュレ",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】自分か相手のライフの上から1枚までを見て、ライフの上か下に置く。その後、このカードを手札に加える。",
+   "current": null
+  },
+  {
+   "no": "ST20-004",
+   "set": "ST20",
+   "name": "シャーロット・プリン",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】相手のコスト3以下のキャラ1枚までを、レストにする。",
+   "current": null
+  },
+  {
+   "no": "ST21-016",
+   "set": "ST21",
+   "name": "ゴムゴムの白い鞭",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】相手のパワー4000以下のキャラ1枚までを、KOする。",
+   "current": null
+  },
+  {
+   "no": "ST21-017",
+   "set": "ST21",
+   "name": "ゴムゴムのモグラ銃",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】このカードの【メイン】効果を発動する。",
+   "current": null
+  },
+  {
+   "no": "ST22-002",
+   "set": "ST22",
+   "name": "イゾウ",
+   "type": "CHAR",
+   "kind": "text_mismatch",
+   "field": "text",
+   "official": "【登場時】自分のデッキの上から5枚を見て、「イゾウ」以外の『白ひげ海賊団』を含む特徴を持つカード1枚までを公開し、手札に加える。その後、残りを好きな順番でデッキの下に置く。 【相手のアタック時】このキャラをトラッシュに置くことができる：カード1枚を引き、自分の手札1枚をデッキの下に置く。",
+   "current": "【登場時】デッキ上5枚から白ひげ海賊団1枚を手札に。【相手のアタック時】自身をトラッシュ:1ドロー、手札1枚をデッキ下"
+  },
+  {
+   "no": "ST22-015",
+   "set": "ST22",
+   "name": "おれァ‘‘白ひげ‘‘だァア!!!!",
+   "type": "EVENT",
+   "kind": "text_mismatch",
+   "field": "text",
+   "official": "【メイン】自分のリーダーが『白ひげ海賊団』を含む特徴を持つ場合、自分の手札から「エドワード・ニューゲート」1枚までを、登場させる。その後、自分のライフの上か下から1枚を手札に加えてもよい。そうした場合、自分のリーダー1枚までを、次の相手のターン終了時まで、パワー+2000。",
+   "current": "【メイン】白ひげリーダーなら手札の「エドワード・ニューゲート」を登場。ライフ1枚を手札に加えてよく、そうしたらリーダー+2000(次相手ターン終了時まで)"
+  },
+  {
+   "no": "ST22-016",
+   "set": "ST22",
+   "name": "取り消せよ……!!!今の言葉……!!!",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】カード1枚を引く。",
+   "current": null
+  },
+  {
+   "no": "ST22-017",
+   "set": "ST22",
+   "name": "火拳",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】コスト3以下のキャラ1枚までを、持ち主の手札に戻す。",
+   "current": null
+  },
+  {
+   "no": "ST23-001",
+   "set": "ST23",
+   "name": "ウタ",
+   "type": "CHAR",
+   "kind": "text_mismatch",
+   "field": "text",
+   "official": "手札のこのカードは、自分のパワー10000以上のキャラがいる場合、コスト-4。 【ブロッカー】(相手のアタックの後、このカードをレストにし、アタックの対象をこのカードにできる)",
+   "current": "手札のこのカードは自分のパワー10000以上のキャラがいればコスト-4。【ブロッカー】"
+  },
+  {
+   "no": "ST28-003",
+   "set": "ST28",
+   "name": "錦えもん",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】自分のリーダーが特徴《ワノ国》を持ち、相手のライフが3枚以下の場合、このカードを登場させる。",
+   "current": null
+  },
+  {
+   "no": "ST29-003",
+   "set": "ST29",
+   "name": "カク",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】相手のコスト3以下のキャラ1枚までを、KOする。",
+   "current": null
+  },
+  {
+   "no": "ST29-004",
+   "set": "ST29",
+   "name": "サンジ",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】自分の手札1枚を捨てることができる：このカードを登場させる。",
+   "current": null
+  },
+  {
+   "no": "ST29-005",
+   "set": "ST29",
+   "name": "ジンベエ",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】自分のリーダーが「モンキー・Ｄ・ルフィ」の場合、このカードを登場させる。",
+   "current": null
+  },
+  {
+   "no": "ST29-007",
+   "set": "ST29",
+   "name": "トニートニー・チョッパー",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】自分の「モンキー・Ｄ・ルフィ」を、このターン中、パワー+2000。",
+   "current": null
+  },
+  {
+   "no": "ST29-008",
+   "set": "ST29",
+   "name": "ナミ",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】自分のリーダーが「モンキー・Ｄ・ルフィ」の場合、このカードを登場させる。",
+   "current": null
+  },
+  {
+   "no": "ST29-009",
+   "set": "ST29",
+   "name": "ニコ・ロビン",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】自分のリーダーが「モンキー・Ｄ・ルフィ」の場合、このカードを登場させる。",
+   "current": null
+  },
+  {
+   "no": "ST29-012",
+   "set": "ST29",
+   "name": "モンキー・Ｄ・ルフィ",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】このカードを登場させる。",
+   "current": null
+  },
+  {
+   "no": "ST29-013",
+   "set": "ST29",
+   "name": "ロブ・ルッチ",
+   "type": "CHAR",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】お互いのライフの合計枚数以下のコストを持つ相手のキャラ1枚までを、KOする。",
+   "current": null
+  },
+  {
+   "no": "ST29-015",
+   "set": "ST29",
+   "name": "温度レアァストライク!!!",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】カード1枚を引く。",
+   "current": null
+  },
+  {
+   "no": "ST29-017",
+   "set": "ST29",
+   "name": "死・獅子歌歌",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】カード2枚を引き、自分の手札1枚を捨てる。",
+   "current": null
+  },
+  {
+   "no": "ST30-015",
+   "set": "ST30",
+   "name": "この時代の名が!!!&quot;白ひげ&quot;だァ!!!",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】相手のパワー6000以下のキャラ1枚までを、KOする。",
+   "current": null
+  },
+  {
+   "no": "ST30-017",
+   "set": "ST30",
+   "name": "無茶ばっかりしやがって!!!",
+   "type": "EVENT",
+   "kind": "trigger_unimplemented",
+   "field": "trigger",
+   "official": "【トリガー】このカードの【メイン】効果を発動する。",
+   "current": null
+  }
+ ]
+}

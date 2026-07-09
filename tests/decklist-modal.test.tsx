@@ -28,12 +28,13 @@ const listBtns = () =>
   Array.from(document.querySelectorAll('button')).filter((b) => (b.textContent || '').includes('カードリスト'));
 
 describe('DeckSelect カードリストモーダル', () => {
-  it('各デッキカードに「📋 カードリスト」ボタンが出る（me/cpu 両グリッド分）', () => {
+  it('カルーセルに全デッキが並び、中央デッキ用の「カードリスト」ボタンが1つ出る', () => {
     render(<DeckSelect />);
     const decks = (engine.DECKS || []).length;
     expect(decks).toBeGreaterThanOrEqual(9); // 組み込み7 + 新規2
-    // 2グリッド（あなた/CPU）に各デッキ分＝decks*2
-    expect(listBtns().length).toBe(decks * 2);
+    // v2: グリッド2回ではなくカルーセル1本（.dsc-item がデッキ数分）＋アクティブデッキのメタ行に「カードリスト」1つ
+    expect(document.querySelectorAll('.dsc-item').length).toBe(decks);
+    expect(listBtns().length).toBe(1);
   });
 
   it('ボタン押下でモーダルが開き、カード画像（公式画像URL）と合計枚数が表示される', () => {
@@ -70,11 +71,13 @@ describe('DeckSelect カードリストモーダル', () => {
 
   it('新デッキ 青緑ルフィ のモーダルにリーダー名と50枚が出る', () => {
     render(<DeckSelect />);
-    // 「青緑ルフィ」デッキカード内のカードリストボタンを押す（ボタンは tier 昇順ソート済＝DECKS順とは別）
-    const cards = Array.from(document.querySelectorAll('.deck-card'));
-    const luffyCard = cards.find((c) => (c.textContent || '').includes('青緑ルフィ'));
-    expect(luffyCard).toBeTruthy();
-    const btn = Array.from(luffyCard!.querySelectorAll('button')).find((b) => (b.textContent || '').includes('カードリスト'))!;
+    // v2: カルーセルの「青緑ルフィ」をクリックして中央（アクティブ）にし、メタ行のカードリストを押す
+    const items = Array.from(document.querySelectorAll('.dsc-item'));
+    const luffyItem = items.find((c) => (c.textContent || '').includes('青緑ルフィ'));
+    expect(luffyItem).toBeTruthy();
+    act(() => { fireEvent.click(luffyItem!); });
+    const btn = listBtns()[0];
+    expect(btn).toBeTruthy();
     act(() => { fireEvent.click(btn); });
 
     // モーダル内にのみ出る情報で判定（画面のデッキ説明文には「モンキー・Ｄ・ルフィ」は無い）

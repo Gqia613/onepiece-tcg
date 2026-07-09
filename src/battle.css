@@ -5563,3 +5563,569 @@ button.hb-chip:not(.zero):not([disabled]):hover {
     background-position: -130% 0;
   }
 }
+
+/* ===== 16. デッキ選択 v2（VSステージ + リーダーカルーセル） ===== */
+.select-wrap.ds2 {
+  padding-bottom: 40px;
+}
+
+/* --- VS ステージ --- */
+.vs-stage {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(16px, 5vw, 44px);
+  margin: 2px 0 6px;
+}
+
+.vs-slot {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  text-align: center;
+  width: clamp(88px, 24vw, 124px);
+}
+
+.vs-card {
+  position: relative;
+  aspect-ratio: 5 / 7;
+  border-radius: 10px;
+  background: #081221;
+  border: 1px dashed var(--surface-edge);
+  overflow: hidden;
+  transition: border-color .2s, box-shadow .2s;
+}
+
+/* 現在選択中のステップ側スロットを点灯（どちらを選んでいるか迷わない） */
+.vs-slot.focus .vs-card {
+  border-color: var(--gold);
+  box-shadow: 0 0 0 1px var(--gold), 0 0 18px -4px var(--gold);
+}
+
+.vs-card .vs-art {
+  position: absolute;
+  inset: 0;
+  background: #0a1722 center/cover no-repeat;
+  border-radius: 10px;
+  box-shadow: inset 0 0 24px -8px var(--aura, transparent);
+}
+
+.vs-card .vs-empty {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: "Bebas Neue";
+  font-size: 34px;
+  color: var(--muted-2);
+}
+
+.vs-slot-lb {
+  margin-top: 5px;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.vs-slot-lb b {
+  font-size: 11px;
+  letter-spacing: .12em;
+  color: var(--muted);
+}
+
+.vs-slot-lb span {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--ink);
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.vs-mid {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  color: var(--gold);
+}
+
+.vs-emblem {
+  font-family: "Bebas Neue";
+  font-style: italic;
+  font-size: clamp(30px, 7vw, 46px);
+  line-height: 1;
+  letter-spacing: .04em;
+  color: var(--muted-2);
+  transition: color .25s, filter .25s, transform .25s;
+}
+
+/* 両デッキ確定 → VS が金色に燃える */
+.vs-stage.ready .vs-emblem {
+  background: linear-gradient(180deg, #fff7d4 0%, #ffd45a 45%, #ff9e2e 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 0 14px rgba(255, 200, 87, .65));
+  animation: vsPulse 1.6s ease-in-out infinite;
+}
+
+@keyframes vsPulse {
+
+  0%,
+  100% {
+    transform: scale(1)
+  }
+
+  50% {
+    transform: scale(1.12)
+  }
+}
+
+/* --- 設定行（先攻/CPU/開始/おまかせ） --- */
+.ds-controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin: 2px 0 4px;
+}
+
+.ds-random {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 38px;
+  padding: 7px 14px;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--gold-soft);
+  background: rgba(255, 200, 87, .08);
+  border: 1px solid rgba(255, 200, 87, .4);
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background .15s;
+}
+
+.ds-random:hover {
+  background: rgba(255, 200, 87, .16);
+}
+
+/* --- ステップタブ --- */
+.ds-step {
+  display: flex;
+  gap: 8px;
+  margin: 8px 0 0;
+  width: 100%;
+  max-width: 720px;
+  justify-content: center;
+}
+
+.ds-step-tab {
+  flex: 1 1 0;
+  max-width: 300px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 40px;
+  padding: 8px 12px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--muted);
+  background: rgba(255, 255, 255, .04);
+  border: 1px solid var(--surface-edge);
+  border-radius: 999px;
+  cursor: pointer;
+  transition: .18s;
+}
+
+.ds-step-tab.on {
+  color: #14202e;
+  background: linear-gradient(180deg, var(--self-glow), var(--self-accent));
+  border-color: transparent;
+  box-shadow: 0 4px 16px -6px var(--self-accent);
+}
+
+.ds-step-tab.on svg,
+.ds-step-tab svg {
+  color: currentColor;
+}
+
+/* --- リーダーカルーセル --- */
+.ds-rail-wrap {
+  position: relative;
+  width: 100%;
+  max-width: 1000px;
+  --dsw: clamp(140px, 38vw, 188px);
+}
+
+/* 中央背後のオーラ（アクティブデッキの色） */
+.ds-rail-wrap::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: min(70vw, 420px);
+  height: 78%;
+  transform: translate(-50%, -50%);
+  background: radial-gradient(ellipse at center, color-mix(in srgb, var(--aura, #3ec9ff) 26%, transparent) 0%, transparent 68%);
+  pointer-events: none;
+  transition: background .3s;
+}
+
+.ds-rail {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-snap-type: x mandatory;
+  padding: 20px calc(50% - var(--dsw) / 2) 14px;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+.ds-rail::-webkit-scrollbar {
+  display: none;
+}
+
+.dsc-item {
+  position: relative;
+  flex: 0 0 var(--dsw);
+  width: var(--dsw);
+  scroll-snap-align: center;
+  cursor: pointer;
+  transform: scale(.84);
+  filter: brightness(.5) saturate(.75);
+  transition: transform .28s cubic-bezier(.2, .8, .3, 1.1), filter .28s;
+}
+
+.dsc-item.on {
+  transform: scale(1);
+  filter: none;
+  z-index: 2;
+  /* 遅延あり＝先に拡大トランジション(.28s)を見せてから浮遊を開始 */
+  animation: dscFloat 3.2s ease-in-out .35s infinite;
+}
+
+@keyframes dscFloat {
+
+  0%,
+  100% {
+    transform: scale(1) translateY(0)
+  }
+
+  50% {
+    transform: scale(1) translateY(-5px)
+  }
+}
+
+.dsc-item .art {
+  aspect-ratio: 5 / 7;
+  border-radius: 14px;
+  overflow: hidden;
+  border: 1px solid var(--surface-edge);
+  background: #0a1722 center/cover no-repeat;
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  transition: border-color .25s, box-shadow .25s;
+}
+
+.dsc-item.on .art {
+  /* color-mix 非対応環境向けフォールバック → 対応環境では下の宣言が上書き */
+  border-color: var(--aura, #3ec9ff);
+  box-shadow: 0 18px 44px -10px rgba(0, 0, 0, .8), 0 0 44px -6px var(--aura, #3ec9ff);
+  border-color: color-mix(in srgb, var(--aura, #3ec9ff) 75%, #fff);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--aura, #3ec9ff) 70%, transparent),
+    0 18px 44px -10px rgba(0, 0, 0, .8),
+    0 0 44px -6px var(--aura, #3ec9ff);
+}
+
+.dsc-item .scrim {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, transparent 52%, rgba(2, 6, 13, .93) 94%);
+}
+
+.dsc-item .art-nm {
+  position: relative;
+  z-index: 3;
+  width: 100%;
+  padding: 6px 9px 8px;
+  font-weight: 900;
+  font-size: 13.5px;
+  color: #fff;
+  text-shadow: 0 1px 3px #000;
+  line-height: 1.25;
+}
+
+.dsc-tier {
+  position: absolute;
+  top: 7px;
+  left: 7px;
+  z-index: 4;
+  font-family: var(--font-num);
+  font-weight: 700;
+  font-size: 10.5px;
+  letter-spacing: .1em;
+  background: rgba(0, 0, 0, .78);
+  border: 1px solid var(--self-line);
+  color: var(--self-glow);
+  padding: 1px 8px;
+  border-radius: 999px;
+}
+
+/* このステップで選択済みのデッキ */
+.dsc-item.picked::after {
+  content: "✓ 選択中";
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  z-index: 5;
+  font-size: 10px;
+  font-weight: 900;
+  color: #1a1205;
+  background: linear-gradient(180deg, var(--gold-soft), var(--gold));
+  border-radius: 999px;
+  padding: 2px 8px;
+  box-shadow: 0 2px 8px #000a;
+}
+
+/* PC用の前後送り矢印（タッチはスワイプが主導線） */
+.ds-arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 6;
+  width: 40px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 26px;
+  line-height: 1;
+  color: var(--ink);
+  background: rgba(4, 12, 22, .72);
+  border: 1px solid var(--surface-edge);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: .15s;
+}
+
+.ds-arrow:hover {
+  border-color: var(--gold);
+  color: var(--gold-soft);
+}
+
+.ds-arrow.left {
+  left: 4px;
+}
+
+.ds-arrow.right {
+  right: 4px;
+}
+
+/* --- 中央デッキのメタ情報 --- */
+.ds-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 7px;
+  max-width: 620px;
+  width: 100%;
+  text-align: center;
+}
+
+.dsm-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.dsm-tier {
+  font-family: var(--font-num);
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: .1em;
+  border: 1px solid var(--self-line);
+  color: var(--self-glow);
+  padding: 1px 9px;
+  border-radius: 999px;
+}
+
+.dsm-dots {
+  display: inline-flex;
+  gap: 4px;
+}
+
+.dsm-usage {
+  font-size: 11.5px;
+  color: var(--muted);
+}
+
+.dsm-desc {
+  font-size: 12px;
+  color: var(--ink);
+  line-height: 1.65;
+  max-width: 560px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.dsm-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.dsm-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 34px;
+  padding: 5px 13px;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--ink);
+  background: rgba(0, 0, 0, .5);
+  border: 1px solid var(--surface-edge);
+  border-radius: 999px;
+  cursor: pointer;
+  transition: .15s;
+}
+
+.dsm-pill:hover {
+  border-color: var(--gold);
+}
+
+.dsm-pill.gold {
+  color: var(--gold-soft);
+}
+
+.dsm-pill.danger {
+  color: var(--danger-glow);
+}
+
+.btn-primary.ds-decide {
+  margin-top: 2px;
+  min-height: 46px;
+  padding: 10px 34px;
+}
+
+/* --- スマホ: 開始バーを親指域に固定 --- */
+.ds-startbar {
+  display: none;
+}
+
+@media(max-width:680px) {
+  .select-wrap.ds2 {
+    padding: 16px 12px calc(96px + env(safe-area-inset-bottom, 0px));
+    /* 下部固定バーに隠れない */
+  }
+
+  .ds-start-inline {
+    display: none;
+    /* スマホは下部固定バーが開始導線（両方選ぶまでは出ない＝迷いなし） */
+  }
+
+  .ds-startbar {
+    display: block;
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 40;
+    padding: 12px 14px calc(12px + env(safe-area-inset-bottom, 0px));
+    background: linear-gradient(180deg, transparent, rgba(2, 8, 16, .92) 34%);
+    pointer-events: none;
+  }
+
+  .ds-startbar .btn-primary {
+    pointer-events: auto;
+    width: 100%;
+    min-height: 50px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 8px 28px -6px rgba(255, 200, 87, .5);
+  }
+
+  .ds-arrow {
+    width: 30px;
+    height: 44px;
+    font-size: 20px;
+  }
+}
+
+/* --- 削除確認モーダル（window.confirm 置き換え） --- */
+.ds-confirm-back {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  background: rgba(2, 8, 16, .6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.ds-confirm {
+  width: min(92vw, 400px);
+  background: linear-gradient(180deg, rgba(14, 30, 52, .97), rgba(7, 16, 30, .98));
+  border: 1px solid var(--danger);
+  border-radius: 16px;
+  padding: 18px 18px calc(16px + env(safe-area-inset-bottom, 0px) / 2);
+  text-align: center;
+  box-shadow: var(--elev-3), 0 0 30px -8px var(--danger);
+}
+
+.ds-confirm h3 {
+  margin: 0 0 8px;
+  font-size: 16px;
+  color: var(--danger-glow);
+}
+
+.ds-confirm p {
+  margin: 0 0 14px;
+  font-size: 13px;
+  color: var(--ink);
+  line-height: 1.7;
+}
+
+.ds-confirm-btns {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ds-confirm-btns .dsc-del {
+  min-height: 46px;
+  border: none;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 800;
+  color: #fff;
+  background: linear-gradient(180deg, var(--danger-glow), var(--danger));
+  cursor: pointer;
+}
+
+.ds-confirm-btns .dsc-cancel {
+  min-height: 44px;
+  border: 1px solid var(--surface-edge);
+  border-radius: 10px;
+  font-size: 13.5px;
+  color: var(--ink);
+  background: rgba(255, 255, 255, .05);
+  cursor: pointer;
+}
