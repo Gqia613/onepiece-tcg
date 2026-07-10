@@ -70,21 +70,38 @@ const lib: Record<string, () => void> = {
 // ピッチ固定で鳴らすジングル系（音楽的なフレーズはデチューンしない）
 const STABLE = new Set(['reveal', 'win', 'lose', 'turnstart', 'summonRare', 'summonSec', 'finish']);
 
+// ★iOSキープアライブ: 無音バッファをループで鳴らし続け、AudioContextの
+//   オーディオセッションを常にアクティブに保つ。iOSは resume() がユーザー操作
+//   なしでは効かないため「落とさない」ことが唯一確実。BGM停止でもSEが死なない。
+let keepAlive: AudioBufferSourceNode | null = null;
+function startKeepAlive() {
+  const c = ac();
+  if (!c || keepAlive) return;
+  try {
+    const buf = c.createBuffer(1, Math.max(1, Math.floor(c.sampleRate * 0.5)), c.sampleRate); // 0.5秒の無音
+    keepAlive = c.createBufferSource();
+    keepAlive.buffer = buf;
+    keepAlive.loop = true;
+    keepAlive.connect(c.destination);
+    keepAlive.start(0);
+  } catch { keepAlive = null; }
+}
+
 export function unlockAudio() {
   unlocked = true;
   const c = ac();
-  if (c && c.state === 'suspended') { try { c.resume(); } catch { /* ignore */ } }
+  if (c && c.state !== 'running') { try { c.resume(); } catch { /* ignore */ } }
   ensureBgmEl(); // 最初のユーザー操作でBGM要素も準備（自動再生アンロック）
   routeBgm();    // BGMをAudioContextのグラフに接続（SEとセッション統合＝BGM停止でSEが死なない）
+  startKeepAlive(); // 無音音源でセッションを常時アクティブに保つ
 }
 
 export function playSfx(name: string) {
   if (!unlocked || muted) return;
-  // ★BGM(HTMLAudio)を止めた後などに AudioContext が suspended になると SE が無音になる
-  //   （特にiOS: WebAudioとHTMLMediaElementがオーディオ出力を共有し、BGM停止で出力が休止）。
-  //   再生のたびに suspended を検知して resume＝自己修復（BGM ON/OFF と SE は独立を保証）。
+  // suspended/interrupted なら復帰を試みる（保険。iOSでは操作なしだと効かないことがあるため
+  //   本命は startKeepAlive によるセッション維持）。
   const c = ac();
-  if (c && c.state === 'suspended') { try { c.resume(); } catch { /* ignore */ } }
+  if (c && c.state !== 'running') { try { c.resume(); } catch { /* ignore */ } }
   pitchF = STABLE.has(name) ? 1 : 0.95 + Math.random() * 0.1; // ±5%
   try { (lib[name] || (() => {}))(); } catch { /* ignore */ }
   pitchF = 1;
@@ -108,6 +125,7 @@ let bgmEl: HTMLAudioElement | null = null;
 let bgmSource: MediaElementAudioSourceNode | null = null;
 let bgmGain: GainNode | null = null;
 let bgmVol = 0.4;          // 目標音量（0..1）
+let bgmEnabled = true;     // 可聴(true)/消音(false)。★要素は止めず gain で制御（iOSでpauseするとSEが死ぬため）
 let curSrc = '';           // 再生中/指定中の src
 let fadeTimer: number | null = null;
 
@@ -167,12 +185,13 @@ function fadeTo(target: number, ms: number, onDone?: () => void) {
   }, 40);
 }
 
-// 指定srcのBGMをフェードインで再生。同じ曲を再生中なら何もしない（連続呼び出し安全）。
+// 指定srcのBGMを再生（要素は盤面中ずっと再生し続ける＝セッション維持）。
+// 可聴かどうかは bgmEnabled（gain）で制御。同じ曲を再生中なら何もしない。
 export function startBgm(src: string) {
   const el = ensureBgmEl();
   if (!el) return;
   routeBgm(); // AudioContext のグラフへ接続（unlock 後。SE とセッション統合）
-  if (curSrc === src && !el.paused) return;
+  if (curSrc === src && !el.paused) { fadeTo(bgmEnabled ? bgmVol : 0, 400); return; }
   curSrc = src;
   try {
     el.src = src;
@@ -181,8 +200,16 @@ export function startBgm(src: string) {
     if (p && typeof (p as Promise<void>).catch === 'function') {
       (p as Promise<void>).catch(() => { /* 自動再生拒否は無視（次のユーザー操作で再試行） */ });
     }
-    fadeTo(bgmVol, 800);
+    fadeTo(bgmEnabled ? bgmVol : 0, 800); // OFFなら無音のまま再生（要素は動かしてセッション維持）
   } catch { /* ignore */ }
+}
+
+// BGMの可聴/消音を切り替える。★要素は止めない（pauseするとiOSでSEも無音になるため）。
+// gain のフェードだけで音を消す＝オーディオセッションは生き続け、SEは影響を受けない。
+export function setBgmEnabled(on: boolean) {
+  bgmEnabled = on;
+  const el = bgmEl;
+  if (el && !el.paused) { clearFade(); fadeTo(on ? bgmVol : 0, on ? 500 : 350); }
 }
 
 // BGM停止。fade:true でフェードアウトしてから pause。
@@ -204,7 +231,7 @@ export function stopBgm(opts?: { fade?: boolean }) {
 export function setBgmVolume(v: number) {
   bgmVol = Math.max(0, Math.min(1, v));
   const el = bgmEl;
-  if (el && curSrc && !el.paused) { clearFade(); applyBgmLevel(bgmVol); }
+  if (el && curSrc && !el.paused && bgmEnabled) { clearFade(); applyBgmLevel(bgmVol); } // 消音中は反映しない（無音を保つ）
 }
 
 export function getBgmVolume() { return bgmVol; }

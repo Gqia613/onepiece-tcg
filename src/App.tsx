@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from './state/auth';
 import { useEngineStore } from './state/engineStore';
-import { setAudioMuted, unlockAudio, startBgm, stopBgm, setBgmVolume as applyBgmVolume, playSfx } from './audio';
+import { setAudioMuted, unlockAudio, startBgm, stopBgm, setBgmEnabled, setBgmVolume as applyBgmVolume, playSfx } from './audio';
 import Login from './screens/Login';
 import Home from './screens/Home';
 import Decks from './screens/Decks';
@@ -132,15 +132,18 @@ function Shell({ username, logout }: { username: string; logout: () => void }) {
     return () => { window.removeEventListener('pointerdown', unlock); window.removeEventListener('click', onClick); };
   }, []);
 
-  // BGMのライフサイクル: 盤面表示中(かつ勝敗未確定・BGM ON)で再生、離脱/中断/勝敗でフェードアウト。
+  // BGMのライフサイクル。★要素の再生/停止は「盤面にいるか」だけで決める（BGM OFFや勝敗でも
+  //   盤面中は無音で鳴らし続ける＝オーディオセッションを維持しSEを死なせない）。可聴/消音は
+  //   setBgmEnabled(gain)で制御。盤面を離れた時だけ要素を止める。
   // random は開始時に1回だけ抽選（version bump では再抽選しない＝ref ガードで多重startを防止）。
   useEffect(() => {
     const eng = useEngineStore.getState().engine;
-    const shouldPlay = !!eng?.G.inGame && location.pathname === '/battle/play' && !end && bgmOn;
-    if (shouldPlay && !bgmActiveRef.current) {
+    const onBattle = !!eng?.G.inGame && location.pathname === '/battle/play';
+    setBgmEnabled(bgmOn && !end); // 音は gain で消す（勝敗中も要素は動かす＝勝敗SEのセッション維持）
+    if (onBattle && !bgmActiveRef.current) {
       bgmActiveRef.current = true;
       startBgm(resolveBgmSrc(bgmTrack));
-    } else if (!shouldPlay && bgmActiveRef.current) {
+    } else if (!onBattle && bgmActiveRef.current) {
       bgmActiveRef.current = false;
       stopBgm({ fade: true });
     }
@@ -165,8 +168,9 @@ function Shell({ username, logout }: { username: string; logout: () => void }) {
   function toggleBgm() {
     const on = !bgmOn;
     setBgmOn(on);
-    // OFFは即停止。ONは lifecycle effect が盤面表示中を見て開始する。
-    if (!on) { bgmActiveRef.current = false; stopBgm({ fade: true }); }
+    // ★要素は止めない。gain で消音するだけ（pauseするとiOSでSEも無音になるため）。
+    //   盤面中は無音でBGM要素を鳴らし続けてセッションを維持する。ONは lifecycle が反映。
+    setBgmEnabled(on && !end);
     persistSettings();
   }
 
