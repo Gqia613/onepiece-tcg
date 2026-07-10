@@ -82,14 +82,44 @@ window.DECK_PLANS = {
            ②6cヤマト→即起動(自壊)→トラッシュの8cヤマト登場(速攻)。8c/9cを先に捨てるのは既存ハードコードが担当。 */
     '_OP16-079': {   // 黒ヤマト（非curatedリーダーは番号キー: leaderKeyOf(side)が '_OP16-079' を返す）
       lines: [
+        /* ★E49b実験(exp:1): deep-research裏付けの「5段チェーン」＝9cモモの登場時効果で6cヤマトを蘇生(steering)→即自壊→
+           8cヤマトまで連鎖(7ドンでアタック3回増・8000+6000残存・yuyu-tei/PROS進行表で確認)。前提が揃う時だけ照合し、
+           揃わない時は下の基本形が照合する（両方照合した時はロールアウト評価が良い方を選ぶ）。 */
+        { id: 'momo-chain', exp: 1, don: [7, 99],
+          need: { hand: [{ no: 'OP16-084' }, { no: 'OP16-087' }], trash: [{ no: 'OP16-085' }, { no: 'OP16-098' }, { name: 'ヤマト', minCost: 8 }], donTotalMin: 9 },
+          pick: ['OP16-098', 'OP16-097'],
+          seq: [{ k: 'char', no: 'OP16-084' }, { k: 'char', no: 'OP16-087' }, { k: 'act', no: 'OP16-084' }, { k: 'act', no: 'OP16-098' }] },
+        { id: 'momo-chain-standing', exp: 1, don: [2, 99],
+          need: { hand: [{ no: 'OP16-087' }], board: [{ no: 'OP16-084' }], trash: [{ no: 'OP16-085' }, { no: 'OP16-098' }, { name: 'ヤマト', minCost: 8 }], donTotalMin: 9 },
+          pick: ['OP16-098', 'OP16-097'],
+          seq: [{ k: 'char', no: 'OP16-087' }, { k: 'act', no: 'OP16-084' }, { k: 'act', no: 'OP16-098' }] },
+        { id: 'enkiri-momo-chain', exp: 1, don: [9, 99],
+          need: { hand: [{ no: 'OP16-099' }, { no: 'OP16-087' }], trash: [{ no: 'OP16-084' }, { no: 'OP16-085' }, { no: 'OP16-098' }, { name: 'ヤマト', minCost: 8 }], donTotalMin: 9 },
+          pick: ['OP16-084', 'OP16-098', 'OP16-097'],
+          seq: [{ k: 'event', no: 'OP16-099' }, { k: 'char', no: 'OP16-087' }, { k: 'act', no: 'OP16-084' }, { k: 'act', no: 'OP16-098' }] },
         { id: 'momo-combo', don: [7, 99],                          // 5cモモ+しのぶ同一ターン: しのぶ自壊で+20→起動条件(コスト20/ドン9)成立→9cモモ(速攻)
           need: { hand: [{ no: 'OP16-084' }, { no: 'OP16-087' }], trash: [{ no: 'OP16-085' }], donTotalMin: 9 },
           seq: [{ k: 'char', no: 'OP16-084' }, { k: 'char', no: 'OP16-087' }, { k: 'act', no: 'OP16-084' }] },
         { id: 'momo-combo-standing', don: [2, 99],                 // 5cモモが既に盤面: しのぶだけ追加で起動
           need: { hand: [{ no: 'OP16-087' }], board: [{ no: 'OP16-084' }], trash: [{ no: 'OP16-085' }], donTotalMin: 9 },
           seq: [{ k: 'char', no: 'OP16-087' }, { k: 'act', no: 'OP16-084' }] },
+        /* ★E51(rec:1・測定中): 097の回収先をソース推奨どおり「しのぶ→5モモ」に修正した変種（ユーザー指摘）。
+           E49bの098回収優先は単一ソース(2-1票)のラインC解釈で、高確度(3-0×2)の推奨「回収先=2しのぶor5もものすけの
+           多く見えている方」を上書きしていた誤り。st.pick=ステップ別steering（縁切り=098蘇生と回収=しのぶを両立）。 */
+        /* v2: pickR=回収(trashToHand)専用steering。v1(回収した しのぶを同ターンに空撃ち登場)は2帯-4.2ptの交絡実装だった。
+           v2は「しのぶを回収して温存」(コスト2以下登場のステップには087を含めない=牛マル/お玉が出る)。回収の最終フォールバックは098(ループ弾)。 */
+        { id: 'yamato-revive-rec', rec: 1, don: [6, 99],
+          need: { hand: [{ no: 'OP16-098' }], trash: [{ name: 'ヤマト', minCost: 8 }] },
+          pick: ['OP16-097'], pickR: ['OP16-087', 'OP16-084', 'OP16-098'],
+          seq: [{ k: 'char', no: 'OP16-098' }, { k: 'act', no: 'OP16-098' }] },
+        { id: 'enkiri-yamato-rec', rec: 1, don: [7, 99],
+          need: { hand: [{ no: 'OP16-099' }], trash: [{ no: 'OP16-098' }, { name: 'ヤマト', minCost: 8 }] },
+          pick: ['OP16-098'], pickR: ['OP16-087', 'OP16-084', 'OP16-098'],
+          seq: [{ k: 'event', no: 'OP16-099' }, { k: 'act', no: 'OP16-098', pick: ['OP16-097'] }] },
         { id: 'yamato-revive', don: [6, 99],                       // 6cヤマト登場→即起動(自壊)→トラッシュの8cヤマトを速攻登場
           need: { hand: [{ no: 'OP16-098' }], trash: [{ name: 'ヤマト', minCost: 8 }] },
+          // ★E49b: 蘇生先は回収型097を基本優先(2ソース一致)→097の登場時に自壊直後の098を回収=次ターンの反復(ラインC)へ
+          pick: ['OP16-097', 'OP16-098'],
           seq: [{ k: 'char', no: 'OP16-098' }, { k: 'act', no: 'OP16-098' }] },
         /* ★E49採用(2026-07-10・ミラーN=120×2帯 +7.5pt(10/1 p=0.012★)/+9.2pt(11/0 p=0.001★)＝E48比の純上乗せで有意):
            縁切り(OP16-099)＝ドン6レスト→ミル5→トラッシュのコスト6以下ワノ国を蘇生(リーダー効果で速攻)を起点に、
@@ -101,13 +131,16 @@ window.DECK_PLANS = {
           seq: [{ k: 'event', no: 'OP16-099' }, { k: 'char', no: 'OP16-087' }, { k: 'act', no: 'OP16-084' }] },
         { id: 'enkiri-yamato', don: [7, 99],               // 縁切りでトラッシュの6cヤマト蘇生(速攻)→即起動(自壊)→8cヤマトも速攻
           need: { hand: [{ no: 'OP16-099' }], trash: [{ no: 'OP16-098' }, { name: 'ヤマト', minCost: 8 }] },
-          pick: ['OP16-098'],
+          pick: ['OP16-098', 'OP16-097'],                  // ★E49b: 蘇生は098→(act)097優先→097登場時に098を回収=反復ループ
           seq: [{ k: 'event', no: 'OP16-099' }, { k: 'act', no: 'OP16-098' }] },
         { id: 'yamato97-shinobu', don: [8, 99],            // 8cヤマト(回収型)でトラッシュのしのぶ回収→コスト2以下登場→+20→盤面の5cモモ起動→9cモモ
           need: { hand: [{ no: 'OP16-097' }], trash: [{ no: 'OP16-087' }, { no: 'OP16-085' }], board: [{ no: 'OP16-084' }], donTotalMin: 9 },
           pick: ['OP16-087'],
           seq: [{ k: 'char', no: 'OP16-097' }, { k: 'act', no: 'OP16-084' }] },
       ],
+      // ★E50(ユーザー観察): しのぶはコンボ専用パーツ＝汎用展開で素出ししない（モモの助不在では自壊効果が空撃ち・
+      //   即除去される・カウンター2000として手札温存が正しい）。正当なプレイは全てライン経由。
+      avoid: [{ no: 'OP16-087' }],
     },
     /* 青黄ハンコック(E47・linesのみ): トリガー登場をリーダードローに変換する受けデッキ。
        カーブ「3→5→7→9」とゾンビ型ライフ仕込み・芳香脚リーサルが検証済みの幹（docs/deck-lines.md）。 */
@@ -226,6 +259,7 @@ function matchDeckLines(side) {
   const out = [];
   for (const ln of plan.lines) {
     if (ln.exp && !G._lineExp) continue;   // E49: 実験ライン（exp:1）は G._lineExp(AGENTS.lineh2)時のみ。採用時にexpを外して昇格
+    if (ln.rec && !G._lineRec) continue;   // E51: 回収優先度v2ライン（rec:1）は G._lineRec(AGENTS.linerec)時のみ。採用時にrecを外して置換
     if (ln.don && (P.don.active < ln.don[0] || P.don.active > ln.don[1])) continue;
     const nd = ln.need || {};
     if (nd.handMin && P.hand.length < nd.handMin) continue;
@@ -237,7 +271,17 @@ function matchDeckLines(side) {
     if (!(ln.seq || []).every(st => st.k === 'act' || P.hand.some(c => c.base.no === st.no))) continue;
     out.push(ln);
   }
-  return out.slice(0, 3);   // 評価コスト上限（1ターンに比較するライン候補は最大3）
+  return out.slice(0, 4);   // 評価コスト上限（1ターンに比較するライン候補は最大4。チェーン変種を先頭に並べ基本形と共存させる）
+}
+/* ★E50: ライン専用パーツの素出し抑制。plan.avoid に合致するカードは汎用キャラ展開の候補から外す
+   （正当なプレイは全てライン(seq)経由=applyAction直呼びでこのフィルタを通らない）。
+   ユーザー観察由来: しのぶをモモの助不在で素出し→自壊効果が空撃ち(+20の対象なし)→残っても即除去。
+   しのぶはカウンター2000＝手札温存の価値が高い。G._lineAvoid(AGENTS.lineav)ゲート→測定合格で既定化。 */
+function planAvoidPlay(side, card) {
+  const DP = (typeof window !== 'undefined' && window.DECK_PLANS) || null;
+  const plan = DP && DP.byLeader && DP.byLeader[leaderKeyOf(side)];
+  if (!plan || !plan.avoid) return false;
+  return plan.avoid.some(r => planCardMatch(card, r));
 }
 // 捨て札保護: plan.holds に合致し、手札の同名枚数が keep 以下なら保護（=捨て札ソートの最後尾へ）。余剰コピーは保護しない。
 function planDiscardProtect(side, card) {

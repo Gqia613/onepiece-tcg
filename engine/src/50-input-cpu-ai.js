@@ -459,9 +459,11 @@
       {
         const lineRun = G._lineExec; G._lineExec = null;
         if (lineRun && lineRun.seq && typeof applyAction === 'function' && P._noPlayTurn !== G.turnSeq) {
-          G._linePick = (lineRun.pick && lineRun.pick.slice()) || null;   // ★E49: ライン実行中だけ対象steering(蘇生/回収の優先no)
+          const basePick = (lineRun.pick && lineRun.pick.slice()) || null;   // ★E49: ライン実行中だけ対象steering(蘇生/回収の優先no)
           try {
             for (const st of lineRun.seq) {
+              G._linePick = (st.pick && st.pick.slice()) || basePick;   // ★E51: ステップ別pick（同じカードが手順の役割ごとに優先度を変える。既存データはst.pick無し=従来どおり）
+              G._linePickR = (st.pickR && st.pickR.slice()) || (lineRun.pickR && lineRun.pickR.slice()) || null;   // ★E51v2: 回収(trashToHand)専用pick＝「回収するが同ターンには出さない」を分離
               if (G.winner) return;
               let c = null;
               if (st.k === 'act') c = [...P.chars, ...(P.stage ? [P.stage] : []), P.leader].find(x => x.base.no === st.no && x.base.fx && x.base.fx.act && x._actTurn !== G.turnSeq && !isNegated(x));
@@ -473,7 +475,7 @@
               await applyAction(side, { k: st.k, uid: c.uid });
               render(); await sleep(160);
             }
-          } finally { G._linePick = null; }
+          } finally { G._linePick = null; G._linePickR = null; }
           if (G.winner) return;
         }
       }
@@ -485,6 +487,8 @@
           let cand = P.hand.filter(c => c.base.type === 'CHAR' && !summonBanned(side, c) && effCost(side, c) <= P.don.active);
           // ★黒ヤマト: 8ヤマト/9モモは素出しせず温存（捨ててトラッシュから踏み倒す方が強い）。他に出せる手があるなら大型は出さない。
           if (isYamatoLeader(side)) { const alt = cand.filter(c => !yamatoReviveTarget(c.base.no)); if (alt.length) cand = alt; }
+          // ★E50(G._lineAvoidゲート): ライン専用パーツ(plan.avoid=しのぶ等)は素出ししない（コンボはライン経由のみ・手札はカウンター温存）
+          if (G._lineAvoid && typeof planAvoidPlay === 'function') cand = cand.filter(c => !planAvoidPlay(side, c));
           return cand.sort((a, b) => scoreChar(b) - scoreChar(a));
         })();
         if (!pl.length) break;

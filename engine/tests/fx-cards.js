@@ -2190,6 +2190,24 @@ humanPick=function(c){return Promise.resolve((c||[])[0]||null);};
       ok(me.hand.length===2, 'ナミL: lifeCost(上か下→手札)でもライフ離脱ドローが発火（手札=ライフ1+ドロー1）');
       await doOp({op:'lifeCost',action:'toHand',pos:'choose',then:[]},{side:'me',self:me.leader});
       ok(me.hand.length===3, 'ナミL: 【ターン1回】＝同ターン2回目はドローしない'); }
+    // ★OP11-041/OP12-099: 「ライフが離れた時」(主語なし=両方)は相手のライフ離脱でも発動（公式裁定・anyLife）
+    { G.players={me:mkP('OP11-041',false),cpu:mkP('OP01-001',true)}; G.active='me'; G.turnSeq=9; G.winner=null; const me=G.players.me;
+      me.deck=[I('OP01-018','me'),I('OP01-023','me')]; me.hand=[];
+      G.players.cpu.life=[I('OP01-010','cpu'),I('OP01-010','cpu')];
+      const atk=I('OP01-018','me'); atk.summonedTurn=3; me.chars=[atk];
+      await dealLeaderDamage('cpu', atk, 1, false);
+      ok(me.hand.length===1, 'ナミL: 相手のライフが離れた時も発動（自分がアタックで相手リーダーに1点→1ドロー）'); }
+    { G.players={me:mkP('OP01-001',false),cpu:mkP('OP01-001',true)}; G.active='me'; G.turnSeq=9; G.winner=null; const me=G.players.me;
+      me.chars=[I('OP12-099','me')]; me.deck=[I('OP01-018','me'),I('OP01-023','me')]; me.hand=[];
+      G.players.cpu.life=[I('OP01-010','cpu'),I('OP01-010','cpu')];
+      const atk=I('OP01-018','me'); atk.summonedTurn=3; me.chars.push(atk);
+      await dealLeaderDamage('cpu', atk, 1, false);
+      ok(me.hand.length===1, 'OP12-099カルガラ(キャラ): 相手のライフが離れた時も発動（1ドロー・ターン1回なし）'); }
+    // 相手ターン中は【自分のターン中】効果が発動しない（anyLifeでも持ち主のターン限定）
+    { G.players={me:mkP('OP11-041',false),cpu:mkP('OP01-001',true)}; G.active='cpu'; G.turnSeq=9; G.winner=null; const me=G.players.me;
+      me.deck=[I('OP01-018','me'),I('OP01-023','me')]; me.hand=[]; me.life=[I('OP01-010','me')];
+      await dealLeaderDamage('me', I('OP01-018','cpu'), 1, false);
+      ok(me.hand.length===1, 'ナミL: 相手ターン中の自ライフ離脱では発動しない（被弾ライフ1のみ）'); }
     // ブロッカー持ちKO（ST01-016）: hasKwフィルタ
     { const me=LP('OP11-041');
       C['__bl__']={no:'__bl__',name:'bl',type:'CHAR',color:[],cost:2,power:2000,counter:0,traits:[],blocker:true};

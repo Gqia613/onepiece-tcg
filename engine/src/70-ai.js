@@ -377,8 +377,10 @@
       //   heuristicのプレイ抑制(src/50)とAI探索(puct)を揃える。探索が短期の8000ボディに釣られて素出しするのを防ぐ。
       if (typeof isYamatoLeader === 'function' && isYamatoLeader(side)) {
         const isTargetChar = a => a.k === 'char' && (c => !!c && yamatoReviveTarget(c.base.no))(findCard(a.uid));
-        if (cand.some(a => a.k === 'char' && !isTargetChar(a))) return cand.filter(a => !isTargetChar(a));
+        if (cand.some(a => a.k === 'char' && !isTargetChar(a))) cand = cand.filter(a => !isTargetChar(a));
       }
+      // ★E50(G._lineAvoidゲート): ライン専用パーツ(plan.avoid)の素出しを探索候補からも除外（heuristicTurn側と対）
+      if (G._lineAvoid && typeof planAvoidPlay === 'function') cand = cand.filter(a => !(a.k === 'char' && (c => !!c && planAvoidPlay(side, c))(findCard(a.uid))));
       return cand;
     }
 
@@ -719,6 +721,11 @@
     AGENTS.lineh = { takeTurn: lineTurn };   // P.agent='lineh'（E47・コンボライン候補化）
     // ★E49: 実験ライン(exp:1)込みで測定するエージェント。既定(lineh/heuristic経由)はexpラインを見ない＝採用測定用。
     AGENTS.lineh2 = { takeTurn: async (side) => { G._lineExp = 1; try { return await lineTurn(side); } finally { G._lineExp = 0; } } };
+    // ★E50: ライン専用パーツの素出し抑制(plan.avoid)込みで測定するエージェント。合格で既定化。
+    AGENTS.lineav = { takeTurn: async (side) => { G._lineAvoid = 1; try { return await lineTurn(side); } finally { G._lineAvoid = 0; } } };
+    // ★E51: ユーザーモデルの複合アーム＝「097の回収先=しのぶ→5モモ(rec:1ライン)」+「しのぶ素出し抑制(avoid)」のセット。
+    //   単体では成立しない（回収したしのぶを汎用展開が即素出しする/抑制だけでは回収が098に行く）ことをE50/E51v1で実測済み。
+    AGENTS.linerec = { takeTurn: async (side) => { G._lineRec = 1; G._lineAvoid = 1; try { return await lineTurn(side); } finally { G._lineRec = 0; G._lineAvoid = 0; } } };
     // ★E48採用テーブル: 既定CPU(heuristic)でもラインを候補化するリーダー（AGENTS.heuristicのディスパッチが参照）。
     //   黒ヤマト: モモの助コンボ不発(9cモモ0.03回/側)のユーザー観察→lines化で ミラーN=120×2帯 +3.3pt(6/2)/+6.7pt(9/1 p=0.021★)・合算15/3(p≈0.008)＝有意。
     var LINE_PLAY = { '_OP16-079': 1 };

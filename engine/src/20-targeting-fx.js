@@ -10,11 +10,10 @@
       return await humanPick(cands, withFxSrc(text), optional, cls);
     }
     function cpuPick(cands, prefer) {
-      // ★E49: コンボライン実行中の対象steering。G._linePick(ラインが宣言した優先no)は line実行中だけ設定され、
-      //   自陣カードの選択(蘇生/回収/登場の対象)でのみ効く（相手対象の選択には影響しない）。未設定なら従来どおり。
+      // ★E49: コンボライン実行中の対象steering。G._linePick(ラインが宣言した優先noのリスト・先頭が最優先)は line実行中だけ
+      //   設定され、自陣カードの選択(蘇生/回収/登場の対象)でのみ効く（相手対象の選択には影響しない）。未設定なら従来どおり。
       if (G._linePick && G._linePick.length && cands.length && cands.every(c => c.owner === G.active)) {
-        const m = cands.find(c => G._linePick.indexOf(c.base.no) >= 0);
-        if (m) return m;
+        for (const no of G._linePick) { const m = cands.find(c => c.base.no === no); if (m) return m; }
       }
       const byPow = (a, b) => power(b) - power(a) || (b.base.cost || 0) - (a.base.cost || 0);
       let arr = cands.slice();
@@ -1105,7 +1104,7 @@
         // 相手が自身の手札 n枚を捨てる
         case 'oppDiscard': { const O = G.players[o]; const k = Math.min(op.n || 1, O.hand.length); for (let i = 0; i < k; i++) { let c; if (O.isCPU) c = O.hand.slice().sort((a, b) => (a.base.cost || 0) - (b.base.cost || 0))[0]; else c = await chooseFromHand(o, O.hand.slice(), `捨てる手札（${i + 1}/${k}）`); if (!c) break; O.hand.splice(O.hand.indexOf(c), 1); O.trash.push(reset(c)); } if (k) { flog(side, `相手は手札${k}枚を捨てた`); await fireHandDiscarded(o, k); } render(); break; }
         // 自分のトラッシュから filter一致のカードを count枚 手札に加える
-        case 'trashToHand': { for (let i = 0; i < (op.count || 1); i++) { const cands = P.trash.filter(c => matchFilter(c, op.filter || {})); if (!cands.length) break; const t = P.isCPU ? ((G._linePick && G._linePick.length && cands.find(c => G._linePick.indexOf(c.base.no) >= 0)) || cands[0]) : await chooseCard(side, cands, 'トラッシュから手札に加えるカード', 'ownBig', op.optional); if (!t) break; P.trash.splice(P.trash.indexOf(t), 1); P.hand.push(t); flog(side, `「${t.base.name}」を手札に加えた`); } render(); break; } // E49: _linePick=ライン実行中の回収対象steering
+        case 'trashToHand': { for (let i = 0; i < (op.count || 1); i++) { const cands = P.trash.filter(c => matchFilter(c, op.filter || {})); if (!cands.length) break; const t = P.isCPU ? (((G._linePickR || G._linePick) || []).map(no => cands.find(c => c.base.no === no)).find(Boolean) || cands[0]) : await chooseCard(side, cands, 'トラッシュから手札に加えるカード', 'ownBig', op.optional); if (!t) break; P.trash.splice(P.trash.indexOf(t), 1); P.hand.push(t); flog(side, `「${t.base.name}」を手札に加えた`); } render(); break; } // E49: _linePick=ライン実行中の回収対象steering
         // 自分のデッキの上 n枚をトラッシュに置く（ミル）
         case 'deckToTrash': { if (op.optional && !(await confirmUse(side, 'デッキをトラッシュ', `デッキの上から${op.n || 1}枚をトラッシュに置きますか？`, '置く', '置かない'))) break; const k = Math.min(op.n || 1, P.deck.length); for (let i = 0; i < k; i++) P.trash.push(reset(P.deck.shift())); if (k) flog(side, `デッキ上${k}枚をトラッシュ`); render(); break; }
         // 自分の手札またはトラッシュから filter一致のキャラ1枚を登場

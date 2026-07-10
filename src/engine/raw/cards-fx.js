@@ -7,7 +7,7 @@
 window.CARD_FX = {
   /* ===== リーダーのデータ駆動フック（onAllyEnter 等。従来は src/30 にハードコード） ===== */
   // OP11-041 ナミ:【自分のターン中】【ターン1回】ライフが離れた時、手札7枚以下なら1ドロー ／【ドン‼×1】【相手のアタック時】【ターン1回】手札1枚を捨てて、このリーダーはこのターン中パワー+2000
-  "OP11-041": {"onLifeLeave":{"when":"selfTurn","once":"turn","optional":true,"cond":{"selfHandAtMost":7},"fx":[{"op":"draw","n":1}]},"onOppAttack":[{"op":"cond","once":"turn","check":"donX1","then":[{"op":"discardCost","count":1,"optional":true,"then":[{"op":"leaderBuff","amount":2000,"duration":"turnEnd"}]}]}]},
+  "OP11-041": {"onLifeLeave":{"when":"selfTurn","anyLife":true,"once":"turn","optional":true,"cond":{"selfHandAtMost":7},"fx":[{"op":"draw","n":1}]},"onOppAttack":[{"op":"cond","once":"turn","check":"donX1","then":[{"op":"discardCost","count":1,"optional":true,"then":[{"op":"leaderBuff","amount":2000,"duration":"turnEnd"}]}]}]},
   // OP14-041 ボア・ハンコック: 相手のターン中に自分のキャラが登場した時、1ドロー（ターン1回制限なし）
   "OP14-041": {"onAllyEnter":{"when":"oppTurn","fx":[{"op":"draw","n":1}]},"onAllyLeave":{"ko":true,"once":"turn","cond":"donX1","filter":{"minPower":5000,"traits":["アマゾン・リリー","九蛇海賊団"]},"fx":[{"op":"oppLifeToHand","n":1,"optional":true}]}},
   /* ----- 同名・別Noのリーダー（番号キーで実装。curatedの短縮キーとは独立＝誤適用なし） ----- */
@@ -963,7 +963,7 @@ window.CARD_FX = {
   // OP12-058 …おれは白ひげを王にする: 【メイン】リーダー白ひげなら、デッキ上1枚公開→コスト9以下の白ひげキャラなら登場(任意)し【速攻】
   "OP12-058": {"main":{"fx":[{"op":"cond","check":{"leaderTraitIncludes":"白ひげ海賊団"},"then":[{"op":"revealTopPlay","filter":{"type":"CHAR","traitIncludes":"白ひげ海賊団","maxCost":9},"grantKw":"rush"}]}]}},
   // OP12-099 カルガラ: 【自分のターン中】ライフが離れた時、1ドロー（※「このターン自分の効果でドロー不可」は近似で省略）
-  "OP12-099": {"onLifeLeave":{"when":"selfTurn","fx":[{"op":"draw","n":1}]}},
+  "OP12-099": {"onLifeLeave":{"when":"selfTurn","anyLife":true,"fx":[{"op":"draw","n":1}]}},
   // OP12-100 サボ: ライフ3以下で【ブロッカー】＋コスト+3 ／【登場時】ライフ上1枚を手札に：2ドロー1捨て
   "OP12-100": {"static":[{"op":"staticKeyword","kw":"blocker","cond":{"lifeAtMost":3}},{"op":"staticCost","cond":{"lifeAtMost":3},"amount":3}],"onPlay":[{"op":"lifeToHand","pos":"top","n":1,"then":[{"op":"draw","n":2},{"op":"discardOwn","n":1}]}]},
   // OP12-101 ジュエリー・ボニー(c3): 【起動メイン】レスト：自分の《超新星》リーダーを次の相手ターン終了まで+1000

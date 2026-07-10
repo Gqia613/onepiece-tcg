@@ -107,35 +107,49 @@
       }
     }
     // 「ライフが離れた時」誘発（OP12-099カルガラ＝自分のターン中ライフ離脱で1ドロー）。side=ライフが離れた側。
+    // ライフ離脱時の誘発。side=ライフを失った側。
+    //   ・onLifeLeave（既定）: そのカードの持ち主「自身の」ライフが離れた時に反応。
+    //   ・onLifeLeave.anyLife:true: 「(自分/相手問わず)ライフが離れた時」＝主語なし公式文（OP11-041ナミ/OP12-099カルガラ）。相手のライフ離脱でも持ち主のターン中なら発動。
+    //   ・onOppLifeLeave: 「相手のライフが離れた時」明記（OP08-105ボニー）。
+    //   【自分のターン中】(when:selfTurn)は「効果の持ち主のターン」で判定する（ライフを失った側ではない）。
     async function fireLifeLeft(side) {
       const P = G.players[side];
       P._lifeLeftTurn = G.turnSeq; // このターンに side のライフが離れた（P-120サンジ「相手のライフが離れているターン中」コスト判定用）※記録は即時
       if ((G._fxDepth || 0) > 0) { (G._pendingReacts = G._pendingReacts || []).push(() => fireLifeLeft(side)); return; } // 誘発効果の発動は現在の効果解決後（例: 日和の全処理後にナミLのドロー）
-      // ★リーダーも走査対象（OP11-041ナミL＝ライフ離脱時に手札7枚以下ならドロー）。cond対応。
-      for (const c of [P.leader, ...P.chars.slice()]) {
+      const fireOne = async (c, owner) => {
         const cfg = c.base.fx && c.base.fx.onLifeLeave;
-        if (!cfg || isNegated(c) || (c !== P.leader && !P.chars.includes(c))) continue;
-        if (cfg.when === 'selfTurn' && side !== G.active) continue;
-        if (cfg.when === 'oppTurn' && side === G.active) continue;
-        if (cfg.cond && !checkCond(cfg.cond, side, c)) continue;
-        if (cfg.once === 'turn' && c._lifeLeaveTurn === G.turnSeq) continue;
-        // 「発動できる」= 任意の自動効果。人間には発動確認（辞退なら【ターン1回】未消費）。CPUは発動
-        if (cfg.optional && !P.isCPU) {
-          const yes = await confirmUse(side, 'ライフ離脱時', `「${c.base.name}」の効果を発動しますか？`, '発動する', '発動しない');
-          if (!yes) continue;
+        if (!cfg || isNegated(c)) return;
+        if (cfg.when === 'selfTurn' && owner !== G.active) return;
+        if (cfg.when === 'oppTurn' && owner === G.active) return;
+        if (cfg.cond && !checkCond(cfg.cond, owner, c)) return;
+        if (cfg.once === 'turn' && c._lifeLeaveTurn === G.turnSeq) return;
+        if (cfg.optional && !G.players[owner].isCPU) { // 「発動できる」= 任意。持ち主に発動確認（辞退なら【ターン1回】未消費）
+          const yes = await confirmUse(owner, 'ライフ離脱時', `「${c.base.name}」の効果を発動しますか？`, '発動する', '発動しない');
+          if (!yes) return;
         }
         const prevSeq = c._lifeLeaveTurn;
         if (cfg.once === 'turn') c._lifeLeaveTurn = G.turnSeq;
-        await fxNote(side, 'ライフ離脱時', c.base.name, c.base.no); // 発火を可視化
-        const rctx = { self: c, side };
+        await fxNote(owner, 'ライフ離脱時', c.base.name, c.base.no);
+        const rctx = { self: c, side: owner };
         await runFx(cfg.fx, rctx);
         if (cfg.once === 'turn' && rctx._declined && !rctx._committed) c._lifeLeaveTurn = prevSeq; // 条件不成立=未発動なら【ターン1回】を消費しない
+      };
+      // (1) ライフを失った側のカード（自分のライフ離脱への反応。anyLifeもここで自ライフに反応）
+      for (const c of [P.leader, ...P.chars.slice()]) {
+        if (c !== P.leader && !P.chars.includes(c)) continue;
+        await fireOne(c, side);
       }
-      // 「相手のライフが離れた時」誘発（OP08-105ボニー＝攻撃側で相手のライフ離脱に反応）
-      const A = G.players[opp(side)];
-      for (const c of A.chars.slice()) {
+      // (2) 相手側のカードで anyLife:true（主語なし「ライフが離れた時」＝相手のライフ離脱にも反応）
+      const O = G.players[opp(side)];
+      for (const c of [O.leader, ...O.chars.slice()]) {
+        if (c !== O.leader && !O.chars.includes(c)) continue;
+        const cfg = c.base.fx && c.base.fx.onLifeLeave;
+        if (cfg && cfg.anyLife) await fireOne(c, opp(side));
+      }
+      // (3) 「相手のライフが離れた時」明記（OP08-105ボニー）
+      for (const c of O.chars.slice()) {
         const cfg = c.base.fx && c.base.fx.onOppLifeLeave;
-        if (!cfg || isNegated(c) || !A.chars.includes(c)) continue;
+        if (!cfg || isNegated(c) || !O.chars.includes(c)) continue;
         if (cfg.when === 'selfTurn' && opp(side) !== G.active) continue;
         if (cfg.when === 'oppTurn' && opp(side) === G.active) continue;
         if (cfg.once === 'turn') { if (c._oppLifeLeftTurn === G.turnSeq) continue; c._oppLifeLeftTurn = G.turnSeq; }

@@ -496,6 +496,95 @@ function chk(name, cond) { if (cond) pass++; else { fail++; console.log('  ✗ '
   chk('E49: 連鎖蘇生でおでんも盤面へ(9cモモ登場時効果)', P19.chars.some(c => c.uid === oden19.uid));
   chk('E49: _linePickは実行後にクリアされる', G._linePick == null);
 
+  // 20) ★E49b: 5段チェーン変種（exp:1）＝9cモモ登場時に6cヤマトをsteering蘇生→即自壊→8cヤマトまで連鎖
+  G.players = {}; G.winner = null; seedRng(131); startGame('yamato', 'yamato');
+  for (let k = 0; k < 300 && !G.myActable && !G.winner; k++) await new Promise(r => setImmediate(r));
+  const P20 = G.players.me;
+  P20.isCPU = true; G.active = 'me'; P20.turnsTaken = 1;
+  const momo5c = inst('OP16-084', 'me'), shino20 = inst('OP16-087', 'me');
+  const momo9c = inst('OP16-085', 'me'), y6 = inst('OP16-098', 'me'), y8 = inst('OP16-097', 'me'), oden20 = inst('OP16-083', 'me');
+  P20.hand.length = 0; P20.hand.push(momo5c, shino20);
+  P20.trash.length = 0; P20.trash.push(momo9c, y6, y8, oden20);   // おでん混入=9cモモETBのsteering(6cヤマト優先)を検証
+  P20.chars = []; P20.don = { active: 9, rested: 0 }; P20.donMax = 10;
+  chk('E49b: momo-chainは既定では照合しない(exp)', !matchDeckLines('me').some(l => l.id === 'momo-chain'));
+  G._lineExp = 1;
+  const m20 = matchDeckLines('me');
+  chk('E49b: lineh2でmomo-chainが照合する', m20.some(l => l.id === 'momo-chain'));
+  G._lineExec = m20.find(l => l.id === 'momo-chain');
+  G._sim = true; G._noChain = true;
+  await heuristicTurn('me');
+  G._sim = false; G._noChain = false; G._lineExp = 0;
+  chk('E49b: 5段チェーン完走=9cモモと8cヤマトが盤面', P20.chars.some(c => c.uid === momo9c.uid) && P20.chars.some(c => c.uid === y8.uid));
+  // 中間体6cヤマトは自壊→(097の登場時効果が回収=ラインCのループ動作)手札へ。おでんが蘇生されなかった(steering勝ち)証跡も確認。
+  chk('E49b: 6cヤマトは盤面に残らず(自壊)、097が手札回収している(ラインC)', !P20.chars.some(c => c.uid === y6.uid) && P20.hand.some(c => c.uid === y6.uid));
+  chk('E49b: おでんはトラッシュのまま(9cモモETBのsteeringが6cヤマトを選んだ)', P20.trash.some(c => c.uid === oden20.uid));
+
+  // 21) ★E50: ライン専用パーツ(しのぶ)の素出し抑制（plan.avoid・G._lineAvoidゲート）
+  chk('エージェント登録: lineav', !!AGENTS.lineav);
+  G.players = {}; G.winner = null; seedRng(141); startGame('yamato', 'yamato');
+  for (let k = 0; k < 300 && !G.myActable && !G.winner; k++) await new Promise(r => setImmediate(r));
+  const P21 = G.players.me;
+  P21.isCPU = true; G.active = 'me'; P21.turnsTaken = 1;
+  const sh21 = inst('OP16-087', 'me');
+  P21.hand.length = 0; P21.hand.push(sh21);            // 手札=しのぶのみ（モモの助なし=素出しは無駄手）
+  P21.chars = []; P21.trash.length = 0; P21.don = { active: 3, rested: 0 };
+  G._lineAvoid = 0; G._sim = true; G._noChain = true;
+  await heuristicTurn('me');
+  chk('E50: ゲート無しでは従来どおり素出しされる', P21.chars.length === 1 || P21.trash.some(c => c.uid === sh21.uid));
+  // リセットして avoid 有効で再実行
+  G.players = {}; G.winner = null; seedRng(142); startGame('yamato', 'yamato');
+  G._sim = false; G._noChain = false;
+  for (let k = 0; k < 300 && !G.myActable && !G.winner; k++) await new Promise(r => setImmediate(r));
+  const P21b = G.players.me;
+  P21b.isCPU = true; G.active = 'me'; P21b.turnsTaken = 1;
+  const sh21b = inst('OP16-087', 'me');
+  P21b.hand.length = 0; P21b.hand.push(sh21b);
+  P21b.chars = []; P21b.trash.length = 0; P21b.don = { active: 3, rested: 0 };
+  G._lineAvoid = 1; G._sim = true; G._noChain = true;
+  await heuristicTurn('me');
+  G._sim = false; G._noChain = false; G._lineAvoid = 0;
+  chk('E50: avoid有効ではしのぶを素出しせず手札に温存', P21b.hand.some(c => c.uid === sh21b.uid) && !P21b.trash.some(c => c.uid === sh21b.uid));
+  // コンボライン経由のしのぶプレイは avoid の影響を受けない（applyAction直呼び）
+  const sh21c = inst('OP16-087', 'me'), momo5v = inst('OP16-084', 'me'), momo9v = inst('OP16-085', 'me');
+  P21b.hand.length = 0; P21b.hand.push(momo5v, sh21c);
+  P21b.trash.length = 0; P21b.trash.push(momo9v);
+  P21b.chars = []; P21b.don = { active: 9, rested: 0 }; P21b.donMax = 10;
+  G._lineAvoid = 1;
+  G._lineExec = matchDeckLines('me').find(l => l.id === 'momo-combo');
+  G._sim = true; G._noChain = true;
+  await heuristicTurn('me');
+  G._sim = false; G._noChain = false; G._lineAvoid = 0;
+  chk('E50: ライン経由のしのぶプレイはavoidの影響を受けない（コンボ完走）', P21b.chars.some(c => c.uid === momo9v.uid));
+
+  // 22) ★E51: 回収優先度v2＝097の回収先がしのぶになる（rec:1ライン・ステップ別pick）
+  chk('エージェント登録: linerec', !!AGENTS.linerec);
+  G.players = {}; G.winner = null; seedRng(151); startGame('yamato', 'yamato');
+  for (let k = 0; k < 300 && !G.myActable && !G.winner; k++) await new Promise(r => setImmediate(r));
+  const P22 = G.players.me;
+  P22.isCPU = true; G.active = 'me'; P22.turnsTaken = 1;
+  const y6b = inst('OP16-098', 'me'), y8b = inst('OP16-097', 'me'), sh22 = inst('OP16-087', 'me'), ushi22 = inst('OP16-088', 'me');
+  P22.hand.length = 0; P22.hand.push(y6b, ushi22);        // 手札: 6cヤマト+牛マル(コスト2以下登場の受け皿)
+  P22.trash.length = 0; P22.trash.push(y8b, sh22);        // トラッシュ: 回収型8cヤマト+しのぶ
+  P22.chars = []; P22.don = { active: 7, rested: 0 }; P22.donMax = 10;
+  chk('E51: recラインは既定では照合しない', !matchDeckLines('me').some(l => l.id === 'yamato-revive-rec'));
+  G._lineRec = 1;
+  const m22 = matchDeckLines('me');
+  chk('E51: linerecでyamato-revive-recが照合する', m22.some(l => l.id === 'yamato-revive-rec'));
+  G._lineRec = 0;
+  // actステップ単体で回収semanticsを決定的に検証（098のETB draw/捨てで手札が乱れないよう盤面に直接置く）
+  P22.hand.length = 0; P22.hand.push(ushi22);
+  y6b.owner = 'me'; y6b.rested = false; P22.chars = [y6b];
+  G._lineExec = { id: 'test-rec', pickR: ['OP16-087', 'OP16-084', 'OP16-098'], seq: [{ k: 'act', no: 'OP16-098', pick: ['OP16-097'] }] };
+  G._lineAvoid = 1;                                       // ★温存はavoid(E50)とセット＝回収したしのぶを汎用展開が素出ししない
+  G._sim = true; G._noChain = true;
+  await heuristicTurn('me');
+  G._sim = false; G._noChain = false; G._lineAvoid = 0;
+  // 期待(v2): act自壊→097蘇生→097のETBが「しのぶ」を回収(pickR)→コスト2以下登場は牛マル(しのぶは温存)
+  chk('E51: 097が蘇生され盤面にいる', P22.chars.some(c => c.uid === y8b.uid));
+  chk('E51: 098は自壊してトラッシュ(回収されない)', P22.trash.some(c => c.uid === y6b.uid) && !P22.hand.some(c => c.uid === y6b.uid));
+  chk('E51v2: しのぶは回収されて手札に温存(空撃ちしない)', P22.hand.some(c => c.uid === sh22.uid) && !P22.trash.some(c => c.uid === sh22.uid));
+  chk('E51v2: コスト2以下登場は牛マル(しのぶでない)', P22.chars.some(c => c.uid === ushi22.uid));
+
   console.log('  AI基盤テスト: pass=' + pass + ' fail=' + fail);
   process.exit(fail ? 1 : 0);
 })();
