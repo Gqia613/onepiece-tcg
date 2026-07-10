@@ -84,6 +84,8 @@ export function Card({ card, ctx }: { card: TCard; ctx: CardCtx }) {
   if ((card as any).noAtkSeq != null) kwChips.push('攻撃不可');
   if ((card as any).negSeq != null) kwChips.push('効果無効');
   if ((card as any).frozen) kwChips.push('凍結');
+  // 【ブロッカー】を発動できない（denyBlocker）状態。ブロッカーなのにブロック選択に出ない理由を可視化。
+  if ((card as any).noBlockSeq != null && engine?.G && (card as any).noBlockSeq === engine.G.turnSeq) kwChips.push('ブロック不可');
 
   const colorHex = COLOR_HEX[(b.color && b.color[0]) as string] || '#1a2c3c';
   const src = imgStage === 0 ? IMG(card.no) : imgStage === 1 ? IMG_RAW(card.no) : '';
