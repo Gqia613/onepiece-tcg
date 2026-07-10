@@ -117,11 +117,13 @@ function Shell({ username, logout }: { username: string; logout: () => void }) {
   // 画面遷移したらハンバーガーを閉じる
   useEffect(() => { setMenuOpen(false); }, [location.pathname]);
 
-  // ①最初の操作でオーディオをアンロック（従来は対戦開始まで全SE無音だった）
+  // ①最初の操作でオーディオをアンロック（従来は対戦開始まで全SE無音だった）。
+  //   毎回の操作でも呼ぶ＝AudioContextが suspended になっていれば resume して自己修復
+  //   （BGMを止めた後にSEが無音になる問題の保険。unlockAudio は idempotent）。
   // ②UIボタン共通の控えめクリック音（ゲームフィール: 全操作に音の手応え。ピッチは±5%自動変化）
   useEffect(() => {
     const unlock = () => unlockAudio();
-    window.addEventListener('pointerdown', unlock, { once: true });
+    window.addEventListener('pointerdown', unlock);
     const onClick = (e: MouseEvent) => {
       const t = e.target as HTMLElement | null;
       if (t && t.closest && t.closest('button')) playSfx('click');

@@ -79,6 +79,11 @@ export function unlockAudio() {
 
 export function playSfx(name: string) {
   if (!unlocked || muted) return;
+  // ★BGM(HTMLAudio)を止めた後などに AudioContext が suspended になると SE が無音になる
+  //   （特にiOS: WebAudioとHTMLMediaElementがオーディオ出力を共有し、BGM停止で出力が休止）。
+  //   再生のたびに suspended を検知して resume＝自己修復（BGM ON/OFF と SE は独立を保証）。
+  const c = ac();
+  if (c && c.state === 'suspended') { try { c.resume(); } catch { /* ignore */ } }
   pitchF = STABLE.has(name) ? 1 : 0.95 + Math.random() * 0.1; // ±5%
   try { (lib[name] || (() => {}))(); } catch { /* ignore */ }
   pitchF = 1;
