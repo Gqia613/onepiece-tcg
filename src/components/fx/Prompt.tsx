@@ -9,10 +9,13 @@
 //  - AnimatePresence でフェード/スケールイン。.prompt は CSS で left:50%/translateX(-50%) 中央寄せ
 //    なので、Framer の transform が translateX を潰さないよう x:'-50%' を常に保ち scale/opacity だけ動かす。
 //  - 各ボタンの onClick で prompt.onPick(o.v) を呼ぶ（必ず解決＝フリーズ厳禁）。
+import { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useEngineStore } from '../../state/engineStore';
 import { IMG } from '../../engine/img';
 import { Icon } from '../ui/Icon';
+import { ZoomView } from '../deck/CardZoom';
 import type { PromptOption, Card } from '../../engine/types';
 
 // アタック進行中にモーダル上部へ出す「誰が誰にアタックしているか」ヘッダー。
@@ -51,26 +54,40 @@ function AttackHead() {
 function MulliganHand() {
   const engine = useEngineStore((s) => s.engine);
   useEngineStore((s) => s.version); // 引き直し後の手札更新を拾う
+  const [zoom, setZoom] = useState<{ no: string; name: string } | null>(null); // タップ拡大中のカード
   if (!engine) return null;
   const hand: Card[] = (engine.G?.players?.me?.hand || []) as Card[];
   const onErr = (e: React.SyntheticEvent<HTMLImageElement>) => { e.currentTarget.style.visibility = 'hidden'; };
   const mid = (hand.length - 1) / 2;
   return (
-    <div className="mull-hand">
-      {hand.map((c, i) => (
-        <motion.div
-          key={c.uid}
-          className="mull-card"
-          style={{ ['--d' as any]: (0.62 + i * 0.16) + 's' }} // シャイン掃引はフリップ完了後に
-          initial={{ opacity: 0, y: 46, rotateY: 180, scale: 0.72, rotate: 0 }}
-          animate={{ opacity: 1, y: Math.abs(i - mid) * 5, rotateY: 0, scale: 1, rotate: (i - mid) * 3 }}
-          transition={{ delay: 0.15 + i * 0.16, type: 'spring', stiffness: 240, damping: 20 }}
-        >
-          <img src={IMG(c.no)} referrerPolicy="no-referrer" decoding="async" alt={c.base?.name || ''} onError={onErr} />
-          <span className="mull-back" />
-        </motion.div>
-      ))}
-    </div>
+    <>
+      <div className="mull-hand">
+        {hand.map((c, i) => (
+          <motion.div
+            key={c.uid}
+            className="mull-card"
+            style={{ ['--d' as any]: (0.62 + i * 0.16) + 's' }} // シャイン掃引はフリップ完了後に
+            initial={{ opacity: 0, y: 46, rotateY: 180, scale: 0.72, rotate: 0 }}
+            animate={{ opacity: 1, y: Math.abs(i - mid) * 5, rotateY: 0, scale: 1, rotate: (i - mid) * 3 }}
+            transition={{ delay: 0.15 + i * 0.16, type: 'spring', stiffness: 240, damping: 20 }}
+            onClick={() => setZoom({ no: c.no, name: c.base?.name || '' })}
+          >
+            <img src={IMG(c.no)} referrerPolicy="no-referrer" decoding="async" alt={c.base?.name || ''} onError={onErr} />
+            <span className="mull-back" />
+          </motion.div>
+        ))}
+      </div>
+      {/* タップで大写し。ZoomView(position:fixed) は body へポータル出力する
+          （親 .prompt が transform を持つため、内側の fixed はビューポート基準にならず崩れる）。 */}
+      {zoom && typeof document !== 'undefined'
+        ? createPortal(
+            <AnimatePresence>
+              <ZoomView key={zoom.no} no={zoom.no} name={zoom.name} onClose={() => setZoom(null)} />
+            </AnimatePresence>,
+            document.body,
+          )
+        : null}
+    </>
   );
 }
 
