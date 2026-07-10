@@ -11,7 +11,7 @@ import DeckSelect from '../src/screens/DeckSelect';
 import { Prompt } from '../src/components/fx/Prompt';
 import { AtkAnnounce } from '../src/components/fx/AtkAnnounce';
 import { EndScreen } from '../src/components/fx/EndScreen';
-import { CardDetailModal } from '../src/components/fx/CardDetailModal';
+import { CardZoomOverlay } from '../src/components/fx/CardZoomOverlay';
 import { TrashModal } from '../src/components/fx/TrashModal';
 
 // 画面/オーバーレイはルーター配下で動く（useNavigate）ため MemoryRouter で包む
@@ -105,12 +105,15 @@ describe('Battle renders a populated game state', () => {
     expect(document.querySelectorAll('img').length).toBeGreaterThan(0);
   });
 
-  it('shows CardDetailModal (long-press) with card text', () => {
-    render(<CardDetailModal />);
+  it('shows CardZoomOverlay (long-press / tap) with the card image', () => {
+    render(<CardZoomOverlay />);
     const leader = engine.G.players.me.leader;
-    act(() => { useEngineStore.getState().setCardModal(leader); });
-    expect(document.querySelector('.cardmodal-box')).toBeTruthy();
-    expect(document.body.textContent).toContain(leader.base.name);
+    act(() => { useEngineStore.getState().setZoomCard({ no: leader.no, name: leader.base.name }); });
+    // 拡大画像オーバーレイが出て、カード画像（公式画像URL）が表示される
+    expect(document.querySelector('.card-zoom-back')).toBeTruthy();
+    const img = document.querySelector('.card-zoom-back img') as HTMLImageElement | null;
+    expect(img).toBeTruthy();
+    expect(img!.src).toContain('onepiece-cardgame.com');
   });
 
   it('shows TrashModal grid for a side', () => {

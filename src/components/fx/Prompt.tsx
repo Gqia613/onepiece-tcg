@@ -9,14 +9,17 @@
 //  - AnimatePresence でフェード/スケールイン。.prompt は CSS で left:50%/translateX(-50%) 中央寄せ
 //    なので、Framer の transform が translateX を潰さないよう x:'-50%' を常に保ち scale/opacity だけ動かす。
 //  - 各ボタンの onClick で prompt.onPick(o.v) を呼ぶ（必ず解決＝フリーズ厳禁）。
-import { useState } from 'react';
-import { createPortal } from 'react-dom';
+import { useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useEngineStore } from '../../state/engineStore';
 import { IMG } from '../../engine/img';
 import { Icon } from '../ui/Icon';
-import { ZoomView } from '../deck/CardZoom';
 import type { PromptOption, Card } from '../../engine/types';
+
+// 効果テキスト等のHTMLタグを除いた素の文字列（大写しの名前ラベル用）。
+const plain = (s: string) => (s || '').replace(/<[^>]*>/g, '').trim();
+// カードを大写し（全カード共通の store.zoomCard 経由。長押し=盤面/選択肢、タップ=マリガン）。
+const zoomTo = (no: string, name: string) => useEngineStore.getState().setZoomCard({ no, name });
 
 // アタック進行中にモーダル上部へ出す「誰が誰にアタックしているか」ヘッダー。
 // 旧: 別枠の浮動ダイアログ(AtkAnnounce)で表示 → モーダルと重なりテキストが読めないため、
@@ -54,40 +57,72 @@ function AttackHead() {
 function MulliganHand() {
   const engine = useEngineStore((s) => s.engine);
   useEngineStore((s) => s.version); // 引き直し後の手札更新を拾う
-  const [zoom, setZoom] = useState<{ no: string; name: string } | null>(null); // タップ拡大中のカード
   if (!engine) return null;
   const hand: Card[] = (engine.G?.players?.me?.hand || []) as Card[];
   const onErr = (e: React.SyntheticEvent<HTMLImageElement>) => { e.currentTarget.style.visibility = 'hidden'; };
   const mid = (hand.length - 1) / 2;
+  // マリガンのカードは選択アクションが無いので「タップ」で大写し（全カード共通の zoomCard へ）。
   return (
-    <>
-      <div className="mull-hand">
-        {hand.map((c, i) => (
-          <motion.div
-            key={c.uid}
-            className="mull-card"
-            style={{ ['--d' as any]: (0.62 + i * 0.16) + 's' }} // シャイン掃引はフリップ完了後に
-            initial={{ opacity: 0, y: 46, rotateY: 180, scale: 0.72, rotate: 0 }}
-            animate={{ opacity: 1, y: Math.abs(i - mid) * 5, rotateY: 0, scale: 1, rotate: (i - mid) * 3 }}
-            transition={{ delay: 0.15 + i * 0.16, type: 'spring', stiffness: 240, damping: 20 }}
-            onClick={() => setZoom({ no: c.no, name: c.base?.name || '' })}
-          >
-            <img src={IMG(c.no)} referrerPolicy="no-referrer" decoding="async" alt={c.base?.name || ''} onError={onErr} />
-            <span className="mull-back" />
-          </motion.div>
-        ))}
-      </div>
-      {/* タップで大写し。ZoomView(position:fixed) は body へポータル出力する
-          （親 .prompt が transform を持つため、内側の fixed はビューポート基準にならず崩れる）。 */}
-      {zoom && typeof document !== 'undefined'
-        ? createPortal(
-            <AnimatePresence>
-              <ZoomView key={zoom.no} no={zoom.no} name={zoom.name} onClose={() => setZoom(null)} />
-            </AnimatePresence>,
-            document.body,
-          )
-        : null}
-    </>
+    <div className="mull-hand">
+      {hand.map((c, i) => (
+        <motion.div
+          key={c.uid}
+          className="mull-card"
+          style={{ ['--d' as any]: (0.62 + i * 0.16) + 's' }} // シャイン掃引はフリップ完了後に
+          initial={{ opacity: 0, y: 46, rotateY: 180, scale: 0.72, rotate: 0 }}
+          animate={{ opacity: 1, y: Math.abs(i - mid) * 5, rotateY: 0, scale: 1, rotate: (i - mid) * 3 }}
+          transition={{ delay: 0.15 + i * 0.16, type: 'spring', stiffness: 240, damping: 20 }}
+          onClick={() => zoomTo(c.no, c.base?.name || '')}
+        >
+          <img src={IMG(c.no)} referrerPolicy="no-referrer" decoding="async" alt={c.base?.name || ''} onError={onErr} />
+          <span className="mull-back" />
+        </motion.div>
+      ))}
+    </div>
+  );
+}
+
+// カード選択肢（カウンター/対象選択/サーチ等）の1枚。タップ=選択／長押し=大写し。
+// 長押し中に選択されないよう、発火フラグで直後の click を握りつぶす（Card.tsx と同型）。
+function OptCard({ o, onSelect, onImgError, html }: {
+  o: PromptOption;
+  onSelect: () => void;
+  onImgError: (e: React.SyntheticEvent<HTMLImageElement>) => void;
+  html: (s: string) => { dangerouslySetInnerHTML: { __html: string } };
+}) {
+  const timer = useRef<any>(null);
+  const fired = useRef(false);
+  const start = useRef<{ x: number; y: number } | null>(null);
+  const onTouchStart = (e: React.TouchEvent) => {
+    const t = e.touches[0]; if (!t) return;
+    fired.current = false; start.current = { x: t.clientX, y: t.clientY };
+    clearTimeout(timer.current);
+    timer.current = setTimeout(() => {
+      fired.current = true;
+      zoomTo(o.card!.no, plain(o.t) || o.card!.no); // 無効な選択肢でも長押し大写しは許可（内容の確認用）
+      try { (navigator as any).vibrate?.(12); } catch { /* ignore */ }
+    }, 400);
+  };
+  const onTouchMove = (e: React.TouchEvent) => {
+    const t = e.touches[0]; if (!t || !start.current) return;
+    if (Math.abs(t.clientX - start.current.x) > 10 || Math.abs(t.clientY - start.current.y) > 10) { clearTimeout(timer.current); timer.current = null; }
+  };
+  const onTouchEnd = () => { clearTimeout(timer.current); timer.current = null; };
+  const onClick = () => { if (fired.current) { fired.current = false; return; } if (!o.disabled) onSelect(); };
+  return (
+    <button
+      className={'opt-card' + (o.ghost ? ' ghost' : '') + (o.disabled ? ' off' : '')}
+      onClick={onClick}
+      onTouchStart={onTouchStart}
+      onTouchMove={onTouchMove}
+      onTouchEnd={onTouchEnd}
+    >
+      <span className="oc-art">
+        <img src={IMG(o.card!.no)} referrerPolicy="no-referrer" decoding="async" alt={o.t} onError={onImgError} />
+        <span className="oc-fb" {...html(o.t)} />
+      </span>
+      <span className="oc-cap" {...html(o.t + (o.card!.sub ? ' <b>' + o.card!.sub + '</b>' : ''))} />
+    </button>
   );
 }
 
@@ -222,23 +257,7 @@ function PromptCard({
       {cardOpts.length > 0 && (
         <div className="opt-cards">
           {cardOpts.map((o, i) => (
-            <button
-              key={i}
-              className={'opt-card' + (o.ghost ? ' ghost' : '') + (o.disabled ? ' off' : '')}
-              onClick={o.disabled ? undefined : () => pick(o)}
-            >
-              <span className="oc-art">
-                <img
-                  src={IMG(o.card!.no)}
-                  referrerPolicy="no-referrer"
-                  decoding="async"
-                  alt={o.t}
-                  onError={onImgError}
-                />
-                <span className="oc-fb" {...html(o.t)} />
-              </span>
-              <span className="oc-cap" {...html(o.t + (o.card!.sub ? ' <b>' + o.card!.sub + '</b>' : ''))} />
-            </button>
+            <OptCard key={i} o={o} onSelect={() => pick(o)} onImgError={onImgError} html={html} />
           ))}
         </div>
       )}

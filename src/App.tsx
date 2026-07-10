@@ -19,7 +19,7 @@ import { Thinking } from './components/fx/Thinking';
 import { EndScreen } from './components/fx/EndScreen';
 import { CardPreview } from './components/fx/CardPreview';
 import { AIIntent } from './components/fx/AIIntent';
-import { CardDetailModal } from './components/fx/CardDetailModal';
+import { CardZoomOverlay } from './components/fx/CardZoomOverlay';
 import { TrashModal } from './components/fx/TrashModal';
 import { LethalCutIn } from './components/fx/LethalCutIn';
 import { SummonCutIn } from './components/fx/SummonCutIn';
@@ -192,16 +192,6 @@ function Shell({ username, logout }: { username: string; logout: () => void }) {
         <div className="spacer" />
         {inPlay ? <TurnPill engine={engine} /> : null}
         <div className="spacer" />
-        {inPlay ? (
-          // CPUモード表示＝デッキ選択で選んだものと一致（通常/強い/AI）。ハンバーガーの左隣に配置。
-          <span
-            className="tbtn"
-            style={{ cursor: 'default', display: 'inline-flex', alignItems: 'center', gap: 4, color: engine.G.cpuMode === 'claude' ? 'var(--gold-soft)' : 'var(--muted)' }}
-            title="CPUの思考モード（デッキ選択画面で設定）"
-          >
-            {engine.G.cpuMode === 'claude' ? <><Icon.cpu size={13} />AI</> : engine.G.cpuMode === 'strong' ? '強い' : '通常'}
-          </span>
-        ) : null}
         {/* ハンバーガー: ナビ/効果音/中断/ログアウト を集約（ヘッダー混雑解消） */}
         <button className="tbtn" aria-label="メニュー" onClick={() => setMenuOpen((o) => !o)} style={{ display: 'inline-flex', alignItems: 'center' }}><Icon.menu size={18} /></button>
       </div>
@@ -300,7 +290,7 @@ function Shell({ username, logout }: { username: string; logout: () => void }) {
       <EndScreen />
       <CardPreview />
       <AIIntent />
-      <CardDetailModal />
+      <CardZoomOverlay />
       <TrashModal />
     </div>
   );

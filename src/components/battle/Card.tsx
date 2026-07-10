@@ -96,7 +96,7 @@ export function Card({ card, ctx }: { card: TCard; ctx: CardCtx }) {
     clearTimeout(lpTimer.current);
     lpTimer.current = setTimeout(() => {
       lpFired.current = true;
-      useEngineStore.getState().setCardModal(card);
+      useEngineStore.getState().setZoomCard({ no: card.no, name: card.base.name });
       if ((navigator as any).vibrate) { try { (navigator as any).vibrate(12); } catch { /* ignore */ } }
     }, 450);
   }

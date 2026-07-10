@@ -1,6 +1,6 @@
 // トラッシュ閲覧モーダル（クリック/タッチ＝H5）。元 showTrashModal 相当。
 // store.trashModal(Side|null) を購読し、その側のトラッシュを新しい順にグリッド表示。.modal-back/.modal/.trash-modal-grid/.tm-card を再利用。
-// 各カードは長押し（タッチ）／クリック（PC）でカード詳細モーダル（setCardModal）を開ける。
+// 各カードは長押し（タッチ）／クリック（PC）でカード大写し（setZoomCard）を開ける。
 import { useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useEngineStore } from '../../state/engineStore';
@@ -13,7 +13,7 @@ function TmCard({ card }: { card: Card }) {
   const lpStart = useRef<{ x: number; y: number } | null>(null);
   const lpFired = useRef(false);
   const b = card.base;
-  const openDetail = () => useEngineStore.getState().setCardModal(card);
+  const openDetail = () => useEngineStore.getState().setZoomCard({ no: card.no, name: card.base.name });
 
   function onTouchStart(e: React.TouchEvent) {
     const t = e.touches[0]; if (!t) return;
