@@ -26,6 +26,19 @@ import { SummonCutIn } from './components/fx/SummonCutIn';
 import { Icon } from './components/ui/Icon';
 import { loadCloudDecks } from './state/decks';
 import { LOGO_WHITE } from './engine/img';
+import { api } from './api/client';
+
+// 設定（効果音/BGM）のアカウント永続化。全フィールドを送る＝上書きで race に強い。
+// 変更は「操作ハンドラ」からのみ呼ぶ（ロード時の setter 直接適用では呼ばない＝保存し返さない）。
+function persistSettings() {
+  const s = useEngineStore.getState();
+  api.saveSettings({ muted: s.muted, bgmOn: s.bgmOn, bgmVolume: s.bgmVolume, bgmTrack: s.bgmTrack }).catch(() => { /* オフライン等は無視 */ });
+}
+let _saveTimer: ReturnType<typeof setTimeout> | null = null;
+function persistSettingsDebounced() {
+  if (_saveTimer) clearTimeout(_saveTimer);
+  _saveTimer = setTimeout(persistSettings, 450); // 音量スライダーの連続変化をまとめる
+}
 
 const hamItem: CSSProperties = {
   textAlign: 'left', padding: '9px 11px', borderRadius: 7, border: 'none', cursor: 'pointer',
@@ -144,6 +157,7 @@ function Shell({ username, logout }: { username: string; logout: () => void }) {
     const m = !muted;
     setMuted(m);
     setAudioMuted(m);
+    persistSettings(); // アカウントごとに保存＝リロードしても維持
   }
 
   function toggleBgm() {
@@ -151,6 +165,7 @@ function Shell({ username, logout }: { username: string; logout: () => void }) {
     setBgmOn(on);
     // OFFは即停止。ONは lifecycle effect が盤面表示中を見て開始する。
     if (!on) { bgmActiveRef.current = false; stopBgm({ fade: true }); }
+    persistSettings();
   }
 
   // 曲を切替え。ゲームプレイ画面(盤面)で再生中のときだけ即差し替え＝その場で試聴。
@@ -162,6 +177,7 @@ function Shell({ username, logout }: { username: string; logout: () => void }) {
       bgmActiveRef.current = true;
       startBgm(resolveBgmSrc(t));
     }
+    persistSettings();
   }
 
   // 対戦を破棄してデッキ選択へ戻る（ハンバーガーの中断ボタン）
@@ -228,7 +244,7 @@ function Shell({ username, logout }: { username: string; logout: () => void }) {
                   <Icon.volume size={15} />
                   <input
                     type="range" min={0} max={1} step={0.05} value={bgmVolume}
-                    onChange={(e) => setBgmVolume(Number(e.target.value))}
+                    onChange={(e) => { setBgmVolume(Number(e.target.value)); persistSettingsDebounced(); }}
                     aria-label="BGM音量"
                     style={{ flex: 1, accentColor: 'var(--gold-soft)' }}
                   />
@@ -303,6 +319,21 @@ export default function App() {
 
   useEffect(() => { refresh(); }, [refresh]);
   useEffect(() => { if (user && !engine) initEngine(); }, [user, engine, initEngine]);
+  // ログイン後、アカウントに保存された効果音/BGM設定を読み込んで適用（リロードしても維持）。
+  // setter を直接呼ぶ＝操作ハンドラを経由しないので保存し返さない（ループ防止）。
+  useEffect(() => {
+    if (!user) return;
+    let alive = true;
+    api.getSettings().then(({ settings }) => {
+      if (!alive || !settings) return;
+      const st = useEngineStore.getState();
+      st.setMuted(!!settings.muted); setAudioMuted(!!settings.muted);
+      st.setBgmOn(!!settings.bgmOn);
+      if (typeof settings.bgmVolume === 'number') st.setBgmVolume(settings.bgmVolume);
+      if (settings.bgmTrack) st.setBgmTrack(settings.bgmTrack as any);
+    }).catch(() => { /* 未ログイン/オフライン等は既定値のまま */ });
+    return () => { alive = false; };
+  }, [user]);
   // ログイン後、クラウド保存のデッキを読み込んで customDecks に反映
   useEffect(() => {
     if (!user || !engine) return;

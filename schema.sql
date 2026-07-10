@@ -18,6 +18,13 @@ CREATE TABLE IF NOT EXISTS decks (
 );
 CREATE INDEX IF NOT EXISTS idx_decks_user ON decks(user_id);
 
+-- アカウントごとの設定（効果音/BGMのON/OFF・音量・曲）。リロードしても維持する。
+CREATE TABLE IF NOT EXISTS user_settings (
+  user_id    TEXT PRIMARY KEY,           -- users.id
+  data       TEXT NOT NULL,              -- JSON文字列 {muted,bgmOn,bgmVolume,bgmTrack}
+  updated_at INTEGER NOT NULL            -- epoch ms
+);
+
 -- AI 1日あたり利用回数（KV書込上限回避のため D1 でカウント）
 CREATE TABLE IF NOT EXISTS ai_usage (
   user_id TEXT NOT NULL,

@@ -18,6 +18,7 @@ async function req<T>(path: string, opts: RequestInit = {}): Promise<T> {
 
 export type User = { id: string; username: string };
 export type SavedDeck = { id: string; name: string; leader: string; list: Record<string, number>; updatedAt: number };
+export type UserSettings = { muted: boolean; bgmOn: boolean; bgmVolume: number; bgmTrack: string };
 
 export const api = {
   me: () => req<{ user: User | null }>('/api/me'),
@@ -35,4 +36,9 @@ export const api = {
     req<{ deck: SavedDeck }>('/api/decks/' + encodeURIComponent(id), { method: 'PUT', body: JSON.stringify(d) }),
   deleteDeck: (id: string) =>
     req<{ ok: true }>('/api/decks/' + encodeURIComponent(id), { method: 'DELETE' }),
+
+  // ---- アカウントごとの設定（効果音/BGM）----
+  getSettings: () => req<{ settings: UserSettings }>('/api/settings'),
+  saveSettings: (s: UserSettings) =>
+    req<{ settings: UserSettings }>('/api/settings', { method: 'PUT', body: JSON.stringify(s) }),
 };
