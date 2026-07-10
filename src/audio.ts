@@ -75,6 +75,7 @@ export function unlockAudio() {
   const c = ac();
   if (c && c.state === 'suspended') { try { c.resume(); } catch { /* ignore */ } }
   ensureBgmEl(); // 最初のユーザー操作でBGM要素も準備（自動再生アンロック）
+  routeBgm();    // BGMをAudioContextのグラフに接続（SEとセッション統合＝BGM停止でSEが死なない）
 }
 
 export function playSfx(name: string) {
@@ -97,8 +98,15 @@ export function buzz(pattern: number | number[]) {
 export function setAudioMuted(m: boolean) { muted = m; }
 export function isAudioMuted() { return muted; }
 
-// ── BGM（ループ音源。HTMLAudioElement＝SE用のWeb Audioとは独立チャンネル）──
+// ── BGM（ループ音源）──
+// ★重要（iOS対策）: HTMLAudioElement を pause するとオーディオ出力セッションが切れ、
+//   別チャンネルの WebAudio(SE) まで無音になる端末がある。これを避けるため BGM も
+//   同じ AudioContext のグラフ（MediaElementSource → gain → destination）に通し、
+//   SE と1つの出力へ統合する（セッション共有＝BGM停止でも SE は生き続ける）。
+//   音量も gain で制御（iOS は el.volume を無視するため BGM音量調整もこれで有効化）。
 let bgmEl: HTMLAudioElement | null = null;
+let bgmSource: MediaElementAudioSourceNode | null = null;
+let bgmGain: GainNode | null = null;
 let bgmVol = 0.4;          // 目標音量（0..1）
 let curSrc = '';           // 再生中/指定中の src
 let fadeTimer: number | null = null;
@@ -109,27 +117,52 @@ function ensureBgmEl(): HTMLAudioElement | null {
     bgmEl = new Audio();
     bgmEl.loop = true;
     bgmEl.preload = 'auto';
-    bgmEl.volume = 0;
+    bgmEl.volume = 1; // 実音量は gain（無ければフォールバックで el.volume）で制御
   }
   return bgmEl;
+}
+
+// BGM を AudioContext のグラフに接続（1回だけ）。context/element が揃った後に呼ぶ。
+// 非対応/失敗時は bgmGain=null のまま＝el.volume フォールバックで動く。
+function routeBgm() {
+  const c = ac();
+  const el = ensureBgmEl();
+  if (!c || !el || bgmSource) return;
+  try {
+    bgmSource = c.createMediaElementSource(el); // 同一オリジンの /bgm/*.mp3 ＝汚染なし
+    bgmGain = c.createGain();
+    bgmGain.gain.value = 0; // 開始は無音（startBgm でフェードイン）
+    bgmSource.connect(bgmGain);
+    bgmGain.connect(c.destination);
+    el.volume = 1;
+  } catch { bgmSource = null; bgmGain = null; }
+}
+
+// 現在音量取得 / 適用（gain 優先・無ければ el.volume）
+function bgmLevel(): number {
+  if (bgmGain) return bgmGain.gain.value;
+  return bgmEl ? bgmEl.volume : 0;
+}
+function applyBgmLevel(v: number) {
+  const x = Math.max(0, Math.min(1, v));
+  if (bgmGain) { try { bgmGain.gain.value = x; } catch { /* ignore */ } }
+  else if (bgmEl) { try { bgmEl.volume = x; } catch { /* ignore */ } }
 }
 
 function clearFade() {
   if (fadeTimer != null) { clearInterval(fadeTimer); fadeTimer = null; }
 }
 
-// el.volume を target まで ms かけて段階変化。完了時 onDone。
+// 音量を target まで ms かけて段階変化。完了時 onDone。
 function fadeTo(target: number, ms: number, onDone?: () => void) {
-  const el = bgmEl;
-  if (!el) return;
+  if (!bgmEl) return;
   clearFade();
-  const from = el.volume;
+  const from = bgmLevel();
   const steps = Math.max(1, Math.round(ms / 40));
   let i = 0;
   fadeTimer = window.setInterval(() => {
     i++;
-    const v = from + (target - from) * (i / steps);
-    try { el.volume = Math.max(0, Math.min(1, v)); } catch { /* ignore */ }
+    applyBgmLevel(from + (target - from) * (i / steps));
     if (i >= steps) { clearFade(); if (onDone) onDone(); }
   }, 40);
 }
@@ -138,11 +171,12 @@ function fadeTo(target: number, ms: number, onDone?: () => void) {
 export function startBgm(src: string) {
   const el = ensureBgmEl();
   if (!el) return;
+  routeBgm(); // AudioContext のグラフへ接続（unlock 後。SE とセッション統合）
   if (curSrc === src && !el.paused) return;
   curSrc = src;
   try {
     el.src = src;
-    el.volume = 0;
+    applyBgmLevel(0);
     const p = el.play();
     if (p && typeof (p as Promise<void>).catch === 'function') {
       (p as Promise<void>).catch(() => { /* 自動再生拒否は無視（次のユーザー操作で再試行） */ });
@@ -152,6 +186,7 @@ export function startBgm(src: string) {
 }
 
 // BGM停止。fade:true でフェードアウトしてから pause。
+// ★element の pause だけ（context は running のまま）＝SE は影響を受けない。
 export function stopBgm(opts?: { fade?: boolean }) {
   const el = bgmEl;
   curSrc = '';
@@ -160,7 +195,8 @@ export function stopBgm(opts?: { fade?: boolean }) {
     fadeTo(0, 600, () => { try { el.pause(); el.currentTime = 0; } catch { /* ignore */ } });
   } else {
     clearFade();
-    try { el.pause(); el.currentTime = 0; el.volume = 0; } catch { /* ignore */ }
+    try { el.pause(); el.currentTime = 0; } catch { /* ignore */ }
+    applyBgmLevel(0);
   }
 }
 
@@ -168,7 +204,7 @@ export function stopBgm(opts?: { fade?: boolean }) {
 export function setBgmVolume(v: number) {
   bgmVol = Math.max(0, Math.min(1, v));
   const el = bgmEl;
-  if (el && curSrc && !el.paused) { clearFade(); try { el.volume = bgmVol; } catch { /* ignore */ } }
+  if (el && curSrc && !el.paused) { clearFade(); applyBgmLevel(bgmVol); }
 }
 
 export function getBgmVolume() { return bgmVol; }
