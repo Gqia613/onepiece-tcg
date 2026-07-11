@@ -56,6 +56,7 @@
        比較はターン境界（両クライアントが同じ待ち状態に達した時点）で行う前提。 */
     const _HASH_SKIP = new Set([
       'customDecks',   // ユーザーごとの登録デッキ（対戦の2デッキ以外も含む）
+      '_customSeq',    // ↑の登録連番（保存デッキ数がユーザーごとに違う＝実機desyncの実例 2026-07-12 部屋ZWYS97）
       'names', 'sel', 'meta', 'inGame', 'aiOn',
       '_tab', '_sideOpen', '_lastCpuSummary',
       '_sim', '_noChain', '_beliefOn', '_linePick',

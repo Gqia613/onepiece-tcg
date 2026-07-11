@@ -136,6 +136,17 @@ async function waitReady(): Promise<void> {
       // start 受信（ホストは onlineGame が bootGame・ゲストは上のハンドラ）
       expect(await waitFor(() => guestStarted && useNetStore.getState().phase === 'playing', 15000)).toBe(true);
       useEngineStore.getState().engine!.G._sim = true; // ホストも演出sleepを短絡（ゲストと対称）
+      // ★実機desyncの再現条件（部屋ZWYS97）: 本番では resetEngine 後に loadCloudDecks が
+      //   ユーザーの保存デッキを builderToDeck で登録し、連番 G._customSeq が保存デッキ数ぶん
+      //   クライアント間でズレる。ホスト側の新エンジンにだけ余分に2つ登録して模す
+      //   （hashが連番を拾うようになったら即desyncする回帰ガード）。
+      {
+        const e2 = useEngineStore.getState().engine!;
+        const base = pick('lucy');
+        e2.G.customDecks = e2.G.customDecks || [];
+        e2.G.customDecks.push(e2.builderToDeck({ leaderNo: base.leader, list: base.list, name: 'クラウド1' }, undefined as any));
+        e2.G.customDecks.push(e2.builderToDeck({ leaderNo: base.leader, list: base.list, name: 'クラウド2' }, undefined as any));
+      }
 
       // ---- ホスト側の自動運転（本物の uiDispatch / ストアを使用）----
       const hostTick = async () => {
