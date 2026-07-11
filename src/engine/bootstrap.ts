@@ -90,7 +90,7 @@ export interface EngineAPI {
   G: any;
   C: Record<string, any>;
   DECKS: any[];
-  startGame: (meDeck: string, cpuDeck: string) => Promise<void>;
+  startGame: (meDeck: string, cpuDeck: string, opts?: { cpuHuman?: boolean }) => Promise<void>;
   beginTurn: (side: 'me' | 'cpu') => Promise<void>;
   endTurn: (side: 'me' | 'cpu') => Promise<void> | void;
   uiEndTurn: (side?: 'me' | 'cpu') => void;

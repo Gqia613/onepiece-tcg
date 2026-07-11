@@ -137,5 +137,6 @@ export function bootClient(c: Client, seed: number, deckA: string, deckB: string
   G.aiOn = false;
   G.firstPref = 'random';
   c.engine.seedRng(seed);
-  void c.engine.startGame(deckA, deckB);
+  // cpuHuman 必須: これが無いと cpu席は isCPU=true のままAIが打ち、「ゲスト=人間」の経路を検証しないテストになる
+  void c.engine.startGame(deckA, deckB, { cpuHuman: true });
 }

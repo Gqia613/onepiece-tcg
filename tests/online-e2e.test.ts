@@ -16,7 +16,7 @@ import { useEngineStore } from '../src/state/engineStore';
 import { useNetStore } from '../src/state/netStore';
 import { hostRoom, leaveOnline } from '../src/net/onlineGame';
 import { setWebSocketImpl } from '../src/net/matchClient';
-import { uiDispatch } from '../src/net/dispatch';
+import { uiDispatch, lockstepNextSeq as lockstepNextSeqHost } from '../src/net/dispatch';
 // @ts-ignore JSモジュール
 import { signJWT } from '../functions/_lib/jwt.js';
 
@@ -112,7 +112,7 @@ async function waitReady(): Promise<void> {
           eng.G.aiOn = false; eng.G.firstPref = 'random';
           eng.G.names = { me: m.names.host, cpu: m.names.guest };
           eng.seedRng(m.seed);
-          void eng.startGame('net-host', 'net-guest');
+          void eng.startGame('net-host', 'net-guest', { cpuHuman: true });
           eng.G._sim = true; // 演出sleepを短絡（ホストと対称に設定＝hash対象外）
           guestStarted = true;
           return;
@@ -174,17 +174,44 @@ async function waitReady(): Promise<void> {
       let hostAnswered = -1, hostPlays = 0, hostAtks = 0;
 
       // ---- 1局完走 ----
-      const deadline = Date.now() + 90000;
+      // ★DO はソケットあたり 20msg/秒のレート制限を持つ（room.ts）。_sim 高速化した自動運転が
+      //   これを超えると入力が落ち echo-timeout(10s) が積み重なって停止するため、送信を 60ms/loop に
+      //   ペーシングする（実ユーザーのクリック速度では到達しない制限）。
+      const deadline = Date.now() + 120000;
+      let lastSeq = -1, lastProgress = Date.now();
       while (Date.now() < deadline) {
         const hg = useEngineStore.getState().engine?.G;
         if (hg?.winner && guest.engine.G.winner) break;
         if (useNetStore.getState().desync || guest.isDesynced() || guestDesyncMsg) break;
-        await new Promise<void>((r) => (globalThis as any).setImmediate(r));
+        const seqNow = lockstepNextSeqHost();
+        if (seqNow !== lastSeq) { lastSeq = seqNow; lastProgress = Date.now(); }
+        else if (Date.now() - lastProgress > 20000) { console.log('[diag] 20秒間進捗なしで打ち切り'); break; }
+        await new Promise((r) => setTimeout(r, 60));
         guest.driver.pump();
         await hostTick();
         await tickClient(guest);
       }
       for (let i = 0; i < 50; i++) await new Promise<void>((r) => (globalThis as any).setImmediate(r));
+
+      // 診断: 未決着ならスナップショットを出力
+      {
+        const hg = useEngineStore.getState().engine!.G;
+        const gg = guest.engine.G;
+        const hp = useEngineStore.getState().prompt as any;
+        const gp = guest.store.prompt as any;
+        if (!hg.winner || !gg.winner) {
+          console.log('[diag] host:', JSON.stringify({
+            active: hg.active, phase: hg.phase, turn: hg.turnSeq, actable: hg.myActable, busy: hg.busy,
+            prompt: hp ? { title: hp.title, side: hp.side, local: hp.local } : null,
+            atkSel: !!hg.attackSel, sending: useNetStore.getState().sending, nextSeq: lockstepNextSeqHost(),
+          }));
+          console.log('[diag] guest:', JSON.stringify({
+            active: gg.active, phase: gg.phase, turn: gg.turnSeq, actable: gg.myActable, busy: gg.busy,
+            prompt: gp ? { title: gp.title, side: gp.side, local: gp.local } : null,
+            atkSel: !!gg.attackSel, sending: guest.isSending(), nextSeq: guest.driver.nextSeq(),
+          }));
+        }
+      }
 
       const hostG = useEngineStore.getState().engine!.G;
       expect(useNetStore.getState().desync, 'ホストdesyncなし（DOのhash突合を全通過）').toBe(false);
@@ -206,5 +233,5 @@ async function waitReady(): Promise<void> {
       }
       return pred();
     }
-  }, 150000);
+  }, 300000);
 });

@@ -57,13 +57,15 @@
     }
 
     /* ---------- ゲーム開始 / マリガン ---------- */
-    async function startGame(meDeck, cpuDeck) {
+    // opts.cpuHuman: オンライン対戦用。cpu席も人間として構築（isCPU=false＝CPU AI・自動マリガンを一切走らせない）
+    async function startGame(meDeck, cpuDeck, opts) {
       removeEndScreen();
       // 前ゲームでプロンプト待機中に離脱すると runFx が finally に到達せず発生源スタックが残留するため、開始時に必ず空にする
       if (typeof _fxSrcStack !== 'undefined') _fxSrcStack.length = 0;
       G._pendingReacts = []; G._fxDepth = 0; G._drainingReacts = false; // 誘発キューを初期化（前ゲームの残留防止）
+      const cpuHuman = !!(opts && opts.cpuHuman);
       G.players.me = buildPlayer('me', meDeck, false);
-      G.players.cpu = buildPlayer('cpu', cpuDeck, true);
+      G.players.cpu = buildPlayer('cpu', cpuDeck, !cpuHuman);
       G.firstPlayer = (G.firstPref === 'me' || G.firstPref === 'cpu') ? G.firstPref : (rng() < 0.5 ? 'me' : 'cpu'); // 選択画面の先攻設定を反映（既定=ランダム）
       G.active = G.firstPlayer; G.winner = null; G.turnSeq = 0; G.turnDisp = 0; G.busy = true; G.myActable = false;
       G.attackSel = null; G.pendingChoice = null; G.promptState = null; G.log = []; G._hints = null; G._aiIntent = null;

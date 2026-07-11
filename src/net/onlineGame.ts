@@ -162,7 +162,9 @@ function bootGame(gameNo: number, seed: number, decks: StartMsg['decks'], names:
   eng.G.aiOn = false;
   eng.G.firstPref = 'random'; // 先攻は rng() で決定＝seed から両者一致
   eng.seedRng(seed);
-  void eng.startGame('net-host', 'net-guest');
+  // ★cpuHuman: cpu席（ゲスト）も人間として構築。これが無いと startGame 既定の isCPU=true で
+  //   ゲストのマリガンが自動判断され、手番も内蔵AIが（中継されずに）打って即desyncする。
+  void eng.startGame('net-host', 'net-guest', { cpuHuman: true });
   es.bump();
 }
 
@@ -197,10 +199,10 @@ function resumeOnlineGame(m: WelcomeMsg): void {
     if (done || Date.now() - started > 30000) {
       const G = eng2.G;
       G._sim = false;
-      // _sim中の lose() は勝敗UI/フラグ更新を省く（MCTS用の仕様）ため、終局済みならここで正規化
+      // _sim中の lose() は setPhase('終了')/終了画面を省く（MCTS用の仕様）ため、終局済みならここで正規化。
+      // myActable は触らない（終局経路により値が分かれ、リプレイでも同じコードが走って自然に一致する）。
       if (G.winner) {
         G.phase = '終了';
-        G.myActable = false;
         useNetStore.getState().setPhase('ended');
         useEngineStore.getState().setEnd({ win: G.winner === useNetStore.getState().mySeat, reason: undefined });
       }

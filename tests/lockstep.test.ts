@@ -82,6 +82,11 @@ async function runMatch(seed: number, deckA: string, deckB: string): Promise<voi
   }
   for (let i = 0; i < 50; i++) await tick();
   C.engine.G._sim = false;
+  // _sim中の lose() は setPhase('終了') を省く（MCTS用仕様）ため、本番の resumeOnlineGame と
+  // 同じ正規化（phaseのみ）を行ってからハッシュ比較する。myActable は触らない＝ライブ側も
+  // 終局経路により true/false が分かれる（declareAttack の操作権復帰）が、リプレイでも同じ
+  // コードが走るため自然に一致する。
+  if (C.engine.G.winner) C.engine.G.phase = '終了';
   expect(jter, label + ': リプレイが固まっていない').toBeLessThan(300000);
   expect(C.engine.G.winner, label + ': リプレイの勝者一致').toBe(A.engine.G.winner);
   expect(C.engine.hashGameState(), label + ': リプレイの最終hash一致').toBe(finalA);
