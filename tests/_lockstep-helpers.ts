@@ -88,7 +88,9 @@ export async function tickClient(c: Client): Promise<void> {
   if (p) {
     if (!p.local && ((p.side || 'me') === c.seat) && c.answeredId !== p.id) {
       c.answeredId = p.id;
-      await c.driver.dispatch({ t: 'prompt', v: autoAnswer(p) }).catch(() => { c.answeredId = -1; });
+      // マリガンは cpu席=引き直す / me席=キープ に固定＝redraw経路（shuffle+rng中継）も毎回検証する
+      const v = (p.cls || '').includes('mulligan') ? c.seat === 'cpu' : autoAnswer(p);
+      await c.driver.dispatch({ t: 'prompt', v }).catch(() => { c.answeredId = -1; });
     }
     return; // 相手席のプロンプトは待つ
   }

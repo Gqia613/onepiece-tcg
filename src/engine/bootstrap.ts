@@ -49,7 +49,7 @@ const EXPORTS = [
   'inst', 'buildPlayer', 'findDeck', 'escapeHTML', 'IMG',
   'builderToDeck', 'builderValidate', 'leaderColors', // デッキ検証/生成（クラウド保存の整合に再利用）
   // オンライン対戦（ロックステップ）: 決定論シード・uid解決・投了・同期ハッシュ・状態複製
-  'seedRng', 'rngState', 'findCard', 'lose', 'hashGameState', 'cloneGameState', 'loadGameState', 'promptPick',
+  'seedRng', 'rngState', 'findCard', 'lose', 'hashGameState', 'canonGameState', 'cloneGameState', 'loadGameState', 'promptPick',
 ];
 
 const PREAMBLE = `
@@ -99,6 +99,7 @@ export interface EngineAPI {
   findCard: (uid: number) => any;
   lose: (side: 'me' | 'cpu', reason?: string) => void;
   hashGameState: (src?: any) => string;
+  canonGameState: (src?: any) => string;
   cloneGameState: (src?: any) => any;
   loadGameState: (state: any) => any;
   declareAttack: (attacker: any, target: any) => Promise<void>;

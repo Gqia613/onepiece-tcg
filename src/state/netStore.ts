@@ -19,6 +19,9 @@ interface NetStore {
   sending: boolean;             // 自入力のecho待ち（多重送信・多重クリックのUIロック）
   desync: boolean;              // 同期エラー検出（対戦続行不可）
   oppConnected: boolean;
+  // マリガン同時化: エンジンは cpu席→me席 の順に逐次で聞く（決定論）。ホスト(me席)は相手の
+  // 選択中に自分の判断を先行入力でき、自分の番が来たら自動送信される。null=未選択。
+  earlyMulligan: boolean | null;
   setMode: (m: NetStore['mode']) => void;
   setMySeat: (s: Seat) => void;
   setPhase: (p: NetPhase) => void;
@@ -29,6 +32,7 @@ interface NetStore {
   setSending: (b: boolean) => void;
   setDesync: (b: boolean) => void;
   setOppConnected: (b: boolean) => void;
+  setEarlyMulligan: (v: boolean | null) => void;
   resetNet: () => void;         // オフライン既定へ戻す（対戦終了/退室時）
 }
 
@@ -43,6 +47,7 @@ const DEFAULTS = {
   sending: false,
   desync: false,
   oppConnected: false,
+  earlyMulligan: null as boolean | null,
 };
 
 export const useNetStore = create<NetStore>((set) => ({
@@ -57,6 +62,7 @@ export const useNetStore = create<NetStore>((set) => ({
   setSending: (sending) => set({ sending }),
   setDesync: (desync) => set({ desync }),
   setOppConnected: (oppConnected) => set({ oppConnected }),
+  setEarlyMulligan: (earlyMulligan) => set({ earlyMulligan }),
   resetNet: () => set({ ...DEFAULTS }),
 }));
 

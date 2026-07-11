@@ -31,6 +31,7 @@ export type C2S =
   | { t: 'unready' }
   | { t: 'input'; d: GameInput }
   | { t: 'hash'; n: number; h: string }        // n=endTurn適用回数（ターン境界カウンタ）
+  | { t: 'dump'; n: number; state: string }    // desync時のデバッグ: 境界時点の正準JSON（canonGameState）
   | { t: 'resume'; afterSeq: number }          // 再接続: afterSeq より後の入力を要求
   | { t: 'rematch' }
   | { t: 'leave' };

@@ -14,6 +14,8 @@ import { seatOf, type S2C, type DeckPayload, type Seat } from './protocol';
 
 let watchersWired = false;
 let toastId = 2_000_000_000; // adapter の fxId と衝突しない帯域
+let lastCanon = '';   // 直近のターン境界の正準JSON（desync時のデバッグdumpに使用）
+let lastCanonN = 0;
 
 function toast(text: string): void {
   try { useEngineStore.getState().pushFx({ type: 'toast', id: ++toastId, text }); } catch { /* ignore */ }
@@ -46,7 +48,11 @@ async function enterRoom(code: string): Promise<void> {
     if (net2.mode !== 'online' || net2.desync) return;
     const eng = useEngineStore.getState().engine;
     if (!eng || eng.G._sim) return; // 復帰リプレイ中は送らない（相手と比較不要・nは継続する）
-    try { sendMatch({ t: 'hash', n, h: eng.hashGameState() }); } catch { /* ignore */ }
+    try {
+      const canon = eng.canonGameState();
+      lastCanon = canon; lastCanonN = n; // desync時に dump するデバッグ一次資料
+      sendMatch({ t: 'hash', n, h: eng.hashGameState() });
+    } catch { /* ignore */ }
   });
   await connectRoom(code);
 }
@@ -104,6 +110,8 @@ function handleMsg(m: S2C): void {
     }
     case 'desync': {
       net.setDesync(true);
+      // デバッグ: 境界時点の正準状態をDOへ預ける（/rooms/:code/dump で両者分を回収して差分特定できる）
+      try { if (lastCanon) sendMatch({ t: 'dump', n: lastCanonN, state: lastCanon }); } catch { /* ignore */ }
       toast('同期エラーが発生しました。この対戦は続行できません');
       return;
     }
@@ -143,6 +151,7 @@ function bootGame(gameNo: number, seed: number, decks: StartMsg['decks'], names:
   net.setNames(seatNames);
   net.setPhase('playing');
   net.setDesync(false);
+  net.setEarlyMulligan(null); // マリガン先行入力をリセット（リマッチ対応）
   eng.G.names = seatNames; // エンジンのログ表記（sideName）用。ハッシュ対象外
 
   // 両デッキを決定的IDで登録（既存の net-* があれば差し替え）

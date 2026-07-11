@@ -64,7 +64,8 @@
       '_pubHand',      // サーチ公開マーク（AI決定化専用。_sim中は付かない＝リプレイと差が出る）
       '_planOverride', '_hintsOn', // AI専用
     ]);
-    function hashGameState(src) {
+    // G の正準直列化（キーソート・除外規則込み）。hashGameState の入力そのもの＝desyncデバッグの一次資料。
+    function canonGameState(src) {
       src = src || G;
       const skipKey = k => _CLONE_SKIP.has(k) || _HASH_SKIP.has(k) || k === 'base';
       const parts = [];
@@ -80,7 +81,10 @@
         for (let i = 0; i < ks.length; i++) { if (i) parts.push(','); parts.push(JSON.stringify(ks[i]), ':'); ser(v[ks[i]]); }
         parts.push('}');
       })(src);
-      const json = parts.join('');
+      return parts.join('');
+    }
+    function hashGameState(src) {
+      const json = canonGameState(src);
       // cyrb53: 軽量な53bit文字列ハッシュ
       let h1 = 0xdeadbeef, h2 = 0x41c6ce57;
       for (let i = 0; i < json.length; i++) {

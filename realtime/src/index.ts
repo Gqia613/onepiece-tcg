@@ -109,6 +109,13 @@ export default {
       return stub.fetch(fwd);
     }
 
+    // desync デバッグ回収（部屋コードを知っている前提の一時ツール。状態はその部屋の対戦内容のみ）
+    const dm = /^\/rooms\/([A-Z0-9]{4,8})\/dump$/.exec(url.pathname);
+    if (dm && req.method === 'GET') {
+      const stub = env.MATCH_ROOM.get(env.MATCH_ROOM.idFromName(dm[1]));
+      return stub.fetch('https://do/dump');
+    }
+
     if (url.pathname === '/healthz') return json({ ok: true });
     return json({ error: 'not_found' }, 404);
   },

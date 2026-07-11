@@ -9,7 +9,7 @@
 //  - AnimatePresence でフェード/スケールイン。.prompt は CSS で left:50%/translateX(-50%) 中央寄せ
 //    なので、Framer の transform が translateX を潰さないよう x:'-50%' を常に保ち scale/opacity だけ動かす。
 //  - 各ボタンの onClick で prompt.onPick(o.v) を呼ぶ（必ず解決＝フリーズ厳禁）。
-import { useRef } from 'react';
+import { useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useEngineStore } from '../../state/engineStore';
 import { useNetStore, seatLabel } from '../../state/netStore';
@@ -138,10 +138,24 @@ export function Prompt() {
   const engine = useEngineStore((s) => s.engine);
   const mySeat = useNetStore((s) => s.mySeat);
   const online = useNetStore((s) => s.mode) === 'online';
+  const earlyMull = useNetStore((s) => s.earlyMulligan);
   useEngineStore((s) => s.version); // pendingChoice の変化（render→bump）を拾う
 
   // オンライン: 相手席の選択（非local）は選択肢を出さず「相手の選択待ち」だけ表示する
   const isRemote = !!prompt && online && !prompt.local && ((prompt.side || 'me') !== mySeat);
+  const isMullPrompt = !!prompt && (prompt.cls || '').includes('mulligan');
+  // マリガン同時化: エンジンは cpu席→me席 の順に聞くため、me席（ホスト）は相手の選択中に
+  // 自分の判断を先行入力できる（相手席のマリガン表示中＝自分はまだ未回答なのは me席のみ）。
+  const mullEarlyChooser = isRemote && isMullPrompt && mySeat === 'me' && earlyMull === null;
+  // 自分のマリガンの番が来たとき、先行入力があれば自動送信（下のuseEffect）。その間はUIを出さない。
+  const mullAutoSending = !!prompt && online && isMullPrompt && !prompt.local && (prompt.side || 'me') === mySeat && earlyMull !== null;
+  useEffect(() => {
+    if (!mullAutoSending || !prompt) return;
+    const v = useNetStore.getState().earlyMulligan;
+    useNetStore.getState().setEarlyMulligan(null);
+    void uiDispatch({ t: 'prompt', v });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mullAutoSending, prompt?.id]);
 
   // 画像読み込み失敗時に .oc-art へ noimg を付与（元: onerror で parentNode.classList.add('noimg')）
   const onImgError = (e: React.SyntheticEvent<HTMLImageElement>) => {
@@ -183,7 +197,25 @@ export function Prompt() {
             transition={{ duration: 0.18 }}
           />
         )}
-        {prompt && isRemote && (
+        {prompt && mullEarlyChooser && (
+          <motion.div
+            key={'mull-early' + prompt.id}
+            className="prompt show mulligan"
+            initial={{ x: '-50%', opacity: 0, scale: 0.9 }}
+            animate={{ x: '-50%', opacity: 1, scale: 1 }}
+            exit={{ x: '-50%', opacity: 0, scale: 0.92 }}
+            transition={{ duration: 0.2, ease: 'easeOut' }}
+          >
+            <h3>マリガン</h3>
+            <p>最初の手札を引き直しますか？（相手も同時に選んでいます。決定は相手の選択後に送信されます）</p>
+            <MulliganHand />
+            <div className="opts">
+              <button className="opt" onClick={() => useNetStore.getState().setEarlyMulligan(true)}>引き直す</button>
+              <button className="opt primary" onClick={() => useNetStore.getState().setEarlyMulligan(false)}>この手札でいく</button>
+            </div>
+          </motion.div>
+        )}
+        {prompt && (isRemote || mullAutoSending) && !mullEarlyChooser && (
           <motion.div
             key={'wait' + prompt.id}
             className="prompt show waiting"
@@ -192,11 +224,11 @@ export function Prompt() {
             exit={{ x: '-50%', opacity: 0, scale: 0.92 }}
             transition={{ duration: 0.2, ease: 'easeOut' }}
           >
-            <h3>{seatLabel((prompt.side || 'cpu') as 'me' | 'cpu')}の選択待ち…</h3>
-            <p>相手が{(prompt.cls || '').includes('defense') ? '防御' : (prompt.cls || '').includes('mulligan') ? 'マリガン' : '効果の対象'}を選んでいます</p>
+            <h3>{mullAutoSending ? '選択を送信中…' : seatLabel((prompt.side || 'cpu') as 'me' | 'cpu') + 'の選択待ち…'}</h3>
+            <p>{mullAutoSending ? 'あなたのマリガン選択を反映しています' : '相手が' + ((prompt.cls || '').includes('defense') ? '防御' : (prompt.cls || '').includes('mulligan') ? 'マリガン' : '効果の対象') + 'を選んでいます'}</p>
           </motion.div>
         )}
-        {prompt && !isRemote && !(peek && canPeek) && (
+        {prompt && !isRemote && !mullAutoSending && !(peek && canPeek) && (
           <PromptCard
             key={prompt.id}
             prompt={prompt}

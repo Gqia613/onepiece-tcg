@@ -72,6 +72,17 @@ export class MatchRoom {
   async fetch(req: Request): Promise<Response> {
     const url = new URL(req.url);
 
+    // desync デバッグ回収: 両席が預けた正準状態を返す（部屋がdesync済みの時のみ）
+    if (url.pathname === '/dump' && req.method === 'GET') {
+      const r = await this.room();
+      if (!r) return new Response(JSON.stringify({ error: 'not_found' }), { status: 404 });
+      const host = await this.ctx.storage.get('dump:host');
+      const guest = await this.ctx.storage.get('dump:guest');
+      return new Response(JSON.stringify({ code: r.code, desynced: r.desynced, gameNo: r.gameNo, seed: r.seed, host: host || null, guest: guest || null }), {
+        headers: { 'Content-Type': 'application/json; charset=utf-8' },
+      });
+    }
+
     if (url.pathname === '/init' && req.method === 'POST') {
       const body = (await req.json()) as { code: string; hostUid: string | number; hostName: string };
       const existing = await this.room();
@@ -219,6 +230,12 @@ export class MatchRoom {
           return;
         }
         await this.putRoom(r);
+        return;
+      }
+      case 'dump': {
+        // desync デバッグ: クライアントが預ける境界時点の正準状態（GET /rooms/:code/dump で回収）
+        if (typeof msg.state !== 'string' || msg.state.length > 120000) return;
+        await this.ctx.storage.put(`dump:${seat}`, { n: msg.n, at: now, state: msg.state });
         return;
       }
       case 'resume': {

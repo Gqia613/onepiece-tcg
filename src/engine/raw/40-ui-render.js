@@ -458,11 +458,11 @@
       }).join('');
     }
     function handPlayable(c) {
-      const P = G.players.me; const b = c.base;
+      const side = c.owner; const P = G.players[side]; const b = c.base; // side=カード所有者（オンライン対戦のcpu席人間にも正しく効く）
       if (P._noPlayTurn === G.turnSeq) return false; // このターン手札からプレイ不可（OP13-028）
-      if (b.type === 'CHAR') return !summonBanned('me', c) && effCost('me', c) <= P.don.active; // 5体でも出せる（登場時に1体トラッシュ）。登場ban中は不可
+      if (b.type === 'CHAR') return !summonBanned(side, c) && effCost(side, c) <= P.don.active; // 5体でも出せる（登場時に1体トラッシュ）。登場ban中は不可
       if (b.type === 'STAGE') return (b.cost || 0) <= P.don.active;
-      if (b.type === 'EVENT') return !!(b.fx && b.fx.main) && effCost('me', c) <= P.don.active; // イベントもcostMod(条件付きコスト減)を反映
+      if (b.type === 'EVENT') return !!(b.fx && b.fx.main) && effCost(side, c) <= P.don.active; // イベントもcostMod(条件付きコスト減)を反映
       return false;
     }
 

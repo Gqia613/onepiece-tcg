@@ -221,6 +221,15 @@ async function waitReady(): Promise<void> {
       expect(useEngineStore.getState().engine!.hashGameState(), '最終状態hash一致').toBe(guest.engine.hashGameState());
       expect(useNetStore.getState().phase).toBe('ended');
 
+      // desyncデバッグ計器の疎通: dump を預けて /rooms/:code/dump で回収できる
+      const { sendMatch } = await import('../src/net/matchClient');
+      sendMatch({ t: 'dump', n: 99, state: '{"probe":1}' });
+      await new Promise((r) => setTimeout(r, 500));
+      const dr = await realFetch(`${BASE}/rooms/${code}/dump`);
+      expect(dr.status).toBe(200);
+      const dj = (await dr.json()) as any;
+      expect(dj.host?.state).toBe('{"probe":1}');
+
       try { gws.close(); } catch { /* ignore */ }
     }
 
