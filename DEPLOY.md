@@ -99,6 +99,8 @@ npx wrangler pages secret put REALTIME_URL --project-name opcg-sim
 #    値: https://opcg-realtime.opcg-sim.workers.dev
 ```
 
+- Worker は Pages と同じ D1（binding `DB`）を持つ（`realtime/wrangler.toml`）＝戦績＋リプレイの書き込み先。
+  読み出しは Pages の `/api/match/history`・`/api/match/replay`。`matches` テーブルは `npm run d1:remote` で作成。
 - 疎通確認: `curl https://opcg-realtime.opcg-sim.workers.dev/healthz` → `{"ok":true}`
   （★workers.dev サブドメイン新設直後は `*.opcg-sim.workers.dev` の証明書発行待ちで数分〜数時間 TLS エラーになることがある）
 - 許可オリジンは `realtime/wrangler.toml` の `ALLOWED_ORIGINS`（+ `*.opcg-sim.pages.dev` プレビューはコードで許可）。
