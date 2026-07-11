@@ -10,6 +10,7 @@ import { startReplay } from '../net/replay';
 import { seatOf, type DeckPayload, type RoomConfig } from '../net/protocol';
 import { IMG } from '../engine/img';
 import { Icon } from '../components/ui/Icon';
+import { DeckCarousel } from '../components/deck/DeckCarousel';
 
 const panel: React.CSSProperties = {
   background: 'linear-gradient(180deg, var(--ocean-800), var(--ocean-850))',
@@ -192,18 +193,19 @@ export default function OnlineLobby() {
           </div>
           <div style={panel}>
             <b>コードで参加</b>
-            <div style={{ display: 'flex', gap: 8 }}>
+            <div style={{ display: 'flex', gap: 8, alignItems: 'stretch' }}>
               <input
                 value={joinCode}
                 onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
                 placeholder="例: ABC234"
                 maxLength={8}
                 style={{
-                  flex: 1, padding: '10px 12px', borderRadius: 8, border: '1px solid var(--gold-dim)',
+                  flex: '1 1 auto', minWidth: 0, // ★min-width:0＝狭幅で入力欄が縮み、行がはみ出さない
+                  padding: '10px 12px', borderRadius: 8, border: '1px solid var(--gold-dim)',
                   background: 'var(--ocean-850)', color: 'var(--ink)', fontSize: 18, letterSpacing: 3, textTransform: 'uppercase',
                 }}
               />
-              <button className="phasebtn go" disabled={busy || joinCode.trim().length < 4} onClick={() => { void doJoin(); }}>参加</button>
+              <button className="phasebtn go" style={{ flex: '0 0 auto' }} disabled={busy || joinCode.trim().length < 4} onClick={() => { void doJoin(); }}>参加</button>
             </div>
           </div>
         </>
@@ -284,28 +286,26 @@ export default function OnlineLobby() {
 
           <div style={{ borderTop: '1px solid var(--line)', paddingTop: 10, display: 'flex', flexDirection: 'column', gap: 8 }}>
             <b style={{ fontSize: 13.5 }}>使用するデッキ</b>
-            <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-              {selected ? (
-                <img src={IMG(selected.leader)} referrerPolicy="no-referrer" alt="" style={{ width: 46, borderRadius: 4 }}
-                  onError={(e) => { e.currentTarget.style.display = 'none'; }} />
-              ) : null}
-              <select
-                value={deckId}
-                disabled={readySent}
-                onChange={(e) => setDeckId(e.target.value)}
-                style={{ flex: 1, ...selStyle, padding: '9px 10px', fontSize: 14 }}
-              >
-                <option value="">デッキを選択…</option>
-                {decks.custom.length ? (
-                  <optgroup label="マイデッキ">
-                    {decks.custom.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
-                  </optgroup>
+            {readySent ? (
+              // 準備完了後は選択済みデッキを小さく確認表示（カルーセルは畳む）
+              <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                {selected ? (
+                  <img src={IMG(selected.leader)} referrerPolicy="no-referrer" alt="" style={{ width: 46, borderRadius: 6, border: '1px solid var(--surface-edge)' }}
+                    onError={(e) => { e.currentTarget.style.display = 'none'; }} />
                 ) : null}
-                <optgroup label="プリセット">
-                  {decks.presets.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
-                </optgroup>
-              </select>
-            </div>
+                <span style={{ fontSize: 14, fontWeight: 700 }}>{selected?.name || 'デッキ'}</span>
+              </div>
+            ) : (
+              // CPU対戦と同じリーダーカルーセルで選ぶ（中央のデッキ＝選択）
+              <div className="deckpick-embed">
+                <DeckCarousel
+                  customList={decks.custom}
+                  presetList={decks.presets}
+                  selectedId={deckId}
+                  onSelect={(d) => setDeckId(d.id)}
+                />
+              </div>
+            )}
             {!readySent ? (
               <button className="phasebtn go" disabled={!selected} onClick={doReady}>
                 このデッキで準備完了

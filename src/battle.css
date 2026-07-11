@@ -5445,10 +5445,31 @@ button.hb-chip:not(.zero):not([disabled]):hover {
     border-right: none;
     border-bottom: none;
     padding: 14px 16px calc(16px + env(safe-area-inset-bottom, 0px));
-    max-height: 74vh;
-    max-height: 74dvh;
-    overflow-y: auto;
-    overflow-x: hidden;
+    /* ★高さフィット: シート全体はスクロールさせず(overflow:hidden)、中身をflex縦組みにして
+       カード候補(.opt-cards)だけを内部スクロール＝見出しと下部ボタンは常に表示される */
+    max-height: 92vh;
+    max-height: 92dvh;
+    overflow: hidden;
+  }
+
+  /* .show の時だけ flex 縦組み（display:none は base のまま） */
+  #promptHost .prompt.show,
+  .prompt.show {
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* 見出し・ヘッダー・ボタンは縮まない（＝常に見える）。中央のカード候補だけが伸縮＆スクロール */
+  .prompt h3,
+  .prompt p,
+  .prompt .pp-src,
+  .prompt .pp-card,
+  .prompt .pp-warn,
+  .prompt .opt-count,
+  .prompt .prompt-atkhead,
+  .prompt .prompt-peek-btn,
+  .prompt .opts {
+    flex: 0 0 auto;
   }
 
   /* 要点が一読で分かる文字サイズ・コントラスト */
@@ -5484,10 +5505,13 @@ button.hb-chip:not(.zero):not([disabled]):hover {
     margin-top: 8px;
   }
 
-  /* カード候補: 全体の max-height と二重スクロールにならないよう内側は控えめに */
+  /* カード候補: flex の伸縮領域を占め、余った高さだけを内部スクロール（下部ボタンは押し出さない） */
   .prompt .opt-cards {
-    max-height: 42vh;
-    max-height: 42dvh;
+    flex: 1 1 auto;
+    min-height: 0;
+    max-height: none;
+    overflow-y: auto;
+    overflow-x: hidden;
   }
 
   .prompt-peek-btn {
@@ -5852,6 +5876,20 @@ button.hb-chip:not(.zero):not([disabled]):hover {
   /* basis 0 ＝ 他要素が収まらない分を最優先で縮んで吸収（下のバーを絶対に押し出さない） */
   flex: 1 1 0;
   min-height: 96px;
+}
+
+/* オンラインロビー等でカルーセルを埋め込む時の固定高さ枠（CPU対戦は select-wrap.ds2 の
+   フレックスで高さが決まるが、埋め込み先は通常フローなので明示的に高さを与える）。 */
+.deckpick-embed {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  height: 300px;
+}
+
+.deckpick-embed .ds-rail-wrap {
+  flex: 1 1 auto;
 }
 
 /* 中央背後のオーラ（アクティブデッキの色） */
