@@ -32,6 +32,7 @@ export function resolveCardClick(
   const mySeat: Side = net.mySeat;
   const online = net.mode === 'online';
   const none: CardBehavior = { clickable: false };
+  if (net.replayActive) return none; // リプレイ再生中は盤面操作を全面無効化
 
   // 1. humanPick 選択中（pick.uids に含まれるカードのみ選択可）。相手席の選択（オンライン）は触れない。
   if (pick) {

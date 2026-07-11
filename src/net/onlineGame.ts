@@ -1,21 +1,28 @@
-// オンライン対戦の進行制御（部屋の入退室・対戦開始・復帰・hash送信・投了/リマッチ）。
+// オンライン対戦の進行制御（部屋の入退室・対戦開始・復帰・hash送信・投了/リマッチ・
+// 部屋設定・持ち時間・desync自動復旧・終局申告・エモート）。
 // matchClient(WS) のイベントをエンジン/ストアへ配線する唯一の場所。
 //
 // 対戦開始の決定論プロトコル（両クライアントで完全一致させる）:
 //   resetEngine（uid採番/rngを初期状態へ）→ 両デッキを 'net-host'/'net-guest' で登録
-//   → G.firstPref='random'（先攻はrngで決定）→ seedRng(seed) → startGame('net-host','net-guest')
+//   → G.firstPref（部屋設定の先攻。random ならエンジンrngで決定）→ seedRng(seed)
+//   → startGame('net-host','net-guest',{cpuHuman:true})
 import { useEngineStore } from '../state/engineStore';
 import { useNetStore } from '../state/netStore';
 import {
   setMatchHandler, sendMatch, connectRoom, createRoom, leaveMatch, setMatchGame,
 } from './matchClient';
 import { resetLockstep, wireLockstep, setOnApplied, setOnBoundary, onRemoteInput, uiDispatch, lockstepNextSeq } from './dispatch';
-import { seatOf, type S2C, type DeckPayload, type Seat } from './protocol';
+import { clockReset, clockNoteInput, clockStop } from './clock';
+import { seatOf, roomSeatOf, type S2C, type DeckPayload, type Seat, type RoomConfig, type RoomSeat, type MatchResult } from './protocol';
 
 let watchersWired = false;
 let toastId = 2_000_000_000; // adapter の fxId と衝突しない帯域
 let lastCanon = '';   // 直近のターン境界の正準JSON（desync時のデバッグdumpに使用）
 let lastCanonN = 0;
+let resultSent = false;          // 終局申告は1ゲーム1回
+let recoveryAttempted = false;   // desync自動復旧は1ゲーム1回だけ試す
+// 復旧・リマッチ再現用に直近のゲーム開始情報を保持
+let lastStart: { gameNo: number; seed: number; decks: Record<RoomSeat, DeckPayload>; names: Record<RoomSeat, string>; first: RoomSeat | null; config: RoomConfig; startTs: number } | null = null;
 
 function toast(text: string): void {
   try { useEngineStore.getState().pushFx({ type: 'toast', id: ++toastId, text }); } catch { /* ignore */ }
@@ -37,6 +44,8 @@ async function enterRoom(code: string): Promise<void> {
   net.setPhase('lobby');
   net.setRoomCode(code);
   net.setDesync(false);
+  net.setVerMismatch(false);
+  net.setRecovering(false);
   wireLockstep();
   wireWatchers();
   setMatchHandler(handleMsg);
@@ -57,16 +66,28 @@ async function enterRoom(code: string): Promise<void> {
   await connectRoom(code);
 }
 
-// ロビーで自分のデッキを確定（ready）。deck は {leader, list, name} に正規化して送る。
+// ロビー: 自分のデッキを確定（ready）。ビルドIDを添えて版数を突合する。
 export function sendReady(deck: DeckPayload): void {
-  sendMatch({ t: 'ready', deck });
+  let ver: string | undefined;
+  try { ver = __BUILD_ID__; } catch { ver = undefined; }
+  sendMatch({ t: 'ready', deck, ver });
 }
+export function sendUnready(): void { sendMatch({ t: 'unready' }); }
+// ロビー: 部屋設定（ホストのみ有効。DOが検証して全員へ配布）
+export function sendConfig(config: RoomConfig): void { sendMatch({ t: 'config', config }); }
 
 export function forfeitOnline(): void {
   void uiDispatch({ t: 'forfeit' });
 }
 export function requestRematch(): void {
   sendMatch({ t: 'rematch' });
+}
+// 相手切断の裁定を要求（DOが猶予・接続状態を検証し、切断側の投了を代理発行）
+export function claimDisconnectWin(): void {
+  sendMatch({ t: 'claim', reason: 'disconnect' });
+}
+export function sendEmote(k: number): void {
+  sendMatch({ t: 'emote', k });
 }
 
 // 退室してオフライン既定へ戻す（ロビー/終了後/エラー時）
@@ -76,6 +97,8 @@ export function leaveOnline(): void {
   setOnApplied(null);
   setOnBoundary(null);
   resetLockstep(1);
+  clockStop();
+  lastStart = null;
   const es = useEngineStore.getState();
   try { es.engine?.backToSelect?.(); } catch { /* ignore */ }
   es.setEnd(null);
@@ -90,12 +113,30 @@ function handleMsg(m: S2C): void {
     case 'joined': {
       net.setMySeat(seatOf(m.seat));
       net.setPlayers(m.players);
+      net.setConfig(m.config);
       if (m.status === 'lobby') net.setPhase('lobby');
       return;
     }
     case 'peer': {
       net.setPlayers(m.players);
-      net.setOppConnected(m.players.filter((p) => p.connected).length >= 2);
+      const oppSeatRoom = roomSeatOf(net.mySeat === 'me' ? 'cpu' : 'me');
+      const opp = m.players.find((p) => p.seat === oppSeatRoom);
+      const oppConnected = !!opp?.connected && m.players.length >= 2;
+      net.setOppConnected(oppConnected);
+      // 勝利宣言の起点時刻（ローカル計時。DO側でも猶予を再検証する）
+      if (net.phase === 'playing') {
+        if (!oppConnected && net.oppLostAt == null && m.players.length >= 2) net.setOppLostAt(Date.now());
+        if (oppConnected && net.oppLostAt != null) net.setOppLostAt(null);
+      }
+      return;
+    }
+    case 'config': {
+      net.setConfig(m.config);
+      return;
+    }
+    case 'version-mismatch': {
+      net.setVerMismatch(true);
+      toast('アプリの版が相手と異なります。両者ページを再読み込みしてください');
       return;
     }
     case 'start': {
@@ -103,17 +144,37 @@ function handleMsg(m: S2C): void {
       return;
     }
     case 'welcome': {
-      // 再接続。エンジンが同一ゲームを保持していれば差分入力を流すだけ（軽量経路）。
-      // ページ再読込などで状態が無ければ、seed+デッキから再構築して入力ログを高速リプレイ（完全経路）。
       resumeOnlineGame(m);
       return;
     }
     case 'desync': {
-      net.setDesync(true);
-      // デバッグ: 境界時点の正準状態をDOへ預ける（/rooms/:code/dump で両者分を回収して差分特定できる）
+      // デバッグ: 境界時点の正準状態をDOへ預ける（/rooms/:code/dump で回収可能）
       try { if (lastCanon) sendMatch({ t: 'dump', n: lastCanonN, state: lastCanon }); } catch { /* ignore */ }
+      // 自動復旧（1ゲーム1回）: サーバの入力ログが正。両者が seed+全ログから再構築して続行する
+      if (!recoveryAttempted && lastStart) {
+        recoveryAttempted = true;
+        net.setRecovering(true);
+        toast('同期のずれを検出 — 自動復旧しています…');
+        void performResync();
+        return;
+      }
+      net.setDesync(true);
+      net.setRecovering(false);
       toast('同期エラーが発生しました。この対戦は続行できません');
       return;
+    }
+    case 'resync-go': {
+      // 両者の再構築が完了（hash台帳リセット済み）。続行。
+      net.setRecovering(false);
+      toast('同期エラーから復旧しました');
+      return;
+    }
+    case 'emote': {
+      net.setLastEmote({ seat: seatOf(m.seat), k: m.k, id: ++toastId });
+      return;
+    }
+    case 'result-saved': {
+      return; // 戦績保存の確認（UIは戦績画面で反映）
     }
     case 'rematch-wait': {
       if (seatOf(m.by) !== net.mySeat) toast('相手がもう一度対戦を希望しています');
@@ -125,6 +186,7 @@ function handleMsg(m: S2C): void {
       return;
     }
     case 'error': {
+      if (m.code === 'claim_rejected') { toast('まだ勝利宣言できません（相手の切断から90秒必要です）'); return; }
       const msg = m.code === 'not_found' ? '部屋が見つかりません'
         : m.code === 'room_full' ? '部屋が満室です'
         : m.code === 'rate' ? '操作が速すぎます'
@@ -138,27 +200,27 @@ function handleMsg(m: S2C): void {
   }
 }
 
-// ---- 対戦開始（初回/リマッチ共通）----
+// ---- 対戦開始（初回/リマッチ/復旧共通）----
 type StartMsg = Extract<S2C, { t: 'start' }>;
 type WelcomeMsg = Extract<S2C, { t: 'welcome' }>;
 
-function bootGame(gameNo: number, seed: number, decks: StartMsg['decks'], names: StartMsg['names']): void {
+function bootGame(gameNo: number, seed: number, decks: Record<RoomSeat, DeckPayload>, names: Record<RoomSeat, string>, first: RoomSeat | null, config: RoomConfig, startTs: number): void {
   const es = useEngineStore.getState();
   const net = useNetStore.getState();
   const eng = es.resetEngine(); // uid採番・rngを初期状態に（両クライアントで一致させる）
 
+  lastStart = { gameNo, seed, decks, names, first, config, startTs };
   const seatNames = { me: names.host || 'ホスト', cpu: names.guest || 'ゲスト' };
   net.setNames(seatNames);
   net.setPhase('playing');
   net.setDesync(false);
   net.setEarlyMulligan(null); // マリガン先行入力をリセット（リマッチ対応）
+  net.setConfig(config);
+  net.setOppLostAt(null);
   eng.G.names = seatNames; // エンジンのログ表記（sideName）用。ハッシュ対象外
 
   // 両デッキを決定的IDで登録（既存の net-* があれば差し替え）
-  const reg = (d: DeckPayload, id: string) => {
-    const deck = eng.builderToDeck({ leaderNo: d.leader, list: d.list, name: d.name }, id);
-    return deck;
-  };
+  const reg = (d: DeckPayload, id: string) => eng.builderToDeck({ leaderNo: d.leader, list: d.list, name: d.name }, id);
   eng.G.customDecks = [
     ...(eng.G.customDecks || []).filter((x: any) => x.id !== 'net-host' && x.id !== 'net-guest'),
     reg(decks.host, 'net-host'),
@@ -167,9 +229,13 @@ function bootGame(gameNo: number, seed: number, decks: StartMsg['decks'], names:
 
   resetLockstep(1);
   setMatchGame(gameNo, 0);
+  resultSent = false;
+  recoveryAttempted = false;
+  clockReset(config.clock, startTs, Date.now());
 
   eng.G.aiOn = false;
-  eng.G.firstPref = 'random'; // 先攻は rng() で決定＝seed から両者一致
+  // 先攻: 部屋設定（host/guest/alt はDOが確定済み）。random は rng() で決定＝seed から両者一致
+  eng.G.firstPref = first == null ? 'random' : first === 'host' ? 'me' : 'cpu';
   eng.seedRng(seed);
   // ★cpuHuman: cpu席（ゲスト）も人間として構築。これが無いと startGame 既定の isCPU=true で
   //   ゲストのマリガンが自動判断され、手番も内蔵AIが（中継されずに）打って即desyncする。
@@ -178,7 +244,7 @@ function bootGame(gameNo: number, seed: number, decks: StartMsg['decks'], names:
 }
 
 function startOnlineGame(m: StartMsg): void {
-  bootGame(m.gameNo, m.seed, m.decks, m.names);
+  bootGame(m.gameNo, m.seed, m.decks, m.names, m.first, m.config, m.ts);
 }
 
 // ---- 復帰（再接続 welcome）----
@@ -186,30 +252,34 @@ function resumeOnlineGame(m: WelcomeMsg): void {
   const es = useEngineStore.getState();
   const eng = es.engine;
   const net = useNetStore.getState();
-  const liveSameGame = !!eng?.G?.inGame && net.phase === 'playing' && !net.desync;
+  const liveSameGame = !!eng?.G?.inGame && net.phase === 'playing' && !net.desync
+    && lastStart?.gameNo === m.gameNo && lastStart?.seed === m.seed;
 
   if (liveSameGame) {
     // 軽量経路: 生きている状態に不足分の入力を流すだけ（pump が順序・待ち状態を保証）
     net.setPhase('playing');
-    for (const rec of m.inputs) onRemoteInput(rec.seq, seatOf(rec.seat), rec.d);
+    for (const rec of m.inputs) { clockNoteInput(seatOf(rec.seat), rec.ts || 0); onRemoteInput(rec.seq, seatOf(rec.seat), rec.d); }
     return;
   }
 
   // 完全経路: seed+デッキから再構築し、入力ログを高速リプレイ（G._sim で演出・sleepを短絡）
-  bootGame(m.gameNo, m.seed, m.decks, m.names);
+  bootGame(m.gameNo, m.seed, m.decks, m.names, m.first, m.config, m.startTs);
   const eng2 = useEngineStore.getState().engine!;
   eng2.G._sim = true;
   useNetStore.getState().setPhase('playing');
-  for (const rec of m.inputs) onRemoteInput(rec.seq, seatOf(rec.seat), rec.d);
-  // リプレイ消化を待って通常モードへ復帰（pump はエンジンの待ち状態到達ごとに進む）
+  for (const rec of m.inputs) { clockNoteInput(seatOf(rec.seat), rec.ts || 0); onRemoteInput(rec.seq, seatOf(rec.seat), rec.d); }
+  finishReplay(eng2, m.lastSeq, null);
+}
+
+// リプレイ消化を待って通常モードへ復帰。afterDone は desync 復旧時の追加処理。
+function finishReplay(eng2: any, lastSeq: number, afterDone: (() => void) | null): void {
   const started = Date.now();
   const finish = () => {
-    const done = !m.inputs.length || lockstepNextSeq() > m.lastSeq; // 全入力適用済み＝次seqがlastSeqを超えた
+    const done = lastSeq <= 0 || lockstepNextSeq() > lastSeq; // 全入力適用済み＝次seqがlastSeqを超えた
     if (done || Date.now() - started > 30000) {
       const G = eng2.G;
       G._sim = false;
       // _sim中の lose() は setPhase('終了')/終了画面を省く（MCTS用の仕様）ため、終局済みならここで正規化。
-      // myActable は触らない（終局経路により値が分かれ、リプレイでも同じコードが走って自然に一致する）。
       if (G.winner) {
         G.phase = '終了';
         useNetStore.getState().setPhase('ended');
@@ -217,6 +287,7 @@ function resumeOnlineGame(m: WelcomeMsg): void {
       }
       useEngineStore.getState().bump();
       if (!done) { useNetStore.getState().setDesync(true); toast('復帰に失敗しました（同期エラー）'); }
+      else if (afterDone) afterDone();
       return;
     }
     setTimeout(finish, 120);
@@ -224,7 +295,31 @@ function resumeOnlineGame(m: WelcomeMsg): void {
   setTimeout(finish, 120);
 }
 
-// ---- 監視（勝敗でphase遷移）----
+// desync自動復旧: サーバの入力ログを正として全再構築 → 完了を申告（両者揃うと resync-go）
+async function performResync(): Promise<void> {
+  const ls = lastStart!;
+  bootGame(ls.gameNo, ls.seed, ls.decks, ls.names, ls.first, ls.config, ls.startTs);
+  recoveryAttempted = true; // bootGame がリセットするため立て直す（復旧は1ゲーム1回）
+  const eng2 = useEngineStore.getState().engine!;
+  eng2.G._sim = true;
+  useNetStore.getState().setRecovering(true);
+  // 全入力を要求（resume は個別 input として届き、pump が順序適用する）
+  sendMatch({ t: 'resume', afterSeq: 0 });
+  // 進捗が止まったら（=ログを消化しきったら）_simを解いて resync 申告
+  let lastSeen = -1; let stable = 0;
+  const poll = () => {
+    const cur = lockstepNextSeq();
+    if (cur === lastSeen) stable++; else { stable = 0; lastSeen = cur; }
+    if (stable >= 8) { // ~1秒進捗なし＝消化完了とみなす
+      finishReplay(eng2, cur - 1, () => { sendMatch({ t: 'resync' }); });
+      return;
+    }
+    setTimeout(poll, 120);
+  };
+  setTimeout(poll, 400);
+}
+
+// ---- 監視（勝敗/引き分けでphase遷移＋終局申告）----
 function wireWatchers(): void {
   if (watchersWired) return;
   watchersWired = true;
@@ -233,6 +328,25 @@ function wireWatchers(): void {
     if (net.mode !== 'online') return;
     const eng = useEngineStore.getState().engine;
     if (!eng) return;
-    if (net.phase === 'playing' && eng.G.winner) net.setPhase('ended');
+    const G = eng.G;
+    if (net.phase !== 'playing' || G._sim) return;
+
+    const drawEnd = !G.winner && G.phase === '終了' && G.inGame; // timeup（両者敗北）
+    if (!G.winner && !drawEnd) return;
+
+    net.setPhase('ended');
+    if (drawEnd) {
+      useEngineStore.getState().setEnd({ win: false, reason: '時間切れ（両者敗北）' });
+    }
+    if (!resultSent) {
+      resultSent = true;
+      const end = useEngineStore.getState().end;
+      const result: MatchResult = {
+        winner: G.winner ? roomSeatOf(G.winner as Seat) : 'draw',
+        reason: (end?.reason as string) || (drawEnd ? '時間切れ（両者敗北）' : ''),
+        turns: G.turnDisp || G.turnSeq || 0,
+      };
+      try { sendMatch({ t: 'result', result }); } catch { /* ignore */ }
+    }
   });
 }

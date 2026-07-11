@@ -6,6 +6,7 @@
 import type { C2S, S2C, GameInput } from './protocol';
 import { seatOf } from './protocol';
 import { onRemoteInput, lockstepGap, lockstepNextSeq, setSender } from './dispatch';
+import { clockNoteInput } from './clock';
 import { useNetStore } from '../state/netStore';
 
 interface TokenResp { token: string; url: string }
@@ -98,7 +99,10 @@ async function open(): Promise<void> {
     try { m = JSON.parse(String(ev.data)) as S2C; } catch { return; }
     if (m.t === 'pong') return;
     if (m.t === 'input') {
-      if (m.seq > lastSeqSeen) lastSeqSeen = m.seq;
+      if (m.seq > lastSeqSeen) {
+        lastSeqSeen = m.seq;
+        clockNoteInput(seatOf(m.seat), m.ts || 0); // 持ち時間: サーバtsで送信席に帰属（重複配信は加算しない）
+      }
       onRemoteInput(m.seq, seatOf(m.seat), m.d);
       // 欠番（先の seq だけ届いた）→ 直ちに再送要求
       if (lockstepGap()) sendMatch({ t: 'resume', afterSeq: lockstepNextSeq() - 1 });

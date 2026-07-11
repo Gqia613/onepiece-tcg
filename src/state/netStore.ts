@@ -3,7 +3,8 @@
 // mySeat は「ローカルプレイヤーがエンジン上のどちらの席か」（オフライン/ホスト='me'・ゲスト='cpu'）。
 // 盤面コンポーネントの視点反転（自席=画面下段）は全て mySeat 基準で行う。
 import { create } from 'zustand';
-import type { Seat, PlayerInfo } from '../net/protocol';
+import type { Seat, PlayerInfo, RoomConfig } from '../net/protocol';
+import { DEFAULT_CONFIG } from '../net/protocol';
 
 export type ConnState = 'idle' | 'connecting' | 'ok' | 'reconnecting' | 'closed';
 export type NetPhase = 'idle' | 'lobby' | 'playing' | 'ended';
@@ -22,6 +23,12 @@ interface NetStore {
   // マリガン同時化: エンジンは cpu席→me席 の順に逐次で聞く（決定論）。ホスト(me席)は相手の
   // 選択中に自分の判断を先行入力でき、自分の番が来たら自動送信される。null=未選択。
   earlyMulligan: boolean | null;
+  config: RoomConfig;              // 部屋設定（ホストが設定・startで確定配布）
+  verMismatch: boolean;            // クライアント版数不一致（リロード案内）
+  recovering: boolean;             // desync自動復旧中（ログ再構築）
+  oppLostAt: number | null;        // 相手の接続が切れた時刻（勝利宣言ボタンの表示判断・ローカル時計）
+  lastEmote: { seat: Seat; k: number; id: number } | null; // 受信エモート（バブル表示用）
+  replayActive: boolean;           // リプレイ再生中（操作を無効化）
   setMode: (m: NetStore['mode']) => void;
   setMySeat: (s: Seat) => void;
   setPhase: (p: NetPhase) => void;
@@ -33,6 +40,12 @@ interface NetStore {
   setDesync: (b: boolean) => void;
   setOppConnected: (b: boolean) => void;
   setEarlyMulligan: (v: boolean | null) => void;
+  setConfig: (c: RoomConfig) => void;
+  setVerMismatch: (b: boolean) => void;
+  setRecovering: (b: boolean) => void;
+  setOppLostAt: (t: number | null) => void;
+  setLastEmote: (e: NetStore['lastEmote']) => void;
+  setReplayActive: (b: boolean) => void;
   resetNet: () => void;         // オフライン既定へ戻す（対戦終了/退室時）
 }
 
@@ -48,6 +61,12 @@ const DEFAULTS = {
   desync: false,
   oppConnected: false,
   earlyMulligan: null as boolean | null,
+  config: DEFAULT_CONFIG as RoomConfig,
+  verMismatch: false,
+  recovering: false,
+  oppLostAt: null as number | null,
+  lastEmote: null as NetStore['lastEmote'],
+  replayActive: false,
 };
 
 export const useNetStore = create<NetStore>((set) => ({
@@ -63,6 +82,12 @@ export const useNetStore = create<NetStore>((set) => ({
   setDesync: (desync) => set({ desync }),
   setOppConnected: (oppConnected) => set({ oppConnected }),
   setEarlyMulligan: (earlyMulligan) => set({ earlyMulligan }),
+  setConfig: (config) => set({ config }),
+  setVerMismatch: (verMismatch) => set({ verMismatch }),
+  setRecovering: (recovering) => set({ recovering }),
+  setOppLostAt: (oppLostAt) => set({ oppLostAt }),
+  setLastEmote: (lastEmote) => set({ lastEmote }),
+  setReplayActive: (replayActive) => set({ replayActive }),
   resetNet: () => set({ ...DEFAULTS }),
 }));
 
@@ -70,6 +95,6 @@ export const useNetStore = create<NetStore>((set) => ({
 export function seatLabel(side: Seat): string {
   const s = useNetStore.getState();
   if (side === s.mySeat) return 'あなた';
-  if (s.mode === 'online') return (s.names && s.names[side]) || '相手';
+  if (s.mode === 'online' || s.replayActive) return (s.names && s.names[side]) || '相手';
   return 'CPU';
 }

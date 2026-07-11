@@ -139,6 +139,7 @@ export function Prompt() {
   const mySeat = useNetStore((s) => s.mySeat);
   const online = useNetStore((s) => s.mode) === 'online';
   const earlyMull = useNetStore((s) => s.earlyMulligan);
+  const replayActive = useNetStore((s) => s.replayActive);
   useEngineStore((s) => s.version); // pendingChoice の変化（render→bump）を拾う
 
   // オンライン: 相手席の選択（非local）は選択肢を出さず「相手の選択待ち」だけ表示する
@@ -183,6 +184,9 @@ export function Prompt() {
   // （pick/pendingChoice=光るカードをクリックで選択、trigger=カード大写しを背後に見せる）では出さない。
   const pendingChoice = !!(engine && engine.G && engine.G.pendingChoice);
   const showScrim = !!prompt && !isRemote && !(peek && canPeek) && !pick && !pendingChoice && !trigger;
+
+  // リプレイ再生中: プロンプトの応答はログが自動供給するため、選択UIは一切出さない
+  if (replayActive) return <div id="promptHost" />;
 
   return (
     <div id="promptHost">

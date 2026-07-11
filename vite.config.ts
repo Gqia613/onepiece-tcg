@@ -1,5 +1,6 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
+import { execSync } from 'node:child_process';
 
 // React版フロント。ビルド出力は dist/（Cloudflare Pages が配信）。
 // functions/ は Cloudflare Pages Functions（Vite のビルド対象外）。
@@ -9,8 +10,20 @@ import react from '@vitejs/plugin-react';
 //   Terminal2: npm run dev        … Vite(:5173, HMR)。/api は下記proxyで :8788 の wrangler へ転送
 //   ブラウザは http://localhost:5173 を開く（初回のみ npm run d1:local でローカルD1にスキーマ適用）
 // ※ Vite単体では functions/ が動かず /api が404になり、新規登録/ログインが失敗する。
+
+// ビルドID（オンライン対戦のクライアント版数照合に使用）。
+// ロックステップは両クライアントが同一ビルドである前提のため、部屋の ready 時に突合する。
+// CF Pages の CI では CF_PAGES_COMMIT_SHA、手元ビルドでは git rev-parse を使う（＝同一コミット→同一ID）。
+function buildId(): string {
+  const sha = process.env.CF_PAGES_COMMIT_SHA;
+  if (sha) return sha.slice(0, 10);
+  try { return execSync('git rev-parse --short=10 HEAD', { encoding: 'utf8' }).trim(); }
+  catch { return 'dev-' + Date.now().toString(36); }
+}
+
 export default defineConfig({
   plugins: [react()],
+  define: { __BUILD_ID__: JSON.stringify(buildId()) },
   build: { outDir: 'dist', target: 'es2022' },
   server: {
     proxy: {

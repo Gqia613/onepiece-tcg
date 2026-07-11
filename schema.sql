@@ -40,3 +40,25 @@ CREATE TABLE IF NOT EXISTS login_attempts (
   count    INTEGER NOT NULL DEFAULT 0,
   PRIMARY KEY (username, win)
 );
+
+-- オンライン対戦の戦績＋リプレイ（realtime Worker の MatchRoom DO が終局時に書き込む。
+-- 両クライアントの終局申告が一致した場合のみ記録＝ロックステップの正が担保）。
+CREATE TABLE IF NOT EXISTS matches (
+  id           INTEGER PRIMARY KEY AUTOINCREMENT,
+  code         TEXT NOT NULL,             -- 部屋コード
+  game_no      INTEGER NOT NULL,
+  host_uid     INTEGER NOT NULL,
+  guest_uid    INTEGER NOT NULL,
+  host_name    TEXT NOT NULL,
+  guest_name   TEXT NOT NULL,
+  host_leader  TEXT NOT NULL,             -- リーダーのカード番号
+  guest_leader TEXT NOT NULL,
+  winner       TEXT NOT NULL,             -- 'host' | 'guest' | 'draw'
+  reason       TEXT,
+  turns        INTEGER,
+  seed         INTEGER NOT NULL,
+  replay       TEXT,                      -- JSON {seed, decks, names, first, inputs:[{seq,seat,d,ts}]}（リプレイ再生用）
+  created_at   TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_matches_host ON matches(host_uid, id DESC);
+CREATE INDEX IF NOT EXISTS idx_matches_guest ON matches(guest_uid, id DESC);

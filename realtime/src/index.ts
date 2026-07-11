@@ -11,6 +11,7 @@ export interface Env {
   JWT_SECRET: string;
   ALLOWED_ORIGINS?: string;
   ALLOW_NO_ORIGIN?: string; // 'true' でOriginヘッダ無しを許可（ローカルのNodeテスト用。 本番では設定しない）
+  DB?: D1Database;          // 戦績＋リプレイの記録先（MatchRoom が使用）
 }
 
 // 紛らわしい文字（0/O/1/I/L）を除いた部屋コード用アルファベット

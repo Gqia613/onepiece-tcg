@@ -12,6 +12,7 @@ import Battle from './screens/Battle';
 import OnlineLobby from './screens/OnlineLobby';
 import { useNetStore } from './state/netStore';
 import { forfeitOnline } from './net/onlineGame';
+import { stopReplay } from './net/replay';
 import { Prompt } from './components/fx/Prompt';
 import { FxLayer } from './components/fx/FxLayer';
 import { AtkAnnounce } from './components/fx/AtkAnnounce';
@@ -25,6 +26,10 @@ import { AIIntent } from './components/fx/AIIntent';
 import { CardZoomOverlay } from './components/fx/CardZoomOverlay';
 import { TrashModal } from './components/fx/TrashModal';
 import { NetOverlay } from './components/fx/NetOverlay';
+import { TimeBar } from './components/fx/TimeBar';
+import { EmoteLayer } from './components/fx/EmoteLayer';
+import { NetSideEffects } from './components/fx/NetSideEffects';
+import { ReplayBar } from './components/fx/ReplayBar';
 import { LethalCutIn } from './components/fx/LethalCutIn';
 import { SummonCutIn } from './components/fx/SummonCutIn';
 import { Icon } from './components/ui/Icon';
@@ -196,6 +201,12 @@ function Shell({ username, logout }: { username: string; logout: () => void }) {
   // オンライン対戦中は「投了」として相手に勝ちを渡す（盤面に留まり結果を見る）。
   function abandonBattle() {
     const net = useNetStore.getState();
+    if (net.replayActive) {
+      stopReplay();
+      setMenuOpen(false);
+      navigate('/online');
+      return;
+    }
     if (net.mode === 'online') {
       if (engine!.G.inGame && !engine!.G.winner) forfeitOnline();
       setMenuOpen(false);
@@ -329,6 +340,10 @@ function Shell({ username, logout }: { username: string; logout: () => void }) {
       <CardZoomOverlay />
       <TrashModal />
       <NetOverlay />
+      <TimeBar />
+      <EmoteLayer />
+      <NetSideEffects />
+      <ReplayBar />
     </div>
   );
 }

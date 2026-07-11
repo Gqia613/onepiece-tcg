@@ -20,8 +20,10 @@ export function Controls() {
   const mySeat = useNetStore((s) => s.mySeat);
   const online = useNetStore((s) => s.mode) === 'online';
   const sending = useNetStore((s) => s.sending);
+  const replay = useNetStore((s) => s.replayActive);
   useEngineStore((s) => s.version); // 再描画トリガ（値は使わないが購読）
   if (!engine) return null;
+  if (replay) return null; // リプレイ中の操作UIは ReplayBar が担当
   const G = engine.G;
 
   // 勝敗確定：もう一度プレイ（オンライン時のリマッチ/退室は EndScreen/OnlineLobby 側が担当）

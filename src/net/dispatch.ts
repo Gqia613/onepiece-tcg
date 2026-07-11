@@ -116,7 +116,7 @@ export function createLockstep(deps: LockstepDeps): Lockstep {
     const eng = deps.engine();
     if (!eng) return false;
     const G = eng.G;
-    if (d.t === 'forfeit') return true;
+    if (d.t === 'forfeit' || d.t === 'timeup') return true; // 終局系は待ち合致不要で即適用
     const prompt = deps.prompt();
     if (prompt) {
       if (prompt.local) return false; // ローカル確認中（自分の手番窓でしか開かない＝相手入力は来ない）
@@ -203,7 +203,15 @@ export function createLockstep(deps: LockstepDeps): Lockstep {
       case 'cancelAtk': { eng.cancelAttackSel(); return; }
       case 'endTurn': { eng.uiEndTurn(seat); return; }
       case 'forfeit': {
-        if (!G.winner && typeof eng.lose === 'function') eng.lose(seat, '投了');
+        if (!G.winner && typeof eng.lose === 'function') eng.lose(seat, (d as any).reason || '投了');
+        return;
+      }
+      case 'timeup': {
+        // 公式風モードの時間切れ＝両者敗北（勝者なしで終了）。両クライアントで同一に適用（冪等）
+        if (G.winner || G.phase === '終了') return;
+        G.phase = '終了';
+        G.myActable = false;
+        G.attackSel = null;
         return;
       }
       case 'attack': {

@@ -18,3 +18,9 @@ new_sqlite_classes = ["MatchRoom"]
 [vars]
 # WSアップグレード/部屋作成を許可するオリジン（カンマ区切り）。*.opcg-sim.pages.dev のプレビューはコードで許可。
 ALLOWED_ORIGINS = "https://opcg-sim.pages.dev,http://localhost:5173,http://127.0.0.1:5173,http://localhost:8788,http://127.0.0.1:8788"
+
+# 戦績＋リプレイの記録先（Pages 本体と同じ D1。読み出しは Pages の /api/match/history 等が担当）
+[[d1_databases]]
+binding = "DB"
+database_name = "opcg"
+database_id = "537b9b81-aef7-450b-b1a4-93d2b101cf17"

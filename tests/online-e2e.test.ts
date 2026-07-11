@@ -7,18 +7,20 @@
 // 実行: OPCG_E2E=1 npx vitest run tests/online-e2e.test.ts
 // （wrangler の起動を含むため既定のテストスイートではスキップ）
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { spawn, type ChildProcess } from 'node:child_process';
+import { spawn, execSync, type ChildProcess } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { makeClient, tickClient, autoAnswer, type Client } from './_lockstep-helpers';
 import { seatOf, roomSeatOf, type DeckPayload, type S2C, type Seat } from '../src/net/protocol';
 import { useEngineStore } from '../src/state/engineStore';
 import { useNetStore } from '../src/state/netStore';
-import { hostRoom, leaveOnline } from '../src/net/onlineGame';
+import { hostRoom, leaveOnline, sendConfig } from '../src/net/onlineGame';
 import { setWebSocketImpl } from '../src/net/matchClient';
 import { uiDispatch, lockstepNextSeq as lockstepNextSeqHost } from '../src/net/dispatch';
 // @ts-ignore JSモジュール
 import { signJWT } from '../functions/_lib/jwt.js';
+
+declare const __BUILD_ID__: string; // vite define（vitestにも適用される）
 
 const RUN = !!process.env.OPCG_E2E;
 const PORT = 8799;
@@ -52,7 +54,7 @@ async function waitReady(): Promise<void> {
     SECRET = readSecret();
     realFetch = globalThis.fetch.bind(globalThis);
     setWebSocketImpl(WS); // Node20 にはグローバル WebSocket が無いため 'ws' を注入
-    wrangler = spawn('npx', ['wrangler', 'dev', '--port', String(PORT), '--var', 'ALLOW_NO_ORIGIN:true'], {
+    wrangler = spawn('npx', ['wrangler', 'dev', '--port', String(PORT), '--var', 'ALLOW_NO_ORIGIN:true', '--var', 'CLAIM_GRACE_MS:3000'], {
       cwd: ROOT + 'realtime',
       stdio: 'ignore',
       detached: false,
@@ -89,6 +91,10 @@ async function waitReady(): Promise<void> {
       expect(useNetStore.getState().mySeat).toBe('me');
 
       // ---- ゲスト（ヘルパークライアント + 生WS）----
+      // 部屋設定（先攻=ホスト固定）を配布→startに反映されることを検証
+      sendConfig({ clock: { mode: 'none' }, firstTurn: 'host' });
+      expect(await waitFor(() => useNetStore.getState().config.firstTurn === 'host')).toBe(true);
+
       const guestToken = await signJWT({ uid: 202, un: 'e2e-guest', scope: 'match' }, SECRET, 60);
       const gws = new WS(`${BASE.replace('http', 'ws')}/rooms/${code}/ws`, ['opcg', guestToken]);
       const guest: Client = makeClient('cpu', (d) => { try { gws.send(JSON.stringify({ t: 'input', d })); } catch { /* ignore */ } });
@@ -109,7 +115,8 @@ async function waitReady(): Promise<void> {
           const reg = (d: DeckPayload, id: string) => eng.builderToDeck({ leaderNo: d.leader, list: d.list, name: d.name }, id);
           eng.G.customDecks = [reg(m.decks.host, 'net-host'), reg(m.decks.guest, 'net-guest')];
           eng.G.players = {}; eng.G.winner = null; eng.G.inGame = false;
-          eng.G.aiOn = false; eng.G.firstPref = 'random';
+          eng.G.aiOn = false;
+          eng.G.firstPref = m.first == null ? 'random' : m.first === 'host' ? 'me' : 'cpu'; // 部屋設定の先攻（本番bootGameと同じ）
           eng.G.names = { me: m.names.host, cpu: m.names.guest };
           eng.seedRng(m.seed);
           void eng.startGame('net-host', 'net-guest', { cpuHuman: true });
@@ -131,10 +138,13 @@ async function waitReady(): Promise<void> {
       };
       const { sendReady } = await import('../src/net/onlineGame');
       sendReady(pick('lucy'));
-      gws.send(JSON.stringify({ t: 'ready', deck: pick('enel') }));
+      gws.send(JSON.stringify({ t: 'ready', deck: pick('enel'), ver: __BUILD_ID__ })); // ホストと同版＝開始できる
 
       // start 受信（ホストは onlineGame が bootGame・ゲストは上のハンドラ）
       expect(await waitFor(() => guestStarted && useNetStore.getState().phase === 'playing', 15000)).toBe(true);
+      // 先攻=ホスト設定が両エンジンに反映されている
+      expect(useEngineStore.getState().engine!.G.firstPlayer).toBe('me');
+      expect(await waitFor(() => guest.engine.G.firstPlayer === 'me', 5000)).toBe(true);
       useEngineStore.getState().engine!.G._sim = true; // ホストも演出sleepを短絡（ゲストと対称）
       // ★実機desyncの再現条件（部屋ZWYS97）: 本番では resetEngine 後に loadCloudDecks が
       //   ユーザーの保存デッキを builderToDeck で登録し、連番 G._customSeq が保存デッキ数ぶん
@@ -203,6 +213,10 @@ async function waitReady(): Promise<void> {
         await tickClient(guest);
       }
       for (let i = 0; i < 50; i++) await new Promise<void>((r) => (globalThis as any).setImmediate(r));
+      // テスト専用の _sim 高速化を解除（本番watcherは _sim 中は動かない設計のため、ここで発火させる）
+      { const hg2 = useEngineStore.getState().engine!.G; if (hg2._sim) { hg2._sim = false; useEngineStore.getState().bump(); } }
+      guest.engine.G._sim = false;
+      await new Promise((r) => setTimeout(r, 300));
 
       // 診断: 未決着ならスナップショットを出力
       {
@@ -232,6 +246,26 @@ async function waitReady(): Promise<void> {
       expect(useEngineStore.getState().engine!.hashGameState(), '最終状態hash一致').toBe(guest.engine.hashGameState());
       expect(useNetStore.getState().phase).toBe('ended');
 
+      // ---- 終局申告→D1（ローカル）へ戦績＋リプレイが書かれる ----
+      // ホストは watcher が自動申告済み。ゲスト（ハーネス）はここで申告して一致させる。
+      const winnerRoom = hostG.winner === 'me' ? 'host' : 'guest';
+      gws.send(JSON.stringify({ t: 'result', result: { winner: winnerRoom, reason: '', turns: guest.engine.G.turnDisp || 0 } }));
+      let saved: any = null;
+      for (let i = 0; i < 12 && !saved; i++) {
+        await new Promise((r) => setTimeout(r, 500));
+        try {
+          const out = execSync(
+            `npx wrangler d1 execute opcg --local --json --command "SELECT winner, turns, length(replay) AS rlen FROM matches ORDER BY id DESC LIMIT 1"`,
+            { cwd: ROOT + 'realtime', encoding: 'utf8' },
+          );
+          const rows = JSON.parse(out)?.[0]?.results || [];
+          if (rows.length) saved = rows[0];
+        } catch { /* まだ */ }
+      }
+      expect(saved, '戦績がD1に記録された').toBeTruthy();
+      expect(saved.winner, '記録の勝者一致').toBe(winnerRoom);
+      expect(Number(saved.rlen), 'リプレイJSONが保存された').toBeGreaterThan(1000);
+
       // desyncデバッグ計器の疎通: dump を預けて /rooms/:code/dump で回収できる
       const { sendMatch } = await import('../src/net/matchClient');
       sendMatch({ t: 'dump', n: 99, state: '{"probe":1}' });
@@ -254,4 +288,100 @@ async function waitReady(): Promise<void> {
       return pred();
     }
   }, 300000);
+
+  it('プロトコル拡張: 設定配布・版数照合・emote・desync→resync調停・切断claim代理投了', async () => {
+    const raw = (code: string, token: string) => {
+      const ws = new WS(`${BASE.replace('http', 'ws')}/rooms/${code}/ws`, ['opcg', token]);
+      const msgs: any[] = [];
+      const waiters: Array<{ pred: (m: any) => boolean; res: (m: any) => void; t: any }> = [];
+      ws.on('message', (b: any) => {
+        const m = JSON.parse(String(b));
+        msgs.push(m);
+        for (let i = waiters.length - 1; i >= 0; i--) {
+          const w = waiters[i];
+          const hit = msgs.find(w.pred);
+          if (hit) { waiters.splice(i, 1); clearTimeout(w.t); w.res(hit); }
+        }
+      });
+      const wait = (pred: (m: any) => boolean, label: string, ms = 8000) => new Promise<any>((res, rej) => {
+        const hit = msgs.find(pred);
+        if (hit) return res(hit);
+        const t = setTimeout(() => rej(new Error('timeout: ' + label)), ms);
+        waiters.push({ pred, res, t });
+      });
+      const open = new Promise<void>((res, rej) => { ws.on('open', () => res()); ws.on('error', rej); });
+      return { ws, msgs, wait, open, send: (m: any) => ws.send(JSON.stringify(m)) };
+    };
+    const deck = { leader: 'OP01-001', list: { 'OP01-016': 4 }, name: 'x' };
+
+    const tA = await signJWT({ uid: 301, un: 'proto-a', scope: 'match' }, SECRET, 60);
+    const tB = await signJWT({ uid: 302, un: 'proto-b', scope: 'match' }, SECRET, 60);
+    const mk = await realFetch(BASE + '/rooms', { method: 'POST', headers: { Authorization: 'Bearer ' + tA } });
+    const { code } = (await mk.json()) as any;
+
+    const A = raw(code, tA); await A.open;
+    const jA = await A.wait((m) => m.t === 'joined', 'A joined');
+    expect(jA.config.clock.mode).toBe('none'); // 既定設定が配布される
+    const B = raw(code, tB); await B.open;
+    await B.wait((m) => m.t === 'joined', 'B joined');
+
+    // 設定配布（サニタイズ込み）
+    A.send({ t: 'config', config: { clock: { mode: 'perTurn', perMin: 20, turnSec: 60 }, firstTurn: 'alt' } });
+    const cB = await B.wait((m) => m.t === 'config' && m.config.clock.mode === 'perTurn', 'Bにconfig');
+    expect(cB.config.clock.perMin).toBe(20);
+    expect(cB.config.clock.turnSec).toBe(60);
+    expect(cB.config.firstTurn).toBe('alt');
+
+    // 版数照合: 不一致なら開始せず両者のreadyを解除
+    A.send({ t: 'ready', deck, ver: 'AAA' });
+    B.send({ t: 'ready', deck, ver: 'BBB' });
+    const vm = await A.wait((m) => m.t === 'version-mismatch', 'version-mismatch');
+    expect(vm.vers.host).toBe('AAA');
+    expect(vm.vers.guest).toBe('BBB');
+    // 同版で再ready → start（alt: ゲーム1はホスト先攻・config/ts同梱）
+    A.send({ t: 'ready', deck, ver: 'SAME' });
+    B.send({ t: 'ready', deck, ver: 'SAME' });
+    const st = await B.wait((m) => m.t === 'start', 'start');
+    expect(st.first).toBe('host');
+    expect(st.config.clock.mode).toBe('perTurn');
+    expect(typeof st.ts).toBe('number');
+
+    // 入力にtsが付く
+    A.send({ t: 'input', d: { t: 'menu', uid: 1 } });
+    const i1 = await B.wait((m) => m.t === 'input' && m.seq === 1, 'input ts');
+    expect(typeof i1.ts).toBe('number');
+    expect(i1.ts).toBeGreaterThan(0);
+
+    // emote 中継
+    B.send({ t: 'emote', k: 1 });
+    const em = await A.wait((m) => m.t === 'emote', 'emote');
+    expect(em.seat).toBe('guest');
+    expect(em.k).toBe(1);
+
+    // desync → 両者resync → resync-go（hash台帳リセット・続行可能）
+    A.send({ t: 'hash', n: 1, h: 'xxx' });
+    B.send({ t: 'hash', n: 1, h: 'yyy' });
+    await A.wait((m) => m.t === 'desync', 'desync');
+    A.send({ t: 'resync' });
+    B.send({ t: 'resync' });
+    const rg = await B.wait((m) => m.t === 'resync-go', 'resync-go');
+    expect(rg.lastSeq).toBe(1);
+    // 復旧後は入力が再び通る
+    B.send({ t: 'input', d: { t: 'endTurn' } });
+    await A.wait((m) => m.t === 'input' && m.seq === 2, '復旧後input');
+
+    // 切断claim: Bが落ちて猶予(テストでは3秒)経過→Aの宣言でDOがguestの投了を代理発行
+    B.ws.close();
+    await new Promise((r) => setTimeout(r, 800));
+    A.send({ t: 'claim', reason: 'disconnect' }); // 猶予前→拒否
+    await A.wait((m) => m.t === 'error' && m.code === 'claim_rejected', '猶予前は拒否');
+    await new Promise((r) => setTimeout(r, 3200));
+    A.send({ t: 'claim', reason: 'disconnect' });
+    const ff = await A.wait((m) => m.t === 'input' && m.d?.t === 'forfeit', '代理投了')
+      .catch((e) => { console.log('[diag] claim後のA受信:', JSON.stringify(A.msgs.slice(-6))); throw e; });
+    expect(ff.seat).toBe('guest');
+    expect(ff.d.reason).toBe('切断');
+
+    A.ws.close();
+  }, 120000);
 });
