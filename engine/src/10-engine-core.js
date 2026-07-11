@@ -8,7 +8,7 @@
     const sleep = ms => (G._sim ? Promise.resolve() : new Promise(r => setTimeout(r, ms)));
     let UID = 0;
     const opp = s => s === 'me' ? 'cpu' : 'me';
-    const sideName = s => s === 'me' ? 'あなた' : 'CPU';
+    const sideName = s => (G.names && G.names[s]) || (s === 'me' ? 'あなた' : 'CPU'); // G.names={me,cpu}: オンライン対戦時の表示名（未設定なら従来表記）
 
     /* ---------- シード可能RNG（再現可能なシミュレーション用） ----------
        通常プレイは未シード＝Math.random相当でランダム。
@@ -81,14 +81,25 @@
     }
     async function mulliganPhase() {
       const cpu = G.players.cpu;
-      if (cpuShouldMulligan(cpu)) { redraw(cpu); log('sys', 'CPUはマリガンした'); }
+      if (cpu.isCPU) {
+        if (cpuShouldMulligan(cpu)) { redraw(cpu); log('sys', sideName('cpu') + 'はマリガンした'); }
+      } else {
+        // オンライン対戦（両者人間）: cpu席にもマリガンを選ばせる。rng消費順は従来どおり cpu→me を維持
+        const keepC = await showPrompt({
+          cls: 'mulligan', side: 'cpu',
+          title: 'マリガン',
+          text: '最初の手札を引き直しますか？（序盤に動けるカードが無ければ引き直し推奨）',
+          opts: [{ t: '引き直す', v: true }, { t: 'この手札でいく', v: false, primary: true }]
+        });
+        if (keepC) { redraw(cpu); log('sys', sideName('cpu') + 'はマリガンした'); render(); }
+      }
       const keep = await showPrompt({
-        cls: 'mulligan', // web: 中央配置＋手札5枚のフリップ公開演出（Prompt.tsx が特別扱い。挙動は通常プロンプトと同一）
+        cls: 'mulligan', side: 'me', // web: 中央配置＋手札5枚のフリップ公開演出（Prompt.tsx が特別扱い。挙動は通常プロンプトと同一）
         title: 'マリガン',
         text: '最初の手札を引き直しますか？（序盤に動けるカードが無ければ引き直し推奨）',
         opts: [{ t: '引き直す', v: true }, { t: 'この手札でいく', v: false, primary: true }]
       });
-      if (keep) { redraw(G.players.me); log('sys', 'あなたはマリガンした'); render(); }
+      if (keep) { redraw(G.players.me); log('sys', sideName('me') + 'はマリガンした'); render(); }
     }
     function redraw(P) { P.deck.push(...P.hand); P.hand = []; shuffle(P.deck); for (let i = 0; i < 5; i++)P.hand.push(P.deck.shift()); }
     function cpuShouldMulligan(P) {
@@ -119,7 +130,7 @@
           if (P.isCPU) useRested = true;                  // CPUは使用済み(レスト)を優先
           else {
             const v = await showPrompt({
-              title: 'ドン!!-' + n, text: 'ドンデッキに戻すドンを選んでください（残りアクティブ ' + P.don.active + ' / レスト ' + P.don.rested + '）',
+              side, title: 'ドン!!-' + n, text: 'ドンデッキに戻すドンを選んでください（残りアクティブ ' + P.don.active + ' / レスト ' + P.don.rested + '）',
               opts: [{ t: 'レストのドンを戻す', v: 'r', primary: true }, { t: 'アクティブのドンを戻す', v: 'a' }]
             });
             useRested = v !== 'a';

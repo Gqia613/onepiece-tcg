@@ -12,9 +12,11 @@
 import { useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useEngineStore } from '../../state/engineStore';
+import { useNetStore, seatLabel } from '../../state/netStore';
+import { uiDispatch } from '../../net/dispatch';
+import type { PromptOption, Card } from '../../engine/types';
 import { IMG } from '../../engine/img';
 import { Icon } from '../ui/Icon';
-import type { PromptOption, Card } from '../../engine/types';
 
 // 効果テキスト等のHTMLタグを除いた素の文字列（大写しの名前ラベル用）。
 const plain = (s: string) => (s || '').replace(/<[^>]*>/g, '').trim();
@@ -32,7 +34,7 @@ function AttackHead() {
   if (!atk || !atk.attacker || !atk.target || !engine) return null;
   const { attacker, target, aSide } = atk;
   const pw = (c: Card): number => { try { return (engine.power(c) as number) ?? 0; } catch { return 0; } };
-  const opp = aSide !== 'me';
+  const opp = aSide !== useNetStore.getState().mySeat;
   const toN = target.base.type === 'LEADER' ? (opp ? 'あなたのリーダー' : '相手のリーダー') : target.base.name;
   const hideImg = (e: React.SyntheticEvent<HTMLImageElement>) => { e.currentTarget.style.visibility = 'hidden'; };
   return (
@@ -56,9 +58,10 @@ function AttackHead() {
 // ボトムシートだと手札が隠れて引いたカードが分からないため、モーダル内に大きく見せる。
 function MulliganHand() {
   const engine = useEngineStore((s) => s.engine);
+  const mySeat = useNetStore((s) => s.mySeat);
   useEngineStore((s) => s.version); // 引き直し後の手札更新を拾う
   if (!engine) return null;
-  const hand: Card[] = (engine.G?.players?.me?.hand || []) as Card[];
+  const hand: Card[] = (engine.G?.players?.[mySeat]?.hand || []) as Card[];
   const onErr = (e: React.SyntheticEvent<HTMLImageElement>) => { e.currentTarget.style.visibility = 'hidden'; };
   const mid = (hand.length - 1) / 2;
   // マリガンのカードは選択アクションが無いので「タップ」で大写し（全カード共通の zoomCard へ）。
@@ -133,7 +136,12 @@ export function Prompt() {
   const pick = useEngineStore((s) => s.pick);
   const trigger = useEngineStore((s) => s.trigger);
   const engine = useEngineStore((s) => s.engine);
+  const mySeat = useNetStore((s) => s.mySeat);
+  const online = useNetStore((s) => s.mode) === 'online';
   useEngineStore((s) => s.version); // pendingChoice の変化（render→bump）を拾う
+
+  // オンライン: 相手席の選択（非local）は選択肢を出さず「相手の選択待ち」だけ表示する
+  const isRemote = !!prompt && online && !prompt.local && ((prompt.side || 'me') !== mySeat);
 
   // 画像読み込み失敗時に .oc-art へ noimg を付与（元: onerror で parentNode.classList.add('noimg')）
   const onImgError = (e: React.SyntheticEvent<HTMLImageElement>) => {
@@ -160,7 +168,7 @@ export function Prompt() {
   // 薄いスクリム: 純粋なボタン決断のときだけ。盤面タップが必要な場面
   // （pick/pendingChoice=光るカードをクリックで選択、trigger=カード大写しを背後に見せる）では出さない。
   const pendingChoice = !!(engine && engine.G && engine.G.pendingChoice);
-  const showScrim = !!prompt && !(peek && canPeek) && !pick && !pendingChoice && !trigger;
+  const showScrim = !!prompt && !isRemote && !(peek && canPeek) && !pick && !pendingChoice && !trigger;
 
   return (
     <div id="promptHost">
@@ -175,7 +183,20 @@ export function Prompt() {
             transition={{ duration: 0.18 }}
           />
         )}
-        {prompt && !(peek && canPeek) && (
+        {prompt && isRemote && (
+          <motion.div
+            key={'wait' + prompt.id}
+            className="prompt show waiting"
+            initial={{ x: '-50%', opacity: 0, scale: 0.9 }}
+            animate={{ x: '-50%', opacity: 1, scale: 1 }}
+            exit={{ x: '-50%', opacity: 0, scale: 0.92 }}
+            transition={{ duration: 0.2, ease: 'easeOut' }}
+          >
+            <h3>{seatLabel((prompt.side || 'cpu') as 'me' | 'cpu')}の選択待ち…</h3>
+            <p>相手が{(prompt.cls || '').includes('defense') ? '防御' : (prompt.cls || '').includes('mulligan') ? 'マリガン' : '効果の対象'}を選んでいます</p>
+          </motion.div>
+        )}
+        {prompt && !isRemote && !(peek && canPeek) && (
           <PromptCard
             key={prompt.id}
             prompt={prompt}
@@ -187,7 +208,7 @@ export function Prompt() {
         )}
       </AnimatePresence>
       {/* 退避中＝盤面を見ている。選択は保留のまま。ボタンでプロンプトに戻る。 */}
-      {prompt && peek && canPeek && (
+      {prompt && !isRemote && peek && canPeek && (
         <button className="peek-back" onClick={() => setPeek(false)}>
           {isDefense ? '防御にもどる' : '選択にもどる'}
         </button>
@@ -214,8 +235,17 @@ function PromptCard({
   const cardOpts = opts.filter((o) => o.card);
   const plainOpts = opts.filter((o) => !o.card);
 
+  // オンライン: 自席のゲームプロンプト（非local）は応答値を DO 経由で中継し、エコー適用で解決する。
+  // ローカル確認（local）とオフラインは従来どおり直接解決。
+  const net = useNetStore.getState();
+  const relay = net.mode === 'online' && !prompt.local && ((prompt.side || 'me') === net.mySeat);
   const pick = (o: PromptOption) => {
     if (o.disabled) return;
+    if (relay) {
+      if (useNetStore.getState().sending) return; // echo待ち中の連打防止
+      void uiDispatch({ t: 'prompt', v: o.v });
+      return;
+    }
     prompt.onPick?.(o.v);
   };
 

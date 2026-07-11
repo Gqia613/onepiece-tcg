@@ -5,6 +5,7 @@
 // （.prompt=50/55 の直下＝人間の発動確認中もカード大写しが背後に残る）。
 import { motion, AnimatePresence } from 'framer-motion';
 import { useEngineStore } from '../../state/engineStore';
+import { useNetStore } from '../../state/netStore';
 import { IMG_BIG, IMG_RAW } from '../../engine/img';
 
 // カード画像（weserv 失敗時 raw へフォールバック。AtkAnnounce の AaCard と同じ作法）。
@@ -31,7 +32,8 @@ const BOLTS = ['M50 0 L40 44 L55 42 L42 100', 'M50 3 L61 40 L47 43 L58 97'];
 
 export function TriggerReveal() {
   const trigger = useEngineStore((s) => s.trigger);
-  const fromY = trigger && trigger.side === 'me' ? 170 : -170; // 自分のライフ=下/相手=上から飛び込む
+  const mySeat = useNetStore((s) => s.mySeat);
+  const fromY = trigger && trigger.side === mySeat ? 170 : -170; // 自分のライフ=下/相手=上から飛び込む
 
   return (
     <AnimatePresence>

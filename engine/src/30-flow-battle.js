@@ -281,7 +281,7 @@
       if (G.winner) return; G.winner = opp(side);
       if (G._sim) return;   // ★AI探索の内部シミュレーションでは勝敗UI(ログ/演出/勝利画面)を出さない。winnerだけ確定。
       const win = G.winner === 'me';
-      log('sys', `${reason ? reason + ' — ' : ''}<b>${win ? 'あなたの勝ち！' : 'CPUの勝ち'}</b>`);
+      log('sys', `${reason ? reason + ' — ' : ''}<b>${sideName(G.winner)}の勝ち${win ? '！' : ''}</b>`);
       setPhase('終了'); G.myActable = false; render();
       showEndScreen(win, reason);
     }
@@ -561,12 +561,12 @@
       // 人間: ブロッカーをボタンとして提示（カードクリックでも選択可）
       return await new Promise(res => {
         const uids = new Set(blockers.map(c => c.uid));
-        G.pendingChoice = { uids, optional: true, res: c => { G.pendingChoice = null; res(c); } };
+        G.pendingChoice = { uids, optional: true, side: dSide, cands: blockers, res: c => { G.pendingChoice = null; res(c); } };
         render();
         const opts = blockers.map(b => ({ t: b.base.name, v: 'blk:' + b.uid, card: { no: b.base.no, sub: '🛡 P' + power(b) } }));
         opts.push({ t: 'ブロックしない', v: '__skip', ghost: true });
         showPrompt({
-          cls: 'defense', title: '🛡 ブロック — あなたの防御', text: 'ブロッカーで肩代わりできます',
+          side: dSide, cls: 'defense', title: '🛡 ブロック — あなたの防御', text: 'ブロッカーで肩代わりできます',
           opts, onPick: v => {
             if (!G.pendingChoice) return;
             if (v === '__skip') { G.pendingChoice.res(null); }
@@ -633,7 +633,7 @@
         leaderOpts.forEach(lo => opts.push(lo));
         opts.push({ t: 'カウンター終了', v: '__done', primary: true });
         const v = await new Promise(res => showPrompt({
-          cls: 'defense',
+          side: dSide, cls: 'defense',
           title: '🛡 カウンター — あなたの防御',
           text: (need < 0 ? '<b style="color:var(--legal-glow)">現在は耐えています</b>' : `<b style="color:var(--danger-glow)">あと +${need + 1000} 必要</b>`) + advice,
           opts, onPick: res
@@ -802,7 +802,7 @@
       }
       const advice = await defenseAdvice(side, 'トリガー発動', '「' + card.base.name + '」を発動 or 手札に加える');
       return await new Promise(res => showPrompt({
-        cls: 'defense',
+        side, cls: 'defense',
         title: '⚡ トリガー',
         text: `ライフから「${card.base.name}」が公開。【トリガー】を発動しますか？（不発なら手札に加わります）` + advice,
         opts: [{ t: '発動する', v: true, primary: true }, { t: '手札に加える', v: false, ghost: true }], onPick: res
@@ -819,7 +819,7 @@
         const ev = P.hand.filter(c => c.base.type === 'EVENT' || c.base.type === 'STAGE');
         if (ev.length && !P.isCPU) {
           const v = await new Promise(res => showPrompt({
-            title: '【ルーシー】', text: 'イベント/ステージを捨ててリーダー+1000しますか？',
+            side, title: '【ルーシー】', text: 'イベント/ステージを捨ててリーダー+1000しますか？',
             opts: [{ t: '捨てて+1000', v: true, primary: true }, { t: 'しない', v: false, ghost: true }], onPick: res
           }));
           if (v) await lucyCounter(side, P.leader);
@@ -854,7 +854,7 @@
       if (!dests.length) return target;
       const opts = dests.map(c => ({ t: (c.base.type === 'LEADER' ? 'リーダーに変更' : c.base.name), v: 'rd:' + c.uid, card: { no: c.base.no, sub: 'P' + power(c) } }));
       opts.push({ t: '変更しない', v: '__no', ghost: true });
-      const v = await showPrompt({ cls: 'defense', title: '🛡 【ティーチ】アタック対象を変更', text: '手札の【トリガー】1枚を捨て、このアタックの対象をリーダーか黒ひげ海賊団キャラに変更できます（ターン1回）', opts });
+      const v = await showPrompt({ side: dSide, cls: 'defense', title: '🛡 【ティーチ】アタック対象を変更', text: '手札の【トリガー】1枚を捨て、このアタックの対象をリーダーか黒ひげ海賊団キャラに変更できます（ターン1回）', opts });
       if (!v || v === '__no') return target;
       const dest = dests.find(c => c.uid === +String(v).slice(3)); if (!dest) return target;
       const disc = await chooseFromHand(dSide, triggers, '捨てる【トリガー】カードを選択'); if (!disc) return target;
@@ -889,7 +889,7 @@
       }
       const opts = valid.map(c => ({ t: (c.base.type === 'LEADER' ? 'リーダーに変更' : c.base.name), v: 'rd:' + c.uid, card: { no: c.base.no, sub: 'P' + power(c) } }));
       opts.push({ t: '変更しない', v: '__no', ghost: true });
-      const v = await showPrompt({ cls: 'defense', title: `🛡 【${L.base.name}】アタック対象を変更`, text: `ドン‼-${costDon}：アタックの対象をリーダーか${dst.traitIncludes || dst.trait || ''}キャラに変更できます（ターン1回）`, opts });
+      const v = await showPrompt({ side: dSide, cls: 'defense', title: `🛡 【${L.base.name}】アタック対象を変更`, text: `ドン‼-${costDon}：アタックの対象をリーダーか${dst.traitIncludes || dst.trait || ''}キャラに変更できます（ターン1回）`, opts });
       if (!v || v === '__no') return target;
       const dest = valid.find(c => c.uid === +String(v).slice(3)); if (!dest) return target;
       pay(); flog(dSide, `【${L.base.name}】対象を「${dest.base.type === 'LEADER' ? 'リーダー' : dest.base.name}」へ変更`); render(); await sleep(180); return dest;

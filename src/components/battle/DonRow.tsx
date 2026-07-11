@@ -3,18 +3,20 @@
 // AnimatePresence + layout でドン付与・消費の出入りを滑らかに。
 import { motion, AnimatePresence } from 'framer-motion';
 import { useEngineStore } from '../../state/engineStore';
+import { useNetStore } from '../../state/netStore';
 import type { Side, Player } from '../../engine/types';
 
 export function DonRow({ side }: { side: Side }) {
   const engine = useEngineStore((s) => s.engine);
+  const mySeat = useNetStore((s) => s.mySeat);
   useEngineStore((s) => s.version); // 再描画トリガ
   if (!engine) return null;
   const G = engine.G;
   const P: Player = G.players[side];
 
   // 元 donCostBlock: usable = 自分 && 自分の手番 && 行動可 && !busy && !attackSel
-  const mine = side === 'me';
-  const usable = mine && G.active === 'me' && G.myActable && !G.busy && !G.attackSel;
+  const mine = side === mySeat;
+  const usable = mine && G.active === mySeat && G.myActable && !G.busy && !G.attackSel;
 
   const active = P.don.active || 0;
   const rested = P.don.rested || 0;

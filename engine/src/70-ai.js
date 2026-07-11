@@ -50,6 +50,49 @@
       return out;
     }
 
+    /* オンライン対戦（ロックステップ）の同期検証用: G の決定的ハッシュ。
+       cloneGameState と同じ除去規則に加え、クライアント間で異なり得る表示/設定/UI/AI専用フィールドを除外する。
+       ★キーはソートして直列化（挿入順に依存しない）＝ライブ進行とリプレイ復元で順序が違っても同値。
+       比較はターン境界（両クライアントが同じ待ち状態に達した時点）で行う前提。 */
+    const _HASH_SKIP = new Set([
+      'customDecks',   // ユーザーごとの登録デッキ（対戦の2デッキ以外も含む）
+      'names', 'sel', 'meta', 'inGame', 'aiOn',
+      '_tab', '_sideOpen', '_lastCpuSummary',
+      '_sim', '_noChain', '_beliefOn', '_linePick',
+      'busy',          // 入力調停フラグ（適用側クライアントだけが窓中trueになる＝ゲーム状態ではない）
+      '_atkFrom', '_atkTo', // 攻撃グロー（UIアダプタが設定＝演出専用）
+      '_pubHand',      // サーチ公開マーク（AI決定化専用。_sim中は付かない＝リプレイと差が出る）
+      '_planOverride', '_hintsOn', // AI専用
+    ]);
+    function hashGameState(src) {
+      src = src || G;
+      const skipKey = k => _CLONE_SKIP.has(k) || _HASH_SKIP.has(k) || k === 'base';
+      const parts = [];
+      (function ser(v) {
+        if (v === null || v === undefined) { parts.push('null'); return; }
+        const t = typeof v;
+        if (t === 'number' || t === 'boolean') { parts.push(String(v)); return; }
+        if (t === 'string') { parts.push(JSON.stringify(v)); return; }
+        if (t === 'function') { parts.push('null'); return; }
+        if (Array.isArray(v)) { parts.push('['); for (let i = 0; i < v.length; i++) { if (i) parts.push(','); ser(v[i]); } parts.push(']'); return; }
+        const ks = Object.keys(v).filter(k => !skipKey(k) && typeof v[k] !== 'function' && v[k] !== undefined).sort();
+        parts.push('{');
+        for (let i = 0; i < ks.length; i++) { if (i) parts.push(','); parts.push(JSON.stringify(ks[i]), ':'); ser(v[ks[i]]); }
+        parts.push('}');
+      })(src);
+      const json = parts.join('');
+      // cyrb53: 軽量な53bit文字列ハッシュ
+      let h1 = 0xdeadbeef, h2 = 0x41c6ce57;
+      for (let i = 0; i < json.length; i++) {
+        const ch = json.charCodeAt(i);
+        h1 = Math.imul(h1 ^ ch, 2654435761);
+        h2 = Math.imul(h2 ^ ch, 1597334677);
+      }
+      h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909);
+      h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909);
+      return (4294967296 * (2097151 & h2) + (h1 >>> 0)).toString(36);
+    }
+
     /* 複製状態を live な G に流し込む（実エンジン関数は global G を読むため）。
        G は const なので中身を入れ替える。複製で落としたキーは既定値に戻す。 */
     function loadGameState(state) {

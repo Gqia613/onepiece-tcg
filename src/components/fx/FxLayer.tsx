@@ -5,6 +5,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useEngineStore } from '../../state/engineStore';
+import { useNetStore, seatLabel } from '../../state/netStore';
 import { IMG, IMG_RAW } from '../../engine/img';
 import type { FxEvent } from '../../engine/types';
 
@@ -109,7 +110,7 @@ export function FxLayer() {
               transition={{ duration: 0.22, ease: 'easeOut' }}
               style={{ position: 'static', transform: 'none' }}
             >
-              {n.side === 'me' ? null : <span className="fx-side">CPU</span>}
+              {n.side === useNetStore.getState().mySeat ? null : <span className="fx-side">{seatLabel(n.side)}</span>}
               {n.no ? (
                 <img
                   className="fx-note-img"
@@ -140,7 +141,7 @@ export function FxLayer() {
 // 相手(CPU)の効果通知は読む前に消えやすいため長めに表示（自分=1.6s / 相手=2.4s。エンジンの進行は待たせない）。
 function NoteTimer({ id, side, onDone }: { id: number; side: 'me' | 'cpu'; onDone: () => void }) {
   useEffect(() => {
-    const t = setTimeout(onDone, side === 'me' ? 1600 : 2400);
+    const t = setTimeout(onDone, side === useNetStore.getState().mySeat ? 1600 : 2400);
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);

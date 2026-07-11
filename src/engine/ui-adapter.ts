@@ -26,8 +26,8 @@ export interface UIAdapter {
   shakeScreen?: () => void;                            // 画面シェイク
   // モーダル選択。cfg.onPick(value) を呼ぶ or Promise<value> を返すことで解決する。
   showPrompt?: (cfg: PromptConfig) => Promise<any> | any;
-  // 盤面ハイライト式の対象選択。Promise<選択カード|null> を返す。
-  humanPick?: (cands: any[], text: string, optional?: boolean, cls?: string) => Promise<any>;
+  // 盤面ハイライト式の対象選択。Promise<選択カード|null> を返す。side=決定者の席（オンライン対戦）。
+  humanPick?: (cands: any[], text: string, optional?: boolean, cls?: string, side?: 'me' | 'cpu') => Promise<any>;
   // ネットワーク（AI proxy 等）。未指定なら reject（AIなし）。
   fetch?: typeof fetch;
   // 計測フック（主にテスト用）。declareAttack 内部呼び出しごとに発火＝全アタックを捕捉。
@@ -48,6 +48,8 @@ export interface PromptConfig {
   opts?: PromptOption[];
   onPick?: (v: any) => void;
   cls?: string;
+  side?: 'me' | 'cpu'; // この選択の決定者の席（エンジンの showPrompt 呼び出し元が付与）
+  local?: boolean;     // ローカル専用の確認（オンライン対戦で中継しない）
 }
 
 // ヘッドレス（vitest / CPU自動対戦）用の自動応答アダプタ。

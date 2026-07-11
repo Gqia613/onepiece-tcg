@@ -556,6 +556,7 @@ html, body, #root { height: 100%; margin: 0; }
 .home-card:active { transform: translateY(-2px) scale(.99); }
 
 .hc-battle { --hc: var(--self-accent); --hc-glow: rgba(62, 201, 255, .38); }
+.hc-online { --hc: #b07ce8; --hc-glow: rgba(176, 124, 232, .34); }
 .hc-decks { --hc: var(--gold); --hc-glow: rgba(255, 200, 87, .34); }
 .hc-builder { --hc: var(--legal); --hc-glow: rgba(53, 227, 154, .3); }
 

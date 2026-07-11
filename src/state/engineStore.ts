@@ -46,6 +46,8 @@ interface EngineStore {
   setBgmTrack: (t: EngineStore['bgmTrack']) => void;
   pushLog: (l: { cls: string; html: string }) => void;
   initEngine: () => EngineAPI;
+  // オンライン対戦用: エンジンを作り直す（uid採番・rngを初期状態に揃える）。customDecks は引き継ぐ。
+  resetEngine: () => EngineAPI;
 }
 
 export const useEngineStore = create<EngineStore>((set, get) => ({
@@ -95,6 +97,19 @@ export const useEngineStore = create<EngineStore>((set, get) => ({
     if (existing) return existing;
     const eng = createEngine({ ui: makeReactAdapter(useEngineStore), timers: 'real', aiOn: false });
     set({ engine: eng });
+    return eng;
+  },
+  resetEngine: () => {
+    const old = get().engine;
+    // 旧エンジンの待機プロンプト等を掃除（プロンプト孤児の発生源スタック対策は backToSelect が内包）
+    try { old?.backToSelect?.(); } catch { /* ignore */ }
+    const eng = createEngine({ ui: makeReactAdapter(useEngineStore), timers: 'real', aiOn: false });
+    if (old?.G?.customDecks?.length) eng.G.customDecks = old.G.customDecks; // 保存デッキを引き継ぎ
+    set({
+      engine: eng,
+      prompt: null, promptPeek: false, pick: null, fxQueue: [], atk: null,
+      trigger: null, lethal: null, end: null, thinking: false, logs: [],
+    });
     return eng;
   },
 }));

@@ -9,6 +9,9 @@ import Decks from './screens/Decks';
 import DeckSelect from './screens/DeckSelect';
 import DeckBuilder from './screens/DeckBuilder';
 import Battle from './screens/Battle';
+import OnlineLobby from './screens/OnlineLobby';
+import { useNetStore } from './state/netStore';
+import { forfeitOnline } from './net/onlineGame';
 import { Prompt } from './components/fx/Prompt';
 import { FxLayer } from './components/fx/FxLayer';
 import { AtkAnnounce } from './components/fx/AtkAnnounce';
@@ -21,6 +24,7 @@ import { CardPreview } from './components/fx/CardPreview';
 import { AIIntent } from './components/fx/AIIntent';
 import { CardZoomOverlay } from './components/fx/CardZoomOverlay';
 import { TrashModal } from './components/fx/TrashModal';
+import { NetOverlay } from './components/fx/NetOverlay';
 import { LethalCutIn } from './components/fx/LethalCutIn';
 import { SummonCutIn } from './components/fx/SummonCutIn';
 import { Icon } from './components/ui/Icon';
@@ -65,10 +69,12 @@ function resolveBgmSrc(t: BgmTrack): string {
 const PHASE_STEPS = ['リフレッシュ', 'ドロー', 'ドン', 'メイン', 'エンド'];
 function TurnPill({ engine }: { engine: any }) {
   const G = engine.G;
+  const mySeat = useNetStore((s) => s.mySeat);
   const active: 'me' | 'cpu' | undefined = G.active;
+  const mine = active === mySeat;
   const cur = PHASE_STEPS.indexOf(G.phase);
   return (
-    <div className={'turnpill' + (active === 'me' ? ' mine' : active === 'cpu' ? ' opp' : '')}>
+    <div className={'turnpill' + (active ? (mine ? ' mine' : ' opp') : '')}>
       <span className="phase-tag">{G.phase || 'SETUP'}</span>
       <span className="tp-steps">
         {PHASE_STEPS.map((p, i) => (
@@ -80,16 +86,16 @@ function TurnPill({ engine }: { engine: any }) {
         <span
           className="tp-first"
           title="この対戦の先攻/後攻"
-          style={{ fontSize: 11, fontWeight: 700, padding: '1px 7px', borderRadius: 999, border: '1px solid var(--surface-edge)', color: G.firstPlayer === 'me' ? 'var(--self-accent)' : 'var(--opp-accent)' }}
+          style={{ fontSize: 11, fontWeight: 700, padding: '1px 7px', borderRadius: 999, border: '1px solid var(--surface-edge)', color: G.firstPlayer === mySeat ? 'var(--self-accent)' : 'var(--opp-accent)' }}
         >
-          あなた{G.firstPlayer === 'me' ? '先攻' : '後攻'}
+          あなた{G.firstPlayer === mySeat ? '先攻' : '後攻'}
         </span>
       ) : null}
       <span
         id="whoTurn"
-        style={{ color: active === 'me' ? 'var(--self-accent)' : active === 'cpu' ? 'var(--opp-accent)' : 'var(--muted)', fontWeight: 700 }}
+        style={{ color: active ? (mine ? 'var(--self-accent)' : 'var(--opp-accent)') : 'var(--muted)', fontWeight: 700 }}
       >
-        {active ? (active === 'me' ? 'あなたの番' : '相手の番') : ''}
+        {active ? (mine ? 'あなたの番' : '相手の番') : ''}
       </span>
     </div>
   );
@@ -186,8 +192,15 @@ function Shell({ username, logout }: { username: string; logout: () => void }) {
     persistSettings();
   }
 
-  // 対戦を破棄してデッキ選択へ戻る（ハンバーガーの中断ボタン）
+  // 対戦を破棄してデッキ選択へ戻る（ハンバーガーの中断ボタン）。
+  // オンライン対戦中は「投了」として相手に勝ちを渡す（盤面に留まり結果を見る）。
   function abandonBattle() {
+    const net = useNetStore.getState();
+    if (net.mode === 'online') {
+      if (engine!.G.inGame && !engine!.G.winner) forfeitOnline();
+      setMenuOpen(false);
+      return;
+    }
     engine!.backToSelect?.();
     const s = useEngineStore.getState();
     s.setEnd(null);
@@ -277,7 +290,7 @@ function Shell({ username, logout }: { username: string; logout: () => void }) {
             ) : null}
             {inGame ? (
               <button className="ham-item" style={hamItem} onClick={abandonBattle}>
-                <Icon.flag size={15} />対戦を中断
+                <Icon.flag size={15} />{useNetStore.getState().mode === 'online' ? '投了する' : '対戦を中断'}
               </button>
             ) : null}
             <button className="ham-item" style={hamItem} onClick={() => { setMenuOpen(false); logout(); }}>
@@ -294,6 +307,7 @@ function Shell({ username, logout }: { username: string; logout: () => void }) {
           <Route path="/decks" element={<Decks />} />
           <Route path="/builder" element={<DeckBuilder />} />
           <Route path="/battle" element={<DeckSelect />} />
+          <Route path="/online" element={<OnlineLobby />} />
           <Route path="/battle/play" element={inGame ? <Battle /> : <Navigate to="/battle" replace />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
@@ -314,6 +328,7 @@ function Shell({ username, logout }: { username: string; logout: () => void }) {
       <AIIntent />
       <CardZoomOverlay />
       <TrashModal />
+      <NetOverlay />
     </div>
   );
 }

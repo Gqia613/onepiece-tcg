@@ -6,10 +6,12 @@
 //   既存 keyframes がそのまま当たる）。その上に Framer の多層 motion を「ラッパー(.endscreen 自体)」へ
 //   重ねて入退場（fade / 軽いズーム）を強化する。内部 es-* は CSS アニメに任せて競合を避ける。
 //   win=金背景＋グロー＋リング拡大＋粒子 / lose=暗黒＋ビネット＋雨、の多層演出は元のまま。
-import { useMemo } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useEngineStore } from '../../state/engineStore';
+import { useNetStore } from '../../state/netStore';
+import { requestRematch, leaveOnline } from '../../net/onlineGame';
 
 // 元 _esMotes(): 勝利の上昇する金粉。9個・ランダム位置/サイズ/速度。
 function makeMotes() {
@@ -35,6 +37,9 @@ export function EndScreen() {
   const navigate = useNavigate();
   const engine = useEngineStore((s) => s.engine);
   const end = useEngineStore((s) => s.end);
+  const online = useNetStore((s) => s.mode) === 'online';
+  const [rematchAsked, setRematchAsked] = useState(false);
+  useEffect(() => { if (!end) setRematchAsked(false); }, [end]); // リマッチ成立（end消滅）でリセット
 
   const win = !!end?.win;
   // 粒子/雨は end が出ている間は固定（再生成でチラつかせない）。win 切替で作り直す。
@@ -47,6 +52,8 @@ export function EndScreen() {
     useEngineStore.getState().bump(); // backToSelect は render フックを呼ばないので明示再描画
     navigate('/battle'); // 対戦セットアップへ
   };
+  const onRematch = () => { requestRematch(); setRematchAsked(true); };
+  const onLeaveOnline = () => { leaveOnline(); navigate('/online'); };
 
   return (
     <AnimatePresence>
@@ -109,9 +116,20 @@ export function EndScreen() {
             <div className="es-title">{win ? 'VICTORY' : 'DEFEAT'}</div>
             <div className="es-sub">{win ? '勝利' : '敗北'}</div>
             {end.reason && <div className="es-reason">{end.reason}</div>}
-            <button className="es-btn" onClick={onReplay}>
-              もう一度プレイ
-            </button>
+            {online ? (
+              <div style={{ display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap' }}>
+                <button className="es-btn" onClick={onRematch} disabled={rematchAsked}>
+                  {rematchAsked ? '相手の同意待ち…' : 'もう一度対戦'}
+                </button>
+                <button className="es-btn" onClick={onLeaveOnline} style={{ opacity: 0.85 }}>
+                  退室する
+                </button>
+              </div>
+            ) : (
+              <button className="es-btn" onClick={onReplay}>
+                もう一度プレイ
+              </button>
+            )}
           </div>
         </motion.div>
       )}

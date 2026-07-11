@@ -4,6 +4,7 @@
 import { useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useEngineStore } from '../../state/engineStore';
+import { seatLabel } from '../../state/netStore';
 import { IMG } from '../../engine/img';
 import type { Card } from '../../engine/types';
 
@@ -61,7 +62,7 @@ export function TrashModal() {
   const open = !!(engine && side);
   const trash: Card[] = open ? ((engine!.G.players?.[side!]?.trash || []) as Card[]) : [];
   const cards = trash.slice().reverse(); // 新しい順
-  const title = side ? `${side === 'me' ? 'あなた' : 'CPU'}のトラッシュ（${trash.length}枚）` : '';
+  const title = side ? `${seatLabel(side)}のトラッシュ（${trash.length}枚）` : '';
 
   return (
     <AnimatePresence>

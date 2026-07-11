@@ -18,7 +18,9 @@
     engine/             # エンジンの React 連携（bootstrap / reactAdapter / ui-adapter / types / img / interaction / rarity）
       raw/              # ★engine/ からの同梱コピー（scripts/sync-engine.mjs が生成・手編集しない）
     state/ api/ audio.ts styles.css battle.css
-  functions/api/        # Cloudflare Pages Functions: auth・me・logout・decks・ai（Claude プロキシ）・_middleware
+  functions/api/        # Cloudflare Pages Functions: auth・me・logout・decks・ai（Claude プロキシ）・match/token（オンライン対戦）・_middleware
+  realtime/             # ★オンライン対戦の独立Worker（MatchRoom Durable Object＝入力のseq採番・中継・記録のみ。別デプロイ単位: cd realtime && npx wrangler deploy）
+  src/net/              # オンライン対戦のクライアント側（protocol / dispatch=ロックステップ / matchClient=WS / onlineGame=進行制御）
   public/bgm/           # BGM mp3（battle/casual/adventure/wafu。src/audio.ts と対・ビルドで dist/bgm/ へ）
   scripts/              # sync-engine.mjs（engine/ 原本 → src/engine/raw/ へ verbatim 同期）・gen-rarity.mjs
   tests/                # web(vitest) テスト
@@ -72,5 +74,6 @@ npm run d1:remote  # 本番 D1 へ schema.sql 適用
 - **web を変更したら**: `npm run build` と `npm test` を通す。React コンポーネント（screens/components）と CSS（`src/styles.css`＝静的シェル / `src/battle.css`＝盤面・デッキ選択・演出）を編集。
 - `src/engine/raw/` は手編集せず sync で更新する。
 - **localStorage/sessionStorage を使わない**。状態は engine の `G` / web の zustand ストアに持つ。
+- **オンライン対戦（ロックステップ）を壊さないための不変条件**: ①ゲーム結果に効く乱数は必ず `rng()`（Math.random は演出専用） ②人間/CPU の分岐は `isCPU` のみ ③エンジンのプロンプトには `side`（決定者の席）を付ける ④UI専用の確認は `local:true` ⑤G に非対称なフィールドを足すときは `hashGameState` の `_HASH_SKIP`（engine/src/70-ai.js）を確認。回帰は `tests/lockstep.test.ts`（2エンジン並走のhash一致）が検出する。
 - PM・実験の一次資料は **`engine/docs/pm/`**（experiments.md＝実験台帳・current-status.md）と **`engine/docs/ai-design.md`**。ルート直下の `docs/` は web UI 仕様（phase3-ui-spec.md 等）。
 - 応答は日本語・簡潔。

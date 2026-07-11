@@ -4,18 +4,20 @@
 // AnimatePresence でライフ減少（exit）を滑らかに。
 import { motion, AnimatePresence } from 'framer-motion';
 import { useEngineStore } from '../../state/engineStore';
+import { useNetStore } from '../../state/netStore';
 import { IMG_ROT } from '../../engine/img';
 import type { Side, Player } from '../../engine/types';
 
 export function LifeStack({ side }: { side: Side }) {
   const engine = useEngineStore((s) => s.engine);
+  const mySeat = useNetStore((s) => s.mySeat);
   useEngineStore((s) => s.version); // 再描画トリガ
   if (!engine) return null;
   const G = engine.G;
   const P: Player = G.players[side];
   const life = P.life || [];
   const len = life.length;
-  const isCpu = side === 'cpu';
+  const isCpu = side !== mySeat; // 上段（相手側）の重なり順
 
   return (
     <div className="zone-side ga-life">

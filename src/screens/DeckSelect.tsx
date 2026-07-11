@@ -180,11 +180,8 @@ export default function DeckSelect() {
 
   if (!G.sel) G.sel = { me: undefined, cpu: undefined };
   if (!G.firstPref) G.firstPref = 'random';
-  // 「AI」は強さが「強い」と大差ないため選択肢から撤去（過去に選択済みの場合は強いとして扱う）
-  const cpuMode: 'normal' | 'strong' = G.cpuMode === 'claude' ? 'strong' : (G.cpuMode || 'normal');
 
   const setFirstPref = (v: 'random' | 'me' | 'cpu') => { G.firstPref = v; bump(); };
-  const setCpuMode = (v: 'normal' | 'claude' | 'strong') => { G.cpuMode = v; bump(); };
 
   const meDeck = allDecks.find((d) => d.id === G.sel!.me);
   const cpuDeck = allDecks.find((d) => d.id === G.sel!.cpu);
@@ -197,21 +194,18 @@ export default function DeckSelect() {
     const e = engine!;
     // 進行中の対戦が残っていたら破棄してから開始（/battle へ直接来た場合の保険）
     if (e.G.inGame) { try { e.backToSelect?.(); } catch { /* ignore */ } }
-    const mode: 'normal' | 'claude' | 'strong' = e.G.cpuMode || 'normal';
-    // ★AIモードは対戦開始の“前”に確定＝1ターン目(CPU先攻でも)から有効。startGameはaiOnをリセットしない。
-    e.G.aiOn = mode === 'claude';
-    e.G.cpuStrength = mode === 'strong' ? 'strong' : 'normal'; // 互換
+    // CPUの強さ段階は撤去済み＝常に「強い」(ローカル探索puct)。
+    e.G.cpuMode = 'strong';
+    e.G.aiOn = false;
+    e.G.cpuStrength = 'strong'; // 互換
     // startGame は同期部で盤面を立ち上げ(inGame=true)→そのままマリガンのモーダルを出して待機する。
     // 先に /battle/play へ遷移して盤面を表示してから解決を待つ（マリガンは盤面の上に出る）。
     const started = e.startGame(e.G.sel!.me as string, e.G.sel!.cpu as string);
     useEngineStore.getState().bump();
     navigate('/battle/play');
     await started;
-    // 「強い」= ローカル探索(puct) / 「AI」= hybrid（Claude戦略×puct探索）。players は startGame で生成済み。
-    if (e.G.players && e.G.players.cpu) {
-      if (mode === 'strong') e.G.players.cpu.agent = 'puct';
-      else if (mode === 'claude') e.G.players.cpu.agent = 'hybrid';
-    }
+    // 常に「強い」= ローカル探索(puct)。players は startGame で生成済み。
+    if (e.G.players && e.G.players.cpu) e.G.players.cpu.agent = 'puct';
     useEngineStore.getState().bump();
   }
 
@@ -268,10 +262,9 @@ export default function DeckSelect() {
         <VsSlot side="cpu" deck={cpuDeck} active={step === 'cpu'} onClick={() => setStep('cpu')} />
       </div>
 
-      {/* 設定（先攻/CPU）— 整列グリッド */}
+      {/* 設定（先攻）— 整列グリッド */}
       <div className="ds-controls">
         {seg('先攻', [['random', 'ランダム'], ['me', 'あなた'], ['cpu', 'CPU']] as Array<['random' | 'me' | 'cpu', string]>, (G.firstPref || 'random') as 'random' | 'me' | 'cpu', setFirstPref)}
-        {seg('CPU', [['normal', '通常'], ['strong', '強い']] as Array<['normal' | 'strong', string]>, cpuMode, setCpuMode)}
       </div>
 
       {/* ===== ステップタブ（アンダーライン・金＝VSステージの選択中スロットと対応） + カテゴリ切替 ===== */}

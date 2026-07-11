@@ -9,7 +9,7 @@ web アプリ（このリポジトリのルート）を Cloudflare Pages + Funct
 - **新規登録の招待ゲート**: `INVITE_CODE`（★未設定だと登録は閉鎖＝既存ユーザーのログインは可能）
 - **AI対戦を使う場合のみ**: `ANTHROPIC_API_KEY`（＋任意で KV `AICACHE`・`ANTHROPIC_VERSION`）
 
-functions が参照する env: `DB`(D1) / `JWT_SECRET` / `INVITE_CODE` / `ANTHROPIC_API_KEY` / `ANTHROPIC_VERSION` / `AICACHE`(KV)。
+functions が参照する env: `DB`(D1) / `JWT_SECRET` / `INVITE_CODE` / `ANTHROPIC_API_KEY` / `ANTHROPIC_VERSION` / `AICACHE`(KV) / **オンライン対戦用** `REALTIME_URL`・`MATCH_JWT_SECRET`（§D）。
 
 ---
 
@@ -76,6 +76,35 @@ Cloudflare ダッシュボード → **Workers & Pages → Create → Pages → 
   ```
   出力の id を `wrangler.toml` の `[[kv_namespaces]]`（コメント解除）に貼る。
 - 1ユーザー/日の上限は `functions/api/ai.js` の `DAILY_LIMIT`(=1000)。
+
+---
+
+## D. オンライン対戦（realtime Worker — Pages とは別デプロイ単位）
+
+オンライン対戦（部屋コード制・ロックステップ中継）は **`realtime/` の独立 Worker `opcg-realtime`**（MatchRoom Durable Object）が担う。
+main への push では**デプロイされない**＝realtime を変更したら手動デプロイが必要。
+
+```bash
+# 1) デプロイ（realtime/ で実行。wrangler v4 は realtime/package.json の devDependency）
+cd realtime && npm install && npx wrangler deploy
+#    → https://opcg-realtime.opcg-sim.workers.dev
+
+# 2) トークン署名鍵（Pages と Worker で同一値。セッション用 JWT_SECRET とは独立）
+node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+npx wrangler secret put JWT_SECRET                    # ← realtime/ で（Worker 側）
+cd .. && npx wrangler pages secret put MATCH_JWT_SECRET --project-name opcg-sim   # ← 同じ値
+
+# 3) Pages に Worker の URL を設定（/api/match/token が返す接続先）
+npx wrangler pages secret put REALTIME_URL --project-name opcg-sim
+#    値: https://opcg-realtime.opcg-sim.workers.dev
+```
+
+- 疎通確認: `curl https://opcg-realtime.opcg-sim.workers.dev/healthz` → `{"ok":true}`
+  （★workers.dev サブドメイン新設直後は `*.opcg-sim.workers.dev` の証明書発行待ちで数分〜数時間 TLS エラーになることがある）
+- 許可オリジンは `realtime/wrangler.toml` の `ALLOWED_ORIGINS`（+ `*.opcg-sim.pages.dev` プレビューはコードで許可）。
+- `REALTIME_URL` 未設定でも本体は無影響（オンラインロビーが「サーバ未設定」を表示するだけ）。
+- ローカル: `cd realtime && npm run dev`（:8787）+ ルート `npm run pages:dev`。ルート `.dev.vars` に `REALTIME_URL=http://127.0.0.1:8787`、`realtime/.dev.vars` にルートと同じ `JWT_SECRET`。
+- 実DO統合テスト: `OPCG_E2E=1 npx vitest run tests/online-e2e.test.ts`（wrangler dev を自動起動して1局完走）。
 
 ---
 

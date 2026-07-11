@@ -48,6 +48,8 @@ const EXPORTS = [
   'cpuTurn', 'aiThink', 'predictCPU',
   'inst', 'buildPlayer', 'findDeck', 'escapeHTML', 'IMG',
   'builderToDeck', 'builderValidate', 'leaderColors', // デッキ検証/生成（クラウド保存の整合に再利用）
+  // オンライン対戦（ロックステップ）: 決定論シード・uid解決・投了・同期ハッシュ・状態複製
+  'seedRng', 'rngState', 'findCard', 'lose', 'hashGameState', 'cloneGameState', 'loadGameState', 'promptPick',
 ];
 
 const PREAMBLE = `
@@ -91,7 +93,14 @@ export interface EngineAPI {
   startGame: (meDeck: string, cpuDeck: string) => Promise<void>;
   beginTurn: (side: 'me' | 'cpu') => Promise<void>;
   endTurn: (side: 'me' | 'cpu') => Promise<void> | void;
-  uiEndTurn: () => void;
+  uiEndTurn: (side?: 'me' | 'cpu') => void;
+  seedRng: (seed: number) => void;
+  rngState: (v?: number) => number;
+  findCard: (uid: number) => any;
+  lose: (side: 'me' | 'cpu', reason?: string) => void;
+  hashGameState: (src?: any) => string;
+  cloneGameState: (src?: any) => any;
+  loadGameState: (state: any) => any;
   declareAttack: (attacker: any, target: any) => Promise<void>;
   summon: (side: 'me' | 'cpu', card: any, noEnter?: boolean, source?: any) => Promise<void>;
   doOp: (op: any, ctx: any) => Promise<void>;

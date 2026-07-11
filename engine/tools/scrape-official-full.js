@@ -58,7 +58,11 @@ function parse(block, seriesId) {
   if (type === 'LEADER') c.life = (costVal != null ? costVal : 5); else c.cost = (costVal != null ? costVal : 0);
   return c;
 }
-const byNo = {}; let totalBlocks = 0; const failed = [];
+/* ★2パス方式（base版優先）: 新弾ブースターには他弾カードのSP再録(_pN)が載る。first-winsだと
+   スクレイプ順で後ろの弾（EB/PRB/ST/プロモ）のbaseカードがSP版のrarity/set/seriesで汚染される
+   （実害26枚: 例 EB04-054 の本来R が OP16ページのSPカードで上書き）。
+   第1パス=基本版(_pNなし)のみ採用 → 第2パス=どのシリーズにもbaseが無い番号だけパラレルで補完。 */
+const byNo = {}; const parallels = []; let totalBlocks = 0; const failed = [];
 for (const id of SERIES) {
   let html = fetchSeries(id);
   if (!html || html.length < 2000) { cp.execSync('sleep 2'); html = fetchSeries(id); } // 1回だけリトライ
@@ -68,12 +72,17 @@ for (const id of SERIES) {
   let added = 0;
   for (const blk of blocks) {
     const c = parse(blk, id); if (!c) continue;
+    const isParallel = /_p\d+$/.test(c.no);
     const base = c.no.replace(/_p\d+$/, ''); c.no = base;
+    if (isParallel) { parallels.push(c); continue; }
     if (!byNo[base]) { byNo[base] = c; added++; }
   }
   console.error(`series ${id}: blocks=${blocks.length} 新規=${added} 累計=${Object.keys(byNo).length}`);
   cp.execSync('sleep 0.25');
 }
+let fromParallel = 0;
+for (const c of parallels) if (!byNo[c.no]) { byNo[c.no] = c; fromParallel++; }
+if (fromParallel) console.error(`★base版がどこにも無くパラレルから補完した番号: ${fromParallel}件`);
 const cards = Object.values(byNo).sort((a, b) => a.no < b.no ? -1 : 1);
 const body = cards.map(c => '  ' + JSON.stringify(c)).join(',\n');
 fs.writeFileSync(OUT, '[\n' + body + '\n]\n');

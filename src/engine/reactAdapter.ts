@@ -4,6 +4,7 @@ import type { UIAdapter, PromptConfig } from './ui-adapter';
 import type { Card, PromptState, PickState, FxEvent, AtkState, EndState, TriggerRevealState } from './types';
 import { playSfx, setAudioMuted, buzz } from '../audio';
 import { RARITY } from './rarity';
+import { useNetStore } from '../state/netStore';
 
 // 必要最小の store 面（zustand の useEngineStore が構造的に満たす）
 export interface AdapterStoreApi {
@@ -25,11 +26,14 @@ export interface AdapterStoreApi {
   };
 }
 
-export function makeReactAdapter(store: AdapterStoreApi): UIAdapter {
+export function makeReactAdapter(store: AdapterStoreApi, opts?: { mySeat?: () => 'me' | 'cpu' }): UIAdapter {
   let promptId = 0;
   let pickId = 0;
   let fxId = 0;
   const S = () => store.getState();
+  // ローカルプレイヤーの席（オンライン対戦のゲスト='cpu'。演出の上下/時間配分・勝敗表示に使う）。
+  // テスト（2エンジン並走）では opts.mySeat で席を注入できる。
+  const my = opts?.mySeat || (() => useNetStore.getState().mySeat);
   const sim = () => {
     const g = S().engine?.G;
     return !!(g && g._sim);
@@ -103,13 +107,14 @@ export function makeReactAdapter(store: AdapterStoreApi): UIAdapter {
     });
   };
 
-  // ドローの飛翔（デッキ山→手札へカード背面が飛ぶ）
+  // ドローの飛翔（デッキ山→手札へカード背面が飛ぶ）。CSSクラス .side.me/.opp は「自席=下段/相手=上段」の意味。
   const drawFly = (side: 'me' | 'cpu') => {
     if (sim()) return;
     whenReady(felt, () => {
       const f = felt(); if (!f) return;
-      const from = document.querySelector('.side.' + (side === 'me' ? 'me' : 'opp') + ' .ga-deck .pile');
-      const to = side === 'me' ? document.querySelector('.handzone') : document.querySelector('.side.opp .ga-hand .pile');
+      const mine = side === my();
+      const from = document.querySelector('.side.' + (mine ? 'me' : 'opp') + ' .ga-deck .pile');
+      const to = mine ? document.querySelector('.handzone') : document.querySelector('.side.opp .ga-hand .pile');
       if (!from || !to) return;
       const fr = f.getBoundingClientRect(), a = from.getBoundingClientRect(), b = to.getBoundingClientRect();
       const d = document.createElement('div'); d.className = 'flycard';
@@ -127,7 +132,7 @@ export function makeReactAdapter(store: AdapterStoreApi): UIAdapter {
     if (sim()) return;
     whenReady(() => byUid(uid) && felt(), () => {
       const f = felt(), to = byUid(uid); if (!f || !to) return;
-      const from = document.querySelector('.side.' + (side === 'me' ? 'me' : 'opp') + ' .ga-cost');
+      const from = document.querySelector('.side.' + (side === my() ? 'me' : 'opp') + ' .ga-cost');
       if (!from) return;
       const fr = f.getBoundingClientRect(), a = from.getBoundingClientRect(), b = to.getBoundingClientRect();
       const d = document.createElement('div'); d.className = 'donfly';
@@ -187,8 +192,8 @@ export function makeReactAdapter(store: AdapterStoreApi): UIAdapter {
     fxNote: (side, label, name, no) => {
       if (sim()) return Promise.resolve();
       S().pushFx({ type: 'fxnote', id: ++fxId, side, label, name, no });
-      // エンジンの await を満たすため一定時間後に解決（me=340 / cpu=660ms）
-      return new Promise<void>((res) => realSetTimeout(res, side === 'me' ? 340 : 660));
+      // エンジンの await を満たすため一定時間後に解決（自分=340 / 相手=660ms）
+      return new Promise<void>((res) => realSetTimeout(res, side === my() ? 340 : 660));
     },
     // ライフからトリガーが公開された瞬間の大写し演出。
     // sim()（AI探索）中は実タイマーで回るため即解決（演出awaitで探索を遅延/破壊しない）。
@@ -197,8 +202,8 @@ export function makeReactAdapter(store: AdapterStoreApi): UIAdapter {
       const b = (card && card.base) || {};
       S().setTrigger({ side, no: b.no, name: b.name });
       if (!S().muted) playSfx('reveal');
-      // 演出を見せる時間だけ待って解決（me=1400 / cpu=1900ms）。相手の行動は少し長く見せる。
-      return new Promise<void>((res) => realSetTimeout(res, side === 'me' ? 1400 : 1900));
+      // 演出を見せる時間だけ待って解決（自分=1400 / 相手=1900ms）。相手の行動は少し長く見せる。
+      return new Promise<void>((res) => realSetTimeout(res, side === my() ? 1400 : 1900));
     },
     clearTriggerReveal: () => {
       if (sim()) return;
@@ -228,7 +233,14 @@ export function makeReactAdapter(store: AdapterStoreApi): UIAdapter {
       clearAtkLine();
       S().setAtk(null);
     },
-    showEndScreen: (win, reason) => { S().setEnd({ win, reason }); buzz(win ? [30, 50, 100] : 60); if (!S().muted) playSfx(win ? 'win' : 'lose'); },
+    showEndScreen: (win, reason) => {
+      // エンジンの win は 'me' 視点。ゲスト席（mySeat='cpu'）では G.winner から自席視点に再計算する。
+      const g = S().engine?.G;
+      const w = g && g.winner ? g.winner === my() : win;
+      S().setEnd({ win: w, reason });
+      buzz(w ? [30, 50, 100] : 60);
+      if (!S().muted) playSfx(w ? 'win' : 'lose');
+    },
     showThinking: (on) => { S().setThinking(on); },
     sfx: (name) => {
       if (sim()) return;
@@ -267,9 +279,13 @@ export function makeReactAdapter(store: AdapterStoreApi): UIAdapter {
         const id = ++promptId;
         const origOnPick = cfg.onPick;
         const g = S().engine?.G;
-        if (g) g.promptState = { title: cfg.title, text: cfg.text, opts: cfg.opts || [], cls: cfg.cls || '' };
+        const side = cfg.side || (g ? g.active : 'me'); // 決定者の席（未指定はアクティブ側＝エンジン改修前の呼び出し互換）
+        const local = !!cfg.local;
+        if (g) g.promptState = { title: cfg.title, text: cfg.text, opts: cfg.opts || [], cls: cfg.cls || '', side, local };
         S().setPrompt({
           ...cfg,
+          side,
+          local,
           id,
           onPick: (v: any) => {
             // staleness ガード: このプロンプトが別のプロンプトに上書きされた後
@@ -287,14 +303,15 @@ export function makeReactAdapter(store: AdapterStoreApi): UIAdapter {
         });
       }),
 
-    // 盤面ハイライト＋モーダル併用の対象選択。空候補/想定外でも必ず resolve。
-    humanPick: (cands: any[], text?: string, optional?: boolean, cls?: string) => {
+    // 盤面ハイライト＋モーダル併用の対象選択。空候補/想定外でも必ず resolve。side=決定者の席。
+    humanPick: (cands: any[], text?: string, optional?: boolean, cls?: string, side?: 'me' | 'cpu') => {
       const list = (cands || []).filter(Boolean);
       if (list.length === 0) return Promise.resolve(null);
       return new Promise<Card | null>((resolve) => {
         const id = ++pickId;
         const uids = new Set<number>(list.map((c: any) => c.uid));
         const g = S().engine?.G;
+        const seat = side || (g ? g.active : 'me');
         const finish = (card: Card | null) => {
           // staleness ガード: 自分が現行の pick/prompt のときだけ表示とミラーを消す
           // （後発プロンプト出現後に旧UIから finish が呼ばれても後発を壊さない）。resolve は必ず行う。
@@ -307,11 +324,12 @@ export function makeReactAdapter(store: AdapterStoreApi): UIAdapter {
           }
           resolve(card);
         };
-        // G.pendingChoice もミラー（エンジン側ガード・整合のため）
-        if (g) g.pendingChoice = { uids, optional, danger: cls === 'danger', res: finish };
-        S().setPick({ id, uids, optional, danger: cls === 'danger', text, resolve: finish });
+        // G.pendingChoice もミラー（エンジン側ガード・整合のため）。cands=ゾーン外一時カードのuid解決用
+        if (g) g.pendingChoice = { uids, optional, danger: cls === 'danger', res: finish, side: seat, cands: list };
+        S().setPick({ id, uids, optional, danger: cls === 'danger', text, resolve: finish, side: seat });
         S().setPrompt({
           id: 100000 + id,
+          side: seat,
           cls: cls || '',
           title: '対象を選択',
           text: text || '対象を選んでください',

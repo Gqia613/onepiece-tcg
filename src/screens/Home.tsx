@@ -58,7 +58,16 @@ export default function Home() {
             onError={(e) => { e.currentTarget.style.display = 'none'; }} />
           <span className="hc-icon"><Icon.swords size={28} /></span>
           <span className="hc-en">{inGame ? '対戦に戻る' : 'CPU対戦'}</span>
-          <span className="hc-desc">デッキを選んで出航。CPUの強さは 通常／強い／AI の3段階。</span>
+          <span className="hc-desc">デッキを選んで出航。先読みで手を選ぶCPUと対戦。</span>
+          <span className="hc-go"><Icon.chevronRight size={16} /></span>
+        </button>
+
+        <button className="home-card hc-online" onClick={() => navigate('/online')}>
+          <img className="hc-chara" aria-hidden="true" src={IMG('OP01-002')} referrerPolicy="no-referrer" decoding="async" alt=""
+            onError={(e) => { e.currentTarget.style.display = 'none'; }} />
+          <span className="hc-icon"><Icon.globe size={28} /></span>
+          <span className="hc-en">オンライン対戦</span>
+          <span className="hc-desc">部屋コードを共有してフレンドと対戦（ベータ）。</span>
           <span className="hc-go"><Icon.chevronRight size={16} /></span>
         </button>
 

@@ -44,15 +44,24 @@ function parse(block) {
   if (type === 'LEADER') c.life = (costVal != null ? costVal : 5); else c.cost = (costVal != null ? costVal : 0);
   return c;
 }
-const byNo = {}; let totalBlocks = 0;
+/* ★2パス方式（base版優先・scrape-official-full.js と対）: 他弾カードのSP再録(_pN)が
+   先にスクレイプされる弾のページに載っていても、base版のデータを必ず優先する。 */
+const byNo = {}; const parallels = []; let totalBlocks = 0;
 for (const id of SERIES) {
   const html = fetchSeries(id);
   const blocks = html.match(/<dl class="modalCol"[\s\S]*?<\/dl>/g) || [];
   totalBlocks += blocks.length;
-  for (const blk of blocks) { const c = parse(blk); if (!c) continue; const base = c.no.replace(/_p\d+$/, ''); c.no = base; if (!byNo[base]) byNo[base] = c; }
+  for (const blk of blocks) {
+    const c = parse(blk); if (!c) continue;
+    const isParallel = /_p\d+$/.test(c.no);
+    const base = c.no.replace(/_p\d+$/, ''); c.no = base;
+    if (isParallel) { parallels.push(c); continue; }
+    if (!byNo[base]) byNo[base] = c;
+  }
   process.stderr.write(`series ${id}: ${blocks.length} cards (uniq ${Object.keys(byNo).length})\n`);
   cp.execSync('sleep 0.25');
 }
+for (const c of parallels) if (!byNo[c.no]) byNo[c.no] = c;
 const cards = Object.values(byNo);
 fs.writeFileSync(OUT, 'window.CARD_DB=' + JSON.stringify(cards) + ';\n');
 const byType = {}; for (const c of cards) byType[c.type] = (byType[c.type] || 0) + 1;

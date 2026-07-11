@@ -73,6 +73,8 @@ export interface PromptConfig {
   opts?: PromptOption[];
   onPick?: (v: any) => void;
   cls?: string;
+  side?: Side;     // この選択の決定者の席（オンライン対戦: 相手席なら「選択待ち」表示・応答は中継で解決）
+  local?: boolean; // ローカル専用の確認（誤タップ救済等）。対戦相手へ中継しない
 }
 
 // G（描画に使う範囲のみ。残りは any で吸収）
@@ -101,6 +103,7 @@ export interface GameState {
   cpuStrength?: 'normal' | 'strong';
   firstPref?: 'random' | 'me' | 'cpu';
   sel?: { me?: string; cpu?: string };
+  names?: { me?: string; cpu?: string } | null; // オンライン対戦の表示名（sideName が参照。ハッシュ対象外）
   customDecks?: any[];
   log?: Array<{ cls: string; html: string }>;
   [k: string]: any;
@@ -134,6 +137,7 @@ export interface PickState {
   optional?: boolean;
   danger?: boolean;
   text?: string;
+  side?: Side; // この対象選択の決定者の席（オンライン対戦の席ガード用）
   resolve: (card: Card | null) => void;
 }
 

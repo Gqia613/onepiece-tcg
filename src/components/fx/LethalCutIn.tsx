@@ -3,15 +3,17 @@
 // 暗転 → 「FINISH!!」が斜めにスラムイン → 衝撃リング。操作は透過（pointer-events:none）。
 import { motion, AnimatePresence } from 'framer-motion';
 import { useEngineStore } from '../../state/engineStore';
+import { useNetStore } from '../../state/netStore';
 
 export function LethalCutIn() {
   const lethal = useEngineStore((s) => s.lethal);
+  const mySeat = useNetStore((s) => s.mySeat);
   return (
     <AnimatePresence>
       {lethal ? (
         <motion.div
           key="lethal"
-          className={'lethal-cut ' + (lethal === 'cpu' ? 'mine' : 'opp')}
+          className={'lethal-cut ' + (lethal !== mySeat ? 'mine' : 'opp')}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}

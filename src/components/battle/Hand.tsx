@@ -4,15 +4,17 @@
 // AnimatePresence でドロー(enter)/プレイ(exit)の出入りをアニメーション。
 import { AnimatePresence } from 'framer-motion';
 import { useEngineStore } from '../../state/engineStore';
+import { useNetStore } from '../../state/netStore';
 import { Card } from '../battle/Card';
 
 export function Hand() {
   const engine = useEngineStore((s) => s.engine);
+  const mySeat = useNetStore((s) => s.mySeat);
   useEngineStore((s) => s.version); // 再描画トリガ（値は使わないが購読）
   if (!engine) return null;
   const G = engine.G;
 
-  const hand = (G.players?.me?.hand ?? []) as any[];
+  const hand = (G.players?.[mySeat]?.hand ?? []) as any[];
 
   return (
     <div className="handzone" id="myhand">

@@ -6,6 +6,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { motion, useAnimationControls } from 'framer-motion';
 import { useEngineStore } from '../../state/engineStore';
+import { useNetStore } from '../../state/netStore';
 import { resolveCardClick, atkGlow, type CardCtx } from '../../engine/interaction';
 import { IMG, IMG_RAW } from '../../engine/img';
 import type { Card as TCard } from '../../engine/types';
@@ -31,8 +32,10 @@ export function Card({ card, ctx }: { card: TCard; ctx: CardCtx }) {
   const lpFired = useRef(false);
   const lpStart = useRef<{ x: number; y: number } | null>(null);
 
+  const mySeat = useNetStore((s) => s.mySeat);
   const b = card.base;
-  const rot = card.rested ? (card.owner === 'cpu' ? -90 : 90) : 0;
+  const isOppCard = card.owner !== mySeat; // 相手側=画面上段（回転・アニメの向きは席でなく上下で決める）
+  const rot = card.rested ? (isOppCard ? -90 : 90) : 0;
   const showPow = b.type === 'CHAR' || b.type === 'LEADER';
   const beh = resolveCardClick(engine, pick, prompt, card, ctx);
   const glow = atkGlow(engine, card);
@@ -50,7 +53,7 @@ export function Card({ card, ctx }: { card: TCard; ctx: CardCtx }) {
   }, [fxQueue]);
 
   async function runAnim(cls: string) {
-    const up = card.owner === 'cpu' ? 1 : -1;
+    const up = isOppCard ? 1 : -1;
     try {
       if (cls.indexOf('lunge') === 0 || cls === 'attack') {
         await fx.start({ y: [0, up * 26, 0], scale: [1, 1.06, 1], transition: { duration: 0.42 } });
@@ -71,7 +74,7 @@ export function Card({ card, ctx }: { card: TCard; ctx: CardCtx }) {
   const classes = ['card'];
   if (b.type === 'LEADER') classes.push('leader');
   if (card.rested) classes.push('rest');
-  if (card.owner === 'cpu' && card.rested) classes.push('flip');
+  if (isOppCard && card.rested) classes.push('flip');
   if (beh.highlight) classes.push(beh.highlight === 'danger' ? 'selectable danger-sel' : beh.highlight);
   if (glow) classes.push(glow);
   if (beh.clickable) classes.push('clickable');
@@ -175,6 +178,6 @@ function safePow(engine: any, card: TCard): number {
 }
 // 手札コストチップ用の実効コスト（costMod 等を反映）。失敗時は素のコスト。
 function safeEffCost(engine: any, card: TCard): number {
-  try { const v = engine.effCost('me', card); return typeof v === 'number' ? v : (card.base.cost || 0); }
+  try { const v = engine.effCost(card.owner, card); return typeof v === 'number' ? v : (card.base.cost || 0); }
   catch { return card.base.cost || 0; }
 }

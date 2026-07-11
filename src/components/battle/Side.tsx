@@ -5,6 +5,7 @@
 // LIFE/DON/山札は専用コンポーネント（Card を使わない）で描く。
 import { AnimatePresence } from 'framer-motion';
 import { useEngineStore } from '../../state/engineStore';
+import { useNetStore } from '../../state/netStore';
 import { Card } from './Card';
 import { DonRow } from './DonRow';
 import { LifeStack } from './LifeStack';
@@ -13,11 +14,12 @@ import type { Side as TSide, Player } from '../../engine/types';
 
 export function Side({ side }: { side: TSide }) {
   const engine = useEngineStore((s) => s.engine);
+  const mySeat = useNetStore((s) => s.mySeat);
   useEngineStore((s) => s.version); // 再描画トリガ
   if (!engine) return null;
   const G = engine.G;
   const P: Player = G.players[side];
-  const isMe = side === 'me';
+  const isMe = side === mySeat; // CSS の .me/.opp は「自席=下段/相手=上段」の意味（オンラインのゲストは cpu 席が下段）
   const chars = P.chars || [];
   // 元 charRowHTML: 残りスロット（5-len）を + で埋める
   const emptySlots = Math.max(0, 5 - chars.length);

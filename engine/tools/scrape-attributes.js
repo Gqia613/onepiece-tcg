@@ -27,7 +27,11 @@ for (const id of SERIES) {
   const blocks = html.split(/<dl class="modalCol"/);
   let added = 0;
   for (const b of blocks) {
-    const no = (b.match(/id="([A-Z0-9][A-Z0-9-]*)"/) || [])[1]; if (!no) continue;
+    /* ★パラレル(_pN)/別イラスト(_rN)のidも許容し、base番号へ集約する（属性は印刷間で不変）。
+       旧正規表現は「_」を含まず _pN/_rN ブロックを全てスキップ＝パラレル版しか存在しないカード
+       （P-081/082等）の属性が取得できなかった（過去はcards-attr.jsへの手編集パッチで凌ぎ、再生成で消える罠）。 */
+    const noFull = (b.match(/id="([A-Z0-9][A-Z0-9-]*(?:_[pr]\d+)?)"/) || [])[1]; if (!noFull) continue;
+    const no = noFull.replace(/_[pr]\d+$/, '');
     const a = (b.match(/class="attribute"[\s\S]{0,200}?alt="([^"]+)"/) || [])[1];
     if (a && a !== '-') { attr[no] = a; added++; }
   }

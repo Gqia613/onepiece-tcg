@@ -1,0 +1,20 @@
+# opcg-realtime — オンライン対戦のリアルタイム中継 Worker（Pages 本体とは別デプロイ単位）。
+# MatchRoom Durable Object が部屋ごとの入力順序付け・記録・中継を担う（ゲームロジックは持たない）。
+# デプロイ: cd realtime && npx wrangler deploy
+# シークレット: npx wrangler secret put JWT_SECRET   （Pages 側と同じ値にする＝トークン共有）
+name = "opcg-realtime"
+main = "src/index.ts"
+compatibility_date = "2026-04-01"
+
+[[durable_objects.bindings]]
+name = "MATCH_ROOM"
+class_name = "MatchRoom"
+
+# SQLite-backed DO（無料プランで利用可能なストレージバックエンド）
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["MatchRoom"]
+
+[vars]
+# WSアップグレード/部屋作成を許可するオリジン（カンマ区切り）。*.opcg-sim.pages.dev のプレビューはコードで許可。
+ALLOWED_ORIGINS = "https://opcg-sim.pages.dev,http://localhost:5173,http://127.0.0.1:5173,http://localhost:8788,http://127.0.0.1:8788"

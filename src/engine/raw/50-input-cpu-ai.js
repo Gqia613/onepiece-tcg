@@ -6,6 +6,7 @@
       return new Promise(resolve => {
         G.promptState = {
           title: cfg.title, text: cfg.text, opts: cfg.opts || [], cls: cfg.cls || '',
+          side: cfg.side || G.active, local: !!cfg.local, // side=この選択の決定者（オンライン対戦の席所有権）。local=ローカル専用確認（対戦相手へ中継しない）
           // プロンプトの表示/消去は盤面を再描画せず #promptHost だけ更新（クリックごとのちらつき防止）
           pick: v => { G.promptState = null; renderPrompt(); if (cfg.onPick) cfg.onPick(v); resolve(v); }
         };
@@ -47,7 +48,7 @@
     }
 
     async function openOwnMenu(card) {
-      const P = G.players.me; const b = card.base; const opts = [];
+      const side = card.owner; const P = G.players[side]; const b = card.base; const opts = [];
       if (canCardAttack(card)) opts.push({ t: '⚔ アタック', v: 'atk', primary: true });
       if (P.don.active >= 1 && b.type !== 'STAGE') opts.push({ t: '＋ ドンを付与 (残' + P.don.active + ')', v: 'don' });
       if (b.fx && b.fx.act && card._actTurn !== G.turnSeq && !isNegated(card)) opts.push({ t: '起動: ' + b.fx.act.label, v: 'act' });
@@ -55,14 +56,14 @@
       if (b.leader === 'lucy' && P._lucyDrawTurn !== G.turnSeq && P._lucyEventTurn === G.turnSeq) opts.push({ t: '【ルーシー】1ドロー', v: 'enel' });
       if (opts.length === 0) { toast('今このカードでできる行動はありません'); return; }
       opts.push({ t: '閉じる', v: 'x', ghost: true });
-      const v = await showPrompt({ title: b.name, text: 'パワー ' + power(card) + (card.attachedDon ? ' ／ 付与ドン' + card.attachedDon : ''), opts });
+      const v = await showPrompt({ side, title: b.name, text: 'パワー ' + power(card) + (card.attachedDon ? ' ／ 付与ドン' + card.attachedDon : ''), opts });
       if (v === 'atk') beginAttack(card);
       else if (v === 'don') { await attachDonFlow(card); }
       else if (v === 'act') await activateAbility(card);
-      else if (v === 'enel') await leaderActivate('me');
+      else if (v === 'enel') await leaderActivate(side);
     }
     async function attachDonFlow(card) {
-      const P = G.players.me;
+      const side = card.owner; const P = G.players[side];
       if (P.don.active < 1) { toast('アクティブなドンがありません'); return; }
       // ★1枚のみでも即付与しない: 多枚数時と同じ確認フロー（誤タップ救済＝「やめる」で取消可能）
       const max = P.don.active;
@@ -70,49 +71,50 @@
       const opts = [];
       for (let i = 1; i <= max; i++)opts.push({ t: i + '枚 → P' + (base + i * 1000) + (i === max ? '（全部）' : ''), v: String(i), primary: i === max });
       opts.push({ t: 'やめる', v: '0', ghost: true });
-      const sel = await showPrompt({ title: card.base.name + ' にドン付与', text: '付与する枚数を選択（現在 P' + base + ' ／ アクティブなドン ' + max + '枚・1枚=+1000）', opts });
+      const sel = await showPrompt({ side, title: card.base.name + ' にドン付与', text: '付与する枚数を選択（現在 P' + base + ' ／ アクティブなドン ' + max + '枚・1枚=+1000）', opts });
       const n = parseInt(sel, 10) || 0;
-      if (n > 0) { card.attachedDon += n; P.don.active -= n; donFly('me', card.uid); floatOn(card.uid, 'ドン+' + n, 'buff'); flog('me', '「' + card.base.name + '」にドン' + n + '枚付与（パワー' + power(card) + '）'); render(); await fireDonAttached('me'); }
+      if (n > 0) { card.attachedDon += n; P.don.active -= n; donFly(side, card.uid); floatOn(card.uid, 'ドン+' + n, 'buff'); flog(side, '「' + card.base.name + '」にドン' + n + '枚付与（パワー' + power(card) + '）'); render(); await fireDonAttached(side); }
     }
     function beginAttack(card) {
-      if (legalTargets('me').length === 0) { toast('攻撃できる対象がいません'); return; }
+      if (legalTargets(card.owner).length === 0) { toast('攻撃できる対象がいません'); return; }
       G.attackSel = { attacker: card }; render(); toast('攻撃対象を選択（光るカード）');
     }
     function cancelAttackSel() { if (G.attackSel) { G.attackSel = null; render(); } }
     async function activateAbility(card) {
+      const side = card.owner;
       if (isNegated(card)) { toast('このキャラの効果は無効化されている'); return; }
       const act = card.base.fx.act; const c = act.cost || {};
       // コストは全て検証してから支払う（払った後に中断して払い損になるのを防ぐ）
       if (c.restSelf && card.rested) { toast('既にレスト状態です'); return; }
-      if (c.don && G.players.me.don.active < c.don) { toast('ドンが足りません'); return; }
-      if (c.don) payDon('me', c.don);
+      if (c.don && G.players[side].don.active < c.don) { toast('ドンが足りません'); return; }
+      if (c.don) payDon(side, c.don);
       if (c.restSelf) card.rested = true;
       card._actTurn = G.turnSeq;
-      flog('me', '「' + card.base.name + '」の起動効果');
-      await fxNote('me', '起動メイン', card.base.name);
-      await runFx(act.fx, { self: card, side: 'me' }); render();
+      flog(side, '「' + card.base.name + '」の起動効果');
+      await fxNote(side, '起動メイン', card.base.name);
+      await runFx(act.fx, { self: card, side }); render();
     }
     async function tryPlayHand(card) {
-      const P = G.players.me; const b = card.base;
+      const side = card.owner; const P = G.players[side]; const b = card.base;
       if (b.type === 'CHAR') {
-        const cost = effCost('me', card); if (P.don.active < cost) { toast('ドンが足りません'); return; }
-        if (P.chars.length >= 5 && !(await trashCharForRoom('me', true))) return; // 5体：枠を空ける（キャンセル可）
-        payDon('me', cost); P.hand.splice(P.hand.indexOf(card), 1); await summon('me', card, false);
+        const cost = effCost(side, card); if (P.don.active < cost) { toast('ドンが足りません'); return; }
+        if (P.chars.length >= 5 && !(await trashCharForRoom(side, true))) return; // 5体：枠を空ける（キャンセル可）
+        payDon(side, cost); P.hand.splice(P.hand.indexOf(card), 1); await summon(side, card, false);
       } else if (b.type === 'STAGE') {
         const cost = b.cost || 0; if (P.don.active < cost) { toast('ドンが足りません'); return; }
-        payDon('me', cost); P.hand.splice(P.hand.indexOf(card), 1);
-        if (P.stage) P.trash.push(reset(P.stage)); P.stage = card; card.owner = 'me'; card.rested = false;
-        flog('me', 'ステージ「' + b.name + '」を配置');
-        if (b.fx && b.fx.onPlay) await runFx(b.fx.onPlay, { self: card, side: 'me' }); render();
+        payDon(side, cost); P.hand.splice(P.hand.indexOf(card), 1);
+        if (P.stage) P.trash.push(reset(P.stage)); P.stage = card; card.owner = side; card.rested = false;
+        flog(side, 'ステージ「' + b.name + '」を配置');
+        if (b.fx && b.fx.onPlay) await runFx(b.fx.onPlay, { self: card, side }); render();
       } else if (b.type === 'EVENT') {
         if (!(b.fx && b.fx.main)) { toast('このイベントはメインで使えません'); return; }
-        const cost = effCost('me', card); if (P.don.active < cost) { toast('ドンが足りません'); return; }
-        payDon('me', cost); P.hand.splice(P.hand.indexOf(card), 1);
+        const cost = effCost(side, card); if (P.don.active < cost) { toast('ドンが足りません'); return; }
+        payDon(side, cost); P.hand.splice(P.hand.indexOf(card), 1);
         if (b.cost >= 3) P._lucyEventTurn = G.turnSeq; // 【ルーシー】起動メイン条件: 当ターンに元々コスト3以上のイベントを発動
-        flog('me', '「' + b.name + '」を使用'); await runFx(b.fx.main.fx, { self: card, side: 'me' }); P.trash.push(reset(card)); render(); await luffyReveal('me'); await fireOppEvent("me");
+        flog(side, '「' + b.name + '」を使用'); await runFx(b.fx.main.fx, { self: card, side }); P.trash.push(reset(card)); render(); await luffyReveal(side); await fireOppEvent(side);
       }
     }
-    function uiEndTurn() { if (G.busy || G.active !== 'me' || !G.myActable || G.promptState || G.pendingChoice) return; G.attackSel = null; G.busy = true; G.myActable = false; render(); endTurn('me'); }
+    function uiEndTurn(side) { side = side || 'me'; if (G.busy || G.active !== side || !G.myActable || G.promptState || G.pendingChoice) return; G.attackSel = null; G.busy = true; G.myActable = false; render(); endTurn(side); } // side省略時は従来どおり'me'（バニラのボタン互換）
     function setTab(t) { // 部分更新：フル再描画せずパネルの表示切替のみ（ログのスクロール位置を保つ）
       G._tab = t; const hintsActive = t !== 'log';
       const hp = document.getElementById('hintsPanel'), lp = document.getElementById('logPanel');

@@ -76,6 +76,17 @@ step('カード効果ユニット', ()=>{
   console.log('  ✓ カード効果ユニット pass');
 });
 
+// 5b) オンライン対戦シーム（プロンプト席タグ/side一般化/両人間マリガン/uiEndTurn(side)/状態ハッシュ）
+step('オンライン対戦シーム', ()=>{
+  const p=path.join(__dirname,'online-seams.js');
+  let out;
+  try{ out=cp.execSync('node '+JSON.stringify(p),{encoding:'utf8',timeout:120000}); }
+  catch(e){ throw {stdout:(e.stdout||'')+(e.stderr||'')}; }
+  process.stdout.write('  '+out.trim()+'\n');
+  if(!/fail=0/.test(out)) throw {stdout:'  ✗ オンライン対戦シームテスト失敗\n'};
+  console.log('  ✓ オンライン対戦シーム pass');
+});
+
 // 6) Phase3 実装カード(cards-fx.js)の効果検証
 step('Phase3 効果カード', ()=>{
   const p=path.join(__dirname,'fx-cards.js');

@@ -6,6 +6,7 @@
 import { useEffect } from 'react';
 import { motion, AnimatePresence, useSpring, useTransform } from 'framer-motion';
 import { useEngineStore } from '../../state/engineStore';
+import { useNetStore } from '../../state/netStore';
 import { Icon } from '../ui/Icon';
 import { IMG, IMG_RAW } from '../../engine/img';
 import type { Card } from '../../engine/types';
@@ -53,7 +54,7 @@ export function AtkAnnounce() {
   const { aSide, attacker, target, phase } = atk;
   if (!attacker || !target) return null;
 
-  const opp = aSide !== 'me';
+  const opp = aSide !== useNetStore.getState().mySeat;
   const power = (c: Card): number => {
     try { return (engine.power(c) as number) ?? 0; } catch { return 0; }
   };
