@@ -5878,6 +5878,21 @@ button.hb-chip:not(.zero):not([disabled]):hover {
   min-height: 96px;
 }
 
+/* オンライン対戦ロビー: #screen が overflow:hidden の固定枠なので、ロビー自身を縦スクロール
+   コンテナにする（戦績など可変・無制限の内容を含むため固定1画面に収められない＝スクロールが正解）。
+   マイデッキ画面(.select-wrap)と同じ方式。 */
+.online-wrap {
+  height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  padding: 22px 14px calc(30px + env(safe-area-inset-bottom, 0px));
+  box-sizing: border-box;
+}
+
 /* オンラインロビー等でカルーセルを埋め込む時の固定高さ枠（CPU対戦は select-wrap.ds2 の
    フレックスで高さが決まるが、埋め込み先は通常フローなので明示的に高さを与える）。 */
 .deckpick-embed {

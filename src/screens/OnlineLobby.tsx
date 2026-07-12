@@ -14,11 +14,11 @@ import { DeckCarousel } from '../components/deck/DeckCarousel';
 
 const panel: React.CSSProperties = {
   background: 'linear-gradient(180deg, var(--ocean-800), var(--ocean-850))',
-  border: '1px solid var(--gold-dim)', borderRadius: 12, padding: 16,
+  border: '1px solid var(--surface-edge)', borderRadius: 12, padding: 16, // 重い金枠→控えめな枠（CPU画面と統一）
   display: 'flex', flexDirection: 'column', gap: 10, maxWidth: 520, width: '100%',
 };
 const selStyle: React.CSSProperties = {
-  background: 'var(--ocean-850)', color: 'var(--ink)', border: '1px solid var(--gold-dim)',
+  background: 'var(--ocean-850)', color: 'var(--ink)', border: '1px solid var(--surface-edge)',
   borderRadius: 8, padding: '7px 9px', fontSize: 13,
 };
 
@@ -166,7 +166,7 @@ export default function OnlineLobby() {
   const inLobby = mode === 'online' && (phase === 'lobby');
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14, padding: '22px 14px' }}>
+    <div className="online-wrap">
       <h2 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
         <Icon.globe size={20} />オンライン対戦
       </h2>
@@ -201,7 +201,7 @@ export default function OnlineLobby() {
                 maxLength={8}
                 style={{
                   flex: '1 1 auto', minWidth: 0, // ★min-width:0＝狭幅で入力欄が縮み、行がはみ出さない
-                  padding: '10px 12px', borderRadius: 8, border: '1px solid var(--gold-dim)',
+                  padding: '10px 12px', borderRadius: 8, border: '1px solid var(--surface-edge)',
                   background: 'var(--ocean-850)', color: 'var(--ink)', fontSize: 18, letterSpacing: 3, textTransform: 'uppercase',
                 }}
               />
