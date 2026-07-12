@@ -28,6 +28,8 @@ engine/
   cards-fx.js         # ★全カードの効果fxを一元化（番号→fx。fx 2330件・トリガー580枚含む）
   cards-attr.js       # 属性（斬/打/射/特/知。tools/scrape-attributes.js 生成・2211枚）
   cards-trigger.js    # トリガー文（tools/gen-cards-trigger.js 生成。mergeCardDB が base.triggerText 付与）
+  cards-sets.js       # 収録弾（tools/gen-cards-sets.js 生成。mergeCardDB が base.sets 付与）。★「弾」＝番号の接頭辞ではない
+                      #   （スタートデッキは他弾からの再録で構成される。web のデッキビルダーの弾フィルタが参照）
   tools/              # scrape-official-full.js（公式の全フィールド完全スナップショット official-full.json＝照合の正本）
                       # audit-cards.js（三点照合 official-full↔C↔CARD_FX → audit-report.json）
                       # scrape-cards / scrape-attributes / gen-cards-trigger / official-opNN.js（弾別の公式効果文の正本）

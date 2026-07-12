@@ -22,6 +22,7 @@ const FILES = [
   'cards-fx.js',
   'cards-attr.js',
   'cards-trigger.js',
+  'cards-sets.js',
   'src/00-data.js',
   'src/10-engine-core.js',
   'src/20-targeting-fx.js',

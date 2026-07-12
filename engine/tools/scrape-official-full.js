@@ -64,6 +64,19 @@ function parse(block, seriesId) {
    スクレイプ順で後ろの弾（EB/PRB/ST/プロモ）のbaseカードがSP版のrarity/set/seriesで汚染される
    （実害26枚: 例 EB04-054 の本来R が OP16ページのSPカードで上書き）。
    第1パス=基本版(_pNなし)のみ採用 → 第2パス=どのシリーズにもbaseが無い番号だけパラレルで補完。 */
+/* ★収録弾（sets）: 「そのカードがどの商品に収録されているか」。カード番号の接頭辞≠収録弾（再録があるため）。
+   例: 新スタートデッキ ST-31 の中身は ST31-001〜005 の新規5枚 ＋ 他弾からの再録10枚（リーダーは ST21-001 の別イラスト）。
+   接頭辞だけで「弾」を出すとデッキビルダーの弾フィルタに ST31〜36 のリーダーも再録札も出せない → 収録弾を正本として記録する。
+   キーは _pN/_rN を剥がした base番号（＝カードの同一性。別イラストは base の収録弾を継承する）。 */
+const SETCODE = {};
+for (let i = 1; i <= 36; i++) SETCODE[550000 + i] = 'ST' + String(i).padStart(2, '0');
+for (let i = 1; i <= 16; i++) SETCODE[550100 + i] = 'OP' + String(i).padStart(2, '0');
+for (let i = 1; i <= 4; i++) SETCODE[550200 + i] = 'EB' + String(i).padStart(2, '0');
+for (let i = 1; i <= 2; i++) SETCODE[550300 + i] = 'PRB' + String(i).padStart(2, '0');
+// 550701(ファミリーデッキセット)/550801(限定商品)/550901(プロモ) は独自の弾コードを作らず、カード番号の接頭辞（P 等）をそのまま使う
+const baseOf = no => no.replace(/_[pr]\d+$/, '');
+const setsByBase = {};
+
 const byNo = {}; const parallels = []; let totalBlocks = 0; const failed = [];
 for (const id of SERIES) {
   let html = fetchSeries(id);
@@ -74,6 +87,8 @@ for (const id of SERIES) {
   let added = 0;
   for (const blk of blocks) {
     const c = parse(blk, id); if (!c) continue;
+    const bid = baseOf(c.no);
+    (setsByBase[bid] = setsByBase[bid] || new Set()).add(SETCODE[id] || bid.split('-')[0]); // 収録弾（再録・別イラスト・パラレルも全て base に集約）
     const isParallel = /_p\d+$/.test(c.no);
     const base = c.no.replace(/_p\d+$/, ''); c.no = base;
     if (isParallel) { parallels.push(c); continue; }
@@ -86,6 +101,7 @@ let fromParallel = 0;
 for (const c of parallels) if (!byNo[c.no]) { byNo[c.no] = c; fromParallel++; }
 if (fromParallel) console.error(`★base版がどこにも無くパラレルから補完した番号: ${fromParallel}件`);
 const cards = Object.values(byNo).sort((a, b) => a.no < b.no ? -1 : 1);
+for (const c of cards) c.sets = [...(setsByBase[baseOf(c.no)] || [baseOf(c.no).split('-')[0]])].sort();
 const body = cards.map(c => '  ' + JSON.stringify(c)).join(',\n');
 fs.writeFileSync(OUT, '[\n' + body + '\n]\n');
 const byType = {}; for (const c of cards) byType[c.type] = (byType[c.type] || 0) + 1;

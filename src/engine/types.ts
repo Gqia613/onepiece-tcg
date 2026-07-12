@@ -22,6 +22,7 @@ export interface CardDef {
   fx?: any;
   text?: string;
   triggerText?: string; // 【トリガー】全文（cards-trigger.js 由来・表示用）
+  sets?: string[];      // 収録弾コード（cards-sets.js 由来。番号の接頭辞≠弾＝再録があるため。デッキビルダーの弾フィルタが参照）
 }
 
 export interface Card {

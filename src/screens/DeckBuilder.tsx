@@ -80,9 +80,14 @@ export default function DeckBuilder() {
     (C[no].name || '') + ' ' + no + ' ' + (C[no].traits || []).join(' ') + ' ' + (C[no].text || '') + ' ' + (C[no].triggerText || '')
   ).toLowerCase();
 
+  // 収録弾。カード番号の接頭辞≠弾（スタートデッキは他弾からの再録で構成される）。
+  // 例: ST-31（赤ルフィ）のリーダーは ST21-001 の別イラスト、中身も OP11/OP13/P からの再録。
+  // 正本は cards-sets.js（mergeCardDB が base.sets に付与）。未登録＝接頭辞と同じ単一弾。
+  const setsOf = (no: string): string[] => C[no].sets || [no.split('-')[0]];
+
   // リーダーが存在する弾一覧（リーダー絞り込み用）
   const leaderPacks = useMemo(() => {
-    return [...new Set(Object.keys(C).filter((no) => C[no].leader).map((no) => no.split('-')[0]))].sort();
+    return [...new Set(Object.keys(C).filter((no) => C[no].leader).flatMap(setsOf))].sort();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -90,7 +95,7 @@ export default function DeckBuilder() {
   const leaders = useMemo(() => {
     let ls = Object.keys(C).filter((no) => C[no].leader);
     if (leaderColorSel.length) ls = ls.filter((no) => leaderColorSel.every((c) => (C[no].color || []).includes(c)));
-    if (leaderPack !== 'all') ls = ls.filter((no) => no.split('-')[0] === leaderPack);
+    if (leaderPack !== 'all') ls = ls.filter((no) => setsOf(no).includes(leaderPack));
     const q = leaderSearch.trim().toLowerCase();
     if (q) ls = ls.filter((no) => hay(no).includes(q));
     ls.sort((x, y) => y.localeCompare(x, undefined, { numeric: true }));
@@ -101,7 +106,7 @@ export default function DeckBuilder() {
   // 使える弾（セット）
   const packs = useMemo(() => {
     if (!leaderNo) return [];
-    return [...new Set(Object.keys(C).filter((no) => cardLegalForLeader(no, leaderNo) && !/_r\d+$/.test(no)).map((no) => no.split('-')[0]))].sort();
+    return [...new Set(Object.keys(C).filter((no) => cardLegalForLeader(no, leaderNo) && !/_r\d+$/.test(no)).flatMap(setsOf))].sort();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [leaderNo]);
 
@@ -112,7 +117,7 @@ export default function DeckBuilder() {
     cards = cards.filter((no) => !/_r\d+$/.test(no) || !C[no.replace(/_r\d+$/, '')]);
     if (typeFilter !== 'all') cards = cards.filter((no) => C[no].type === typeFilter);
     if (colorFilter !== 'all') cards = cards.filter((no) => (C[no].color || []).includes(colorFilter));
-    if (packFilter !== 'all') cards = cards.filter((no) => no.split('-')[0] === packFilter);
+    if (packFilter !== 'all') cards = cards.filter((no) => setsOf(no).includes(packFilter));
     const q = search.trim().toLowerCase();
     if (q) cards = cards.filter((no) => hay(no).includes(q));
     const byNo = (x: string, y: string) => y.localeCompare(x, undefined, { numeric: true });

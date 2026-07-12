@@ -532,6 +532,10 @@
         }
         // 属性(斬/打/射/特/知)を付与。パラレル(_rN)は本体noの属性を共有。
         if (ATTR) { const a = ATTR[cd.no] || ATTR[cd.no.replace(/_r\d+$/, '')]; if (a) base.attribute = a; }
+        // 収録弾（cards-sets.js）。番号の接頭辞≠弾（スタートデッキは他弾からの再録で構成される）。未登録＝接頭辞と同じ単一弾。
+        { const SETS = (typeof window !== 'undefined' && window.CARD_SETS) || (typeof CARD_SETS !== 'undefined' ? CARD_SETS : null);
+          const sb = cd.no.replace(/_r\d+$/, '');
+          base.sets = (SETS && (SETS[cd.no] || SETS[sb])) || [sb.split('-')[0]]; }
         // 【トリガー】全文を付与（表示用）。パラレル(_rN)は本体noを共有。
         if (TRIG) { const tg = TRIG[cd.no] || TRIG[cd.no.replace(/_r\d+$/, '')]; if (tg) base.triggerText = tg; }
         // 別名（「カード名を「X」としても扱う」。OP04-099おリン=シャーロット・リンリン）

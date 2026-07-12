@@ -120,6 +120,29 @@ describe('DeckBuilder', () => {
     act(() => { useEngineStore.setState({ builderDeck: null }); });
   });
 
+  // 弾フィルタは「カード番号の接頭辞」ではなく「収録弾（cards-sets.js）」で引く。
+  // 新スタートデッキ ST-31〜36 はリーダーも中身も他弾からの再録が主体なので、接頭辞基準だと選択肢に出ない。
+  it('filters by printed set (収録弾): ST31〜36 appear and resolve to their reprinted leader', () => {
+    const engine = useEngineStore.getState().engine!;
+    const C = engine.C as Record<string, any>;
+
+    // ① 新スターター6弾がリーダーの弾選択肢に出る（リーダーは全て既存カードの再録）
+    render(<DeckBuilder />);
+    const leaderSel = document.querySelector('.bd-fsel') as HTMLSelectElement;
+    const opts = [...leaderSel.options].map((o) => o.value);
+    for (const p of ['ST31', 'ST32', 'ST33', 'ST34', 'ST35', 'ST36']) expect(opts).toContain(p);
+
+    // ② 弾=ST32 を選ぶと、その収録リーダー（OP12-020 ロロノア・ゾロ）が出る
+    act(() => { fireEvent.change(leaderSel, { target: { value: 'ST32' } }); });
+    const names = [...document.querySelectorAll('.bd-leader')].map((el) => el.getAttribute('title'));
+    expect(names).toContain(C['OP12-020'].name);
+
+    // ③ 収録弾データそのものの回帰（番号の接頭辞≠弾）
+    expect(C['OP12-020'].sets).toEqual(expect.arrayContaining(['OP12', 'ST32']));
+    expect(C['ST31-001'].sets).toEqual(['ST31']);           // 新規カードは自弾のみ
+    expect(C['OP01-001'].sets).toEqual(['OP01']);           // 再録なしは接頭辞へフォールバック
+  });
+
   it('opens a preset deck as a copy (new save, name suffixed)', () => {
     const engine = useEngineStore.getState().engine!;
     const base = (engine.DECKS as any[])[0];
