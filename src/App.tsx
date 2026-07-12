@@ -122,6 +122,7 @@ function Shell({ username, logout }: { username: string; logout: () => void }) {
   const setBgmTrack = useEngineStore((s) => s.setBgmTrack);
   const end = useEngineStore((s) => s.end);
   const version = useEngineStore((s) => s.version); // 盤面状態の購読（inGame 判定）
+  const netMode = useNetStore((s) => s.mode); // /battle/play 離脱時の戻り先（online→ロビー）
   const bgmActiveRef = useRef(false);
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -319,7 +320,8 @@ function Shell({ username, logout }: { username: string; logout: () => void }) {
           <Route path="/builder" element={<DeckBuilder />} />
           <Route path="/battle" element={<DeckSelect />} />
           <Route path="/online" element={<OnlineLobby />} />
-          <Route path="/battle/play" element={inGame ? <Battle /> : <Navigate to="/battle" replace />} />
+          {/* 盤面が無い時の戻り先: オンライン中はロビー（CPU対戦のデッキ選択に飛ばさない） */}
+          <Route path="/battle/play" element={inGame ? <Battle /> : <Navigate to={netMode === 'online' ? '/online' : '/battle'} replace />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </div>

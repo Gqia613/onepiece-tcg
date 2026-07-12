@@ -1,13 +1,16 @@
 // リーサル（トドメの一撃）カットイン。エンジンの lethalFx フック（reactAdapter 実装）が
 // store.lethal をセットしている間だけ表示される全画面オーバーレイ。
 // 暗転 → 「FINISH!!」が斜めにスラムイン → 衝撃リング。操作は透過（pointer-events:none）。
+import { useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useEngineStore } from '../../state/engineStore';
 import { useNetStore } from '../../state/netStore';
 
 export function LethalCutIn() {
+  const onPlay = useLocation().pathname === '/battle/play';
   const lethal = useEngineStore((s) => s.lethal);
   const mySeat = useNetStore((s) => s.mySeat);
+  if (!onPlay) return null; // 盤面（/battle/play）以外では出さない（画面遷移後の残留防止・フックの後に判定）
   return (
     <AnimatePresence>
       {lethal ? (

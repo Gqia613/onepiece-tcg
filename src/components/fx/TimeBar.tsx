@@ -1,14 +1,17 @@
 // 持ち時間の表示（オンライン対戦・部屋設定でクロック有効時のみ）。
 // 時計の計算は src/net/clock.ts（サーバtsが正）。ここは表示だけ。
+import { useLocation } from 'react-router-dom';
 import { useClockStore, fmtClock } from '../../net/clock';
 import { useNetStore } from '../../state/netStore';
 
 export function TimeBar() {
+  const onPlay = useLocation().pathname === '/battle/play';
   const clk = useClockStore();
   const mySeat = useNetStore((s) => s.mySeat);
   const online = useNetStore((s) => s.mode) === 'online';
   const phase = useNetStore((s) => s.phase);
   const names = useNetStore((s) => s.names);
+  if (!onPlay) return null; // 盤面（/battle/play）以外では出さない（画面遷移後の残留防止・フックの後に判定）
   if (!online || !clk.enabled || (phase !== 'playing' && phase !== 'ended')) return null;
 
   const chip = (label: string, ms: number, active: boolean) => {

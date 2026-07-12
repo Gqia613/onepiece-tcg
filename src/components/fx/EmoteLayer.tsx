@@ -1,12 +1,14 @@
 // 定型エモート（オンライン対戦のみ）。自由入力チャットは意図的に持たない。
 // 送信: 左下の😊ボタン→8種から選択。受信: 相手側は盤面上部、自分は下部にバブル表示（2.6秒）。
 import { useEffect, useRef, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useNetStore } from '../../state/netStore';
 import { EMOTES } from '../../net/protocol';
 import { sendEmote } from '../../net/onlineGame';
 
 export function EmoteLayer() {
+  const onPlay = useLocation().pathname === '/battle/play';
   const online = useNetStore((s) => s.mode) === 'online';
   const phase = useNetStore((s) => s.phase);
   const mySeat = useNetStore((s) => s.mySeat);
@@ -23,6 +25,7 @@ export function EmoteLayer() {
     return () => clearTimeout(t);
   }, [last, mySeat]);
 
+  if (!onPlay) return null; // 盤面（/battle/play）以外では出さない（画面遷移後の残留防止・フックの後に判定）
   if (!online || replay || (phase !== 'playing' && phase !== 'ended')) return null;
 
   const pick = (i: number) => {

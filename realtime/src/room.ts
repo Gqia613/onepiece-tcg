@@ -374,6 +374,12 @@ export class MatchRoom {
           } else {
             await this.putRoom(r); // 不一致＝desync系。hash側が検知する
           }
+        } else if (this.ctx.getWebSockets(other(seat)).length === 0) {
+          // 相手が切断済み（スマホのタブ閉じ等）＝相手の申告は来ない。片側申告で確定する
+          r.resultSaved = true;
+          await this.putRoom(r);
+          const id = await this.saveMatch(r, r.results[seat]!);
+          this.broadcast({ t: 'result-saved', id });
         } else {
           await this.putRoom(r);
         }
@@ -401,6 +407,16 @@ export class MatchRoom {
         if (r.status === 'lobby' && seat === 'guest') {
           r.guestUid = null; r.guestName = null; r.ready.guest = false; r.vers.guest = null;
           await this.putRoom(r);
+        }
+        // 対戦中に片側だけ申告済みのまま相手が退室 → その申告で戦績を確定する
+        if (r.status === 'playing' && !r.resultSaved) {
+          const oth = r.results[other(seat)];
+          if (oth) {
+            r.resultSaved = true;
+            await this.putRoom(r);
+            const id = await this.saveMatch(r, oth);
+            this.broadcast({ t: 'result-saved', id });
+          }
         }
         this.broadcastPeer(r);
         return;
@@ -461,15 +477,16 @@ export class MatchRoom {
       await this.env.DB.prepare(
         `CREATE TABLE IF NOT EXISTS matches (
           id INTEGER PRIMARY KEY AUTOINCREMENT, code TEXT NOT NULL, game_no INTEGER NOT NULL,
-          host_uid INTEGER NOT NULL, guest_uid INTEGER NOT NULL, host_name TEXT NOT NULL, guest_name TEXT NOT NULL,
+          host_uid TEXT NOT NULL, guest_uid TEXT NOT NULL, host_name TEXT NOT NULL, guest_name TEXT NOT NULL,
           host_leader TEXT NOT NULL, guest_leader TEXT NOT NULL, winner TEXT NOT NULL, reason TEXT, turns INTEGER,
           seed INTEGER NOT NULL, replay TEXT, created_at TEXT NOT NULL DEFAULT (datetime('now')))`,
       ).run();
+      // ★uid は UUID 文字列（users.id）。数値変換すると 0 になり履歴検索が空振りする（実バグの前科）
       const out = await this.env.DB.prepare(
         `INSERT INTO matches (code, game_no, host_uid, guest_uid, host_name, guest_name, host_leader, guest_leader, winner, reason, turns, seed, replay)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       ).bind(
-        r.code, r.gameNo, Number(r.hostUid) || 0, Number(r.guestUid) || 0, r.hostName, r.guestName || '',
+        r.code, r.gameNo, r.hostUid, r.guestUid || '', r.hostName, r.guestName || '',
         r.decks.host?.leader || '', r.decks.guest?.leader || '', res.winner, res.reason || null, res.turns || null,
         r.seed, replay,
       ).run();

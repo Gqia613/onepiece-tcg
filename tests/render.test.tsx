@@ -14,8 +14,9 @@ import { EndScreen } from '../src/components/fx/EndScreen';
 import { CardZoomOverlay } from '../src/components/fx/CardZoomOverlay';
 import { TrashModal } from '../src/components/fx/TrashModal';
 
-// 画面/オーバーレイはルーター配下で動く（useNavigate）ため MemoryRouter で包む
-const render = (ui: ReactElement) => rtlRender(<MemoryRouter>{ui}</MemoryRouter>);
+// 画面/オーバーレイはルーター配下で動く（useNavigate）ため MemoryRouter で包む。
+// Prompt/AtkAnnounce 等の対戦オーバーレイは /battle/play でのみ描画されるため、そのルートを初期値にする。
+const render = (ui: ReactElement) => rtlRender(<MemoryRouter initialEntries={['/battle/play']}>{ui}</MemoryRouter>);
 
 // headless でゲームを「自分が操作可能になる静止点」まで進め、その engine を store に入れて描画する。
 let engine: any;

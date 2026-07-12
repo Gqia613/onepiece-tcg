@@ -3,12 +3,15 @@
 // 元 showThinking は body 直付けの #aiThinking に inline スタイルを当てていた（CSS class 無し）ので、
 // ここでも当時の見た目（丸ピル・半透明ネイビー・薄青文字）を inline で 1:1 再現しつつ、
 // 🤖 アイコンを回転、バッジ全体をパルスさせ、false で AnimatePresence によりフェードアウトする。
+import { useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useEngineStore } from '../../state/engineStore';
 import { Icon } from '../ui/Icon';
 
 export function Thinking() {
+  const onPlay = useLocation().pathname === '/battle/play';
   const thinking = useEngineStore((s) => s.thinking);
+  if (!onPlay) return null; // 盤面（/battle/play）以外では出さない（画面遷移後の残留防止・フックの後に判定）
 
   return (
     <AnimatePresence>

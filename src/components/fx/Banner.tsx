@@ -6,6 +6,7 @@
 //   (tbnrFade/tbnrBand/tbnrTxt) で animate する設計。旧版の Framer 手動アニメは廃し、raw と同じく
 //   .flash クラスで CSS アニメを発火させる（マウント＝新要素なので 1 回再生され、HOLD_MS 後に unmount）。
 import { useRef, useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { useEngineStore } from '../../state/engineStore';
 import { useNetStore } from '../../state/netStore';
 import { playSfx } from '../../audio';
@@ -20,6 +21,7 @@ interface BannerItem {
 const HOLD_MS = 1600;
 
 export function Banner() {
+  const onPlay = useLocation().pathname === '/battle/play';
   const engine = useEngineStore((s) => s.engine);
   useEngineStore((s) => s.version); // 値は使わないが購読（再描画＝検知のトリガ）
 
@@ -58,6 +60,7 @@ export function Banner() {
 
   useEffect(() => () => { if (toRef.current) clearTimeout(toRef.current); }, []);
 
+  if (!onPlay) return null; // 盤面（/battle/play）以外では出さない（画面遷移後の残留防止・フックの後に判定）
   if (!item) return null;
   // key で毎回 remount＝.flash の CSS アニメ(tbnrFade/Band/Txt)が先頭から再生される。
   return (

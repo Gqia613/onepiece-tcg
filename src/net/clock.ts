@@ -41,6 +41,10 @@ let elapsed: { me: number; cpu: number } = { me: 0, cpu: 0 };
 let timer: ReturnType<typeof setInterval> | null = null;
 let myForfeitSent = false;
 let timeupSent = false;
+// ★カウントは両者のマリガン完了後から。ゲーム最初の2入力は必ずマリガン応答（cpu席→me席の順で、
+//   それ以前に他の入力は deliverable にならない）なので、2入力目までは消費せず時刻だけ進める。
+let inputCount = 0;
+let mullDoneTs = 0;         // 2入力目（=マリガン完了）のサーバ時刻。official30 の元期にもなる
 
 const nowServer = () => Date.now() + serverOffset;
 
@@ -64,6 +68,8 @@ export function clockReset(config: ClockConfig, startTs: number, localReceiptWal
   elapsed = { me: 0, cpu: 0 };
   myForfeitSent = false;
   timeupSent = false;
+  inputCount = 0;
+  mullDoneTs = 0;
   if (timer) { clearInterval(timer); timer = null; }
   const enabled = cfg.mode !== 'none';
   useClockStore.setState({ enabled, mode: cfg.mode, remain: null, shared: null, turnRemain: null, owner: null });
@@ -72,8 +78,15 @@ export function clockReset(config: ClockConfig, startTs: number, localReceiptWal
 }
 
 // 入力（開始以降の全操作）のサーバ時刻を記録。間隔は送信席に帰属。
+// 最初の2入力（両者のマリガン応答）は消費せず、完了時刻だけ記録する。
 export function clockNoteInput(seat: Seat, ts: number): void {
   if (cfg.mode === 'none' || !ts) return;
+  inputCount++;
+  if (inputCount <= 2) {
+    if (ts > lastTs) lastTs = ts;
+    if (inputCount === 2) mullDoneTs = ts;
+    return;
+  }
   if (ts > lastTs) {
     elapsed[seat] += ts - lastTs;
     lastTs = ts;
@@ -94,10 +107,12 @@ function tick(): void {
   const sim = !!eng?.G?._sim; // 復帰リプレイ中は執行しない（tsは入力列から積み上がる）
   const now = nowServer();
 
+  const mullDone = inputCount >= 2; // 両者のマリガン完了後からカウント開始
+
   if (cfg.mode === 'official30') {
-    const shared = Math.max(0, 30 * 60_000 - (now - epochTs));
+    const shared = mullDone ? Math.max(0, 30 * 60_000 - (now - mullDoneTs)) : 30 * 60_000;
     useClockStore.setState({ enabled: true, mode: cfg.mode, shared, remain: null, turnRemain: null, owner: liveOwner() });
-    if (playing && !sim && shared <= 0 && !timeupSent) {
+    if (playing && !sim && mullDone && shared <= 0 && !timeupSent) {
       timeupSent = true;
       void uiDispatch({ t: 'timeup' }); // 両者が送っても適用側で冪等
     }
@@ -106,9 +121,9 @@ function tick(): void {
 
   // per / perTurn（チェスクロック）
   const owner = liveOwner();
-  const live = (s: Seat) => elapsed[s] + (owner === s && playing ? Math.max(0, now - lastTs) : 0);
+  const live = (s: Seat) => elapsed[s] + (mullDone && owner === s && playing ? Math.max(0, now - lastTs) : 0);
   const remain = { me: Math.max(0, perMs - live('me')), cpu: Math.max(0, perMs - live('cpu')) };
-  const turnRemain = cfg.mode === 'perTurn' && owner ? Math.max(0, turnMs - Math.max(0, now - lastTs)) : null;
+  const turnRemain = cfg.mode === 'perTurn' && owner && mullDone ? Math.max(0, turnMs - Math.max(0, now - lastTs)) : null;
   useClockStore.setState({ enabled: true, mode: cfg.mode, remain, shared: null, turnRemain, owner });
 
   if (!playing || sim || myForfeitSent) return;

@@ -10,6 +10,7 @@
 //    なので、Framer の transform が translateX を潰さないよう x:'-50%' を常に保ち scale/opacity だけ動かす。
 //  - 各ボタンの onClick で prompt.onPick(o.v) を呼ぶ（必ず解決＝フリーズ厳禁）。
 import { useRef, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useEngineStore } from '../../state/engineStore';
 import { useNetStore, seatLabel } from '../../state/netStore';
@@ -140,6 +141,7 @@ export function Prompt() {
   const online = useNetStore((s) => s.mode) === 'online';
   const earlyMull = useNetStore((s) => s.earlyMulligan);
   const replayActive = useNetStore((s) => s.replayActive);
+  const onPlay = useLocation().pathname === '/battle/play';
   useEngineStore((s) => s.version); // pendingChoice の変化（render→bump）を拾う
 
   // オンライン: 相手席の選択（非local）は選択肢を出さず「相手の選択待ち」だけ表示する
@@ -187,6 +189,9 @@ export function Prompt() {
 
   // リプレイ再生中: プロンプトの応答はログが自動供給するため、選択UIは一切出さない
   if (replayActive) return <div id="promptHost" />;
+  // 盤面（/battle/play）以外ではモーダルを出さない（対戦中に他画面へ移動しても残留させない。
+  // エンジンは待ったまま＝盤面に戻れば再表示される）
+  if (!onPlay) return <div id="promptHost" />;
 
   return (
     <div id="promptHost">

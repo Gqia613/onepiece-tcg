@@ -4,6 +4,7 @@
 //  ・phase で見た目変化 declare(両者表示)/block(盾アイコン強調)/damage(最終パワー)
 //  ・パワー数値は motion(useSpring) で補間
 import { useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { motion, AnimatePresence, useSpring, useTransform } from 'framer-motion';
 import { useEngineStore } from '../../state/engineStore';
 import { useNetStore } from '../../state/netStore';
@@ -38,12 +39,14 @@ function AaCard({ no }: { no: string }) {
 }
 
 export function AtkAnnounce() {
+  const onPlay = useLocation().pathname === '/battle/play';
   const engine = useEngineStore((s) => s.engine);
   const atk = useEngineStore((s) => s.atk);
   const trigger = useEngineStore((s) => s.trigger);
   const prompt = useEngineStore((s) => s.prompt);
   useEngineStore((s) => s.version); // 再描画トリガ（power 再評価のため）
 
+  if (!onPlay) return null; // 盤面（/battle/play）以外では出さない（画面遷移後の残留防止・フックの後に判定）
   if (!engine || !atk) return null;
   // トリガー公開演出中はアタック宣言を出さない（このアタックは解決済み）。
   if (trigger) return null;

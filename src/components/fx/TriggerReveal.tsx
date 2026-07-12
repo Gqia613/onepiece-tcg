@@ -3,6 +3,7 @@
 // 飛び込み → 3D フリップ → 金色の放射光線・稲妻・パーティクル・「⚡トリガー!!」で大きく見せる。
 // 全体 pointer-events:none（下のプロンプト/盤面操作を妨げない）。fixed inset:0・z-index 54
 // （.prompt=50/55 の直下＝人間の発動確認中もカード大写しが背後に残る）。
+import { useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useEngineStore } from '../../state/engineStore';
 import { useNetStore } from '../../state/netStore';
@@ -31,8 +32,10 @@ function TrigCard({ no }: { no: string }) {
 const BOLTS = ['M50 0 L40 44 L55 42 L42 100', 'M50 3 L61 40 L47 43 L58 97'];
 
 export function TriggerReveal() {
+  const onPlay = useLocation().pathname === '/battle/play';
   const trigger = useEngineStore((s) => s.trigger);
   const mySeat = useNetStore((s) => s.mySeat);
+  if (!onPlay) return null; // 盤面（/battle/play）以外では出さない（画面遷移後の残留防止・フックの後に判定）
   const fromY = trigger && trigger.side === mySeat ? 170 : -170; // 自分のライフ=下/相手=上から飛び込む
 
   return (

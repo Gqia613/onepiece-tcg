@@ -47,8 +47,8 @@ CREATE TABLE IF NOT EXISTS matches (
   id           INTEGER PRIMARY KEY AUTOINCREMENT,
   code         TEXT NOT NULL,             -- 部屋コード
   game_no      INTEGER NOT NULL,
-  host_uid     INTEGER NOT NULL,
-  guest_uid    INTEGER NOT NULL,
+  host_uid     TEXT NOT NULL,             -- users.id は UUID 文字列
+  guest_uid    TEXT NOT NULL,
   host_name    TEXT NOT NULL,
   guest_name   TEXT NOT NULL,
   host_leader  TEXT NOT NULL,             -- リーダーのカード番号
