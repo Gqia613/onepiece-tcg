@@ -123,6 +123,7 @@ function Shell({ username, logout }: { username: string; logout: () => void }) {
   const end = useEngineStore((s) => s.end);
   const version = useEngineStore((s) => s.version); // 盤面状態の購読（inGame 判定）
   const netMode = useNetStore((s) => s.mode); // /battle/play 離脱時の戻り先（online→ロビー）
+  const replayActive = useNetStore((s) => s.replayActive);
   const bgmActiveRef = useRef(false);
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -203,9 +204,9 @@ function Shell({ username, logout }: { username: string; logout: () => void }) {
   function abandonBattle() {
     const net = useNetStore.getState();
     if (net.replayActive) {
-      stopReplay();
       setMenuOpen(false);
-      navigate('/online');
+      navigate('/online'); // 先に遷移（盤面消滅→ルートガードのリダイレクトに負けない）
+      stopReplay();
       return;
     }
     if (net.mode === 'online') {
@@ -320,8 +321,8 @@ function Shell({ username, logout }: { username: string; logout: () => void }) {
           <Route path="/builder" element={<DeckBuilder />} />
           <Route path="/battle" element={<DeckSelect />} />
           <Route path="/online" element={<OnlineLobby />} />
-          {/* 盤面が無い時の戻り先: オンライン中はロビー（CPU対戦のデッキ選択に飛ばさない） */}
-          <Route path="/battle/play" element={inGame ? <Battle /> : <Navigate to={netMode === 'online' ? '/online' : '/battle'} replace />} />
+          {/* 盤面が無い時の戻り先: オンライン中・リプレイはロビー（CPU対戦のデッキ選択に飛ばさない） */}
+          <Route path="/battle/play" element={inGame || replayActive ? <Battle /> : <Navigate to={netMode === 'online' ? '/online' : '/battle'} replace />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </div>

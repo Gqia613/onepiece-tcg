@@ -38,6 +38,7 @@ export function EndScreen() {
   const engine = useEngineStore((s) => s.engine);
   const end = useEngineStore((s) => s.end);
   const online = useNetStore((s) => s.mode) === 'online';
+  const replayActive = useNetStore((s) => s.replayActive);
   const [rematchAsked, setRematchAsked] = useState(false);
   useEffect(() => { if (!end) setRematchAsked(false); }, [end]); // リマッチ成立（end消滅）でリセット
 
@@ -116,7 +117,10 @@ export function EndScreen() {
             <div className="es-title">{win ? 'VICTORY' : 'DEFEAT'}</div>
             <div className="es-sub">{win ? '勝利' : '敗北'}</div>
             {end.reason && <div className="es-reason">{end.reason}</div>}
-            {online ? (
+            {replayActive ? (
+              // リプレイ再生の終局: 操作は下部の ReplayBar（終了する）に集約。対戦用ボタンは出さない
+              <div className="es-reason" style={{ opacity: 0.8 }}>リプレイ再生（操作は下のバーから）</div>
+            ) : online ? (
               <div style={{ display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap' }}>
                 <button className="es-btn" onClick={onRematch} disabled={rematchAsked}>
                   {rematchAsked ? '相手の同意待ち…' : 'もう一度対戦'}

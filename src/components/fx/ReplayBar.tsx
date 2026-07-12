@@ -23,7 +23,7 @@ export function ReplayBar() {
 
   return (
     <div style={{
-      position: 'fixed', bottom: 8, left: '50%', transform: 'translateX(-50%)', zIndex: 63,
+      position: 'fixed', bottom: 8, left: '50%', transform: 'translateX(-50%)', zIndex: 210, // .endscreen(200)より前＝終局後も操作できる
       display: 'flex', alignItems: 'center', gap: 8, padding: '7px 12px', borderRadius: 12,
       background: 'linear-gradient(180deg, var(--ocean-800), var(--ocean-850))',
       border: '1px solid var(--gold-dim)', boxShadow: '0 10px 28px #000a',
@@ -40,7 +40,8 @@ export function ReplayBar() {
         <span style={{ fontSize: 12, color: 'var(--muted)' }}>再生終了</span>
       )}
       <button style={{ ...btn, borderColor: 'var(--danger-glow,#ff6a4d)', color: 'var(--danger-glow,#ff6a4d)' }}
-        onClick={() => { stopReplay(); navigate('/online'); }}>
+        onClick={() => { navigate('/online'); stopReplay(); }} // ★先に遷移（盤面消滅→ルートガードのリダイレクトに負けない）
+      >
         終了する
       </button>
     </div>
