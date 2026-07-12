@@ -28,6 +28,7 @@ export const useReplayStore = create<ReplayState>(() => ({ active: false, paused
 
 let driver: Lockstep | null = null;
 let data: ReplayData | null = null;
+let viewer: RoomSeat = 'host';
 let feedTimer: ReturnType<typeof setTimeout> | null = null;
 let pumpTimer: ReturnType<typeof setInterval> | null = null;
 let sending = false, desync = false; // driver依存のダミー
@@ -52,7 +53,9 @@ function bootReplayEngine(d: ReplayData): void {
 // viewerSeat: 'host'|'guest' — 視点（自分が参加した側を下段に）
 export function startReplay(d: ReplayData, viewerSeat: RoomSeat): void {
   stopReplay(false);
+  useEngineStore.getState().setEnd(null); // 再再生時に前回の勝敗画面を持ち越さない
   data = d;
+  viewer = viewerSeat;
   const net = useNetStore.getState();
   net.setReplayActive(true);
   net.setNames({ me: d.names.host || 'ホスト', cpu: d.names.guest || 'ゲスト' });
@@ -98,6 +101,12 @@ function feedOne(): void {
 
 function finish(): void {
   useReplayStore.setState({ done: true, paused: true });
+}
+
+// 同じリプレイを最初から再生し直す
+export function replayRestart(): void {
+  if (!data) return;
+  startReplay(data, viewer);
 }
 
 export function replayTogglePause(): void {

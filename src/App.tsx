@@ -205,8 +205,7 @@ function Shell({ username, logout }: { username: string; logout: () => void }) {
     const net = useNetStore.getState();
     if (net.replayActive) {
       setMenuOpen(false);
-      navigate('/online'); // 先に遷移（盤面消滅→ルートガードのリダイレクトに負けない）
-      stopReplay();
+      navigate('/online'); // 遷移するだけ。停止と後片付けは ReplayBar の不変条件エフェクトが担う
       return;
     }
     if (net.mode === 'online') {
