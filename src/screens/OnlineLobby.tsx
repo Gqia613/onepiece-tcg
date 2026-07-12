@@ -349,9 +349,9 @@ export default function OnlineLobby() {
                   {oppName}<span style={{ color: 'var(--muted)', fontSize: 11 }}>（{m.turns ? `${m.turns}T` : ''}{m.reason ? '・' + m.reason : ''}）</span>
                 </span>
                 <span style={{ fontSize: 10.5, color: 'var(--muted)' }}>{(m.created_at || '').slice(5, 16).replace('T', ' ')}</span>
-                <button className="phasebtn ghost" style={{ padding: '3px 10px', fontSize: 12 }} disabled={replayLoading === m.id}
+                <button className="phasebtn ghost" style={{ padding: '3px 10px', fontSize: 12, display: 'inline-flex', alignItems: 'center', gap: 4 }} disabled={replayLoading === m.id}
                   onClick={() => { void playReplay(m); }}>
-                  {replayLoading === m.id ? '…' : '▶ リプレイ'}
+                  {replayLoading === m.id ? '…' : <><Icon.play size={11} />リプレイ</>}
                 </button>
               </div>
             );
