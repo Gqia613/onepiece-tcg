@@ -5903,25 +5903,140 @@ button.hb-chip:not(.zero):not([disabled]):hover {
   height: 300px;
 }
 
-/* ★部屋内(デッキ選択中)はフィット型＝スクロールさせずファーストビューで完結。
-   セットアップ(コード/設定/プレイヤー/準備ボタン)は自然高さ、カルーセルが残り高さに伸縮する。
-   万一入り切らない時(ホストが設定を多く展開等)だけ room-panel が内部スクロールする安全網。 */
+/* ★部屋内(デッキ選択中)はフィット型＝スクロールさせずファーストビューで完結。クリーンな
+   フローティング設計（重い枠を廃止）。設定はモーダルに逃がし縦を食わない。カルーセルが主役。 */
 .online-wrap.fit {
   overflow: hidden;
 }
 
-.online-wrap.fit .room-panel {
+.online-room {
   flex: 1 1 auto;
   min-height: 0;
-  overflow-y: auto;
+  width: 100%;
+  max-width: 560px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
-.online-wrap.fit .room-deck {
+/* 部屋コード帯 */
+.or-code {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.or-code-label {
+  font-size: 12px;
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.or-code-val {
+  font-family: var(--font-num);
+  font-size: 24px;
+  font-weight: 800;
+  letter-spacing: 5px;
+  color: var(--gold-soft);
+}
+
+.or-copy {
+  min-height: 30px;
+  padding: 4px 12px;
+  font-size: 12px;
+  font-weight: 700;
+  border-radius: 999px;
+  border: 1px solid var(--surface-edge);
+  background: rgba(255, 255, 255, .05);
+  color: var(--ink);
+  cursor: pointer;
+  transition: .15s;
+}
+
+.or-copy:hover {
+  border-color: var(--gold);
+  color: var(--gold-soft);
+}
+
+.or-conn {
+  font-size: 11px;
+  color: var(--muted);
+  margin-left: auto;
+}
+
+/* プレイヤー + 設定要約の帯（上下に細い区切り） */
+.or-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 8px 0;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+
+.or-players {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+}
+
+.or-player {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13.5px;
+}
+
+.or-waiting {
+  font-size: 12.5px;
+  color: var(--muted);
+}
+
+.or-config {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.or-config > span {
+  flex: 1 1 auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.or-cfg-btn {
+  flex: 0 0 auto;
+  min-height: 28px;
+  padding: 3px 14px;
+  font-size: 11.5px;
+  font-weight: 700;
+  border-radius: 999px;
+  border: 1px solid var(--surface-edge);
+  background: rgba(255, 255, 255, .05);
+  color: var(--gold-soft);
+  cursor: pointer;
+}
+
+.or-cfg-btn:hover {
+  border-color: var(--gold);
+}
+
+/* デッキ選択（伸縮＝残り高さを占有） */
+.or-deck {
   flex: 1 1 auto;
   min-height: 0;
+  border: none !important;
+  padding-top: 2px !important;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
 
-.online-wrap.fit .room-deck .deckpick-embed {
+.or-deck .deckpick-embed {
   flex: 1 1 auto;
   height: auto;
   min-height: 128px;
@@ -5931,6 +6046,61 @@ button.hb-chip:not(.zero):not([disabled]):hover {
    背の高い端末では flex で十分な高さが与えられるため見た目は変わらない。 */
 .online-wrap.fit .dsc-item {
   min-height: 92px;
+}
+
+.or-deck-done {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+}
+
+/* 下部アクションバー */
+.or-actions {
+  display: flex;
+  gap: 10px;
+  align-items: stretch;
+  padding-top: 2px;
+}
+
+.or-actions .or-leave {
+  flex: 0 0 auto;
+  min-height: 48px;
+  padding: 8px 18px;
+}
+
+.or-actions .or-ready {
+  flex: 1 1 auto;
+  min-height: 48px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 対戦設定モーダル（ds-confirm を流用するが、削除用の danger(赤)は打ち消して金系の中立に）。
+   ds-confirm がこの規則より後に定義されているため、詳細度を上げて(.ds-confirm.or-cfg-modal)確実に勝たせる。 */
+.ds-confirm.or-cfg-modal {
+  text-align: left;
+  width: min(92vw, 420px);
+  border-color: var(--gold-dim);
+  box-shadow: var(--elev-3), 0 0 30px -10px rgba(255, 200, 87, .4);
+}
+
+.ds-confirm.or-cfg-modal h3 {
+  color: var(--gold-soft);
+  text-align: center;
+}
+
+.or-cfg-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12.5px;
+  margin-bottom: 10px;
+}
+
+.or-cfg-row > span {
+  color: var(--muted);
 }
 
 .deckpick-embed .ds-rail-wrap {

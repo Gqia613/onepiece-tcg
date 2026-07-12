@@ -72,6 +72,7 @@ export default function OnlineLobby() {
   const [history, setHistory] = useState<MatchRow[] | null>(null);
   const [myUid, setMyUid] = useState<number | null>(null);
   const [replayLoading, setReplayLoading] = useState<number | null>(null);
+  const [showConfig, setShowConfig] = useState(false); // 対戦設定モーダル（ホスト）
 
   // 対戦が始まったら盤面へ
   useEffect(() => {
@@ -210,90 +211,49 @@ export default function OnlineLobby() {
           </div>
         </>
       ) : (
-        <div className="room-panel" style={panel}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-            <b>部屋コード</b>
-            <span style={{ fontSize: 26, fontWeight: 800, letterSpacing: 6, color: 'var(--gold-soft)' }}>{roomCode}</span>
-            <button className="phasebtn ghost" style={{ padding: '4px 10px' }} onClick={() => { void copy('code'); }}>
-              {copied === 'code' ? 'コピーしました' : 'コード'}
-            </button>
-            <button className="phasebtn ghost" style={{ padding: '4px 10px' }} onClick={() => { void copy('link'); }}>
-              {copied === 'link' ? 'コピーしました' : '招待リンク'}
-            </button>
-          </div>
-          <div style={{ fontSize: 12, color: 'var(--muted)' }}>
-            {conn === 'ok' ? 'サーバ接続中' : conn === 'reconnecting' ? '再接続中…' : '接続中…'}／あなたは{isHost ? 'ホスト' : 'ゲスト'}
+        <div className="online-room">
+          {/* 部屋コード + 招待（1行・コンパクト） */}
+          <div className="or-code">
+            <span className="or-code-label">部屋コード</span>
+            <span className="or-code-val">{roomCode}</span>
+            <button className="or-copy" onClick={() => { void copy('code'); }}>{copied === 'code' ? '✓ コピー' : 'コード'}</button>
+            <button className="or-copy" onClick={() => { void copy('link'); }}>{copied === 'link' ? '✓ コピー' : '招待リンク'}</button>
+            <span className="or-conn">{conn === 'ok' ? '接続中' : conn === 'reconnecting' ? '再接続中…' : '接続待ち…'}・{isHost ? 'ホスト' : 'ゲスト'}</span>
           </div>
 
-          {/* 部屋設定（ホストのみ変更可） */}
-          <div style={{ borderTop: '1px solid var(--line)', paddingTop: 10, display: 'flex', flexDirection: 'column', gap: 8 }}>
-            <b style={{ fontSize: 13.5 }}>対戦設定{isHost ? '' : '（ホストが設定）'}</b>
-            {isHost ? (
-              <>
-                <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 12.5 }}>
-                  <span style={{ color: 'var(--muted)' }}>持ち時間</span>
-                  <select style={selStyle} value={config.clock.mode} disabled={readySent}
-                    onChange={(e) => updateConfig({ clock: { mode: e.target.value as any } })}>
-                    {Object.entries(CLOCK_LABEL).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
-                  </select>
-                </label>
-                {(config.clock.mode === 'per' || config.clock.mode === 'perTurn') ? (
-                  <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12.5 }}>
-                    <span style={{ color: 'var(--muted)' }}>各プレイヤー</span>
-                    <select style={selStyle} value={config.clock.perMin ?? 30} disabled={readySent}
-                      onChange={(e) => updateConfig({ clock: { perMin: Number(e.target.value) } })}>
-                      {[10, 15, 20, 25, 30, 40, 60].map((m) => <option key={m} value={m}>{m}分</option>)}
-                    </select>
-                  </label>
-                ) : null}
-                {config.clock.mode === 'perTurn' ? (
-                  <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12.5 }}>
-                    <span style={{ color: 'var(--muted)' }}>1手の制限</span>
-                    <select style={selStyle} value={config.clock.turnSec ?? 90} disabled={readySent}
-                      onChange={(e) => updateConfig({ clock: { turnSec: Number(e.target.value) } })}>
-                      {[30, 60, 90, 120, 180].map((s) => <option key={s} value={s}>{s}秒</option>)}
-                    </select>
-                  </label>
-                ) : null}
-                <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12.5 }}>
-                  <span style={{ color: 'var(--muted)' }}>先攻</span>
-                  <select style={selStyle} value={config.firstTurn} disabled={readySent}
-                    onChange={(e) => updateConfig({ firstTurn: e.target.value as any })}>
-                    {Object.entries(FIRST_LABEL).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
-                  </select>
-                </label>
-              </>
-            ) : (
-              <div style={{ fontSize: 12.5 }}>{configSummary(config)}</div>
-            )}
-          </div>
-
-          <div style={{ borderTop: '1px solid var(--line)', paddingTop: 8, display: 'flex', flexDirection: 'column', gap: 6 }}>
-            {players.map((p) => (
-              <div key={p.seat} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14 }}>
-                <span style={{ opacity: p.connected ? 1 : 0.45 }}>
+          {/* プレイヤー状況 + 対戦設定（要約1行・ホストは設定ボタンでモーダル） */}
+          <div className="or-meta">
+            <div className="or-players">
+              {players.map((p) => (
+                <span key={p.seat} className="or-player" style={{ opacity: p.connected ? 1 : 0.45 }}>
                   {p.seat === 'host' ? '👑' : '⚔'} {p.name}{seatOf(p.seat) === mySeat ? '（あなた）' : ''}
+                  <b style={{ color: p.ready ? 'var(--good, #48c98a)' : 'var(--muted)', fontWeight: 700, fontSize: 11.5 }}>
+                    {p.ready ? '✔ 準備完了' : p.connected ? '選択中…' : '切断中'}
+                  </b>
                 </span>
-                <span style={{ fontSize: 12, color: p.ready ? 'var(--good, #48c98a)' : 'var(--muted)' }}>
-                  {p.ready ? '✔ 準備完了' : p.connected ? 'デッキ選択中…' : '切断中'}
-                </span>
-              </div>
-            ))}
-            {players.length < 2 ? (
-              <div style={{ fontSize: 12.5, color: 'var(--muted)' }}>相手の入室を待っています…（コードか招待リンクを伝えてください）</div>
-            ) : null}
+              ))}
+              {players.length < 2 ? <span className="or-waiting">相手の入室を待っています…</span> : null}
+            </div>
+            <div className="or-config">
+              <span>⏱ {configSummary(config)}</span>
+              {isHost && !readySent ? (
+                <button className="or-cfg-btn" onClick={() => setShowConfig(true)}>設定</button>
+              ) : null}
+            </div>
           </div>
 
-          <div className="room-deck" style={{ borderTop: '1px solid var(--line)', paddingTop: 10, display: 'flex', flexDirection: 'column', gap: 8 }}>
-            <b style={{ fontSize: 13.5 }}>使用するデッキ</b>
+          {/* デッキ選択（中心・残り高さに伸縮＝スクロール不要） */}
+          <div className="room-deck or-deck">
             {readySent ? (
-              // 準備完了後は選択済みデッキを小さく確認表示（カルーセルは畳む）
-              <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+              <div className="or-deck-done">
                 {selected ? (
-                  <img src={IMG(selected.leader)} referrerPolicy="no-referrer" alt="" style={{ width: 46, borderRadius: 6, border: '1px solid var(--surface-edge)' }}
+                  <img src={IMG(selected.leader)} referrerPolicy="no-referrer" alt="" style={{ width: 52, borderRadius: 6, border: '1px solid var(--surface-edge)' }}
                     onError={(e) => { e.currentTarget.style.display = 'none'; }} />
                 ) : null}
-                <span style={{ fontSize: 14, fontWeight: 700 }}>{selected?.name || 'デッキ'}</span>
+                <div>
+                  <div style={{ fontSize: 14, fontWeight: 700 }}>{selected?.name || 'デッキ'}</div>
+                  <div style={{ fontSize: 12.5, color: 'var(--good, #48c98a)' }}>✔ 準備完了 — 相手を待っています…</div>
+                </div>
               </div>
             ) : (
               // CPU対戦と同じリーダーカルーセルで選ぶ（中央のデッキ＝選択）
@@ -306,20 +266,61 @@ export default function OnlineLobby() {
                 />
               </div>
             )}
-            {!readySent ? (
-              <button className="phasebtn go" disabled={!selected} onClick={doReady}>
-                このデッキで準備完了
-              </button>
-            ) : (
-              <div style={{ fontSize: 13, color: 'var(--good, #48c98a)' }}>✔ 準備完了 — 相手を待っています…（{configSummary(config)}）</div>
-            )}
           </div>
 
-          <div style={{ borderTop: '1px solid var(--line)', paddingTop: 10 }}>
-            <button className="phasebtn ghost" onClick={doLeave}>退室する</button>
+          {/* 下部アクションバー（親指域・常に見える） */}
+          <div className="or-actions">
+            <button className="phasebtn ghost or-leave" onClick={doLeave}>退室</button>
+            {!readySent ? (
+              <button className="btn-primary or-ready" disabled={!selected} onClick={doReady}>このデッキで準備完了</button>
+            ) : (
+              <button className="phasebtn or-ready" disabled>✔ 準備完了</button>
+            )}
           </div>
         </div>
       )}
+
+      {/* 対戦設定モーダル（ホスト） */}
+      {showConfig ? (
+        <div className="ds-confirm-back" onClick={() => setShowConfig(false)}>
+          <div className="ds-confirm or-cfg-modal" onClick={(e) => e.stopPropagation()}>
+            <h3>対戦設定</h3>
+            <label className="or-cfg-row">
+              <span>持ち時間</span>
+              <select style={selStyle} value={config.clock.mode} disabled={readySent}
+                onChange={(e) => updateConfig({ clock: { mode: e.target.value as any } })}>
+                {Object.entries(CLOCK_LABEL).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+              </select>
+            </label>
+            {(config.clock.mode === 'per' || config.clock.mode === 'perTurn') ? (
+              <label className="or-cfg-row">
+                <span>各プレイヤー</span>
+                <select style={selStyle} value={config.clock.perMin ?? 30} disabled={readySent}
+                  onChange={(e) => updateConfig({ clock: { perMin: Number(e.target.value) } })}>
+                  {[10, 15, 20, 25, 30, 40, 60].map((m) => <option key={m} value={m}>{m}分</option>)}
+                </select>
+              </label>
+            ) : null}
+            {config.clock.mode === 'perTurn' ? (
+              <label className="or-cfg-row">
+                <span>1手の制限</span>
+                <select style={selStyle} value={config.clock.turnSec ?? 90} disabled={readySent}
+                  onChange={(e) => updateConfig({ clock: { turnSec: Number(e.target.value) } })}>
+                  {[30, 60, 90, 120, 180].map((s) => <option key={s} value={s}>{s}秒</option>)}
+                </select>
+              </label>
+            ) : null}
+            <label className="or-cfg-row">
+              <span>先攻</span>
+              <select style={selStyle} value={config.firstTurn} disabled={readySent}
+                onChange={(e) => updateConfig({ firstTurn: e.target.value as any })}>
+                {Object.entries(FIRST_LABEL).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+              </select>
+            </label>
+            <button className="dsc-cancel" style={{ marginTop: 6 }} onClick={() => setShowConfig(false)}>閉じる</button>
+          </div>
+        </div>
+      ) : null}
 
       {/* 戦績（リプレイ再生）— 入室前の入口画面のみ表示。部屋内(デッキ選択中)は非表示にして
           セットアップをファーストビューで完結させる（戦績閲覧は対戦準備の導線ではないため） */}
