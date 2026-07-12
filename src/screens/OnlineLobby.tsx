@@ -166,7 +166,7 @@ export default function OnlineLobby() {
   const inLobby = mode === 'online' && (phase === 'lobby');
 
   return (
-    <div className="online-wrap">
+    <div className={'online-wrap' + (inLobby ? ' fit' : '')}>
       <h2 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
         <Icon.globe size={20} />オンライン対戦
       </h2>
@@ -210,7 +210,7 @@ export default function OnlineLobby() {
           </div>
         </>
       ) : (
-        <div style={panel}>
+        <div className="room-panel" style={panel}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
             <b>部屋コード</b>
             <span style={{ fontSize: 26, fontWeight: 800, letterSpacing: 6, color: 'var(--gold-soft)' }}>{roomCode}</span>
@@ -284,7 +284,7 @@ export default function OnlineLobby() {
             ) : null}
           </div>
 
-          <div style={{ borderTop: '1px solid var(--line)', paddingTop: 10, display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <div className="room-deck" style={{ borderTop: '1px solid var(--line)', paddingTop: 10, display: 'flex', flexDirection: 'column', gap: 8 }}>
             <b style={{ fontSize: 13.5 }}>使用するデッキ</b>
             {readySent ? (
               // 準備完了後は選択済みデッキを小さく確認表示（カルーセルは畳む）
@@ -321,7 +321,9 @@ export default function OnlineLobby() {
         </div>
       )}
 
-      {/* 戦績（リプレイ再生） */}
+      {/* 戦績（リプレイ再生）— 入室前の入口画面のみ表示。部屋内(デッキ選択中)は非表示にして
+          セットアップをファーストビューで完結させる（戦績閲覧は対戦準備の導線ではないため） */}
+      {!inLobby ? (
       <div style={{ ...panel, gap: 6 }}>
         <b style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Icon.layers size={15} />オンライン戦績</b>
         {history === null ? (
@@ -355,6 +357,7 @@ export default function OnlineLobby() {
           })
         )}
       </div>
+      ) : null}
     </div>
   );
 }

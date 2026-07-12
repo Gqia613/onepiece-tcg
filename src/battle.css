@@ -5903,6 +5903,36 @@ button.hb-chip:not(.zero):not([disabled]):hover {
   height: 300px;
 }
 
+/* ★部屋内(デッキ選択中)はフィット型＝スクロールさせずファーストビューで完結。
+   セットアップ(コード/設定/プレイヤー/準備ボタン)は自然高さ、カルーセルが残り高さに伸縮する。
+   万一入り切らない時(ホストが設定を多く展開等)だけ room-panel が内部スクロールする安全網。 */
+.online-wrap.fit {
+  overflow: hidden;
+}
+
+.online-wrap.fit .room-panel {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.online-wrap.fit .room-deck {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.online-wrap.fit .room-deck .deckpick-embed {
+  flex: 1 1 auto;
+  height: auto;
+  min-height: 128px;
+}
+
+/* 低背端末(SE級)ではカードがもっと縮めるように（.dsc-item の min-height 128px がフィットを妨げる）。
+   背の高い端末では flex で十分な高さが与えられるため見た目は変わらない。 */
+.online-wrap.fit .dsc-item {
+  min-height: 92px;
+}
+
 .deckpick-embed .ds-rail-wrap {
   flex: 1 1 auto;
 }
