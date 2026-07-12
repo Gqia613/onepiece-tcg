@@ -33,7 +33,7 @@ const { runHarness } = require('./_load-app');  // stubs+CARD_DB+CARD_FX+本体J
     const DB = global.window.CARD_DB, FX = global.window.CARD_FX;
     // エンジン側でハードコード実装のリーダー（CARD_FXを持たないが実装済み＝lucy/enel/teach のカウンター/起動メイン/常在）。missing判定から除外。
     const ENGINE_IMPL = new Set(['OP15-002', 'OP15-058', 'OP16-080']);
-    for (const [tag, file] of [['OP16', 'official-op16.js'], ['OP15', 'official-op15.js'], ['OP14', 'official-op14.js'], ['OP13', 'official-op13.js'], ['OP12', 'official-op12.js'], ['OP11', 'official-op11.js'], ['OP10', 'official-op10.js'], ['OP09', 'official-op09.js'], ['OP08', 'official-op08.js'], ['OP07', 'official-op07.js'], ['OP06', 'official-op06.js'], ['OP05', 'official-op05.js'], ['OP04', 'official-op04.js'], ['OP03', 'official-op03.js'], ['OP02', 'official-op02.js'], ['OP01', 'official-op01.js'], ['EB01', 'official-eb01.js'], ['EB02', 'official-eb02.js'], ['EB03', 'official-eb03.js'], ['EB04', 'official-eb04.js'], ['ST01', 'official-st01.js'], ['ST02', 'official-st02.js'], ['ST03', 'official-st03.js'], ['ST04', 'official-st04.js'], ['ST05', 'official-st05.js'], ['ST06', 'official-st06.js'], ['ST07', 'official-st07.js'], ['ST08', 'official-st08.js'], ['ST09', 'official-st09.js'], ['ST10', 'official-st10.js'], ['ST11', 'official-st11.js'], ['ST12', 'official-st12.js'], ['ST13', 'official-st13.js'], ['ST14', 'official-st14.js'], ['ST15', 'official-st15.js'], ['ST16', 'official-st16.js'], ['ST17', 'official-st17.js'], ['ST18', 'official-st18.js'], ['ST19', 'official-st19.js'], ['ST20', 'official-st20.js'], ['ST21', 'official-st21.js'], ['ST22', 'official-st22.js'], ['ST23', 'official-st23.js'], ['ST24', 'official-st24.js'], ['ST25', 'official-st25.js'], ['ST26', 'official-st26.js'], ['ST27', 'official-st27.js'], ['ST28', 'official-st28.js'], ['ST29', 'official-st29.js'], ['ST30', 'official-st30.js'], ['P', 'official-p.js'], ['PRB01', 'official-prb01.js'], ['PRB02', 'official-prb02.js']]) {
+    for (const [tag, file] of [['OP16', 'official-op16.js'], ['OP15', 'official-op15.js'], ['OP14', 'official-op14.js'], ['OP13', 'official-op13.js'], ['OP12', 'official-op12.js'], ['OP11', 'official-op11.js'], ['OP10', 'official-op10.js'], ['OP09', 'official-op09.js'], ['OP08', 'official-op08.js'], ['OP07', 'official-op07.js'], ['OP06', 'official-op06.js'], ['OP05', 'official-op05.js'], ['OP04', 'official-op04.js'], ['OP03', 'official-op03.js'], ['OP02', 'official-op02.js'], ['OP01', 'official-op01.js'], ['EB01', 'official-eb01.js'], ['EB02', 'official-eb02.js'], ['EB03', 'official-eb03.js'], ['EB04', 'official-eb04.js'], ['ST01', 'official-st01.js'], ['ST02', 'official-st02.js'], ['ST03', 'official-st03.js'], ['ST04', 'official-st04.js'], ['ST05', 'official-st05.js'], ['ST06', 'official-st06.js'], ['ST07', 'official-st07.js'], ['ST08', 'official-st08.js'], ['ST09', 'official-st09.js'], ['ST10', 'official-st10.js'], ['ST11', 'official-st11.js'], ['ST12', 'official-st12.js'], ['ST13', 'official-st13.js'], ['ST14', 'official-st14.js'], ['ST15', 'official-st15.js'], ['ST16', 'official-st16.js'], ['ST17', 'official-st17.js'], ['ST18', 'official-st18.js'], ['ST19', 'official-st19.js'], ['ST20', 'official-st20.js'], ['ST21', 'official-st21.js'], ['ST22', 'official-st22.js'], ['ST23', 'official-st23.js'], ['ST24', 'official-st24.js'], ['ST25', 'official-st25.js'], ['ST26', 'official-st26.js'], ['ST27', 'official-st27.js'], ['ST28', 'official-st28.js'], ['ST29', 'official-st29.js'], ['ST30', 'official-st30.js'], ['ST31', 'official-st31.js'], ['ST32', 'official-st32.js'], ['ST33', 'official-st33.js'], ['ST34', 'official-st34.js'], ['ST35', 'official-st35.js'], ['ST36', 'official-st36.js'], ['P', 'official-p.js'], ['PRB01', 'official-prb01.js'], ['PRB02', 'official-prb02.js']]) {
       const off = require(path.join(__dirname, '..', 'tools', file));
       const mismatch = [], missing = [];
       for (const no in off) {
@@ -2248,6 +2248,107 @@ humanPick=function(c){return Promise.resolve((c||[])[0]||null);};
     { const me=LP('OP11-041'); me.hand=[I('OP11-041','me'),I('OP11-041','me')]; me.deck=[I('OP11-041','me')]; me.life=[];
       await runFx(C['OP03-118'].fx.trigger,{self:I('OP03-118','me'),side:'me'});
       ok(me.hand.length===0 && me.life.length===1 && me.deck.length===0, 'トリガーdiscardCost→ライフ: OP03-118 手札2捨て→デッキ上1枚をライフに'); }
+
+    /* ===== ST-31〜36（新スタートデッキ・新規30枚）の回帰 ===== */
+    // ST33-004 ボルサリーノ: 効果で自分の手札が捨てられているターン中だけ手札コスト-3（新cond selfHandDiscardedThisTurn）
+    { const me=LP('ST21-001'); const bol=I('ST33-004','me'); me.hand=[bol,I('OP11-041','me')];
+      ok(effCost('me',bol)===6, 'ST33-004: 手札を捨てていないターンはコスト6');
+      await runFx([{op:'discardOwn',n:1}],{side:'me'});
+      ok(effCost('me',bol)===3, 'ST33-004: 効果で手札が捨てられたターン中はコスト-3（=3）');
+      G.turnSeq++;
+      ok(effCost('me',bol)===6, 'ST33-004: 次のターンにはコスト6へ戻る（turnSeq比較で自動失効）');
+      ok(C['ST33-004'].blocker===true, 'ST33-004: 【ブロッカー】はtext由来で無条件付与'); }
+    // ST31-001 サンジ: 【ドン‼×2】速攻＝条件付き（無条件rushになっていないこと）
+    { const me=LP('ST21-001'); const s=I('ST31-001','me'); me.chars=[s];
+      ok(C['ST31-001'].rush===false, 'ST31-001: text由来の無条件【速攻】がcond付きstaticKeywordで打ち消されている');
+      s.attachedDon=1; ok(!hasKw(s,'rush'), 'ST31-001: 付与ドン1枚では速攻を得ない');
+      s.attachedDon=2; ok(hasKw(s,'rush'), 'ST31-001: 【ドン‼×2】で速攻を得る'); }
+    // ST31-003 ブルック: 相手ターン中・自分の付与ドン合計3枚以上で【ブロッカー】＋パワー+3000
+    { const me=LP('ST21-001'); const b=I('ST31-003','me'); me.chars=[b];
+      ok(C['ST31-003'].blocker===false, 'ST31-003: 無条件ブロッカーになっていない');
+      G.active='cpu'; me.leader.attachedDon=2; // 付与ドンはリーダーに置く（自身のパワーへの+1000加算と分離して検証）
+      ok(!hasKw(b,'blocker') && power(b)===3000, 'ST31-003: 付与ドン合計2ではブロッカーもバフも無し');
+      me.leader.attachedDon=3; // 合計3
+      ok(hasKw(b,'blocker') && power(b)===6000, 'ST31-003: 相手ターン・付与ドン合計3でブロッカー＋3000');
+      G.active='me'; ok(!hasKw(b,'blocker') && power(b)===3000, 'ST31-003: 自分のターン中は発動しない（【相手のターン中】）'); }
+    // ST31-004 ルフィ: 場の《麦わらの一味》枚数ぶん 相手キャラに-1000（ニセ麦わらの一味は数えない＝trait完全一致）
+    { const me=LP('ST21-001'); const l=I('ST31-004','me'); me.chars=[l,I('ST31-003','me')]; // リーダー(ST21-001=麦わら)＋ブルック＋自身=3枚
+      const t=I('OP01-006','cpu'); G.players.cpu.chars=[t]; const p0=power(t);
+      await runFx(C['ST31-004'].fx.onPlay,{self:l,side:'me'});
+      ok(power(t)===p0-3000, 'ST31-004: 場の《麦わらの一味》3枚（リーダー＋ブルック＋自身）ぶん -1000×3');
+      ok(C['ST31-004'].rush===false, 'ST31-004: 速攻は付与ドン合計3以上の条件付き'); }
+    // ST31-002 ジンベエ: 「コスト1の《麦わらの一味》カード」＝STAGE(サニー号)も登場でき、EVENTは対象外
+    { const me=LP('ST21-001'); const j=I('ST31-002','me'); const sunny=I('ST31-005','me'); const ev=I('ST01-014','me'); // ST01-014=コスト1《麦わらの一味》EVENT
+      me.hand=[ev,sunny]; me.deck=[I('OP11-041','me'),I('OP11-041','me')]; me.chars=[]; me.stage=null;
+      await runFx(C['ST31-002'].fx.onPlay,{self:j,side:'me'});
+      ok(me.stage===sunny, 'ST31-002: コスト1の《麦わらの一味》STAGE（サニー号）を登場させられる');
+      ok(me.hand.includes(ev), 'ST31-002: EVENTは「登場」対象外（手札に残る）'); }
+    // ST31-005 サウザンド・サニー号:【起動メイン】自身をレスト→「モンキー・Ｄ・ルフィ」にレストのドン1枚を付与（レストから取る）
+    // ※リーダー名がルフィ以外（ゾロ）なら対象は場の「ルフィ」キャラのみ＝一意に決まる
+    { const me=LP('OP01-001'); const sunny=I('ST31-005','me'); me.stage=sunny;
+      const luffy=I('ST31-004','me'); me.chars=[luffy]; me.don={active:3,rested:2};
+      await runFx(C['ST31-005'].fx.act.fx,{self:sunny,side:'me'});
+      ok(luffy.attachedDon===1 && me.don.rested===1 && me.don.active===3, 'ST31-005: レストのドンから1枚付与（アクティブは減らない）'); }
+    // 「自分の「モンキー・Ｄ・ルフィ」」はリーダーも対象（公式はキャラ限定と書いていない）
+    { const me=LP('ST21-001'); const sunny=I('ST31-005','me'); me.stage=sunny; me.chars=[]; me.don={active:0,rested:1};
+      await runFx(C['ST31-005'].fx.act.fx,{self:sunny,side:'me'});
+      ok(me.leader.attachedDon===1 && me.don.rested===0, 'ST31-005: リーダー「モンキー・Ｄ・ルフィ」にも付与できる'); }
+    // ST32-004 レイリー: 属性(斬)リーダーのときだけ【速攻：キャラ】
+    { const me=LP('ST21-001'); const r=I('ST32-004','me'); me.chars=[r]; // ST21-001ルフィ=属性(打)
+      ok(C['ST32-004'].rushChar===false, 'ST32-004: 無条件の【速攻：キャラ】になっていない');
+      ok(!hasKw(r,'rushChar'), 'ST32-004: 斬でないリーダーでは【速攻：キャラ】を得ない'); }
+    { G.players={me:mkP('OP01-001',false),cpu:mkP('OP11-041',true)}; G.active='me'; G.turnSeq=5; G.winner=null;
+      const me=G.players.me; me.leader.base={...me.leader.base, attribute:'斬'}; // インスタンスのbaseだけ差し替え（Cは不変）
+      const r=I('ST32-004','me'); me.chars=[r];
+      ok(hasKw(r,'rushChar'), 'ST32-004: 属性(斬)リーダーで【速攻：キャラ】を得る'); }
+    // ST32-003 ミホーク: このキャラがレストになった時（アタック宣言）に1ドロー・1捨て
+    { const me=LP('ST21-001'); const m=I('ST32-003','me'); m.summonedTurn=1; me.chars=[m];
+      me.deck=[I('OP11-041','me'),I('OP11-041','me')]; me.hand=[I('OP01-006','me')];
+      await runFx(C['ST32-003'].fx.onSelfRested,{self:m,side:'me'});
+      ok(me.hand.length===1 && me.deck.length===1 && me.trash.length===1, 'ST32-003: レスト時に1ドロー→手札1枚捨て'); }
+    // ST34-005 タマゴ男爵: 【アタック時】ドン‼-1→「元々のパワー2000以下」をKO（バフで5000でも元々2000ならKO）
+    { const me=LP('ST21-001'); me.don={active:2,rested:0};
+      const t=I('OP01-006','cpu'); G.players.cpu.chars=[t]; t.buffs=[{amount:3000,until:'turnEnd'}];
+      const base=t.base.power;
+      await runFx(C['ST34-005'].fx.onAttack,{self:I('ST34-005','me'),side:'me'});
+      ok(base>2000 || !G.players.cpu.chars.includes(t), 'ST34-005: 元々のパワー2000以下ならバフ中でもKO（maxPower=base基準）'); }
+    // ST34-001 カタクリ: ドンがドンデッキに戻された時、BM団リーダーならドンデッキからドン2枚をレストで追加
+    { G.players={me:mkP('ST07-001',false),cpu:mkP('OP11-041',true)}; G.active='me'; G.turnSeq=5; G.winner=null; // ST07-001=リンリン(ビッグ・マム海賊団)
+      const me=G.players.me; const k=I('ST34-001','me'); me.chars=[k]; me.don={active:1,rested:0}; me.donMax=10;
+      await runFx(C['ST34-001'].fx.onDonReturned,{self:k,side:'me'});
+      ok(me.don.rested===2, 'ST34-001: ビッグ・マム海賊団リーダーでドンデッキからドン2枚をレストで追加'); }
+    // ST35-004/005: 「このキャラのコスト+N」は staticCost（盤面コスト）＝相手の「コストN以下」除去の判定に効く
+    { const me=LP('ST21-001'); const koala=I('ST35-004','me'), kuma=I('ST35-005','me'); me.chars=[koala,kuma];
+      ok(matchFilter(koala,{maxCost:8}) && !matchFilter(koala,{maxCost:7}), 'ST35-004: コスト7+1=8（staticCost）');
+      ok(matchFilter(kuma,{maxCost:8}) && !matchFilter(kuma,{maxCost:7}), 'ST35-005: コスト5+3=8（staticCost）');
+      ok(C['ST35-004'].blocker===true, 'ST35-004: 【ブロッカー】は無条件（text由来）'); }
+    // ST36-002 キラー:【トリガー】相手のライフ3枚以下なら登場
+    { const me=LP('ST21-001'); me.chars=[]; G.players.cpu.life=[I('OP11-041','cpu'),I('OP11-041','cpu'),I('OP11-041','cpu')];
+      const self=I('ST36-002','me'); await runFx(C['ST36-002'].fx.trigger,{self,side:'me'});
+      ok(me.chars.includes(self), 'ST36-002: 相手ライフ3枚以下でトリガー登場'); }
+    { const me=LP('ST21-001'); me.chars=[]; G.players.cpu.life=[I('OP11-041','cpu'),I('OP11-041','cpu'),I('OP11-041','cpu'),I('OP11-041','cpu')];
+      const self=I('ST36-002','me'); await runFx(C['ST36-002'].fx.trigger,{self,side:'me'});
+      ok(!me.chars.includes(self), 'ST36-002: 相手ライフ4枚では登場しない'); }
+    // ST36-003 アプー:【トリガー】1ドロー＋《超新星》リーダーを このターン中 元々のパワー7000に
+    { G.players={me:mkP('OP01-002',false),cpu:mkP('OP11-041',true)}; G.active='me'; G.turnSeq=5; G.winner=null; // OP01-002=ゾロ(超新星)
+      const me=G.players.me; me.deck=[I('OP11-041','me')]; me.hand=[];
+      await runFx(C['ST36-003'].fx.trigger,{self:I('ST36-003','me'),side:'me'});
+      ok(me.hand.length===1 && power(me.leader)===7000, 'ST36-003: 1ドロー＋《超新星》リーダーを元々のパワー7000に'); }
+    // ST36-005 キッド: 表向きライフが無ければ【相手のアタック時】のコストを払えない＝【ターン1回】を消費しない
+    { const me=LP('ST21-001'); const kid=I('ST36-005','me'); me.chars=[kid];
+      me.life=[I('OP11-041','me'),I('OP11-041','me')]; // 全て裏向き
+      const ctx={self:kid,side:'me'}; await runFx(C['ST36-005'].fx.onOppAttack,ctx);
+      ok(ctx._declined===true && !ctx._committed, 'ST36-005: 表向きライフ0ではコスト不成立→_declined（onceゲート未消費）'); }
+    { const me=LP('ST21-001'); const kid=I('ST36-005','me'); me.chars=[kid];
+      me.life=[I('OP11-041','me'),I('OP11-041','me')]; me.life[1]._faceUp=true; // ライフ下が表向き
+      const ctx={self:kid,side:'me'}; await runFx(C['ST36-005'].fx.onOppAttack,ctx);
+      ok(me.life[1]._faceUp===false && G._counterRedirect===kid, 'ST36-005: ライフ下(表向き)を裏返してアタック対象をキッドに変更');
+      G._counterRedirect=null; }
+    // ST36-005 起動メイン: ライフの上か下1枚を表向きにしてリーダーにレストのドン1枚を付与
+    { const me=LP('ST21-001'); const kid=I('ST36-005','me'); me.chars=[kid];
+      me.life=[I('OP11-041','me')]; me.don={active:2,rested:1};
+      await runFx(C['ST36-005'].fx.act.fx,{self:kid,side:'me'});
+      ok(me.life[0]._faceUp===true && me.leader.attachedDon===1 && me.don.rested===0, 'ST36-005起動メイン: ライフを表向き→リーダーにレストのドン1枚を付与'); }
   }catch(e){ console.log('EXCEPTION:', e.message); fail++; }
   console.log('Phase3 fxテスト: pass='+pass+' fail='+fail);
   process.exit(fail?1:0);

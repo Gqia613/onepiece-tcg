@@ -12,6 +12,7 @@ const SERIES = [
   550101, 550102, 550103, 550104, 550105, 550106, 550107, 550108, 550109, 550110, 550111, 550112, 550113, 550114, 550115, 550116,
   550201, 550202, 550203, 550204, 550301, 550302,
   550001, 550002, 550003, 550004, 550005, 550006, 550007, 550008, 550009, 550010, 550011, 550012, 550013, 550014, 550015, 550016, 550017, 550018, 550019, 550020, 550021, 550022, 550023, 550024, 550025, 550026, 550027, 550028, 550029, 550030,
+  550031, 550032, 550033, 550034, 550035, 550036,
   550701, 550801, 550901
 ];
 const UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15) AppleWebKit/537.36 Chrome/120 Safari/537.36';
@@ -37,8 +38,8 @@ function parse(block) {
   const feature = txt((b.match(/<div class="feature"><h3>[^<]*<\/h3>([\s\S]*?)<\/div>/) || [])[1]);
   const text = txt((b.match(/<div class="text"><h3>[^<]*<\/h3>([\s\S]*?)<\/div>/) || [])[1]);
   const c = {
-    no, name, type, color: colorRaw ? colorRaw.split('/').map(s => s.trim()).filter(Boolean) : [],
-    traits: feature ? feature.split('/').map(s => s.trim()).filter(Boolean) : [],
+    no, name, type, color: colorRaw ? colorRaw.split(/[/／]/).map(s => s.trim()).filter(Boolean) : [],
+    traits: feature ? feature.split(/[/／]/).map(s => s.trim()).filter(Boolean) : [], // 全角「／」区切りにも対応（OP05-059/OP06-057）
     power: power || 0, counter: (counterRaw === '-' || !counterRaw) ? 0 : num(counterRaw), text
   };
   if (type === 'LEADER') c.life = (costVal != null ? costVal : 5); else c.cost = (costVal != null ? costVal : 0);

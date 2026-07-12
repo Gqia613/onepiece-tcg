@@ -44,6 +44,7 @@
     // 手札を捨てる各op（discardOwn/discardCost/oppDiscard）から、捨てられた側を指定して呼ぶ。
     async function fireHandDiscarded(side, n) {
       const P = G.players[side]; n = n || 1;
+      P._handDiscardedTurn = G.turnSeq; // 効果で自分の手札が捨てられたターン（cond selfHandDiscardedThisTurn＝ST33-004ボルサリーノのコスト-3）
       for (const c of [...P.chars.slice(), P.leader]) {
         if (c && c.base.fx && c.base.fx.onSelfHandDiscarded && (c === P.leader || P.chars.includes(c)) && !isNegated(c)) {
           await runFx(c.base.fx.onSelfHandDiscarded, { self: c, side, discarded: n }); // ctx.discarded=捨てた枚数（OP12-040クザンが参照）
@@ -451,7 +452,7 @@
       }
       // 防御側の効果でアタッカーが場を離れた/攻撃不能になった場合はアタックを中断
       if ((attacker.base.type === 'CHAR' && !G.players[aSide].chars.includes(attacker)) || cantAttackNeg(attacker)) {
-        clearBattleBuffs(); G.players[dSide]._teachSacUid = null; clearAtkAnnounce(); checkWinByLife();
+        clearBattleBuffs(); G.players[dSide]._teachSacUid = null; G._counterRedirect = null; clearAtkAnnounce(); checkWinByLife(); // 対象変更予約も破棄（onOppAttackで立てた場合に次のアタックへ漏れる。ST36-005キッド）
         if (G.players[aSide].isCPU) { G.busy = true; } else { G.busy = false; G.myActable = true; } // ★状態確定後に描画（中断時も操作権を返す＝処理中固まり防止）
         render();
         return;

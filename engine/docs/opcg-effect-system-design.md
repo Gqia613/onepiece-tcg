@@ -347,6 +347,7 @@
 - 展開: `playCharFromHand`（`count`/`filter`/`distinctName`/`maxCost`/`trait`）/ `playSpecificFromHand`（`name`/`nameIncludes`/`choose`/`optional`/`noEnter`）/ `playSelf` / `playEventFromHand` / `playCharFromDeck`（`look`/`count`/`filter`/`distinctName`/`rest`）/ `playFromHandOrTrash`（`filter`）/ `reviveSelf`（KO時に自身をトラッシュから）
 - ドン: `donAttach`（**レストのドン**から。`target:'leader'|'self'|'leaderAndChar'|'chooseOwn'`＋`filter`）/ `donAttachAll`（`incLeader`）/ `donMinus`（`fromActive`でアクティブ限定）/ `donActivate`（レスト→アクティブ）/ `donFromDeck`（ドンデッキから`mode:'rest'|'active'`で追加）
 - ライフ: `lifeAddFromDeck`（`faceUp`）/ `lifeAddChoose` / `lifeToHand` / `lifeSwap` / `handToLife` / `lifeTrash` / `trashToLife` / `flipLifeUp`
+- ライフコスト: `lifeCost`（`action:'toHand'|'trash'|'faceUp'|'faceDown'`, `pos:'choose'`＝「ライフの上か下から1枚」）。**`pos:'choose'` を faceUp/faceDown に付けた場合のみ**、上下から選べて「既にその向きのライフしか無い＝コスト不払い（`_declined`）」を判定する（pos 未指定の既存カードは従来どおりライフ上を固定で裏返す）。コスト成立時に `ctx._committed` を立てる＝【ターン1回】は辞退では消費しない（ST36-005）
 
 ### 12-6. 状態付与・防御・キーワード・コスト
 - キーワード付与: `giveKeyword`（`target:'self'|'chooseOwn'|'chooseOwnL'|'allOwn'|'allOwnL'`, `kw`, `duration:'turn'|'untilNextEnd'`, `filter`）/ `grantUnblockable`
@@ -365,7 +366,7 @@
 
 ### 12-8. 条件（`checkCond`／`evalCondObj`。`cond` または `cond.check`）
 - 文字列: `don<=6` / `don>=6` / `don10` / `donX1`（付与ドン1以上） / `donX2` / `life<=1|2|3` / `oppLife>=3` / `oppLife<=3` / `oppTurn` / `selfTurn` / `koByOpp`（相手効果でKO時） / `koByBattle` / `leaderWB`/`leaderBH`/`leaderShichibukai`/`leaderKujya` 等。
-- オブジェクト（複数キーAND）: `leaderTrait` / `leaderNameIncludes` / `leaderColor` / `selfChar:{...filter,min}` / `noSelfChar:{...}` / `allSelfChar:{...}`（〜のみ） / `allSelfCharOther:{...}` / `selfCharCount:{filter,distinctBy,min,max}` / `selfHand:{...,min}` / `donAtLeast` / `lifeAtMost` / `oppLifeAtMost` / `oppHandAtLeast` / `selfHandAtMost` / `trashAtLeast` / `trashAtMost` / `oppCharKOedThisTurn` / `selfCostAtLeast`（self盤面実効コスト≥N） / `selfTurn` / `oppTurn` / `and:[...]` / `or:[...]` / `not:{...}`。
+- オブジェクト（複数キーAND）: `leaderTrait` / `leaderNameIncludes` / `leaderColor` / `selfChar:{...filter,min}` / `noSelfChar:{...}` / `allSelfChar:{...}`（〜のみ） / `allSelfCharOther:{...}` / `selfCharCount:{filter,distinctBy,min,max}` / `selfHand:{...,min}` / `donAtLeast` / `lifeAtMost` / `oppLifeAtMost` / `oppHandAtLeast` / `selfHandAtMost` / `trashAtLeast` / `trashAtMost` / `oppCharKOedThisTurn` / `selfCostAtLeast`（self盤面実効コスト≥N） / `selfTurn` / `oppTurn` / `selfHandDiscardedThisTurn`（**効果で自分の手札が捨てられているターン中**。`fireHandDiscarded` が `P._handDiscardedTurn` を記録＝自分の discardOwn/discardCost でも相手のハンデスでも成立。ST33-004） / `and:[...]` / `or:[...]` / `not:{...}`。
 
 ### 12-9. キーワード
 `blocker` / `rush` / `doubleAttack` / `banish` / `unblockable` / **`rushChar`**（【速攻：キャラ】＝登場ターンはキャラのみアタック可・リーダー不可。`canTargetLeader()` で制御）。

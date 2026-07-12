@@ -186,6 +186,7 @@
       if (c.oppDonAtLeast != null && donTotal(opp(side)) < c.oppDonAtLeast) return false; // 相手の場のドンN枚以上
       if (c.oppDonAtMost != null && donTotal(opp(side)) > c.oppDonAtMost) return false; // 相手の場のドンN枚以下（PRB02-005ルフィ）
       if (c.oppLifeLeftThisTurn && G.players[opp(side)]._lifeLeftTurn !== G.turnSeq) return false; // 相手のライフがこのターンに離れている（P-120サンジ）
+      if (c.selfHandDiscardedThisTurn && P._handDiscardedTurn !== G.turnSeq) return false; // 効果で自分の手札が捨てられているターン中（ST33-004ボルサリーノ）
       if (c.faceUpLifeAtLeast != null && P.life.filter(l => l._faceUp).length < c.faceUpLifeAtLeast) return false; // 自分の表向きライフN枚以上（PRB02-018エース）
       if (c.leaderNameIncludes != null && !normName(P.leader.base.name).includes(normName(c.leaderNameIncludes))) return false;
       if (c.leaderColor != null && !(P.leader.base.color || []).includes(c.leaderColor)) return false;

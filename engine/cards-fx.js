@@ -4009,6 +4009,76 @@ window.CARD_FX = {
 
 
 
+/* ===== ST-31〜36（新スタートデッキ6種・新規30枚。正本=tools/official-full.json） =====
+   ・キーワードは cards.js の text から自動派生（00-data.js innateKw）。条件付き付与だけ staticKeyword(cond) を書く
+     （cond付き staticKeyword は 00-data.js:524 が text由来の無条件フラグを打ち消す＝ST31-001速攻/ST31-003ブロッカー/ST32-004速攻：キャラ）。
+     ST35-004「【ブロッカー】を得て」は無条件付与なので text由来のまま（fxに書かない）。
+   ・特徴は trait（完全一致）で書く: traitIncludes だと ニセ麦わらの一味 / 元ビッグ・マム海賊団 / NEO海軍・元海軍 を誤って拾う。 */
+(function () { Object.assign(window.CARD_FX, {
+  // ST31-001 サンジ:【ドン‼×2】速攻 ／【登場時】1ドロー＋手札から「サンジ」以外のコスト5以下《麦わらの一味》1枚まで登場
+  "ST31-001": {"static":[{"op":"staticKeyword","kw":"rush","cond":{"donX2":true}}],"onPlay":[{"op":"draw","n":1},{"op":"playCharFromHand","filter":{"maxCost":5,"trait":"麦わらの一味","not":{"name":"サンジ"}},"count":1,"optional":true}]},
+  // ST31-002 ジンベエ:【ブロッカー】(text由来) ／【登場時】1ドロー＋手札からコスト1の《麦わらの一味》カード1枚まで登場（STAGE=サニー号も対象なので playSpecificFromHand）
+  "ST31-002": {"onPlay":[{"op":"draw","n":1},{"op":"playSpecificFromHand","choose":true,"optional":true,"filter":{"cost":1,"trait":"麦わらの一味","or":[{"type":"CHAR"},{"type":"STAGE"}]}}]},
+  // ST31-003 ブルック:【相手のターン中】付与ドン合計3枚以上で【ブロッカー】＋パワー+3000
+  "ST31-003": {"static":[{"op":"staticKeyword","kw":"blocker","cond":{"and":[{"oppTurn":true},{"selfAttachedDonAtLeast":3}]}},{"op":"condBuff","cond":{"and":[{"oppTurn":true},{"selfAttachedDonAtLeast":3}]},"power":3000}]},
+  // ST31-004 ルフィ: 付与ドン合計3枚以上で【速攻】／【登場時】自分の場の《麦わらの一味》1枚につき相手キャラ1枚まで -1000（リーダー/ステージ/キャラ最大5＝7分岐で枚数分の対象を取る）
+  "ST31-004": {"static":[{"op":"staticKeyword","kw":"rush","cond":{"selfAttachedDonAtLeast":3}}],"onPlay":[{"op":"cond","check":{"leaderTrait":"麦わらの一味"},"then":[{"op":"powerMod","side":"opp","amount":-1000,"count":1,"optional":true,"duration":"turn"}]},{"op":"cond","check":{"selfStage":{"trait":"麦わらの一味"}},"then":[{"op":"powerMod","side":"opp","amount":-1000,"count":1,"optional":true,"duration":"turn"}]},{"op":"cond","check":{"selfCharCount":{"filter":{"trait":"麦わらの一味"},"min":1}},"then":[{"op":"powerMod","side":"opp","amount":-1000,"count":1,"optional":true,"duration":"turn"}]},{"op":"cond","check":{"selfCharCount":{"filter":{"trait":"麦わらの一味"},"min":2}},"then":[{"op":"powerMod","side":"opp","amount":-1000,"count":1,"optional":true,"duration":"turn"}]},{"op":"cond","check":{"selfCharCount":{"filter":{"trait":"麦わらの一味"},"min":3}},"then":[{"op":"powerMod","side":"opp","amount":-1000,"count":1,"optional":true,"duration":"turn"}]},{"op":"cond","check":{"selfCharCount":{"filter":{"trait":"麦わらの一味"},"min":4}},"then":[{"op":"powerMod","side":"opp","amount":-1000,"count":1,"optional":true,"duration":"turn"}]},{"op":"cond","check":{"selfCharCount":{"filter":{"trait":"麦わらの一味"},"min":5}},"then":[{"op":"powerMod","side":"opp","amount":-1000,"count":1,"optional":true,"duration":"turn"}]}]},
+  // ST31-005 サウザンド・サニー号(STAGE):【登場時】デッキ上5枚から《麦わらの一味》1枚まで手札 ／【起動メイン】自身をレスト：「ルフィ」1枚にレストのドン1枚まで付与
+  "ST31-005": {"onPlay":[{"op":"search","look":5,"count":1,"filter":{"trait":"麦わらの一味"},"optional":true}],"act":{"label":"レストにする：「モンキー・Ｄ・ルフィ」にレストのドン‼1枚","cost":{"restSelf":true},"fx":[{"op":"donAttach","target":"chooseOwn","n":1,"filter":{"name":"モンキー・Ｄ・ルフィ"}}]}},
+  // ST32-001 錦えもん:【登場時】属性(斬)リーダー か ドン‼1枚をレスト：2ドロー・手札1枚捨て（両方払えるときだけ選択させ、片方しか無ければ自動で払う）
+  "ST32-001": {"onPlay":[{"op":"cond","check":{"and":[{"leaderAttr":"斬"},{"leaderActive":true},{"activeDonAtLeast":1}]},"then":[{"op":"chooseOption","options":[{"label":"ドン‼1枚をレスト：2ドロー・1捨て","fx":[{"op":"restDonCost","n":1,"then":[{"op":"draw","n":2},{"op":"discardOwn","n":1}]}]},{"label":"属性(斬)のリーダーをレスト：2ドロー・1捨て","fx":[{"op":"restOwnAsCost","count":1,"filter":{"type":"LEADER","attr":"斬"},"then":[{"op":"draw","n":2},{"op":"discardOwn","n":1}]}]},{"label":"使わない","fx":[]}]}],"else":[{"op":"cond","check":{"activeDonAtLeast":1},"then":[{"op":"restDonCost","n":1,"then":[{"op":"draw","n":2},{"op":"discardOwn","n":1}]}],"else":[{"op":"restOwnAsCost","count":1,"filter":{"type":"LEADER","attr":"斬"},"then":[{"op":"draw","n":2},{"op":"discardOwn","n":1}]}]}]}]},
+  // ST32-002 光月おでん:【登場時】1ドロー＋相手の元々のコスト6以下キャラ1枚までを次の相手エンドまでレスト不可
+  "ST32-002": {"onPlay":[{"op":"draw","n":1},{"op":"restImmune","side":"opp","filter":{"maxBaseCost":6},"count":1,"duration":"untilNextEnd","optional":true}]},
+  // ST32-003 ミホーク:【自分のターン中】このキャラがレストになった時(=アタック)、1ドロー・1捨て ／【登場時】斬リーダーなら手札からコスト5以下の「ペローナ」か属性(斬)キャラ1枚まで登場
+  "ST32-003": {"onSelfRested":[{"op":"draw","n":1},{"op":"discardOwn","n":1}],"onPlay":[{"op":"cond","check":{"leaderAttr":"斬"},"then":[{"op":"playCharFromHand","filter":{"maxCost":5,"or":[{"name":"ペローナ"},{"attr":"斬"}]},"count":1,"optional":true}]}]},
+  // ST32-004 レイリー: 斬リーダーなら【速攻：キャラ】／【登場時】相手のコスト2以下キャラ2枚までをレスト
+  "ST32-004": {"static":[{"op":"staticKeyword","kw":"rushChar","cond":{"leaderAttr":"斬"}}],"onPlay":[{"op":"restChar","side":"opp","filter":{"maxCost":2},"count":2,"optional":true}]},
+  // ST32-005 ゾロ:【速攻：キャラ】(text由来) ／【登場時】斬リーダーなら相手のコスト2以下キャラ1枚までをレスト
+  "ST32-005": {"onPlay":[{"op":"cond","check":{"leaderAttr":"斬"},"then":[{"op":"restChar","side":"opp","filter":{"maxCost":2},"count":1,"optional":true}]}]},
+  // ST33-001 コビー:【ブロッカー】(text由来) ／【登場時】手札1枚を捨てられる：1ドロー
+  "ST33-001": {"onPlay":[{"op":"discardCost","count":1,"optional":true,"then":[{"op":"draw","n":1}]}]},
+  // ST33-002 サカズキ:【アタック時】手札1枚を捨てられる：相手の手札6枚以上なら相手が1枚捨てる ／【KO時】手札からコスト4以下《海軍》1枚まで登場
+  "ST33-002": {"onAttack":[{"op":"discardCost","count":1,"optional":true,"then":[{"op":"cond","check":{"oppHandAtLeast":6},"then":[{"op":"oppDiscard","n":1}]}]}],"onKO":[{"op":"playCharFromHand","filter":{"trait":"海軍","maxCost":4},"count":1,"optional":true}]},
+  // ST33-003 スモーカー:【登場時】手札1枚を捨てられる：相手のコスト2以下キャラ2枚までを持ち主のデッキの下へ（deckBottomはcountを読まないのでop2個）
+  "ST33-003": {"onPlay":[{"op":"discardCost","count":1,"optional":true,"then":[{"op":"deckBottom","side":"opp","filter":{"maxCost":2},"optional":true},{"op":"deckBottom","side":"opp","filter":{"maxCost":2},"optional":true}]}]},
+  // ST33-004 ボルサリーノ: 手札のこのカードは、効果で自分の手札が捨てられているターン中コスト-3（cond selfHandDiscardedThisTurn＝10-engine-core.js）／【ブロッカー】はtext由来
+  "ST33-004": {"costMod":{"cond":{"selfHandDiscardedThisTurn":true},"amount":-3}},
+  // ST33-005 ガープ:【登場時】《海軍》リーダーなら手札から「ガープ」以外のパワー8000以下・青・《海軍》キャラ1枚まで登場
+  "ST33-005": {"onPlay":[{"op":"cond","check":{"leaderTrait":"海軍"},"then":[{"op":"playCharFromHand","filter":{"color":"青","trait":"海軍","maxPower":8000,"nameExcludes":"モンキー・Ｄ・ガープ"},"count":1,"optional":true}]}]},
+  // ST34-001 カタクリ:【自分のターン中】【ターン1回】自分の場のドンがドンデッキに戻された時、BM団リーダーならドンデッキからドン2枚までレストで追加 ／【KO時】手札からパワー8000以下キャラ1枚まで登場
+  "ST34-001": {"onDonReturned":[{"op":"cond","once":"turn","check":{"and":[{"selfTurn":true},{"leaderTrait":"ビッグ・マム海賊団"}]},"then":[{"op":"donFromDeck","n":2,"mode":"rested"}]}],"onKO":[{"op":"playCharFromHand","filter":{"maxPower":8000},"count":1,"optional":true}]},
+  // ST34-002 クラッカー:【登場時】BM団リーダーならドンデッキからドン1枚までレストで追加→相手のコスト2以下キャラ1枚までKO
+  "ST34-002": {"onPlay":[{"op":"cond","check":{"leaderTrait":"ビッグ・マム海賊団"},"then":[{"op":"donFromDeck","n":1,"mode":"rested"},{"op":"ko","side":"opp","filter":{"maxCost":2},"count":1,"optional":true}]}]},
+  // ST34-003 ブリュレ:【登場時】デッキ上3枚から《ビッグ・マム海賊団》1枚まで手札（残りはデッキ下）
+  "ST34-003": {"onPlay":[{"op":"search","look":3,"count":1,"filter":{"trait":"ビッグ・マム海賊団"},"optional":true}]},
+  // ST34-004 リンリン:【登場時】ドン‼-4・手札1枚を捨てられる：デッキ上1枚までライフの上へ→相手キャラ1枚までを このターン中 元々のパワー0
+  "ST34-004": {"onPlay":[{"op":"donMinus","n":4},{"op":"discardCost","count":1,"optional":true,"then":[{"op":"lifeAddFromDeck","n":1},{"op":"setPower","side":"opp","value":0,"count":1,"optional":true,"duration":"turn"}]}]},
+  // ST34-005 タマゴ男爵＆ペコムズ:【アタック時】ドン‼-1：相手の元々のパワー2000以下キャラ1枚までKO
+  "ST34-005": {"onAttack":[{"op":"donMinus","n":1},{"op":"ko","side":"opp","filter":{"maxPower":2000},"count":1,"optional":true}]},
+  // ST35-001 ハック:【ブロッカー】(text由来) ／【登場時】相手の元々のパワー2000以下キャラ1枚までKO
+  "ST35-001": {"onPlay":[{"op":"ko","side":"opp","filter":{"maxPower":2000},"count":1,"optional":true}]},
+  // ST35-002 リンドバーグ:【登場時】相手キャラ1枚までを このターン中 -3000
+  "ST35-002": {"onPlay":[{"op":"powerMod","side":"opp","amount":-3000,"duration":"turn","count":1,"optional":true}]},
+  // ST35-003 カラス:【アタック時】デッキ上2枚をトラッシュできる：相手の手札7枚以上なら相手が1枚捨てる
+  "ST35-003": {"onAttack":[{"op":"deckTrashCost","n":2,"then":[{"op":"cond","check":{"oppHandAtLeast":7},"then":[{"op":"oppDiscard","n":1}]}]}]},
+  // ST35-004 コアラ:【ブロッカー】を得てコスト+1（ブロッカーは無条件＝text由来のまま） ／【登場時】リーダーにレストのドン1枚まで付与→手札かトラッシュからパワー4000以下《革命軍》1枚まで登場
+  "ST35-004": {"static":[{"op":"staticCost","amount":1}],"onPlay":[{"op":"donAttach","target":"leader","n":1},{"op":"playFromHandOrTrash","filter":{"trait":"革命軍","maxPower":4000},"optional":true}]},
+  // ST35-005 くま: このキャラのコスト+3 ／【登場時】リーダーにレストのドン1枚まで付与→手札かトラッシュからパワー4000以下《革命軍》1枚まで登場
+  "ST35-005": {"static":[{"op":"staticCost","amount":3}],"onPlay":[{"op":"donAttach","target":"leader","n":1},{"op":"playFromHandOrTrash","filter":{"trait":"革命軍","maxPower":4000},"optional":true}]},
+  // ST36-001 キャベンディッシュ:【KO時】手札1枚を捨てられる：デッキ上1枚までライフの上へ
+  "ST36-001": {"onKO":[{"op":"discardCost","count":1,"then":[{"op":"lifeAddFromDeck","n":1}]}]},
+  // ST36-002 キラー:【自分のターン中】【登場時】《キッド海賊団》リーダーならデッキ上1枚までライフの上へ ／【トリガー】相手のライフ3枚以下ならこのカードを登場
+  "ST36-002": {"onPlay":[{"op":"cond","check":{"and":[{"selfTurn":true},{"leaderTrait":"キッド海賊団"}]},"then":[{"op":"lifeAddFromDeck","n":1}]}],"trigger":[{"op":"cond","check":{"oppLifeAtMost":3},"then":[{"op":"playSelf"}]}]},
+  // ST36-003 アプー:【トリガー】1ドロー＋自分の《超新星》リーダーを このターン中 元々のパワー7000に（本文の効果は無し）
+  "ST36-003": {"trigger":[{"op":"draw","n":1},{"op":"cond","check":{"leaderTrait":"超新星"},"then":[{"op":"setPower","target":"leader","value":7000,"duration":"turn"}]}]},
+  // ST36-004 バルトロメオ:【登場時】手札から《超新星》1枚を捨てられる：2ドロー
+  "ST36-004": {"onPlay":[{"op":"discardCost","count":1,"optional":true,"filter":{"trait":"超新星"},"then":[{"op":"draw","n":2}]}]},
+  // ST36-005 キッド:【相手のアタック時】【ターン1回】ライフの上か下1枚を裏向きにできる：アタック対象を自分の元々のパワー5000以上の「キッド」に変更
+  //   ／【起動メイン】【ターン1回】ライフの上か下1枚を表向きにできる：リーダーにレストのドン1枚まで付与
+  //   ※counterRedirect はブロック宣言後に対象を差し替える（公式はブロック前）。対象が居ないとコストだけ払うため cond で事前ガード。
+  "ST36-005": {"onOppAttack":[{"op":"cond","once":"turn","check":{"faceUpLifeAtLeast":1,"selfChar":{"name":"ユースタス・キッド","minPower":5000}},"then":[{"op":"lifeCost","action":"faceDown","pos":"choose","then":[{"op":"counterRedirect","filter":{"name":"ユースタス・キッド","minPower":5000},"optional":false}]}]}],"act":{"label":"ライフを表向き：リーダーにレストのドン‼1枚","cost":{},"fx":[{"op":"lifeCost","action":"faceUp","pos":"choose","then":[{"op":"donAttach","target":"leader","n":1}]}]}}
+});})();
+
 /* ===== audit駆動【トリガー】一括実装（docs/card-audit-workflow.md §5・頻出テンプレート順・318枚。既存fxへtriggerをマージ／パラレルは親を共有） ===== */
 (function () {
   var FX = window.CARD_FX;

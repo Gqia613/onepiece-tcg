@@ -901,18 +901,28 @@
         // ライフ操作コスト: 自分のライフ上1枚を action して then を実行（action: 'toHand'|'trash'|'faceUp'|'faceDown'。任意）
         case 'lifeCost': {
           const act = op.action || 'toHand';
-          if (act === 'toHand' && P._noLifeToHandTurn === G.turnSeq) { flog(side, 'このターンは効果でライフを手札に加えられない'); break; }
-          if (!P.life.length) break; // ライフが無ければ払えない＝不発
+          if (act === 'toHand' && P._noLifeToHandTurn === G.turnSeq) { flog(side, 'このターンは効果でライフを手札に加えられない'); ctx._declined = true; break; }
+          if (!P.life.length) { ctx._declined = true; break; } // ライフが無ければ払えない＝不発
           const pick2 = op.pos === 'choose' && (act === 'toHand' || act === 'trash'); // 「ライフの上か下から1枚」＝上下を選べる（toHand/trash対応）
-          { const lbl = act === 'toHand' ? '手札に加え' : act === 'trash' ? 'トラッシュに置き' : act === 'faceUp' ? '表向きにし' : '裏向きにし'; const where = pick2 ? '上か下から1枚' : '上から1枚'; if (!(await confirmUse(side, 'ライフをコストに', `ライフの${where}を${lbl}て効果を使いますか？`, '使う', undefined, { cls: 'danger' }))) break; }
+          // 「ライフの上か下から1枚を表/裏向きにできる」（ST36-005キッド）: pos:'choose' の時だけ上下から選び、
+          // かつ「既にその向きのライフ」しか無ければコストを払えない＝不発（pos未指定の既存カードは従来どおりライフ上を固定で裏返す）。
+          const flip2 = op.pos === 'choose' && (act === 'faceUp' || act === 'faceDown');
+          const flipPool = () => { const cand = P.life.length >= 2 ? [P.life[0], P.life[P.life.length - 1]] : [P.life[0]]; return cand.filter(l => l && (act === 'faceUp' ? !l._faceUp : !!l._faceUp)); };
+          if (flip2 && !flipPool().length) { ctx._declined = true; break; }
+          { const lbl = act === 'toHand' ? '手札に加え' : act === 'trash' ? 'トラッシュに置き' : act === 'faceUp' ? '表向きにし' : '裏向きにし'; const where = (pick2 || flip2) ? '上か下から1枚' : '上から1枚'; if (!(await confirmUse(side, 'ライフをコストに', `ライフの${where}を${lbl}て効果を使いますか？`, '使う', undefined, { cls: 'danger' }))) { ctx._declined = true; break; } }
+          ctx._committed = true; // コスト支払い＝使用（【ターン1回】の onceゲート消費。辞退だけなら未消費のまま＝ST36-005キッド）
           if (act === 'toHand') {
             let fromBottom = false;
             if (pick2 && P.life.length >= 2 && !P.isCPU) fromBottom = (await showPrompt({ side, title: 'ライフを手札に', text: 'ライフの上か下、どちらの1枚を手札に加えますか？', opts: [{ t: 'ライフ上', v: 'top', primary: true }, { t: 'ライフ下', v: 'bot' }] })) === 'bot';
             P.hand.push(fromBottom ? P.life.pop() : P.life.shift()); flog(side, `ライフ${fromBottom ? '下' : '上'}1枚を手札に加えた`); fireSimpleReact(side, 'onLifeToHand'); await fireLifeLeft(side); // OP05-107スペーシー
           }
           else if (act === 'trash') { let fb = false; if (pick2 && P.life.length >= 2 && !P.isCPU) fb = (await showPrompt({ side, title: 'ライフをトラッシュ', text: 'ライフの上か下、どちらの1枚をトラッシュに置きますか？', opts: [{ t: 'ライフ上', v: 'top', primary: true }, { t: 'ライフ下', v: 'bottom' }] })) === 'bottom'; P.trash.push(fb ? P.life.pop() : P.life.shift()); flog(side, `ライフ${fb ? '下' : '上'}1枚をトラッシュ`); await fireLifeLeft(side); }
-          else if (act === 'faceUp') { P.life[0]._faceUp = true; flog(side, 'ライフ上を表向きにした'); }
-          else if (act === 'faceDown') { P.life[0]._faceUp = false; flog(side, 'ライフ上を裏向きにした'); }
+          else if (act === 'faceUp' || act === 'faceDown') {
+            const pool = flip2 ? flipPool() : [P.life[0]];
+            let t = pool[0];
+            if (flip2 && pool.length >= 2 && !P.isCPU) t = (await showPrompt({ side, title: act === 'faceUp' ? 'ライフを表向きに' : 'ライフを裏向きに', text: `ライフの上か下、どちらの1枚を${act === 'faceUp' ? '表' : '裏'}向きにしますか？`, opts: [{ t: 'ライフ上', v: 'top', primary: true }, { t: 'ライフ下', v: 'bot' }] })) === 'bot' ? pool[1] : pool[0];
+            if (t) { t._faceUp = (act === 'faceUp'); flog(side, `ライフ${t === P.life[0] ? '上' : '下'}1枚を${act === 'faceUp' ? '表' : '裏'}向きにした`); }
+          }
           render();
           await runFx(op.then, ctx);
           break;
