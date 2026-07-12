@@ -6067,6 +6067,18 @@ button.hb-chip:not(.zero):not([disabled]):hover {
   flex: 0 0 auto;
   min-height: 48px;
   padding: 8px 18px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--danger-glow);
+  background: rgba(255, 77, 85, .08);
+  border: 1px solid var(--danger);
+  cursor: pointer;
+  transition: .15s;
+}
+
+.or-actions .or-leave:hover {
+  background: rgba(255, 77, 85, .16);
 }
 
 .or-actions .or-ready {

@@ -270,9 +270,9 @@ export default function OnlineLobby() {
 
           {/* 下部アクションバー（親指域・常に見える） */}
           <div className="or-actions">
-            <button className="phasebtn ghost or-leave" onClick={doLeave}>退室</button>
+            <button className="or-leave" onClick={doLeave}>退室</button>
             {!readySent ? (
-              <button className="btn-primary or-ready" disabled={!selected} onClick={doReady}>このデッキで準備完了</button>
+              <button className="btn-primary or-ready" disabled={!selected} onClick={doReady}>準備完了</button>
             ) : (
               <button className="phasebtn or-ready" disabled>✔ 準備完了</button>
             )}
