@@ -148,7 +148,8 @@ export type FxEvent =
   | { type: 'anim'; id: number; uid: number; cls: string }
   | { type: 'fxnote'; id: number; side: Side; label: string; name: string; no?: string }
   | { type: 'banner'; id: number; text: string; cls: 'mine' | 'opp' }
-  | { type: 'sumcut'; id: number; no: string; name: string }; // 主役級（SEC/SP）登場ミニカットイン
+  | { type: 'sumcut'; id: number; no: string; name: string } // 主役級（SEC/SP）登場ミニカットイン
+  | { type: 'reveal'; id: number; side: Side; no: string; name: string; label: string }; // 公開カードの大写し（サーチで手札に／イベント発動）
 
 // ライフから公開されたトリガーカードの大写し演出（TriggerReveal オーバーレイ）。
 export interface TriggerRevealState {

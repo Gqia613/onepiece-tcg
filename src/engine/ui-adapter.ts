@@ -19,6 +19,8 @@ export interface UIAdapter {
   lethalFx?: (side: any) => Promise<void> | void; // リーサル（トドメ）カットイン。既定はno-op
   showThinking?: (on: boolean) => void;
   sfx?: (name: string) => void;
+  // 公開カードの大写し（サーチで手札に加えた／イベント・カウンター発動）。演出専用＝G には触れない。
+  cardReveal?: (side: 'me' | 'cpu', no: string, name: string, label: string) => void;
   // 盤面演出（元 40-ui-render.js）。実DOM(.felt)へ一時要素を append する fire-and-forget。
   spawnAt?: (uid: number, kind: string) => void;      // burst=KO / slash=斬撃 / ring=登場 / spark=ドン
   drawFly?: (side: 'me' | 'cpu') => void;             // ドロー飛翔
@@ -92,6 +94,7 @@ export function headlessAdapter(): UIAdapter {
     showEndScreen: () => {},
     showThinking: () => {},
     sfx: () => {},
+    cardReveal: () => {},
     spawnAt: () => {},
     drawFly: () => {},
     donFly: () => {},

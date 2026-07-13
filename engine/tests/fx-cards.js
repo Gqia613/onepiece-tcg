@@ -2344,6 +2344,36 @@ humanPick=function(c){return Promise.resolve((c||[])[0]||null);};
       const ctx={self:kid,side:'me'}; await runFx(C['ST36-005'].fx.onOppAttack,ctx);
       ok(me.life[1]._faceUp===false && G._counterRedirect===kid, 'ST36-005: ライフ下(表向き)を裏返してアタック対象をキッドに変更');
       G._counterRedirect=null; }
+    /* ===== 【起動メイン】の【ターン1回】は公式テキスト由来（一律ターン1回で塞がない） ===== */
+    // ★報告バグ: ST30-014（【ターン1回】なし・コスト=このキャラをレスト）を使った後、別の効果でアクティブに戻しても再使用できなかった
+    { const me=LP('OP11-041'); const mr3=I('ST30-014','me'); me.chars=[mr3]; me.don={active:0,rested:4};
+      ok(actUsable(mr3)===true, 'ST30-014: 起動メインを使える');
+      mr3.rested=true; mr3._actTurn=G.turnSeq; // 1回使った（自身をレスト）
+      ok(actUsable(mr3)===false, 'ST30-014: レスト中は再使用できない（コスト未払い）');
+      mr3.rested=false; // 別の効果でアクティブに戻した
+      ok(actUsable(mr3)===true, '★ST30-014: アクティブに戻れば同じターンでも再使用できる（【ターン1回】は無い）'); }
+    // 【ターン1回】が公式にあるカードは、同一ターンに2回使えない
+    { const me=LP('OP11-041'); const c=I('OP16-001','me'); me.chars=[c]; // OP16-001=【起動メイン】【ターン1回】
+      ok(/【起動メイン】\s*【ターン1回】/.test(C['OP16-001'].text||''), 'OP16-001: 公式に【ターン1回】がある');
+      ok(actUsable(c)===true, 'OP16-001: 1回目は使える');
+      c._actTurn=G.turnSeq;
+      ok(actUsable(c)===false, 'OP16-001:【ターン1回】なので同一ターンの2回目は使えない'); }
+
+    /* ===== 「レストにできない」はコスト支払いのレストも止める ===== */
+    // ★報告バグ: OP16-032でレスト不可にされたキャラを、OP14-020Lのコスト（自分のカード1枚をレスト）でレストできてしまった
+    { G.players={me:mkP('OP14-020',false),cpu:mkP('OP11-041',true)}; G.active='me'; G.turnSeq=5; G.winner=null;
+      const me=G.players.me; const mh=I('OP14-119','me'), z=I('ST32-003','me');
+      me.chars=[mh,z]; me.leader.rested=true; me.don={active:0,rested:0};
+      // 相手の OP16-032 が「レストにできない」を付与した状態を再現
+      const cpu=G.players.cpu; cpu.chars=[];
+      await runFx(C['OP16-032'].fx.onPlay,{self:I('OP16-032','cpu'),side:'cpu'});
+      ok(mh.restImmuneUntil!=null || z.restImmuneUntil!=null, 'OP16-032: 相手のキャラ1枚を「レストにできない」状態にする');
+      const locked = mh.restImmuneUntil!=null ? mh : z;
+      const free   = locked===mh ? z : mh;
+      await leaderActivate('me'); // OP14-020: 自分のカード1枚をレストにできる：…
+      ok(locked.rested===false, '★レスト不可のキャラはリーダー効果のコストとしてもレストできない');
+      ok(free.rested===true, 'レスト不可でないキャラはコストとしてレストできる'); }
+
     /* ===== 「自分のリーダーの『X』」＝リーダー名の完全一致（無条件に効かせない・部分一致で誤爆しない） ===== */
     // ★報告バグ: OP12-031 たしぎを出したら、リーダーがミホークなのにドンが3枚付与された
     { const me=LP('OP14-020'); me.don={active:0,rested:3}; // リーダー=ミホーク（ゾロではない）

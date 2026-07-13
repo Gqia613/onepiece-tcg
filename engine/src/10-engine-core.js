@@ -310,6 +310,25 @@
     }
     function cantAttackNeg(card) { return !!(card && card.noAtkSeq != null); }
     // 「レストにできない」状態（restImmune）: アタックもブロックもできず、レスト系効果の対象にもならない
+    /* 【起動メイン】が使えるか。★以前は全ての act を一律「ターン1回」で塞いでいたが、
+       公式で【ターン1回】が付いているのは 365枚中165枚だけ。残りは条件を満たせば同一ターンに何度でも使える
+       （例: ST30-014 Mr.3＝「このキャラをレストにできる：…」＝別の効果でアクティブに戻せば再使用できるのが正しい）。
+       once の正本は公式テキストの「【起動メイン】【ターン1回】」。fx.act.once があればそちらを優先。
+       restSelf コストは「レスト中は払えない」ので、それ自体が自然な再使用制限になる。 */
+    function actOnce(card) {
+      const a = card && card.base.fx && card.base.fx.act; if (!a) return false;
+      if (a.once != null) return !!a.once;
+      return /【起動メイン】\s*【ターン1回】/.test(card.base.text || '');
+    }
+    function actUsable(card) {
+      const b = card && card.base; const a = b && b.fx && b.fx.act;
+      if (!a || isNegated(card)) return false;
+      if (actOnce(card) && card._actTurn === G.turnSeq) return false;
+      const c = a.cost || {};
+      if (c.restSelf && (card.rested || isRestImmune(card))) return false; // 自身をレストにできない＝コスト未払い
+      if (c.don && G.players[card.owner].don.active < c.don) return false;
+      return true;
+    }
     function isRestImmune(card) {
       if (!card) return false;
       if (card.restImmuneUntil != null && G.turnSeq <= card.restImmuneUntil) return true;

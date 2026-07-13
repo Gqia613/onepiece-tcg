@@ -246,6 +246,7 @@
             if (!pick) break;
             if (!G._sim) pick._pubHand = G.turnSeq;   // ★E43: サーチは公開で手札に加わる＝相手AIの決定化が既知情報として使える（bpuct用・実対局のみ）
             picked.push(pick); P.hand.push(pick); flog(side, `「${pick.base.name}」を手札に`);
+            cardReveal(side, pick.base.no, pick.base.name, '手札に加えた'); // 公開して手札に加える＝何を取ったか見せる
           }
           // 取らなかったカードはデッキ下（rest:'trash'ならトラッシュ）へ
           for (const c of look) if (!picked.includes(c)) { if (op.rest === 'trash') P.trash.push(reset(c)); else P.deck.push(c); }
@@ -358,8 +359,8 @@
             const cands = lockPool();
             const t = P.isCPU ? cands[0] : await chooseCard(side, cands, progText('次のリフレッシュでアクティブにしない相手のカード', i, op.count || 1), 'oppBig', op.optional);
             if (!t) break;
-            t.rested = true; await fireSelfRested(t, t.owner === side ? 'ownEffect' : 'oppEffect'); t.frozen = true; flog(side, `「${t.base.type === 'LEADER' ? '相手リーダー' : t.base.name}」を次のリフレッシュでアクティブにしない`);
-            if (op.restSource && self && i === 0) { self.rested = true; await fireSelfRested(self, 'ownEffect'); flog(side, `「${self.base.name}」をレストにした`); }
+            t.rested = true; await fireSelfRested(t, t.owner === side ? 'ownEffect' : 'oppEffect'); t.frozen = true; flog(side, `「${t.base.type === 'LEADER' ? '相手リーダー' : t.base.name}」を次のリフレッシュでアクティブにしない`); floatOn(t.uid, '凍結', 'dmg'); animClass(t.uid, 'hit');
+            if (op.restSource && self && i === 0 && !isRestImmune(self)) { self.rested = true; await fireSelfRested(self, 'ownEffect'); flog(side, `「${self.base.name}」をレストにした`); }
           }
           break;
         }
@@ -530,7 +531,7 @@
         }
         // このキャラをレストにするコスト（OP10-112キッド登場時）。既にレストなら不発。then実行。
         case 'restSelfCost': {
-          if (!self || self.rested) break;
+          if (!self || self.rested || isRestImmune(self)) break; // 「レストにできない」＝コストとしてもレストできない
           if (!(await confirmUse(side, '自身をレスト', `「${self.base.name}」をレストにして効果を使いますか？`, 'レストして使う', '使わない'))) break;
           self.rested = true; await fireSelfRested(self, 'ownEffect'); flog(side, `「${self.base.name}」をレストにした`); render(); await runFx(op.then, ctx); break;
         }
@@ -769,7 +770,7 @@
           for (let i = 0; i < fn; i++) if (P.life[i]) P.life[i]._faceUp = true; flog(side, `ライフの上から${fn}枚を表向きにした`); render();
           await runFx(op.then, ctx); break;
         }
-        case 'restThis': { if (self) { self.rested = true; await fireSelfRested(self, 'ownEffect'); flog(side, `「${self.base.name}」をレストにした`); render(); } break; } // このキャラをレストにする（強制・OP08-046シャクヤク）
+        case 'restThis': { if (self && isRestImmune(self)) { flog(side, `「${self.base.name}」はレストにできない`); break; } if (self) { self.rested = true; await fireSelfRested(self, 'ownEffect'); flog(side, `「${self.base.name}」をレストにした`); render(); } break; } // このキャラをレストにする（強制・OP08-046シャクヤク）
         // 自分のトラッシュから n 枚(filter一致)をデッキの下に置くコスト（OP13-081コアラ / OP12-091/094）。任意。
         case 'trashToBottomCost': {
           const tn = op.n || 1;
@@ -1050,14 +1051,14 @@
           for (let i = 0; i < (op.count || 1); i++) {
             const cands = oppChars(side, opFilter(op)).filter(c => !isRestImmune(c));
             const t = P.isCPU ? cands[0] : await chooseCard(side, cands, 'レストにできない状態にする相手キャラ', 'oppBig', op.optional);
-            if (!t) break; t.restImmuneUntil = until; flog(side, `「${t.base.name}」はレストにできない`);
+            if (!t) break; t.restImmuneUntil = until; flog(side, `「${t.base.name}」はレストにできない`); floatOn(t.uid, 'レスト不可', 'dmg'); animClass(t.uid, 'hit');
           }
           render(); break;
         }
         // 相手キャラ count枚をアタック不可にする（duration:'untilNextEnd'で次の相手ターン終了まで）
         case 'setAttackBan': {
           if (op.leaderOnly) { const L = G.players[o].leader; if (L && (!op.restedOnly || L.rested) && L.noAtkSeq == null) { L.noAtkSeq = durSeq(op.duration); flog(side, '相手リーダーはアタック不可'); } render(); break; } // 相手リーダーのアタック禁止（OP06-023アーロン＝レストのリーダー）
-          for (let i = 0; i < (op.count || 1); i++) { let cands = oppChars(side, opFilter(op)).filter(c => c.noAtkSeq == null); if (op.includeLeader && G.players[o].leader.noAtkSeq == null && (!op.leaderRestedOnly || G.players[o].leader.rested)) cands = [G.players[o].leader, ...cands]; const t = P.isCPU ? cands[0] : await chooseCard(side, cands, 'アタック不可にする相手キャラ', 'oppBig', op.optional); if (!t) break; t.noAtkSeq = durSeq(op.duration); flog(side, `「${t.base.type === 'LEADER' ? '相手リーダー' : t.base.name}」はアタック不可`); }
+          for (let i = 0; i < (op.count || 1); i++) { let cands = oppChars(side, opFilter(op)).filter(c => c.noAtkSeq == null); if (op.includeLeader && G.players[o].leader.noAtkSeq == null && (!op.leaderRestedOnly || G.players[o].leader.rested)) cands = [G.players[o].leader, ...cands]; const t = P.isCPU ? cands[0] : await chooseCard(side, cands, 'アタック不可にする相手キャラ', 'oppBig', op.optional); if (!t) break; t.noAtkSeq = durSeq(op.duration); flog(side, `「${t.base.type === 'LEADER' ? '相手リーダー' : t.base.name}」はアタック不可`); floatOn(t.uid, 'アタック不可', 'dmg'); animClass(t.uid, 'hit');}
           render(); break;
         }
         // 攻撃税（OP08-043ニューゲート）: 相手のキャラすべてに「アタック時に手札N枚を捨てなければアタック不可」を付与。declareAttack冒頭で判定。
@@ -1076,10 +1077,10 @@
         // 自分のリーダー/ステージ/キャラ（filter一致）1枚をレストにするコスト。任意。払えた時 then を実行
         case 'restOwnAsCost': {
           const cnt = op.count || 1; // count枚をレストにできる（足りなければ不発）
-          if ([P.leader, P.stage, ...P.chars].filter(c => c && !c.rested && matchFilter(c, opFilter(op))).length < cnt) break;
+          if ([P.leader, P.stage, ...P.chars].filter(c => c && !c.rested && !isRestImmune(c) && matchFilter(c, opFilter(op))).length < cnt) break; // 「レストにできない」はコスト支払いにも使えない
           if (!(await confirmUse(side, 'レストにする', `カード${cnt}枚をレストにして効果を使いますか？`, 'レストして使う'))) break;
           const rested = [];
-          for (let i = 0; i < cnt; i++) { const pool = [P.leader, P.stage, ...P.chars].filter(c => c && !c.rested && !rested.includes(c) && matchFilter(c, opFilter(op))); const t = P.isCPU ? pool[0] : await chooseCard(side, pool, `レストにするカードを選択（コスト ${i + 1}/${cnt}）`, 'ownBig', false); if (!t) break; t.rested = true; await fireSelfRested(t, 'ownEffect'); rested.push(t); }
+          for (let i = 0; i < cnt; i++) { const pool = [P.leader, P.stage, ...P.chars].filter(c => c && !c.rested && !isRestImmune(c) && !rested.includes(c) && matchFilter(c, opFilter(op))); const t = P.isCPU ? pool[0] : await chooseCard(side, pool, `レストにするカードを選択（コスト ${i + 1}/${cnt}）`, 'ownBig', false); if (!t) break; t.rested = true; await fireSelfRested(t, 'ownEffect'); rested.push(t); }
           if (rested.length < cnt) break; flog(side, `カード${cnt}枚をレストにした`);
           await runFx(op.then, ctx); break;
         }
@@ -1124,7 +1125,7 @@
         case 'playEventFromHand': {
           const cands = P.hand.filter(c => matchFilter(c, op.filter) && c.base.fx && c.base.fx.main);
           const c = await chooseFromHand(side, cands, '発動するイベントを選択', null, op.optional !== false); // 「1枚まで」は任意（既定で見送り可）
-          if (c) { P.hand.splice(P.hand.indexOf(c), 1); await runFx(c.base.fx.main.fx, { self: c, side }); P.trash.push(reset(c)); flog(side, `「${c.base.name}」を発動`); await luffyReveal(side); }
+          if (c) { P.hand.splice(P.hand.indexOf(c), 1); cardReveal(side, c.base.no, c.base.name, 'イベント発動'); await runFx(c.base.fx.main.fx, { self: c, side }); P.trash.push(reset(c)); flog(side, `「${c.base.name}」を発動`); await luffyReveal(side); }
           break;
         }
         case 'playCharFromHand': {
@@ -1291,7 +1292,7 @@
           ow.life.unshift(faceDown(reset(target))); flog(target.owner, `【${p.base.name}】「${target.base.name}」をライフの上に裏向きで加えた`); render(); return true;
         }
         if (prot.pay === 'restOwnCards') {
-          const n = prot.n || 2; const pool = [ow.leader, ...ow.chars].filter(c => c && c !== target && !c.rested && !(prot.excludeLeader && c === ow.leader) && (!prot.filter || matchFilter(c, prot.filter))); // excludeLeader=「自分のキャラ」限定（リーダー除外。OP14-034）。filter=レスト対象の限定（OP11-110フカボシ＝魚人島/しらほし）
+          const n = prot.n || 2; const pool = [ow.leader, ...ow.chars].filter(c => c && c !== target && !c.rested && !isRestImmune(c) && !(prot.excludeLeader && c === ow.leader) && (!prot.filter || matchFilter(c, prot.filter))); // excludeLeader=「自分のキャラ」限定（リーダー除外。OP14-034）。filter=レスト対象の限定（OP11-110フカボシ＝魚人島/しらほし）
           if (pool.length < n) continue;
           if (!(await confirmUse(target.owner, `【${p.base.name}】身代わり`, `自分のカード${n}枚をレストにして「${target.base.name}」を守りますか？`, `守る（${n}枚レスト）`, '守らない', { noSrc: true }))) continue;
           let picks;

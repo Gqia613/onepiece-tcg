@@ -227,6 +227,10 @@
     // リーサル（トドメの一撃）演出フック。web(reactAdapter)がカットイン実装で差し替える。
     // headless/既定は何もしない（_sim中も含め即解決＝テスト/探索を遅延させない）。
     async function lethalFx(side) { if (G._sim) return; }
+    /* 公開カードの大写し（UI専用フック・G には一切触れない＝ロックステップ無関係）。
+       「デッキから公開して手札に加えた」「イベントを使用した」など、盤面に残らないカードは
+       何が起きたのか分からないため、カードを一枚だけ短く見せる。web は reactAdapter が差し替える。 */
+    function cardReveal(side, no, name, label) { if (G._sim) return; }
     let _fxNoteEl = null;
     function showFxNote(side, label, name, no) {
       if (G._sim) return;
@@ -399,7 +403,7 @@
       if (G.active !== 'me' || !G.myActable || G.busy || G.attackSel) return false;
       const P = G.players.me; const b = card.base;
       if (canCardAttack(card)) return true;
-      if (b.fx && b.fx.act && card._actTurn !== G.turnSeq && !isNegated(card)) return true;
+      if (actUsable(card)) return true;
       if (b.leader === 'enel' && P._enelUsedTurn !== G.turnSeq && P.turnsTaken >= 2) return true;
       if (b.leader === 'lucy' && P._lucyDrawTurn !== G.turnSeq && P._lucyEventTurn === G.turnSeq) return true;
       if (P.don.active >= 1 && b.type !== 'STAGE') return true; // ドン付与
@@ -480,7 +484,7 @@
         }
         const playN = P.hand.filter(handPlayable).length;
         const atkN = (typeof canCardAttack === 'function') ? [P.leader, ...P.chars].filter(canCardAttack).length : 0;
-        const actN = [...P.chars, ...(P.stage ? [P.stage] : [])].filter(c => c.base.fx && c.base.fx.act && c._actTurn !== G.turnSeq && !isNegated(c)).length;
+        const actN = [...P.chars, ...(P.stage ? [P.stage] : [])].filter(c => actUsable(c) && !isNegated(c)).length;
         const idle = playN + atkN + actN === 0;
         // チップは押すと該当カードがスポットライトされる（どれが動かせるかを能動提示）
         const chip = (cls, label, n, spot) => '<button class="hb-chip' + (n ? '' : ' zero') + (cls ? ' ' + cls : '') + '"' +

@@ -51,7 +51,7 @@
       const side = card.owner; const P = G.players[side]; const b = card.base; const opts = [];
       if (canCardAttack(card)) opts.push({ t: '⚔ アタック', v: 'atk', primary: true });
       if (P.don.active >= 1 && b.type !== 'STAGE') opts.push({ t: '＋ ドンを付与 (残' + P.don.active + ')', v: 'don' });
-      if (b.fx && b.fx.act && card._actTurn !== G.turnSeq && !isNegated(card)) opts.push({ t: '起動: ' + b.fx.act.label, v: 'act' });
+      if (actUsable(card)) opts.push({ t: '起動: ' + b.fx.act.label, v: 'act' }); // 【ターン1回】は公式テキスト由来（actOnce）。restSelfコストはレスト中なら出さない
       if (b.leader === 'enel' && P._enelUsedTurn !== G.turnSeq && P.turnsTaken >= 2) opts.push({ t: '【エネル】ドン追加＆付与', v: 'enel' });
       if (b.leader === 'lucy' && P._lucyDrawTurn !== G.turnSeq && P._lucyEventTurn === G.turnSeq) opts.push({ t: '【ルーシー】1ドロー', v: 'enel' });
       if (opts.length === 0) { toast('今このカードでできる行動はありません'); return; }
@@ -86,6 +86,7 @@
       const act = card.base.fx.act; const c = act.cost || {};
       // コストは全て検証してから支払う（払った後に中断して払い損になるのを防ぐ）
       if (c.restSelf && card.rested) { toast('既にレスト状態です'); return; }
+      if (c.restSelf && isRestImmune(card)) { toast('このキャラはレストにできない'); return; }
       if (c.don && G.players[side].don.active < c.don) { toast('ドンが足りません'); return; }
       if (c.don) payDon(side, c.don);
       if (c.restSelf) card.rested = true;
@@ -111,7 +112,7 @@
         const cost = effCost(side, card); if (P.don.active < cost) { toast('ドンが足りません'); return; }
         payDon(side, cost); P.hand.splice(P.hand.indexOf(card), 1);
         if (b.cost >= 3) P._lucyEventTurn = G.turnSeq; // 【ルーシー】起動メイン条件: 当ターンに元々コスト3以上のイベントを発動
-        flog(side, '「' + b.name + '」を使用'); await runFx(b.fx.main.fx, { self: card, side }); P.trash.push(reset(card)); render(); await luffyReveal(side); await fireOppEvent(side);
+        flog(side, '「' + b.name + '」を使用'); cardReveal(side, b.no, b.name, 'イベント発動'); await runFx(b.fx.main.fx, { self: card, side }); P.trash.push(reset(card)); render(); await luffyReveal(side); await fireOppEvent(side);
       }
     }
     function uiEndTurn(side) { side = side || 'me'; if (G.busy || G.active !== side || !G.myActable || G.promptState || G.pendingChoice) return; G.attackSel = null; G.busy = true; G.myActable = false; render(); endTurn(side); } // side省略時は従来どおり'me'（バニラのボタン互換）
@@ -536,7 +537,7 @@
       // 3) 起動効果（エネル等）。エネルのリーダー効果は第2ターン以降ほぼ常に得（ドンランプ＋付与）なので毎ターン使う
       if (P.leader.base.leader === 'enel' && P.turnsTaken >= 2 && P._enelUsedTurn !== G.turnSeq) await leaderActivate(side);
       // 起動メインはキャラだけでなくステージ（ハチノス/マリンフォード等）も対象にする
-      for (const c of [P.leader, ...P.chars, ...(P.stage ? [P.stage] : [])]) { if (c.base.fx && c.base.fx.act && c._actTurn !== G.turnSeq && !isNegated(c)) { const cost = c.base.fx.act.cost || {}; if ((!cost.don || P.don.active >= cost.don) && (!cost.restSelf || !c.rested) && actWorthUsing(side, c)) { if (cost.don) payDon(side, cost.don); if (cost.restSelf) c.rested = true; c._actTurn = G.turnSeq; await fxNote(side, '起動メイン', c.base.name); await runFx(c.base.fx.act.fx, { self: c, side }); await sleep(160); } } }
+      for (const c of [P.leader, ...P.chars, ...(P.stage ? [P.stage] : [])]) { if (actUsable(c)) { const cost = c.base.fx.act.cost || {}; if (actWorthUsing(side, c)) { if (cost.don) payDon(side, cost.don); if (cost.restSelf) c.rested = true; c._actTurn = G.turnSeq; await fxNote(side, '起動メイン', c.base.name); await runFx(c.base.fx.act.fx, { self: c, side }); await sleep(160); } } }
       // 4) アタック（リーサルが見えたらリーダー集中、そうでなければ盤面と圧を使い分け）
       if (canAttackThisTurn(side)) {
         if ((isHeur2(side) && h2On('lethal')) ? threatCanLethal(side) : cpuCanLethal(side)) { plan.lethal = true; plan.donReserve = 0; }   // ★E42a: heur2はプール期待値のリーサル判定
@@ -593,7 +594,7 @@
           else if (b.type === 'EVENT' && b.fx && b.fx.main && effCost(side, c) <= P.don.active) acts.push({ k: 'event', c });
         }
         for (const c of [P.leader, ...P.chars, ...(P.stage ? [P.stage] : [])]) { // リーダーの fx.act（番号キーの起動メインリーダー）も対象
-          if (c.base.fx && c.base.fx.act && c._actTurn !== G.turnSeq && !isNegated(c)) {
+          if (actUsable(c)) {
             const cost = c.base.fx.act.cost || {};
             if ((!cost.don || P.don.active >= cost.don) && (!cost.restSelf || !c.rested)) acts.push({ k: 'act', c });
           }

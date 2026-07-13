@@ -6853,3 +6853,64 @@ button.hb-chip:not(.zero):not([disabled]):hover {
   overflow: hidden;
   text-overflow: ellipsis;
 }
+
+/* ===== 公開カードの大写し（CardReveal）=====
+   サーチで「公開して手札に加えた」カードと、イベント/カウンターの発動カードを短く見せる。
+   どちらも盤面に残らないため「何が起きたか分からない」問題への対処。非ブロッキング・操作は透過。 */
+.reveal-host {
+  position: fixed;
+  inset: 0;
+  z-index: 62;
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.reveal-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 12px 12px;
+  border-radius: 14px;
+  background: linear-gradient(180deg, rgba(10, 24, 42, .96), rgba(5, 12, 24, .97));
+  border: 1px solid var(--gold);
+  box-shadow: var(--elev-3), 0 0 34px -12px rgba(255, 200, 87, .55);
+  will-change: transform, opacity;
+}
+
+.reveal-card.opp {
+  border-color: var(--danger-glow, #ff6a4d);
+  box-shadow: var(--elev-3), 0 0 34px -12px rgba(255, 106, 77, .55);
+}
+
+.reveal-card img {
+  width: 132px;
+  max-width: 34vw;
+  aspect-ratio: 5 / 7;
+  object-fit: cover;
+  border-radius: 8px;
+  display: block;
+}
+
+.reveal-card .rv-label {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: .04em;
+  color: var(--gold);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, .6);
+}
+
+.reveal-card.opp .rv-label {
+  color: var(--danger-glow, #ff6a4d);
+}
+
+.reveal-card .rv-name {
+  font-size: 12px;
+  font-weight: 700;
+  color: #eaf2ff;
+  max-width: 150px;
+  text-align: center;
+  line-height: 1.25;
+}

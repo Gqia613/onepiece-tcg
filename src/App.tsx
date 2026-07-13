@@ -32,6 +32,7 @@ import { NetSideEffects } from './components/fx/NetSideEffects';
 import { ReplayBar } from './components/fx/ReplayBar';
 import { LethalCutIn } from './components/fx/LethalCutIn';
 import { SummonCutIn } from './components/fx/SummonCutIn';
+import { CardReveal } from './components/fx/CardReveal';
 import { Icon } from './components/ui/Icon';
 import { loadCloudDecks } from './state/decks';
 import { LOGO_WHITE } from './engine/img';
@@ -333,6 +334,7 @@ function Shell({ username, logout }: { username: string; logout: () => void }) {
       <TriggerReveal />
       <LethalCutIn />
       <SummonCutIn />
+      <CardReveal />
       <Toast />
       <Banner />
       <Thinking />
