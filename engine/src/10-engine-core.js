@@ -189,6 +189,10 @@
       if (c.selfHandDiscardedThisTurn && P._handDiscardedTurn !== G.turnSeq) return false; // 効果で自分の手札が捨てられているターン中（ST33-004ボルサリーノ）
       if (c.faceUpLifeAtLeast != null && P.life.filter(l => l._faceUp).length < c.faceUpLifeAtLeast) return false; // 自分の表向きライフN枚以上（PRB02-018エース）
       if (c.leaderNameIncludes != null && !normName(P.leader.base.name).includes(normName(c.leaderNameIncludes))) return false;
+      // 「自分のリーダーの『X』」＝カード名の完全一致（OP12-026/031/039・ST11-005）。
+      // ★部分一致(leaderNameIncludes)で代用してはいけない: ST12-001「ロロノア・ゾロ＆サンジ」という別のリーダーが実在し、
+      //   「ロロノア・ゾロ」指定の効果が誤って通ってしまう。別名（カード名をXとしても扱う）は名乗り先も可とする。
+      if (c.leaderName != null) { const L = P.leader.base, n = normName(c.leaderName); if (normName(L.name) !== n && !(L.aliasName && normName(L.aliasName) === n)) return false; }
       if (c.leaderColor != null && !(P.leader.base.color || []).includes(c.leaderColor)) return false;
       if (c.leaderMulticolor && (P.leader.base.color || []).length < 2) return false; // リーダーが多色（2色以上）。OP13-051ハンコック等
       if (c.leaderAttr != null && !((P.leader.base.attribute || '').includes(c.leaderAttr))) return false; // 自分のリーダーが属性Xを持つ（OP13-025コビーの属性(打)）

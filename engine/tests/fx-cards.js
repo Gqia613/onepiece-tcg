@@ -2344,6 +2344,63 @@ humanPick=function(c){return Promise.resolve((c||[])[0]||null);};
       const ctx={self:kid,side:'me'}; await runFx(C['ST36-005'].fx.onOppAttack,ctx);
       ok(me.life[1]._faceUp===false && G._counterRedirect===kid, 'ST36-005: ライフ下(表向き)を裏返してアタック対象をキッドに変更');
       G._counterRedirect=null; }
+    /* ===== 「自分のリーダーの『X』」＝リーダー名の完全一致（無条件に効かせない・部分一致で誤爆しない） ===== */
+    // ★報告バグ: OP12-031 たしぎを出したら、リーダーがミホークなのにドンが3枚付与された
+    { const me=LP('OP14-020'); me.don={active:0,rested:3}; // リーダー=ミホーク（ゾロではない）
+      const t=I('OP01-006','cpu'); G.players.cpu.chars=[t];
+      await runFx(C['OP12-031'].fx.onPlay,{self:I('OP12-031','me'),side:'me'});
+      ok(t.rested===true, 'OP12-031: 相手の元々のコスト6以下キャラをレストにする（ここは条件なし）');
+      ok(me.leader.attachedDon===0 && me.don.rested===3, '★OP12-031: リーダーが「ロロノア・ゾロ」でなければドンは付与されない'); }
+    { const me=LP('OP12-020'); me.don={active:0,rested:3}; // リーダー=ロロノア・ゾロ
+      G.players.cpu.chars=[I('OP01-006','cpu')];
+      await runFx(C['OP12-031'].fx.onPlay,{self:I('OP12-031','me'),side:'me'});
+      ok(me.leader.attachedDon===3 && me.don.rested===0, 'OP12-031: リーダーが「ロロノア・ゾロ」ならレストのドン3枚を付与'); }
+    // 部分一致の罠: ST12-001「ロロノア・ゾロ＆サンジ」は別のリーダー＝対象外
+    { const me=LP('ST12-001'); me.don={active:0,rested:3};
+      G.players.cpu.chars=[I('OP01-006','cpu')];
+      await runFx(C['OP12-031'].fx.onPlay,{self:I('OP12-031','me'),side:'me'});
+      ok(me.leader.attachedDon===0, '★OP12-031: 「ロロノア・ゾロ＆サンジ」は別カード名＝付与されない（部分一致で誤爆しない）'); }
+    // 同型: OP12-039/ST11-005 は「自分のリーダーの『X』をアクティブにする」＝リーダー名が違えば何も起きない
+    { const me=LP('OP14-020'); me.leader.rested=true;
+      await runFx(C['OP12-039'].fx.main.fx,{side:'me'});
+      ok(me.leader.rested===true, '★OP12-039: リーダーが「ロロノア・ゾロ」でなければアクティブにならない'); }
+    { const me=LP('OP12-020'); me.leader.rested=true;
+      await runFx(C['OP12-039'].fx.main.fx,{side:'me'});
+      ok(me.leader.rested===false, 'OP12-039: リーダーが「ロロノア・ゾロ」ならアクティブになる'); }
+
+    // OP13-016 ガープ: サーチはリーダーが サボ/エース/ルフィ のいずれかのときだけ
+    { const me=LP('OP14-020'); me.deck=[I('OP01-006','me'),I('OP01-006','me'),I('OP01-006','me'),I('OP01-006','me')]; me.hand=[];
+      await runFx(C['OP13-016'].fx.onPlay,{self:I('OP13-016','me'),side:'me'});
+      ok(me.hand.length===0, '★OP13-016: 対象外のリーダー（ミホーク）ではサーチしない'); }
+    { const me=LP('OP12-020'); me.deck=[]; me.hand=[]; // ゾロも対象外
+      await runFx(C['OP13-016'].fx.onPlay,{self:I('OP13-016','me'),side:'me'});
+      ok(me.hand.length===0, 'OP13-016: 「ロロノア・ゾロ」も対象外'); }
+    // OP05-040 鳥カゴ: ドフラリーダー時、両者のコスト5以下キャラはリフレッシュでアクティブにならない
+    { G.players={me:mkP('OP04-040',false),cpu:mkP('OP01-060',true)}; G.active='cpu'; G.turnSeq=5; G.winner=null;
+      const cpu=G.players.cpu; cpu.stage=I('OP05-040','cpu'); // ステージ=鳥カゴ（持ち主のリーダー=OP01-060 ドフラミンゴ）
+      const me=G.players.me;
+      const small=I('OP01-006','me'); small.rested=true; const big=I('EB01-055','me'); big.rested=true; // コスト1 と コスト7
+      me.chars=[small,big]; me.leader.rested=true; me.deck=[I('OP01-006','me')];
+      G.active='me'; me.turnsTaken=2;
+      await beginTurn('me');
+      ok(small.rested===true, '★OP05-040: ドフラリーダーの鳥カゴがあると、相手のコスト5以下キャラもリフレッシュでアクティブにならない');
+      ok(big.rested===false, 'OP05-040: コスト6以上のキャラはアクティブになる');
+      ok(me.leader.rested===false, 'OP05-040: リーダーは対象外（キャラのみ）'); }
+
+    /* ===== 【起動メイン】は人間には自動発動しない（キャラを出しただけでリーダー効果が動かないこと） ===== */
+    // 報告: 「5コストのおでんを出したらリーダー効果が勝手に発動して、おでんがレストになった」
+    // → 人間の起動メインは openOwnMenu で明示的に「起動」を選んだときだけ activateAbility が走る。
+    { G.players={me:mkP('OP14-020',false),cpu:mkP('OP11-041',true)}; G.active='me'; G.turnSeq=5; G.winner=null;
+      const me=G.players.me; const oden=I('ST32-002','me'); me.hand=[oden]; me.don={active:5,rested:0};
+      me.deck=[I('OP11-041','me'),I('OP11-041','me')]; me.chars=[];
+      const t=I('OP01-006','cpu'); G.players.cpu.chars=[t];
+      await tryPlayHand(oden);
+      ok(me.chars.includes(oden), 'ST32-002: 5コストのおでんを登場できる');
+      ok(oden.rested===false, '★おでんを出しただけではレストにならない（リーダー効果は自動発動しない）');
+      ok(me.leader.rested===false && me.leader._actTurn!==G.turnSeq, '★リーダーの【起動メイン】はキャラ登場では発動しない');
+      ok(!summonBanned('me', I('OP04-007','me')), '★登場不可（リーダー効果のデメリット）も付いていない');
+      ok(me.don.active===0, 'ST32-002: コスト5を支払っている（ドン5→0。リーダー効果のドン3アクティブ化は起きていない）'); }
+
     /* ===== onSelfRested（このキャラがレストになった時）: アタック以外の全レスト経路から誘発する ===== */
     // ★報告バグ: OP14-020ミホークLの起動メイン（コスト＝自分のカード1枚をレスト）で OP14-119 をレストにしても発動しなかった
     { G.players={me:mkP('OP14-020',false),cpu:mkP('OP11-041',true)}; G.active='me'; G.turnSeq=5; G.winner=null;

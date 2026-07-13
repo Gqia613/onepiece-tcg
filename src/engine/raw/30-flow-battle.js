@@ -322,7 +322,26 @@
       P.don.active += P.don.rested - _refLock; P.don.rested = _refLock;
       const ret = c => { P.don.active += c.attachedDon; c.attachedDon = 0; };
       ret(P.leader); P.chars.forEach(ret); if (P.stage) ret(P.stage);
-      const ready = c => { if (c._noRefreshSeq === G.turnSeq) { c._noRefreshSeq = null; return; } if (c.frozen) { c.frozen = false; } else c.rested = false; }; // _noRefreshSeq=このリフレッシュではアクティブにしない（OP08ミンク族/OP07-059フォクシー）
+      /* 「（条件）の場合、〜のキャラすべては、お互いのリフレッシュフェイズでアクティブにならない」（OP05-040 鳥カゴ）。
+         盤面の誰か（両者のリーダー/ステージ/キャラ）が static:noRefreshAll を持ち、cond 成立かつ filter に一致する
+         キャラは、このリフレッシュでアクティブにしない。frozen（lock）と違い状態を持たない＝常在の都度評価。 */
+      const noRefreshBlocked = c => {
+        if (!c || c.base.type !== 'CHAR') return false;
+        for (const sd of ['me', 'cpu']) {
+          const PP = G.players[sd];
+          for (const src of [PP.leader, PP.stage, ...PP.chars]) {
+            if (!src || isNegated(src)) continue;
+            const st = src.base.fx && src.base.fx.static; if (!st) continue;
+            for (const o of st) {
+              if (o.op !== 'noRefreshAll') continue;
+              if (o.cond && !checkCond(o.cond, src.owner, src)) continue;
+              if (matchFilter(c, o.filter || {})) return true;
+            }
+          }
+        }
+        return false;
+      };
+      const ready = c => { if (c._noRefreshSeq === G.turnSeq) { c._noRefreshSeq = null; return; } if (noRefreshBlocked(c)) return; if (c.frozen) { c.frozen = false; } else c.rested = false; }; // _noRefreshSeq=このリフレッシュではアクティブにしない（OP08ミンク族/OP07-059フォクシー）
       ready(P.leader); P.chars.forEach(ready); if (P.stage) P.stage.rested = false;
       expireBuffs(side, 'ownerNextStart');
       expireBuffs(side, 'oppNextEnd'); // 「次の相手のエンドフェイズ終了時まで」のパワー付与は所有者の次ターン開始で失効

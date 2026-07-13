@@ -168,7 +168,8 @@ window.CARD_FX = {
   "OP15-056": {"main":{"don":0,"fx":[{"op":"draw","n":2},{"op":"leaderDoubleAttack","amount":3000,"cond":{"leaderNameIncludes":"ルーシー"}}]}},
   "OP15-057": {"onPlay":[{"op":"cond","check":"leaderDressrosa","then":[{"op":"draw","n":1}]}],"onOppAttack":[{"op":"restSelfCost","then":[{"op":"discardCost","count":1,"filter":{"or":[{"type":"EVENT"},{"type":"STAGE"}]},"then":[{"op":"powerMod","side":"self","amount":2000,"count":1,"leader":true,"battle":true,"optional":true}]}]}]},
   "OP15-042": {"onPlay":[{"op":"discardCost","count":1,"optional":true,"then":[{"op":"cond","check":{"leaderNameIncludes":"レベッカ"},"then":[{"op":"giveKeyword","target":"self","kw":"rush","duration":"turn"}]}]}],"onKO":[{"op":"selfToHand"}]},
-  "OP13-016": {"onPlay":[{"op":"search","look":4,"filter":{"minCost":3}}]},
+  // OP13-016 ガープ: サーチはリーダーが「サボ」「ポートガス・D・エース」「モンキー・Ｄ・ルフィ」のいずれかの場合のみ（以前は無条件）
+  "OP13-016": {"onPlay":[{"op":"cond","check":{"or":[{"leaderName":"サボ"},{"leaderName":"ポートガス・D・エース"},{"leaderName":"モンキー・Ｄ・ルフィ"}]},"then":[{"op":"search","look":4,"count":1,"filter":{"minCost":3},"optional":true}]}]},
   "ST22-002": {"onPlay":[{"op":"search","look":5,"count":1,"optional":true,"filter":{"traitIncludes":"白ひげ海賊団","nameExcludes":"イゾウ"}}],"onOppAttack":[{"op":"trashSelfCost","cpuSkip":true,"then":[{"op":"draw","n":1},{"op":"bottomOwn","n":1}]}]},
   "PRB02-008": {"onKO":[{"op":"draw","n":2}]},
   "PRB02-015": {"static":[{"op":"staticKeyword","kw":"blocker","cond":"leaderBH"},{"op":"staticCost","amount":4,"cond":"leaderBH"}],"onKO":[{"op":"cond","check":"leaderBH","then":[{"op":"ko","side":"opp","filter":{"maxBaseCost":4},"count":1,"optional":true}]}]},
@@ -372,7 +373,7 @@ window.CARD_FX = {
   // OP14-054: 【登場時】リーダー《魚人族》なら3ドロー ／【自分のターン終了時】手札が5枚になるよう捨てる
   "OP14-054": {"onPlay":[{"op":"cond","check":{"leaderTrait":"魚人族"},"then":[{"op":"draw","n":3}]}],"onTurnEnd":[{"op":"discardOwn","toSize":5}]},
   // OP14-039 STAGE: 【登場時】リーダー「ミホーク」なら1ドロー ／【自分のターン終了時】リーダー「ミホーク」ならドン1枚をアクティブに
-  "OP14-039": {"onPlay":[{"op":"cond","check":{"leaderNameIncludes":"ミホーク"},"then":[{"op":"draw","n":1}]}],"onTurnEnd":[{"op":"cond","check":{"leaderNameIncludes":"ミホーク"},"then":[{"op":"donActivate","n":1}]}]},
+  "OP14-039": {"onPlay":[{"op":"cond","check":{"leaderName":"ジュラキュール・ミホーク"},"then":[{"op":"draw","n":1}]}],"onTurnEnd":[{"op":"cond","check":{"leaderName":"ジュラキュール・ミホーク"},"then":[{"op":"donActivate","n":1}]}]},
   // OP14-037: 【メイン】自カード3枚レスト：相手のレストの元々パワー7000以下1枚KO ／【カウンター】リーダー+3000
   "OP14-037": {"main":{"fx":[{"op":"restOwnAsCost","count":3,"then":[{"op":"ko","side":"opp","filter":{"maxPower":7000,"restedOnly":true},"count":1,"optional":true}]}]},"counter":{"cost":0,"fx":[{"op":"leaderBuff","amount":3000,"duration":"battle"}]}},
   // OP14-038: 【メイン】自カード2枚レスト：1ドロー＋相手の元々パワー7000以下1枚レスト ／【カウンター】リーダー+3000
@@ -851,7 +852,8 @@ window.CARD_FX = {
   // OP12-024 牛鬼丸: アクティブの間は相手効果でKOされない ／【アタック時】付与ドン合計3以上で相手の元々コスト6以下1枚レスト
   "OP12-024": {"static":[{"op":"condBuff","cond":{"selfActive":true},"immune":true}],"onAttack":[{"op":"cond","check":{"selfAttachedDonAtLeast":3},"then":[{"op":"restChar","side":"opp","filter":{"maxBaseCost":6},"count":1,"optional":true}]}]},
   // OP12-026 くいな: 【起動メイン】レスト：相手の元々コスト4以下1枚レスト→ゾロ(リーダー)にレストのドン3付与
-  "OP12-026": {"act":{"label":"レスト:相手4以下レスト→ゾロに付与ドン3","cost":{"restSelf":true},"fx":[{"op":"restChar","side":"opp","filter":{"maxBaseCost":4},"count":1,"optional":true},{"op":"donAttach","target":"leader","n":3}]}},
+  // OP12-026 くいな: 同上。ドン付与はリーダーが「ロロノア・ゾロ」のときだけ
+  "OP12-026": {"act":{"label":"レスト:相手4以下レスト→ゾロに付与ドン3","cost":{"restSelf":true},"fx":[{"op":"restChar","side":"opp","filter":{"maxBaseCost":4},"count":1,"optional":true},{"op":"cond","check":{"leaderName":"ロロノア・ゾロ"},"then":[{"op":"donAttach","target":"leader","n":3}]}]}},
   // OP12-028 光月日和: 【起動メイン】ドン1+レスト：ゾロなら斬属性か緑イベント1枚をサーチ
   "OP12-028": {"act":{"label":"ドン1+レスト:ゾロなら斬/緑イベントサーチ","cost":{"don":1,"restSelf":true},"fx":[{"op":"cond","check":{"leaderNameIncludes":"ロロノア・ゾロ"},"then":[{"op":"search","look":5,"count":1,"filter":{"or":[{"attr":"斬"},{"color":"緑","type":"EVENT"}]},"optional":true}]}]}},
   // OP12-029 霜月コウ三郎: 【登場時】相手コスト2以下1枚レスト→相手レストの元々コスト1以下1枚KO
@@ -859,7 +861,8 @@ window.CARD_FX = {
   // OP12-030 ジュラキュール・ミホーク: 【ブロッカー】 ／【登場時】ドン4アクティブ→元々コスト7以上を登場不可
   "OP12-030": {"onPlay":[{"op":"donActivate","n":4},{"op":"setSummonBan","minBaseCost":7}]},
   // OP12-031 たしぎ: 【登場時】相手の元々コスト6以下1枚レスト→ゾロ(リーダー)にレストのドン3付与
-  "OP12-031": {"onPlay":[{"op":"restChar","side":"opp","filter":{"maxBaseCost":6},"count":1,"optional":true},{"op":"donAttach","target":"leader","n":3}]},
+  // OP12-031 たしぎ: ドン付与は「自分のリーダーの『ロロノア・ゾロ』」限定（リーダー名の完全一致。以前は無条件付与だった）
+  "OP12-031": {"onPlay":[{"op":"restChar","side":"opp","filter":{"maxBaseCost":6},"count":1,"optional":true},{"op":"cond","check":{"leaderName":"ロロノア・ゾロ"},"then":[{"op":"donAttach","target":"leader","n":3}]}]},
   // OP12-034 ペローナ: 【登場時】リーダーが属性(斬)なら斬属性か緑イベント1枚をサーチ
   "OP12-034": {"onPlay":[{"op":"cond","check":{"leaderAttr":"斬"},"then":[{"op":"search","look":5,"count":1,"filter":{"or":[{"attr":"斬"},{"color":"緑","type":"EVENT"}]},"optional":true}]}]},
   // OP12-036 ロロノア・ゾロ(c4): リーダーが属性(斬)なら+1000（※「効果で登場できない」「斬とのバトルでKOされない」は近似で省略）
@@ -869,7 +872,8 @@ window.CARD_FX = {
   // OP12-038 二刀流居合羅生門: 【メイン】ドン2レスト：相手レストの元々コスト4以下2枚KO ／【カウンター】リーダー+3000
   "OP12-038": {"main":{"fx":[{"op":"restDonCost","n":2,"then":[{"op":"ko","side":"opp","filter":{"maxBaseCost":4,"restedOnly":true},"count":2,"optional":true}]}]},"counter":{"cost":0,"fx":[{"op":"leaderBuff","amount":3000,"duration":"battle"}]}},
   // OP12-039 ルフィは海賊王になる男だ: 【メイン】ゾロ(リーダー)をアクティブにする
-  "OP12-039": {"main":{"fx":[{"op":"activateOwnChar","incLeader":true,"all":true,"filter":{"type":"LEADER"}}]}},
+  // OP12-039:【メイン】アクティブにできるのはリーダーが「ロロノア・ゾロ」のときだけ（以前は任意のリーダーをアクティブにしていた）
+  "OP12-039": {"main":{"fx":[{"op":"cond","check":{"leaderName":"ロロノア・ゾロ"},"then":[{"op":"activateOwnChar","incLeader":true,"count":0}]}]}},
   // OP12-118 ジュエリー・ボニー(緑): 【ブロッカー】 ／【登場時】レストのカード8枚以上で2ドロー1捨て→ドン1アクティブ
   "OP12-118": {"onPlay":[{"op":"cond","check":{"restedCardsAtLeast":8},"then":[{"op":"draw","n":2},{"op":"discardOwn","n":1},{"op":"donActivate","n":1}]}]},
   /* ===== OP12 バッチ3（青・海軍/麦わら。新cond selfHandAtLeast/trashEventAtLeast・drawDiscarded） ===== */
@@ -1161,7 +1165,7 @@ window.CARD_FX = {
   // OP11-109 パッパグ: 【登場時】自分の「ケイミー」がいれば 2ドロー＋手札2枚を捨てる
   "OP11-109": {"onPlay":[{"op":"cond","check":{"selfChar":{"nameIncludes":"ケイミー"}},"then":[{"op":"draw","n":2},{"op":"discardOwn","n":2}]}]},
   // OP11-110 フカボシ: KOされる場合 代わりに「魚人島」かリーダー「しらほし」1枚をレスト ／【登場時】ライフ上か下1枚を手札に：相手コスト1以下1枚KO
-  "OP11-110": {"static":[{"op":"leaveProtect","targetSelf":true,"onlyKO":true,"pay":"restOwnCards","n":1,"filter":{"or":[{"traitIncludes":"魚人島"},{"type":"LEADER","nameIncludes":"しらほし"}]}}],"onPlay":[{"op":"lifeCost","pos":"choose","then":[{"op":"ko","side":"opp","filter":{"maxCost":1},"count":1,"optional":true}]}]},
+  "OP11-110": {"static":[{"op":"leaveProtect","targetSelf":true,"onlyKO":true,"pay":"restOwnCards","n":1,"filter":{"or":[{"traitIncludes":"魚人島"},{"type":"LEADER","name":"しらほし"}]}}],"onPlay":[{"op":"lifeCost","pos":"choose","then":[{"op":"ko","side":"opp","filter":{"maxCost":1},"count":1,"optional":true}]}]},
   // OP11-112 メガロ: 【ブロッカー】 ／【相手のターン中】しらほしリーダーなら このキャラ+4000
   "OP11-112": {"static":[{"op":"condBuff","cond":{"oppTurn":true,"leaderNameIncludes":"しらほし"},"power":4000}]},
   // OP11-114 ゴムゴムの火拳銃: 【メイン】ドン3レスト：お互いライフ合計5以上で相手の元々コスト5以下1枚KO ／【カウンター】リーダー+3000
@@ -1574,7 +1578,7 @@ window.CARD_FX = {
   // OP09-104 サボ(c7): 【登場時】手札から革命軍キャラ1枚をライフ上に表向きで加える→ライフ2枚以上ならライフ上か下1枚を手札に
   "OP09-104": {"onPlay":[{"op":"handCharToLife","faceUp":true,"filter":{"traitIncludes":"革命軍"}},{"op":"cond","check":{"lifeAtLeast":2},"then":[{"op":"lifeCost","pos":"choose"}]}]},
   // OP09-106 ニコ・オルビア: 【登場時】リーダーが「ニコ・ロビン」なら+3000
-  "OP09-106": {"onPlay":[{"op":"cond","check":{"leaderNameIncludes":"ニコ・ロビン"},"then":[{"op":"leaderBuff","amount":3000,"duration":"turn"}]}]},
+  "OP09-106": {"onPlay":[{"op":"cond","check":{"leaderName":"ニコ・ロビン"},"then":[{"op":"leaderBuff","amount":3000,"duration":"turn"}]}]},
   // OP09-107 ニコ・ロビン(c6): 【登場時】相手ライフ3枚以上なら相手ライフ上1枚をトラッシュ
   "OP09-107": {"onPlay":[{"op":"cond","check":{"oppLifeAtLeast":3},"then":[{"op":"lifeTrash","side":"opp"}]}]},
   // OP09-110 ピエール: 【登場時】2ドロー＋手札2枚捨て
@@ -2269,7 +2273,9 @@ window.CARD_FX = {
   // OP05-039 ベタベットン流星: 【カウンター】リーダーかキャラ+4000→相手のレストのコスト3以下1枚KO
   "OP05-039": {"counter":{"cost":0,"fx":[{"op":"powerMod","side":"self","leader":true,"amount":4000,"battle":true,"count":1,"optional":true},{"op":"ko","side":"opp","filter":{"restedOnly":true,"maxCost":3},"count":1,"optional":true}]}},
   // OP05-040 鳥カゴ(STAGE): 【自分のターン終了時】ドン10ならレストのコスト5以下すべてKO→自身トラッシュ（リフレッシュロック静的は近似で省略）
-  "OP05-040": {"onTurnEnd":[{"op":"cond","check":{"donAtLeast":10},"then":[{"op":"ko","side":"opp","filter":{"restedOnly":true,"maxCost":5},"all":true},{"op":"negateSelf"}]}]},
+  // OP05-040 鳥カゴ: 常在＝リーダーが「ドンキホーテ・ドフラミンゴ」の場合、コスト5以下のキャラすべて（両者）が
+  //   お互いのリフレッシュフェイズでアクティブにならない（noRefreshAll。以前は常在が丸ごと未実装だった）
+  "OP05-040": {"static":[{"op":"noRefreshAll","cond":{"leaderName":"ドンキホーテ・ドフラミンゴ"},"filter":{"type":"CHAR","maxCost":5}}],"onTurnEnd":[{"op":"cond","check":{"donAtLeast":10},"then":[{"op":"ko","side":"opp","filter":{"restedOnly":true,"maxCost":5},"all":true},{"op":"negateSelf"}]}]},
   /* ===== OP05 バッチ2（青海軍・紫麦わら/キッド/ハート・黒ドレスローザ/天竜人・黄空島） ===== */
   // OP05-042 イッショウ: 【登場時】相手コスト7以下1枚は次の自分ターン開始までアタック不可
   "OP05-042": {"onPlay":[{"op":"setAttackBan","filter":{"maxCost":7},"count":1,"duration":"untilNextStart","optional":true}]},
@@ -3738,7 +3744,8 @@ window.CARD_FX = {
   "ST11-002": {"onTurnEnd":[{"op":"discardCost","count":1,"optional":true,"filter":{"type":"EVENT"},"then":[{"op":"activateOwnChar","count":1,"filter":{"restedOnly":true,"traitIncludes":"FILM"}}]}]},
   "ST11-003": {"main":{"fx":[{"op":"cond","check":{"leaderNameIncludes":"ウタ"},"then":[{"op":"chooseOption","options":[{"label":"相手コスト5以下1枚レスト","fx":[{"op":"restChar","side":"opp","filter":{"maxCost":5},"count":1,"optional":true}]},{"label":"相手のレストのコスト5以下1枚KO","fx":[{"op":"ko","side":"opp","filter":{"restedOnly":true,"maxCost":5},"count":1,"optional":true}]}]}]}]}},
   "ST11-004": {"main":{"fx":[{"op":"cond","check":{"leaderNameIncludes":"ウタ"},"then":[{"op":"search","look":3,"count":1,"filter":{"traitIncludes":"FILM"},"exclude":"新時代","optional":true},{"op":"donActivate","n":1}]}]}},
-  "ST11-005": {"main":{"fx":[{"op":"activateOwnChar","incLeader":true,"count":0}]}},
+  // ST11-005:【メイン】アクティブにできるのはリーダーが「ウタ」のときだけ
+  "ST11-005": {"main":{"fx":[{"op":"cond","check":{"leaderName":"ウタ"},"then":[{"op":"activateOwnChar","incLeader":true,"count":0}]}]}},
   "ST12-002": {"act":{"label":"レスト:相手コスト4以下レスト","cost":{"restSelf":true},"fx":[{"op":"restChar","side":"opp","filter":{"maxCost":4},"count":1,"optional":true}]}},
   "ST12-003": {"onPlay":[{"op":"cond","check":{"selfCharCount":{"max":2}},"then":[{"op":"playCharFromHand","filter":{"maxCost":4,"or":[{"traitIncludes":"シッケアール王国"},{"attr":"斬"}],"nameExcludes":"ジュラキュール・ミホーク"},"count":1,"optional":true,"rested":true}]}]},
   "ST12-006": {"onAttack":[{"op":"cond","check":{"donX1":true},"then":[{"op":"chooseOption","options":[{"label":"相手コスト2以下1枚レスト","fx":[{"op":"restChar","side":"opp","filter":{"maxCost":2},"count":1,"optional":true}]},{"label":"相手のレストのコスト2以下1枚KO","fx":[{"op":"ko","side":"opp","filter":{"restedOnly":true,"maxCost":2},"count":1,"optional":true}]}]}]}]},
@@ -4485,7 +4492,7 @@ window.CARD_FX = {
   "OP09-097": [{"op":"negateChoose","duration":"turn"}],
   "OP09-098": [{"op":"negateChoose","duration":"turn"}],
   "OP09-105": [{"op":"cond","check":{"leaderTrait":"エッグヘッド"},"then":[{"op":"lifeAddFromDeck","n":1},{"op":"discardOwn","n":2}]}],
-  "OP09-106": [{"op":"cond","check":{"leaderNameIncludes":"ニコ・ロビン"},"then":[{"op":"draw","n":3},{"op":"discardOwn","n":2}]}],
+  "OP09-106": [{"op":"cond","check":{"leaderName":"ニコ・ロビン"},"then":[{"op":"draw","n":3},{"op":"discardOwn","n":2}]}],
   "OP09-107": [{"op":"playCharFromHand","filter":{"maxCost":3,"color":"黄"},"count":1,"optional":true}],
   "OP09-111": [{"op":"cond","check":{"and":[{"leaderTrait":"エッグヘッド"},{"oppHandAtLeast":6}]},"then":[{"op":"oppDiscard","n":2}]}],
   "OP09-114": [{"op":"cond","check":{"totalLifeAtMost":5},"then":[{"op":"playSelf"}]}],
