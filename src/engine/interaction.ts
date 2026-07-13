@@ -77,9 +77,11 @@ export function resolveCardClick(
       const ok = safe(() => engine.handPlayable(card));
       // 出せる手札=playable(緑グロー)/出せない=unplayable(グレーアウト)。元 handHTML と同じ事前アフォーダンス。
       // 誤タップ救済: 1タップ即確定にせず、カード画像付きの確認を挟んでから tryPlayHand。
+      // 出せない手札は「グレーアウトして無反応」だと理由が分からない（リーダー効果で登場不可になった等）。
+      // タップで理由をトーストする（プレイはしない＝tryPlayHand/uiDispatch は絶対に呼ばない）。
       return ok
         ? { highlight: 'playable', onClick: () => { void runExclusive(engine, mySeat, online, () => confirmPlayHand(engine, card, mySeat, online)); }, clickable: true }
-        : { highlight: 'unplayable', clickable: false };
+        : { highlight: 'unplayable', onClick: () => toastUnplayable(engine, card, mySeat), clickable: true };
     }
     if (card === me.leader || me.chars.includes(card) || card === me.stage) {
       const canAtk = safe(() => engine.canCardAttack(card));
@@ -150,4 +152,24 @@ export function atkGlow(engine: EngineAPI, card: Card): 'atk-active' | 'atk-targ
   if (G._atkFrom === card.uid) return 'atk-active';
   if (G._atkTo === card.uid) return 'atk-target';
   return undefined;
+}
+
+/* 出せない手札をタップしたときに「なぜ出せないか」をトーストする（読み取りのみ・Gは変更しない）。
+   判定順は engine の handPlayable（40-ui-render.js:460）と summonBanned（10-engine-core.js:407）に合わせる。
+   これが無いと、リーダー効果（例: OP14-020ミホーク＝「その後、自分は、このターン中、キャラカードを登場できない」）で
+   登場不可になったとき、手札がグレーになるだけで理由がどこにも出ず「ドンはあるのに出せない＝バグ」に見える。 */
+function toastUnplayable(engine: EngineAPI, card: Card, seat: Side): void {
+  const say = (text: string) => useEngineStore.getState().pushFx({ type: 'toast', id: Date.now() + Math.random(), text } as any);
+  let msg = '今このカードは使えません';
+  try {
+    const G = engine.G, P = G.players[seat], b = card.base;
+    const cost = ((): number => { try { const v = engine.effCost(seat, card); return typeof v === 'number' ? v : (b.cost || 0); } catch { return b.cost || 0; } })();
+    const don = P.don?.active || 0;
+    if (P._noPlayTurn === G.turnSeq) msg = 'このターンは手札からカードをプレイできません';
+    else if (b.type === 'CHAR' && P._noSummonTurn === G.turnSeq) msg = 'このターンはキャラを登場できません（使用したリーダー効果によるもの）';
+    else if (b.type === 'CHAR' && P._noSummonMinCostTurn === G.turnSeq && (b.cost || 0) >= (P._noSummonMinCost || 99)) msg = `このターンは元々のコスト${P._noSummonMinCost}以上のキャラを登場できません`;
+    else if (b.type === 'EVENT' && !(b.fx && b.fx.main)) msg = 'このイベントはメインでは使えません（カウンター専用など）';
+    else if (cost > don) msg = `ドン!!が足りません（必要 ${cost} ／ アクティブ ${don}）`;
+  } catch { /* ignore: 既定メッセージのまま */ }
+  say(msg);
 }

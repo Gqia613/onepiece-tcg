@@ -138,6 +138,10 @@ export default function OnlineLobby() {
     setDeckId('');
     navigate('/');
   };
+  // 戻る: 部屋にいるなら必ず退室してから帰る（WS・部屋の席を残さない＝相手が待ち続けるのを防ぐ）。
+  // 入口画面（mode!=='online'）で doLeave を通すと leaveOnline→engine.backToSelect() で
+  // 進行中の CPU 対戦の盤面まで破棄されるため、mode で分ける。
+  const goBack = () => { if (mode === 'online') doLeave(); else navigate('/'); };
   const copy = async (kind: 'code' | 'link') => {
     if (!roomCode) return;
     const text = kind === 'code' ? roomCode : `${location.origin}/online?room=${roomCode}`;
@@ -168,9 +172,16 @@ export default function OnlineLobby() {
 
   return (
     <div className={'online-wrap' + (inLobby ? ' fit' : '')}>
-      <h2 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
-        <Icon.globe size={20} />オンライン対戦
-      </h2>
+      {/* 他画面（DeckSelect/Decks/DeckBuilder）と同じヘッダー流儀。以前は h2 直書きで戻る導線が無く、
+          ハンバーガーメニューからしかホームへ帰れなかった。 */}
+      <div className="bd-head" style={{ width: '100%', maxWidth: 560 }}>
+        <button className="bd-back" onClick={goBack} aria-label="戻る" title="戻る">
+          <Icon.arrowLeft size={22} />
+        </button>
+        <h1 style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <Icon.globe size={20} />オンライン対戦
+        </h1>
+      </div>
       <div style={{ fontSize: 12.5, color: 'var(--muted)' }}>
         部屋コードを共有して、フレンドと1対1で対戦できます
       </div>

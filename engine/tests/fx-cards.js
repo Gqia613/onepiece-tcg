@@ -2344,6 +2344,34 @@ humanPick=function(c){return Promise.resolve((c||[])[0]||null);};
       const ctx={self:kid,side:'me'}; await runFx(C['ST36-005'].fx.onOppAttack,ctx);
       ok(me.life[1]._faceUp===false && G._counterRedirect===kid, 'ST36-005: ライフ下(表向き)を裏返してアタック対象をキッドに変更');
       G._counterRedirect=null; }
+    /* ===== onSelfRested（このキャラがレストになった時）: アタック以外の全レスト経路から誘発する ===== */
+    // ★報告バグ: OP14-020ミホークLの起動メイン（コスト＝自分のカード1枚をレスト）で OP14-119 をレストにしても発動しなかった
+    { G.players={me:mkP('OP14-020',false),cpu:mkP('OP11-041',true)}; G.active='me'; G.turnSeq=5; G.winner=null;
+      const me=G.players.me; const mh=I('OP14-119','me'); me.chars=[mh]; me.don={active:0,rested:3}; // 場にコスト9(=5以上)のキャラ
+      me.leader.rested=true; // コスト対象を OP14-119 に一意化（restOwnAsCost の候補はレストしていない自分のカード）
+      const t=I('OP01-006','cpu'); G.players.cpu.chars=[t];
+      await leaderActivate('me');
+      ok(mh.rested===true, 'OP14-020L: コストで自分のカード（OP14-119）をレストにする');
+      ok(t.restImmuneUntil != null, '★OP14-119: リーダー効果のコストでレストされても【レストになった時】が発動する（相手をレスト不可に）');
+      ok(me.don.active===3 && me.don.rested===0, 'OP14-020L: コスト5以上のキャラがいるのでドン3枚がアクティブに');
+      ok(summonBanned('me', I('OP04-007','me')), 'OP14-020L: その後このターン中はキャラを登場できない'); }
+    // 効果でレストにされた側（相手の効果）でも誘発する（自分のターン中に限る＝【自分のターン中】）
+    { const me=LP('OP14-020'); const z=I('OP14-032','me'); me.chars=[z];
+      const t=I('OP01-006','cpu'); G.players.cpu.chars=[t];
+      await runFx([{op:'restThis'}],{self:z,side:'me'});
+      ok(z.rested===true && t.rested===true, 'OP14-032: restThis（効果で自身をレスト）でも【レストになった時】が発動'); }
+    // 【自分のターン中】なので、相手ターンのブロックでは発動しない
+    { const me=LP('OP14-020'); const z=I('OP14-032','me'); me.chars=[z]; G.active='cpu';
+      const t=I('OP01-006','cpu'); G.players.cpu.chars=[t];
+      await runFx([{op:'restThis'}],{self:z,side:'me'});
+      ok(z.rested===true && t.rested===false, 'OP14-032: 相手ターン中のレストでは発動しない（【自分のターン中】）'); }
+    // PRB02-009 は「相手の効果でレストになった時」＝アタック宣言のレストでは発動しない
+    { const me=LP('OP11-041'); const p=I('PRB02-009','me'); me.chars=[p]; me.deck=[I('OP11-041','me'),I('OP11-041','me')]; me.hand=[];
+      await fireSelfRested(p,'attack');
+      ok(me.chars.includes(p) && me.hand.length===0, 'PRB02-009: 自分のアタックでのレストでは発動しない（相手の効果限定）');
+      await fireSelfRested(p,'oppEffect');
+      ok(!me.chars.includes(p) && me.hand.length===2, 'PRB02-009: 相手の効果でレストされた時のみ発動（自身をトラッシュ→2ドロー）'); }
+
     // ST36-005 起動メイン: ライフの上か下1枚を表向きにしてリーダーにレストのドン1枚を付与
     { const me=LP('ST21-001'); const kid=I('ST36-005','me'); me.chars=[kid];
       me.life=[I('OP11-041','me')]; me.don={active:2,rested:1};

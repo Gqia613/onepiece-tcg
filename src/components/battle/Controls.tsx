@@ -95,8 +95,24 @@ export function Controls() {
       if (online) void uiDispatch({ t: 'endTurn' });
       else engine.uiEndTurn(mySeat);
     };
+    // 「このターンはキャラを登場できない」等の全体制限は、手札が丸ごとグレーになるだけで理由が見えない
+    // （例: OP14-020ミホークLの起動メイン）。制限中だけヒントバーで理由を常時表示する。
+    const banMsg = ((): string | null => {
+      try {
+        const P = G.players[mySeat];
+        if (P._noPlayTurn === G.turnSeq) return 'このターンは手札からカードをプレイできません';
+        if (P._noSummonTurn === G.turnSeq) return 'このターンはキャラを登場できません';
+        if (P._noSummonMinCostTurn === G.turnSeq) return `このターンは元々のコスト${P._noSummonMinCost}以上のキャラを登場できません`;
+      } catch { /* ignore */ }
+      return null;
+    })();
     return (
       <div className="controls">
+        {banMsg && (
+          <div className="hintbar">
+            <span className="hb-chip warn">⚠ {banMsg}</span>
+          </div>
+        )}
         <button className="phasebtn go" onClick={() => { void confirmEndTurn(); }}>
           ターン終了
         </button>

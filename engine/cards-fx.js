@@ -3991,7 +3991,8 @@ window.CARD_FX = {
   "PRB02-005": {"onPlay":[{"op":"cond","check":{"and":[{"leaderMulticolor":true},{"oppDonAtMost":7}]},"then":[{"op":"restOppDon","n":1},{"op":"donRefreshLock","n":1}]}]},
   "PRB02-006": {"static":[{"op":"restRedirect"}]},
   "PRB02-007": {"onPlay":[{"op":"search","look":5,"count":1,"filter":{"traitIncludes":"王下七武海","nameExcludes":"ジンベエ"},"optional":true}],"onAttack":[{"op":"deckBottom","side":"any","filter":{"maxCost":1},"count":1,"optional":true}]},
-  "PRB02-009": {"onSelfRested":[{"op":"trashSelfCost","then":[{"op":"draw","n":2}]}]},
+  // PRB02-009: 「このキャラが【相手の効果で】レストになった時」＝ターン制限なし・原因限定（他の onSelfRested 勢＝【自分のターン中】とは条件が違う）
+  "PRB02-009": {"onSelfRested":{"when":"any","cause":"oppEffect","fx":[{"op":"trashSelfCost","then":[{"op":"draw","n":2}]}]}},
   "PRB02-010": {"onPlay":[{"op":"donMinus","n":2},{"op":"cond","check":{"and":[{"leaderTraitIncludes":"ビッグ・マム海賊団"},{"oppDonAtLeast":6}]},"then":[{"op":"draw","n":2},{"op":"playCharFromHand","filter":{"minPower":6000,"maxPower":8000,"traitIncludes":"ビッグ・マム海賊団"},"count":1,"optional":true}]}]},
   "PRB02-011": {"onPlay":[{"op":"cond","check":{"leaderMulticolor":true},"then":[{"op":"donFromDeck","n":1,"mode":"rested"}]}]},
   "PRB02-013": {"onPlay":[{"op":"cond","check":{"leaderTraitIncludes":"スリラーバーク海賊団"},"then":[{"op":"reviveFromTrash","filter":{"maxCost":4},"rested":true,"optional":true},{"op":"donAttach","target":"chooseOwn","n":1}]}]},

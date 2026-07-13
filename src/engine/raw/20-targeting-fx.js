@@ -335,11 +335,11 @@
           };
           if (op.leaderOnly) { const L2 = G.players[o].leader; if (!L2.rested) { L2.rested = true; flog(side, '相手リーダーをレストにした'); } render(); break; } // 「相手のリーダーをレストにする」（OP16-039五老星）
           const restPool = () => { let arr = oppChars(side, opFilter(op)).filter(c => !c.rested && !isRestImmune(c) && !isOppRestImmune(c)); if (op.includeLeader && !G.players[o].leader.rested) arr = [G.players[o].leader, ...arr]; if (op.includeStage && G.players[o].stage && !G.players[o].stage.rested) arr = [...arr, G.players[o].stage]; return arr; };
-          if (op.all) { const rs = restPool(); for (let t of rs) { t = await maybeRestRedirect(t); t.rested = true; flog(side, `「${t.base.name === undefined ? '相手リーダー' : t.base.name}」をレスト`); } if (rs.length) await fireOwnRest(side); break; } // 条件一致を全てレスト
+          if (op.all) { const rs = restPool(); for (let t of rs) { t = await maybeRestRedirect(t); t.rested = true; await fireSelfRested(t, t.owner === side ? 'ownEffect' : 'oppEffect'); flog(side, `「${t.base.name === undefined ? '相手リーダー' : t.base.name}」をレスト`); } if (rs.length) await fireOwnRest(side); break; } // 条件一致を全てレスト
           for (let i = 0; i < (op.count || 1); i++) {
             const cands = restPool();
             let t = await chooseCard(side, cands, progText('レストにする相手キャラを選択', i, op.count || 1), 'oppBig', op.optional);
-            if (!t) break; t = await maybeRestRedirect(t); t.rested = true; flog(side, `「${t.base.name}」をレスト`); await fireOwnRest(side);
+            if (!t) break; t = await maybeRestRedirect(t); t.rested = true; await fireSelfRested(t, t.owner === side ? 'ownEffect' : 'oppEffect'); flog(side, `「${t.base.name}」をレスト`); await fireOwnRest(side);
             if (t.base.fx && t.base.fx.onOppRested && !isNegated(t) && t.owner !== side && self && self.base && self.base.type === 'CHAR') { await runFx(t.base.fx.onOppRested, { self: t, side: t.owner }); } // 「相手のキャラの効果でレストになった時」(OP14-070バッファロー。効果源=ctx.self がキャラの時のみ)
           }
           break;
@@ -358,8 +358,8 @@
             const cands = lockPool();
             const t = P.isCPU ? cands[0] : await chooseCard(side, cands, progText('次のリフレッシュでアクティブにしない相手のカード', i, op.count || 1), 'oppBig', op.optional);
             if (!t) break;
-            t.rested = true; t.frozen = true; flog(side, `「${t.base.type === 'LEADER' ? '相手リーダー' : t.base.name}」を次のリフレッシュでアクティブにしない`);
-            if (op.restSource && self && i === 0) { self.rested = true; flog(side, `「${self.base.name}」をレストにした`); }
+            t.rested = true; await fireSelfRested(t, t.owner === side ? 'ownEffect' : 'oppEffect'); t.frozen = true; flog(side, `「${t.base.type === 'LEADER' ? '相手リーダー' : t.base.name}」を次のリフレッシュでアクティブにしない`);
+            if (op.restSource && self && i === 0) { self.rested = true; await fireSelfRested(self, 'ownEffect'); flog(side, `「${self.base.name}」をレストにした`); }
           }
           break;
         }
@@ -532,7 +532,7 @@
         case 'restSelfCost': {
           if (!self || self.rested) break;
           if (!(await confirmUse(side, '自身をレスト', `「${self.base.name}」をレストにして効果を使いますか？`, 'レストして使う', '使わない'))) break;
-          self.rested = true; flog(side, `「${self.base.name}」をレストにした`); render(); await runFx(op.then, ctx); break;
+          self.rested = true; await fireSelfRested(self, 'ownEffect'); flog(side, `「${self.base.name}」をレストにした`); render(); await runFx(op.then, ctx); break;
         }
         // このキャラを持ち主のデッキの下に置く（強制・OP09-051バギー）
         case 'selfToDeckBottom': { if (self && P.chars.includes(self)) { P.don.rested += self.attachedDon || 0; removeChar(self); P.deck.push(reset(self)); flog(side, `「${self.base.name}」をデッキの下に置いた`); await checkAllyLeave(side, self, 'ownEffect'); render(); } break; }
@@ -769,7 +769,7 @@
           for (let i = 0; i < fn; i++) if (P.life[i]) P.life[i]._faceUp = true; flog(side, `ライフの上から${fn}枚を表向きにした`); render();
           await runFx(op.then, ctx); break;
         }
-        case 'restThis': { if (self) { self.rested = true; flog(side, `「${self.base.name}」をレストにした`); render(); } break; } // このキャラをレストにする（強制・OP08-046シャクヤク）
+        case 'restThis': { if (self) { self.rested = true; await fireSelfRested(self, 'ownEffect'); flog(side, `「${self.base.name}」をレストにした`); render(); } break; } // このキャラをレストにする（強制・OP08-046シャクヤク）
         // 自分のトラッシュから n 枚(filter一致)をデッキの下に置くコスト（OP13-081コアラ / OP12-091/094）。任意。
         case 'trashToBottomCost': {
           const tn = op.n || 1;
@@ -970,13 +970,6 @@
         }
         // 「このターン終了時」に fx を予約発動（登場時等から遅延）
         case 'scheduleTurnEnd': { (G._pendingTurnEnd = G._pendingTurnEnd || []).push({ side, fx: op.fx, self }); break; }
-        // self自身をレストにするコスト（onOppAttack等。任意）。払えた時 then を実行
-        case 'restSelfCost': {
-          if (!self || self.rested) break;
-          if (!(await confirmUse(side, '自身をレスト', `「${self.base.name}」をレストにして効果を使いますか？`, 'レストして使う'))) break;
-          self.rested = true; flog(side, `「${self.base.name}」をレストにした`); render();
-          await runFx(op.then, ctx); break;
-        }
         case 'bounceStage': { // ステージ1枚（自分/相手）を持ち主の手札に戻す（任意）
           const stages = []; if (G.players.me.stage) stages.push(G.players.me.stage); if (G.players.cpu.stage) stages.push(G.players.cpu.stage);
           if (!stages.length) break;
@@ -1086,7 +1079,7 @@
           if ([P.leader, P.stage, ...P.chars].filter(c => c && !c.rested && matchFilter(c, opFilter(op))).length < cnt) break;
           if (!(await confirmUse(side, 'レストにする', `カード${cnt}枚をレストにして効果を使いますか？`, 'レストして使う'))) break;
           const rested = [];
-          for (let i = 0; i < cnt; i++) { const pool = [P.leader, P.stage, ...P.chars].filter(c => c && !c.rested && !rested.includes(c) && matchFilter(c, opFilter(op))); const t = P.isCPU ? pool[0] : await chooseCard(side, pool, `レストにするカードを選択（コスト ${i + 1}/${cnt}）`, 'ownBig', false); if (!t) break; t.rested = true; rested.push(t); }
+          for (let i = 0; i < cnt; i++) { const pool = [P.leader, P.stage, ...P.chars].filter(c => c && !c.rested && !rested.includes(c) && matchFilter(c, opFilter(op))); const t = P.isCPU ? pool[0] : await chooseCard(side, pool, `レストにするカードを選択（コスト ${i + 1}/${cnt}）`, 'ownBig', false); if (!t) break; t.rested = true; await fireSelfRested(t, 'ownEffect'); rested.push(t); }
           if (rested.length < cnt) break; flog(side, `カード${cnt}枚をレストにした`);
           await runFx(op.then, ctx); break;
         }
@@ -1304,13 +1297,13 @@
           let picks;
           if (ow.isCPU) picks = pool.slice().sort((a, b) => power(a) - power(b)).slice(0, n);
           else { picks = []; for (let i = 0; i < n; i++) { const pk = await chooseCard(target.owner, pool.filter(c => !picks.includes(c)), `レストにするカード（${i + 1}/${n}）`, 'ownSmall', false); if (!pk) break; picks.push(pk); } if (picks.length < n) continue; }
-          for (const c of picks) c.rested = true;
+          for (const c of picks) { c.rested = true; await fireSelfRested(c, 'ownEffect'); }
           flog(target.owner, `【${p.base.name}】カード${n}枚をレストにして「${target.base.name}」を守った`); return true;
         } else if (prot.pay === 'restSelf') {
           // 代わりにこのキャラ(p=身代わり元)をレストにして target を場に残す（OP12-027コウシロウ）。p===target/既にレストなら不可
           if (p === target || p.rested) continue;
           if (!(await confirmUse(target.owner, `【${p.base.name}】身代わり`, `「${p.base.name}」をレストにして「${target.base.name}」を場に残しますか？`, '残す（このキャラをレスト）', '残さない', { noSrc: true }))) continue;
-          p.rested = true; flog(target.owner, `【${p.base.name}】自身をレストにして「${target.base.name}」を場に残した`); render(); return true;
+          p.rested = true; await fireSelfRested(p, 'ownEffect'); flog(target.owner, `【${p.base.name}】自身をレストにして「${target.base.name}」を場に残した`); render(); return true;
         } else if (prot.pay === 'free') {
           // コスト無しで場を離れない（OP10-118ルフィ＝ターン1回相手の効果でKOされない。once:'turn'は上のゲートで消化済）
           flog(target.owner, `「${target.base.name}」は相手の効果で離れない`); return true;
@@ -1338,7 +1331,7 @@
           if (!cands.length) continue;
           if (!(await confirmUse(target.owner, `【${p.base.name}】身代わり`, `相手のキャラ1枚をレストにして「${target.base.name}」を場に残しますか？`, '残す（相手をレスト）', '残さない', { noSrc: true }))) continue;
           const rt = G.players[target.owner].isCPU ? cands[0] : await chooseCard(target.owner, cands, 'レストにする相手キャラを選択', 'oppBig', false); if (!rt) continue;
-          rt.rested = true; flog(target.owner, `【${p.base.name}】相手の「${rt.base.name}」をレストにして「${target.base.name}」を場に残した`); render(); return true;
+          rt.rested = true; await fireSelfRested(rt, 'oppEffect'); flog(target.owner, `【${p.base.name}】相手の「${rt.base.name}」をレストにして「${target.base.name}」を場に残した`); render(); return true;
         } else if (prot.pay === 'trashSelfDraw') {
           // バウンス/デッキ送りの代わりにトラッシュへ置き1ドロー（OP08-045サッチ。KOはonKO側で処理するため'ko'では発動しない）
           if (cause === 'ko') continue;

@@ -6,12 +6,14 @@
 //  - store.prompt(PromptState|null) を購読。null なら何も描かない（残骸を出さない）。
 //  - body直付け相当のオーバーレイ #promptHost（position:fixed・pointer-events:none）。
 //    その中の .prompt だけが pointer-events:auto（元CSS準拠）。
-//  - AnimatePresence でフェード/スケールイン。.prompt は CSS で left:50%/translateX(-50%) 中央寄せ
-//    なので、Framer の transform が translateX を潰さないよう x:'-50%' を常に保ち scale/opacity だけ動かす。
+//  - ★モーダル本体は framer の AnimatePresence を使わない（ストアの純関数として描画する）。
+//    退場アニメの内部 state に依存すると、退場完了と新プロンプトの入場が同着したときに描画が消え、
+//    「プロンプトはあるのに画面に出ない＝進行不能」になる（オンラインのブロック→カウンターで実際に発生）。
+//    入退場の見た目は CSS（.prompt.show の promptIn）に任せる。
 //  - 各ボタンの onClick で prompt.onPick(o.v) を呼ぶ（必ず解決＝フリーズ厳禁）。
 import { useRef, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion'; // マリガン手札のフリップ演出だけに使う（プロンプト本体は AnimatePresence を使わない＝下の Prompt() のコメント参照）
 import { useEngineStore } from '../../state/engineStore';
 import { useNetStore, seatLabel } from '../../state/netStore';
 import { uiDispatch } from '../../net/dispatch';
@@ -193,61 +195,46 @@ export function Prompt() {
   // エンジンは待ったまま＝盤面に戻れば再表示される）
   if (!onPlay) return <div id="promptHost" />;
 
+  // ★AnimatePresence を使わない（ゲーム進行に必須のモーダルをアニメ内部状態に依存させない）。
+  //   旧実装は scrim/待機/PromptCard を1つの <AnimatePresence> の子にし、全てに exit(0.2s) を付けていた。
+  //   AnimatePresence は表示中の子を内部 state（renderedChildren）で持ち、退場完了時に「前回コミット時点の
+  //   スナップショット」を書き戻す。オンラインのブロック→カウンターは
+  //     setPrompt(null)（ブロックモーダル退場開始）→ エンジンが sleep(200) → counterStep の showPrompt
+  //   となり、退場完了(≈200ms)と新プロンプトの入場コミットがちょうど同着する。書き戻しが後勝ちすると
+  //   renderedChildren が空のまま固定され、ストアには自席のカウンタープロンプトがあるのに #promptHost が空＝
+  //   「あなたの操作待ち」のまま進行不能になった（ホームへ出て戻ると AnimatePresence ごと再マウントされて直る）。
+  //   → 描画をストアの純関数にする。入場アニメは CSS（.prompt.show の promptIn）が持っているので見た目は不変。
+  //   退場フェードは無くなる（即消え）が、進行不能より遥かにマシ。
   return (
     <div id="promptHost">
-      <AnimatePresence>
-        {showScrim && (
-          <motion.div
-            key="scrim"
-            className="prompt-scrim"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.18 }}
-          />
-        )}
-        {prompt && mullEarlyChooser && (
-          <motion.div
-            key={'mull-early' + prompt.id}
-            className="prompt show mulligan"
-            initial={{ x: '-50%', opacity: 0, scale: 0.9 }}
-            animate={{ x: '-50%', opacity: 1, scale: 1 }}
-            exit={{ x: '-50%', opacity: 0, scale: 0.92 }}
-            transition={{ duration: 0.2, ease: 'easeOut' }}
-          >
-            <h3>マリガン</h3>
-            <p>最初の手札を引き直しますか？（相手も同時に選んでいます。決定は相手の選択後に送信されます）</p>
-            <MulliganHand />
-            <div className="opts">
-              <button className="opt" onClick={() => useNetStore.getState().setEarlyMulligan(true)}>引き直す</button>
-              <button className="opt primary" onClick={() => useNetStore.getState().setEarlyMulligan(false)}>この手札でいく</button>
-            </div>
-          </motion.div>
-        )}
-        {prompt && (isRemote || mullAutoSending) && !mullEarlyChooser && (
-          <motion.div
-            key={'wait' + prompt.id}
-            className="prompt show waiting"
-            initial={{ x: '-50%', opacity: 0, scale: 0.9 }}
-            animate={{ x: '-50%', opacity: 1, scale: 1 }}
-            exit={{ x: '-50%', opacity: 0, scale: 0.92 }}
-            transition={{ duration: 0.2, ease: 'easeOut' }}
-          >
-            <h3>{mullAutoSending ? '選択を送信中…' : seatLabel((prompt.side || 'cpu') as 'me' | 'cpu') + 'の選択待ち…'}</h3>
-            <p>{mullAutoSending ? 'あなたのマリガン選択を反映しています' : '相手が' + ((prompt.cls || '').includes('defense') ? '防御' : (prompt.cls || '').includes('mulligan') ? 'マリガン' : '効果の対象') + 'を選んでいます'}</p>
-          </motion.div>
-        )}
-        {prompt && !isRemote && !mullAutoSending && !(peek && canPeek) && (
-          <PromptCard
-            key={prompt.id}
-            prompt={prompt}
-            onImgError={onImgError}
-            canPeek={canPeek}
-            peekLabel={peekLabel}
-            onPeek={() => setPeek(true)}
-          />
-        )}
-      </AnimatePresence>
+      {showScrim && <div className="prompt-scrim" />}
+      {prompt && mullEarlyChooser && (
+        <div className="prompt show mulligan">
+          <h3>マリガン</h3>
+          <p>最初の手札を引き直しますか？（相手も同時に選んでいます。決定は相手の選択後に送信されます）</p>
+          <MulliganHand />
+          <div className="opts">
+            <button className="opt" onClick={() => useNetStore.getState().setEarlyMulligan(true)}>引き直す</button>
+            <button className="opt primary" onClick={() => useNetStore.getState().setEarlyMulligan(false)}>この手札でいく</button>
+          </div>
+        </div>
+      )}
+      {prompt && (isRemote || mullAutoSending) && !mullEarlyChooser && (
+        <div className="prompt show waiting">
+          <h3>{mullAutoSending ? '選択を送信中…' : seatLabel((prompt.side || 'cpu') as 'me' | 'cpu') + 'の選択待ち…'}</h3>
+          <p>{mullAutoSending ? 'あなたのマリガン選択を反映しています' : '相手が' + ((prompt.cls || '').includes('defense') ? '防御' : (prompt.cls || '').includes('mulligan') ? 'マリガン' : '効果の対象') + 'を選んでいます'}</p>
+        </div>
+      )}
+      {prompt && !isRemote && !mullAutoSending && !(peek && canPeek) && (
+        <PromptCard
+          key={prompt.id}
+          prompt={prompt}
+          onImgError={onImgError}
+          canPeek={canPeek}
+          peekLabel={peekLabel}
+          onPeek={() => setPeek(true)}
+        />
+      )}
       {/* 退避中＝盤面を見ている。選択は保留のまま。ボタンでプロンプトに戻る。 */}
       {prompt && !isRemote && peek && canPeek && (
         <button className="peek-back" onClick={() => setPeek(false)}>
@@ -298,15 +285,9 @@ function PromptCard({
   const html = (s: string) => ({ dangerouslySetInnerHTML: { __html: s } });
 
   return (
-    <motion.div
-      className={'prompt show ' + (prompt.cls || '')}
-      // .prompt は left:50% + translateX(-50%) で中央寄せ。Framer が transform を上書きするため
-      // x:'-50%' を常に維持し scale/opacity のみアニメ（横中央がズレないように）。
-      initial={{ x: '-50%', opacity: 0, scale: 0.9 }}
-      animate={{ x: '-50%', opacity: 1, scale: 1 }}
-      exit={{ x: '-50%', opacity: 0, scale: 0.92 }}
-      transition={{ duration: 0.2, ease: 'easeOut' }}
-    >
+    // 素の div（framer を使わない）。中央寄せは CSS の transform:translateX(-50%)、
+    // 入場は .prompt.show の promptIn アニメが担う（Prompt() のコメント参照＝進行不能バグの修正）。
+    <div className={'prompt show ' + (prompt.cls || '')}>
       {/* アタック進行中は常に攻撃情報をモーダル内に統合（atk が無ければ AttackHead は何も描かない） */}
       <AttackHead />
       <h3 {...html(prompt.title || '')} />
@@ -349,6 +330,6 @@ function PromptCard({
           ))}
         </div>
       )}
-    </motion.div>
+    </div>
   );
 }

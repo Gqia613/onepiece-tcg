@@ -86,6 +86,28 @@
         await runFx(cfg.fx, { self: c, side });
       }
     }
+    /* 「★このキャラがレストになった時」誘発（onSelfRested）。fireOwnRest（＝“自分の効果で他のカードが”レストになった時）とは別物。
+       レストになる経路は「アタック宣言 / ブロック宣言 / 効果・コストによるレスト」の3系統あるが、以前はアタック宣言でしか
+       誘発しておらず、OP14-020ミホークLの「自分のカード1枚をレストにできる：…」のコストでレストしても発動しなかった（実バグ）。
+       cause: 'attack' | 'block' | 'ownEffect'（自分の効果・コスト） | 'oppEffect'（相手の効果）。
+       cfg: 配列＝【自分のターン中】の既定形（既存7枚） / オブジェクト {when:'selfTurn'|'oppTurn'|'any', cause, once, fx}。
+       ※「レストで登場」は“レストになった”ではない（状態として出るだけ）ので summon 系からは呼ばない。 */
+    async function fireSelfRested(card, cause) {
+      if (!card || isNegated(card)) return;
+      const cfg = card.base.fx && card.base.fx.onSelfRested; if (!cfg) return;
+      if ((G._fxDepth || 0) > 0) { (G._pendingReacts = G._pendingReacts || []).push(() => fireSelfRested(card, cause)); return; } // 効果解決中は最外のrunFx完了後（公式の割り込み規則）
+      const side = card.owner, P = G.players[side];
+      if (!(P.chars.includes(card) || card === P.leader || P.stage === card)) return; // 既に場を離れていたら発動しない
+      const arr = Array.isArray(cfg);
+      const when = arr ? 'selfTurn' : (cfg.when || 'selfTurn');
+      const needCause = arr ? 'any' : (cfg.cause || 'any');
+      if (when === 'selfTurn' && side !== G.active) return;
+      if (when === 'oppTurn' && side === G.active) return;
+      if (needCause !== 'any' && needCause !== cause) return;
+      if (!arr && cfg.once === 'turn') { if (card._selfRestTurn === G.turnSeq) return; card._selfRestTurn = G.turnSeq; }
+      await fxNote(side, 'レスト時', card.base.name);
+      await runFx(arr ? cfg : cfg.fx, { self: card, side });
+    }
     async function fireOppEvent(eventSide) {
       const oppSide = opp(eventSide), P = G.players[oppSide];
       for (const c of P.chars.slice()) {
@@ -410,8 +432,8 @@
       if (attacker.base.type === 'LEADER' && target && target.base.type === 'CHAR') G.players[aSide]._leaderBattledTurn = G.turnSeq; // リーダーが相手キャラとバトル（OP12-020ゾロLの起動メイン条件）
       // リーダーの onLeaderAttack: このリーダーがアタックした時（vsLeaderで相手リーダー限定。cond対応。OP12-081コアラL）
       if (attacker.base.type === 'LEADER' && attacker.base.fx && attacker.base.fx.onLeaderAttack && !isNegated(attacker)) { const cfg = attacker.base.fx.onLeaderAttack; if ((!cfg.vsLeader || (target && target.base.type === 'LEADER')) && (!cfg.cond || checkCond(cfg.cond, aSide, attacker))) await runFx(cfg.fx, { self: attacker, side: aSide }); }
-      // 【自分のターン中】このキャラがレストになった時（アタックでレスト）の誘発
-      if (attacker.base.fx && attacker.base.fx.onSelfRested && !isNegated(attacker) && aSide === G.active) { await fxNote(aSide, 'レスト時', attacker.base.name); await runFx(attacker.base.fx.onSelfRested, { self: attacker, side: aSide }); }
+      // このキャラがレストになった時（アタック宣言でレスト）の誘発
+      await fireSelfRested(attacker, 'attack');
       flog(aSide, `「${attacker.base.name}」が${target.base.type === 'LEADER' ? 'リーダー' : '「' + target.base.name + '」'}にアタック`);
       showAtkAnnounce(aSide, attacker, target);
       render(); animClass(attacker.uid, 'lunge' + (aSide === 'me' ? '' : ' up')); sfx('attack'); await sleep(aSide === 'me' ? 280 : 780);
@@ -464,7 +486,7 @@
       if (!(target.base.type === 'LEADER' && G.players[aSide].denyBlock) && !isUnblockable(attacker)) {
         const blocker = await chooseBlocker(dSide, attacker, target);
         if (blocker) {
-          blocker.rested = true; blkTarget = blocker; G._atkTo = blocker.uid; flog(dSide, `「${blocker.base.name}」でブロック`); floatOn(blocker.uid, '🛡 BLOCK', 'buff'); sfx('block'); showAtkAnnounce(aSide, attacker, blocker); render(); await sleep(200); await luffyReveal(dSide);
+          blocker.rested = true; await fireSelfRested(blocker, 'block'); blkTarget = blocker; G._atkTo = blocker.uid; flog(dSide, `「${blocker.base.name}」でブロック`); floatOn(blocker.uid, '🛡 BLOCK', 'buff'); sfx('block'); showAtkAnnounce(aSide, attacker, blocker); render(); await sleep(200); await luffyReveal(dSide);
           // ゴール・D・ロジャー(OP09-118): 相手が【ブロッカー】を発動した時、どちらかのライフが0なら自分の勝利
           if (!isNegated(attacker) && attacker.base.fx && attacker.base.fx.static && attacker.base.fx.static.some(o => o.op === 'winOnBlockLife0') && (G.players[aSide].life.length === 0 || G.players[dSide].life.length === 0)) { flog(aSide, '【ロジャー】相手のブロッカー発動時ライフ0で勝利'); lose(dSide, 'ロジャー: ブロッカー発動時ライフ0'); return; }
           // 【相手が【ブロッカー】を発動した時】アタック側キャラの誘発（OP15-119ルフィ=ライフ公開してコスト分+1000）
