@@ -173,6 +173,16 @@ export function makeReactAdapter(store: AdapterStoreApi, opts?: { mySeat?: () =>
     });
   };
 
+  /* 停泊直前の1フレーム後に必ず親を再レンダーさせる自己修復 bump。
+     プロンプト/対象選択を出した直後はエンジンが入力待ちで止まり、以後 render()→bump() が二度と来ない。
+     framer-motion の AnimatePresence は退場アニメ完了時に「前回コミット時点の子」を値渡しで書き戻すため、
+     退場完了と新要素の入場コミットが同着すると描画が空のまま固まる（オンラインのブロック→カウンターで
+     実際に進行不能になった事故の正体。Prompt 自体は AnimatePresence を撤去して根治済み）。
+     Hand/Side はまだ AnimatePresence を使っており、普段は render()→bump の連打で自己修復しているが、
+     「停泊直前の最後の更新」で腐ると復帰契機が無い ＝ ここで1回だけ保険の再レンダーを入れる。
+     version++ のみで G には一切触れない＝ロックステップ（hashGameState）には無関係。 */
+  const healRender = () => { if (sim()) return; raf(() => { if (!sim()) S().bump(); }); };
+
   return {
     // ★AI探索中(_sim)は描画しない（元 render() の `if(G._sim) return` と同じ）。
     //   探索は実Gを一時的に書き換えて復元するため、この間に再描画すると盤面/手札が崩れる。
@@ -301,6 +311,7 @@ export function makeReactAdapter(store: AdapterStoreApi, opts?: { mySeat?: () =>
             resolve(v);
           },
         });
+        healRender(); // 停泊直前の保険（AnimatePresence の腐りを次フレームで自己修復）
       }),
 
     // 盤面ハイライト＋モーダル併用の対象選択。空候補/想定外でも必ず resolve。side=決定者の席。
@@ -327,6 +338,7 @@ export function makeReactAdapter(store: AdapterStoreApi, opts?: { mySeat?: () =>
         // G.pendingChoice もミラー（エンジン側ガード・整合のため）。cands=ゾーン外一時カードのuid解決用
         if (g) g.pendingChoice = { uids, optional, danger: cls === 'danger', res: finish, side: seat, cands: list };
         S().setPick({ id, uids, optional, danger: cls === 'danger', text, resolve: finish, side: seat });
+        healRender(); // 停泊直前の保険（AnimatePresence の腐りを次フレームで自己修復）
         S().setPrompt({
           id: 100000 + id,
           side: seat,
