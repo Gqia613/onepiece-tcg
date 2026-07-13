@@ -44,6 +44,34 @@ describe('CardReveal（公開カードの大写し）', () => {
     expect(document.querySelector('.rv-label')?.textContent).toContain('相手');
   });
 
+  // イベント/カウンター発動は「何を使われたのか」が最も分かりにくいので大型カットインにする
+  it('イベント発動は大型カットイン（ev-cut）で見せる', () => {
+    render(<CardReveal />);
+    act(() => {
+      useEngineStore.getState().pushFx({
+        type: 'reveal', id: 10, side: 'me', no: 'OP12-039', name: 'ルフィは海賊王になる男だ!!!', label: 'イベント発動', kind: 'event',
+      } as any);
+    });
+    const cut = document.querySelector('.ev-cut');
+    expect(cut).toBeTruthy();
+    expect(cut?.className).toContain('mine');
+    expect(document.querySelector('.ev-name')?.textContent).toBe('ルフィは海賊王になる男だ!!!');
+    expect(document.querySelector('.ev-chip')?.textContent).toContain('イベント発動');
+    // 控えめ版（手札に加えた）とは別物である
+    expect(document.querySelector('.reveal-card')).toBeFalsy();
+  });
+
+  it('相手のカウンター発動も大型カットイン（相手側の見た目）', () => {
+    render(<CardReveal />);
+    act(() => {
+      useEngineStore.getState().pushFx({
+        type: 'reveal', id: 11, side: 'cpu', no: 'OP01-025', name: 'ゴムゴムの銃乱打', label: 'カウンター発動', kind: 'event',
+      } as any);
+    });
+    expect(document.querySelector('.ev-cut')?.className).toContain('opp');
+    expect(document.querySelector('.ev-chip')?.textContent).toContain('相手');
+  });
+
   it('連続で公開されても取りこぼさず1枚ずつ見せる（キューに積む）', () => {
     render(<CardReveal />);
     pushReveal(3, 'me', 'ST31-001', 'サンジ', '手札に加えた');

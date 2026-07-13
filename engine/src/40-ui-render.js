@@ -230,7 +230,7 @@
     /* 公開カードの大写し（UI専用フック・G には一切触れない＝ロックステップ無関係）。
        「デッキから公開して手札に加えた」「イベントを使用した」など、盤面に残らないカードは
        何が起きたのか分からないため、カードを一枚だけ短く見せる。web は reactAdapter が差し替える。 */
-    function cardReveal(side, no, name, label) { if (G._sim) return; }
+    function cardReveal(side, no, name, label, kind) { if (G._sim) return; }
     let _fxNoteEl = null;
     function showFxNote(side, label, name, no) {
       if (G._sim) return;

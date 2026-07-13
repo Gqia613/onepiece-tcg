@@ -6914,3 +6914,177 @@ button.hb-chip:not(.zero):not([disabled]):hover {
   text-align: center;
   line-height: 1.25;
 }
+
+/* ===== イベント/カウンター発動の大型カットイン（CardReveal kind:'event'）=====
+   盤面に残らないイベントは「何を使われたのか」が分からないため、トリガー演出と同格の見せ場にする。
+   非ブロッキング（pointer-events:none）＝ゲーム進行は待たせない。 */
+.ev-cut {
+  position: fixed;
+  inset: 0;
+  z-index: 61;
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.ev-cut .ev-scrim {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at center, rgba(2, 8, 16, .42) 0%, rgba(2, 8, 16, .78) 85%);
+}
+
+/* 開幕の白フラッシュ（一瞬） */
+.ev-cut .ev-flash {
+  position: absolute;
+  inset: 0;
+  background: #fff;
+  opacity: 0;
+  animation: evFlash .42s ease-out forwards;
+}
+
+@keyframes evFlash {
+  0% { opacity: .55; }
+  100% { opacity: 0; }
+}
+
+.ev-cut .ev-stage {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 背後で回る放射光 */
+.ev-cut .ev-rays {
+  position: absolute;
+  width: 150vmax;
+  height: 150vmax;
+  border-radius: 50%;
+  background: repeating-conic-gradient(from 0deg,
+      rgba(255, 200, 87, .20) 0deg 7deg,
+      rgba(255, 200, 87, 0) 7deg 18deg);
+  animation: evSpin 6s linear infinite;
+  filter: blur(1px);
+}
+
+.ev-cut.opp .ev-rays {
+  background: repeating-conic-gradient(from 0deg,
+      rgba(255, 106, 77, .20) 0deg 7deg,
+      rgba(255, 106, 77, 0) 7deg 18deg);
+}
+
+@keyframes evSpin {
+  to { transform: rotate(360deg); }
+}
+
+.ev-cut .ev-stage img {
+  position: relative;
+  z-index: 2;
+  width: clamp(200px, 52vw, 320px);
+  aspect-ratio: 5 / 7;
+  object-fit: cover;
+  border-radius: 12px;
+  border: 2px solid var(--gold);
+  box-shadow: 0 30px 80px rgba(0, 0, 0, .7), 0 0 60px -8px rgba(255, 200, 87, .75);
+}
+
+.ev-cut.opp .ev-stage img {
+  border-color: var(--danger-glow, #ff8a8f);
+  box-shadow: 0 30px 80px rgba(0, 0, 0, .7), 0 0 60px -8px rgba(255, 106, 77, .75);
+}
+
+/* 着弾の衝撃波リング */
+.ev-cut .ev-ring {
+  position: absolute;
+  z-index: 1;
+  width: 240px;
+  height: 240px;
+  border-radius: 50%;
+  border: 3px solid rgba(255, 200, 87, .9);
+  opacity: 0;
+  animation: evRing .72s cubic-bezier(.15, .7, .25, 1) .12s forwards;
+}
+
+.ev-cut.opp .ev-ring {
+  border-color: rgba(255, 106, 77, .9);
+}
+
+@keyframes evRing {
+  0% { transform: scale(.35); opacity: .95; }
+  100% { transform: scale(2.6); opacity: 0; }
+}
+
+/* 粒子バースト */
+.ev-cut .ev-parts {
+  position: absolute;
+  z-index: 3;
+  width: 0;
+  height: 0;
+}
+
+.ev-cut .ev-parts i {
+  position: absolute;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--gold);
+  box-shadow: 0 0 12px rgba(255, 200, 87, .95);
+  opacity: 0;
+  animation: evPart .8s ease-out .1s forwards;
+  transform: rotate(var(--a)) translateY(0);
+}
+
+.ev-cut.opp .ev-parts i {
+  background: var(--danger-glow, #ff8a8f);
+  box-shadow: 0 0 12px rgba(255, 106, 77, .95);
+}
+
+@keyframes evPart {
+  0% { opacity: 1; transform: rotate(var(--a)) translateY(0) scale(1); }
+  100% { opacity: 0; transform: rotate(var(--a)) translateY(calc(var(--d) * -1)) scale(.3); }
+}
+
+/* 上のラベル（誰が・何を）と下のカード名 */
+.ev-cut .ev-chip {
+  position: absolute;
+  z-index: 4;
+  top: -46px;
+  font-size: 13px;
+  font-weight: 900;
+  letter-spacing: .06em;
+  color: #0b0803;
+  background: linear-gradient(180deg, #ffe9a8, var(--gold));
+  border-radius: 999px;
+  padding: 5px 18px;
+  box-shadow: 0 6px 22px rgba(0, 0, 0, .55);
+  white-space: nowrap;
+}
+
+.ev-cut.opp .ev-chip {
+  background: linear-gradient(180deg, #ffc0b6, var(--danger-glow, #ff8a8f));
+}
+
+.ev-cut .ev-name {
+  position: absolute;
+  z-index: 4;
+  bottom: -42px;
+  font-size: 15px;
+  font-weight: 900;
+  color: var(--gold-soft, #ffe9a8);
+  background: rgba(10, 6, 2, .88);
+  border: 1px solid rgba(255, 200, 87, .6);
+  border-radius: 999px;
+  padding: 5px 18px;
+  max-width: 78vw;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ev-cut.opp .ev-name {
+  color: #ffd9d2;
+  border-color: rgba(255, 106, 77, .6);
+}

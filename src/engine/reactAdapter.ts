@@ -198,7 +198,7 @@ export function makeReactAdapter(store: AdapterStoreApi, opts?: { mySeat?: () =>
     toast: (text) => { if (sim()) return; S().pushFx({ type: 'toast', id: ++fxId, text }); },
     // 公開カードの大写し（サーチで手札に加えた／イベント・カウンター発動）。盤面に残らないカードは
     // 何が起きたか分からないため、一枚だけ短く見せる。演出専用＝G には触れない。
-    cardReveal: (side, no, name, label) => { if (sim()) return; S().pushFx({ type: 'reveal', id: ++fxId, side, no, name, label }); },
+    cardReveal: (side, no, name, label, kind) => { if (sim()) return; S().pushFx({ type: 'reveal', id: ++fxId, side, no, name, label, kind: kind || 'hand' }); },
     floatOn: (uid, text, kind) => { if (sim()) return; S().pushFx({ type: 'float', id: ++fxId, uid, text, kind }); },
     animClass: (uid, cls) => { if (sim()) return; S().pushFx({ type: 'anim', id: ++fxId, uid, cls }); },
     showFxNote: (side, label, name, no) => { if (sim()) return; S().pushFx({ type: 'fxnote', id: ++fxId, side, label, name, no }); },

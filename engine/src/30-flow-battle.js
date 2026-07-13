@@ -687,7 +687,7 @@
           if (c.base.fx && c.base.fx.counter) {
             if ((c.base.cost || 0) > 0 && !payDon(dSide, c.base.cost)) { toast('ドンが足りません'); continue; }
             D.hand.splice(D.hand.indexOf(c), 1);
-            sfx('counter'); cardReveal(dSide, c.base.no, c.base.name, 'カウンター発動'); // 何を使ったか見せる
+            sfx('counter'); cardReveal(dSide, c.base.no, c.base.name, 'カウンター発動', 'event'); // 何を使ったか見せる
             await runFx(c.base.fx.counter.fx, { self: c, side: dSide, target });
             D.trash.push(reset(c)); flog(dSide, `カウンター「${c.base.name}」`);
             if (c.base.type === 'EVENT') await luffyReveal(dSide);

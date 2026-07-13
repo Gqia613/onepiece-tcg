@@ -246,7 +246,7 @@
             if (!pick) break;
             if (!G._sim) pick._pubHand = G.turnSeq;   // ★E43: サーチは公開で手札に加わる＝相手AIの決定化が既知情報として使える（bpuct用・実対局のみ）
             picked.push(pick); P.hand.push(pick); flog(side, `「${pick.base.name}」を手札に`);
-            cardReveal(side, pick.base.no, pick.base.name, '手札に加えた'); // 公開して手札に加える＝何を取ったか見せる
+            cardReveal(side, pick.base.no, pick.base.name, '手札に加えた', 'hand'); // 公開して手札に加える＝何を取ったか見せる
           }
           // 取らなかったカードはデッキ下（rest:'trash'ならトラッシュ）へ
           for (const c of look) if (!picked.includes(c)) { if (op.rest === 'trash') P.trash.push(reset(c)); else P.deck.push(c); }
@@ -1125,7 +1125,7 @@
         case 'playEventFromHand': {
           const cands = P.hand.filter(c => matchFilter(c, op.filter) && c.base.fx && c.base.fx.main);
           const c = await chooseFromHand(side, cands, '発動するイベントを選択', null, op.optional !== false); // 「1枚まで」は任意（既定で見送り可）
-          if (c) { P.hand.splice(P.hand.indexOf(c), 1); cardReveal(side, c.base.no, c.base.name, 'イベント発動'); await runFx(c.base.fx.main.fx, { self: c, side }); P.trash.push(reset(c)); flog(side, `「${c.base.name}」を発動`); await luffyReveal(side); }
+          if (c) { P.hand.splice(P.hand.indexOf(c), 1); cardReveal(side, c.base.no, c.base.name, 'イベント発動', 'event'); await runFx(c.base.fx.main.fx, { self: c, side }); P.trash.push(reset(c)); flog(side, `「${c.base.name}」を発動`); await luffyReveal(side); }
           break;
         }
         case 'playCharFromHand': {

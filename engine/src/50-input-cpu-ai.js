@@ -112,7 +112,7 @@
         const cost = effCost(side, card); if (P.don.active < cost) { toast('ドンが足りません'); return; }
         payDon(side, cost); P.hand.splice(P.hand.indexOf(card), 1);
         if (b.cost >= 3) P._lucyEventTurn = G.turnSeq; // 【ルーシー】起動メイン条件: 当ターンに元々コスト3以上のイベントを発動
-        flog(side, '「' + b.name + '」を使用'); cardReveal(side, b.no, b.name, 'イベント発動'); await runFx(b.fx.main.fx, { self: card, side }); P.trash.push(reset(card)); render(); await luffyReveal(side); await fireOppEvent(side);
+        flog(side, '「' + b.name + '」を使用'); cardReveal(side, b.no, b.name, 'イベント発動', 'event'); await runFx(b.fx.main.fx, { self: card, side }); P.trash.push(reset(card)); render(); await luffyReveal(side); await fireOppEvent(side);
       }
     }
     function uiEndTurn(side) { side = side || 'me'; if (G.busy || G.active !== side || !G.myActable || G.promptState || G.pendingChoice) return; G.attackSel = null; G.busy = true; G.myActable = false; render(); endTurn(side); } // side省略時は従来どおり'me'（バニラのボタン互換）
