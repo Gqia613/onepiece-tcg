@@ -62,6 +62,9 @@ export default function OnlineLobby() {
   const mySeat = useNetStore((s) => s.mySeat);
   const config = useNetStore((s) => s.config);
   const verMismatch = useNetStore((s) => s.verMismatch);
+  const lobbyEpoch = useNetStore((s) => s.lobbyEpoch);   // 「部屋に戻る」で++。ローカルstateを初期化するトリガ
+  const lastResult = useNetStore((s) => s.lastResult);   // 直前の対戦結果（部屋に戻ったとき表示）
+  const myDeckId = useNetStore((s) => s.myDeckId);       // 直近で ready したデッキ（既定選択に使う）
 
   const [joinCode, setJoinCode] = useState('');
   const [deckId, setDeckId] = useState('');
@@ -105,6 +108,23 @@ export default function OnlineLobby() {
     return { custom, presets };
   }, [engine, phase, mode]);
 
+  /* 「部屋に戻る」で戻ってきたとき（lobbyEpoch が進む）: 楽観表示の readySent を必ず落とす
+     （DO 側も ready を解除している＝落とさないと「準備完了」のまま固まる）。
+     あわせて前局のデッキを既定選択にして 1タップで再開できるようにする。
+     ★削除済みのデッキだと選択が当たらず「準備完了」が押せなくなるので、実在するときだけ復元する。
+     ★フックなので早期 return より前に置く。 */
+  useEffect(() => {
+    if (!lobbyEpoch) return;
+    setReadySent(false);
+    setDeckId((cur) => {
+      if (cur) return cur;
+      if (!myDeckId) return '';
+      const exists = decks.custom.some((d) => d.id === myDeckId) || decks.presets.some((d) => d.id === myDeckId);
+      return exists ? myDeckId : '';
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lobbyEpoch]);
+
   if (!engine) return null;
 
   const findDeck = (id: string): any =>
@@ -130,6 +150,7 @@ export default function OnlineLobby() {
     if (!d || !d.leader || !d.list) return;
     const payload: DeckPayload = { leader: d.leader, list: d.list, name: d.name || 'デッキ' };
     sendReady(payload);
+    useNetStore.getState().setMyDeckId(d.id); // 次に部屋へ戻ったときの既定選択
     setReadySent(true);
   };
   const doLeave = () => {
@@ -244,6 +265,14 @@ export default function OnlineLobby() {
                 </span>
               ))}
               {players.length < 2 ? <span className="or-waiting">相手の入室を待っています…</span> : null}
+              {/* 「部屋に戻る」で戻ったとき: 前局の結果を残す（勝敗が分からなくなるのを防ぐ） */}
+              {lastResult ? (
+                <span className="or-waiting" style={{ opacity: 0.9 }}>
+                  前局: {lastResult.winner === 'draw' ? '引き分け'
+                    : seatOf(lastResult.winner) === mySeat ? 'あなたの勝ち' : '相手の勝ち'}
+                  （{lastResult.reason}・{lastResult.turns}ターン）
+                </span>
+              ) : null}
             </div>
             <div className="or-config">
               <span>⏱ {configSummary(config)}</span>

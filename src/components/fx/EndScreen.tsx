@@ -11,7 +11,7 @@ import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useEngineStore } from '../../state/engineStore';
 import { useNetStore } from '../../state/netStore';
-import { requestRematch, leaveOnline } from '../../net/onlineGame';
+import { requestRematch, requestLobby, leaveOnline } from '../../net/onlineGame';
 
 // 元 _esMotes(): 勝利の上昇する金粉。9個・ランダム位置/サイズ/速度。
 function makeMotes() {
@@ -40,7 +40,8 @@ export function EndScreen() {
   const online = useNetStore((s) => s.mode) === 'online';
   const replayActive = useNetStore((s) => s.replayActive);
   const [rematchAsked, setRematchAsked] = useState(false);
-  useEffect(() => { if (!end) setRematchAsked(false); }, [end]); // リマッチ成立（end消滅）でリセット
+  const [lobbyAsked, setLobbyAsked] = useState(false);
+  useEffect(() => { if (!end) { setRematchAsked(false); setLobbyAsked(false); } }, [end]); // 成立（end消滅）でリセット
 
   const win = !!end?.win;
   // 粒子/雨は end が出ている間は固定（再生成でチラつかせない）。win 切替で作り直す。
@@ -54,6 +55,8 @@ export function EndScreen() {
     navigate('/battle'); // 対戦セットアップへ
   };
   const onRematch = () => { requestRematch(); setRematchAsked(true); };
+  // 部屋（ロビー）へ戻る＝デッキと対戦設定を選び直して再戦する。片方が押せば両者が戻る（退室して作り直す必要はない）
+  const onToLobby = () => { requestLobby(); setLobbyAsked(true); };
   const onLeaveOnline = () => { leaveOnline(); navigate('/online'); };
 
   return (
@@ -122,8 +125,11 @@ export function EndScreen() {
               <div className="es-reason" style={{ opacity: 0.8 }}>リプレイ再生（操作は下のバーから）</div>
             ) : online ? (
               <div style={{ display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap' }}>
-                <button className="es-btn" onClick={onRematch} disabled={rematchAsked}>
-                  {rematchAsked ? '相手の同意待ち…' : 'もう一度対戦'}
+                <button className="es-btn" onClick={onRematch} disabled={rematchAsked || lobbyAsked}>
+                  {rematchAsked ? '相手の同意待ち…' : '同じデッキでもう一度'}
+                </button>
+                <button className="es-btn" onClick={onToLobby} disabled={lobbyAsked}>
+                  {lobbyAsked ? '部屋に戻っています…' : '部屋に戻る（デッキ変更）'}
                 </button>
                 <button className="es-btn" onClick={onLeaveOnline} style={{ opacity: 0.85 }}>
                   退室する

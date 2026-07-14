@@ -6,7 +6,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNetStore } from '../../state/netStore';
-import { leaveOnline, claimDisconnectWin } from '../../net/onlineGame';
+import { leaveOnline, claimDisconnectWin, requestLobby } from '../../net/onlineGame';
 
 const CLAIM_GRACE_MS = 90 * 1000; // realtime/src/room.ts と揃える
 
@@ -56,9 +56,12 @@ export function NetOverlay() {
               <div style={{ fontSize: 20, fontWeight: 800, marginBottom: 8 }}>⚠ 同期エラー</div>
               <div style={{ fontSize: 13.5, color: 'var(--muted)', lineHeight: 1.7, marginBottom: 14 }}>
                 自動復旧を試みましたが、盤面を一致させられませんでした。<br />
-                お手数ですが退室して新しい部屋で対戦し直してください。
+                この対戦は続行できません。部屋に戻ればデッキを選び直して再戦できます。
               </div>
-              <button className="phasebtn go" onClick={() => { leaveOnline(); navigate('/online'); }}>退室する</button>
+              <div style={{ display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap' }}>
+                <button className="phasebtn go" onClick={() => requestLobby()}>部屋に戻る</button>
+                <button className="phasebtn ghost" onClick={() => { leaveOnline(); navigate('/online'); }}>退室する</button>
+              </div>
             </div>
           </motion.div>
         ) : null}

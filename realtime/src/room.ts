@@ -284,6 +284,7 @@ export class MatchRoom {
       case 'unready': {
         if (r.status !== 'lobby') return;
         r.ready[seat] = false;
+        r.lastActivity = now; // ロビーTTLは lastActivity 基準（alarm 参照）＝操作があれば延命する
         await this.putRoom(r);
         this.broadcastPeer(r);
         return;
@@ -402,6 +403,27 @@ export class MatchRoom {
         }
         return;
       }
+      /* ★終局後に部屋（ロビー）へ戻る＝デッキと対戦設定を選び直して再戦する。
+         「片方が押せば両者が戻る」: 合意の関門は ready（:268）であって終了画面ではない。局は既に終わっており
+         戦績も記録済み＝ロビー復帰は非破壊なので、ここで二重に同意を取ると相手が離席したときに詰む
+         （現行の rematch がまさにそれ＝退室して部屋を作り直すしかない、というユーザーの不満の元）。 */
+      case 'to-lobby': {
+        // 冪等: 既にロビー（相手が先に押した／ブロードキャストを取りこぼした）なら、送信者に現状を返して終わり。
+        // ここでエラーを返すと「両者が同時に押す」という最も起きやすい操作で bad_state トーストが出る。
+        if (r.status === 'lobby') {
+          this.send(ws, { t: 'lobby', gameNo: r.gameNo, config: r.config, players: this.players(r), last: null });
+          return;
+        }
+        // ★生きた対局からの逃亡は許さない（負けそうな側が部屋をリセットして敗北を消せてしまう）。
+        //   DO はエンジンを持たないので、終局の証拠は「両者の結果申告（＝resultSaved）」か「desync」しかない。
+        const ended = r.resultSaved || (!!r.results.host && !!r.results.guest);
+        if (r.status !== 'playing' || r.gameNo === 0 || !(ended || r.desynced)) {
+          this.send(ws, { t: 'error', code: 'bad_state' });
+          return;
+        }
+        await this.toLobby(r);
+        return;
+      }
       case 'leave': {
         try { ws.close(4002, 'left'); } catch { /* ignore */ }
         if (r.status === 'lobby' && seat === 'guest') {
@@ -425,6 +447,44 @@ export class MatchRoom {
   }
 
   // 新規ゲーム開始（初回 ready 完了 / リマッチ）。seed 生成・カウンタ初期化・start 配信。
+  /* 部屋（ロビー）へ戻す。局は終了済み＝盤面は捨ててよい。
+     ★ready を必ず落とす: ready は startGame がリセットしない唯一のフィールド（代入は ready/unready/toLobby のみ）。
+       残したまま戻すと、片方が新デッキで準備完了した瞬間に相手の古い ready と合致して即 startGame になり、
+       相手はデッキを変える機会を失う（＝この機能の目的の真逆）。
+     ★gameNo は進めない: 進めるのは startGame だけ。ここで ++ すると firstTurn:'alt' の交互先攻が1つズレる。
+     ★入力ログ（i:{gameNo}:*）と nextSeq は触らない: saveMatch がリプレイ生成に使い、掃除は次の startGame が行う。
+     ★decks は残す: 次の ready が上書きする。前回のデッキを既定として出せる。 */
+  private async toLobby(r: RoomRecord): Promise<void> {
+    const now = Date.now();
+    const last = r.resultSaved ? (r.results.host ?? r.results.guest ?? null) : null; // 合意された結果だけを返す
+
+    r.status = 'lobby';
+    r.ready = { host: false, guest: false };
+    r.rematch = { host: false, guest: false };
+    r.hashes = { host: null, guest: null };
+    r.desynced = false;
+    r.resyncReq = { host: false, guest: false };
+    r.results = { host: null, guest: null };
+    r.resultSaved = false;
+    r.first = null;
+    r.startTs = 0;
+    r.lastActivity = now;
+
+    /* ★ゴーストゲストの解放: 相手がタブを閉じただけだと 'leave' は届かず guestUid が残り、
+       ロビーに戻っても新しい相手が room_full（:188）で入れない行き止まりになる。
+       claim と同じ猶予を超えて切断していれば席を空ける（iOSのバックグラウンド一時切断で誤って蹴らないため）。 */
+    const grace = Number(this.env.CLAIM_GRACE_MS) || CLAIM_GRACE_MS;
+    const gLost = r.connLost.guest;
+    if (r.guestUid != null && this.ctx.getWebSockets('guest').length === 0 && gLost != null && now - gLost > grace) {
+      r.guestUid = null; r.guestName = null; r.vers.guest = null; r.decks.guest = null; r.connLost.guest = null;
+    }
+
+    await this.putRoom(r);
+    await this.ctx.storage.setAlarm(now + LOBBY_TTL_MS);
+    this.broadcast({ t: 'lobby', gameNo: r.gameNo, config: r.config, players: this.players(r), last });
+    this.broadcastPeer(r);
+  }
+
   private async startGame(r: RoomRecord): Promise<void> {
     const now = Date.now();
     // 旧ゲームの入力ログを掃除（リマッチ時。ストレージ肥大防止）
@@ -522,7 +582,9 @@ export class MatchRoom {
     if (!r) { await this.ctx.storage.deleteAll(); return; }
     const now = Date.now();
     const expired =
-      (r.status === 'lobby' && now - r.createdAt > LOBBY_TTL_MS) ||
+      // ★lastActivity 基準（旧: createdAt）。createdAt 基準だと、対戦を終えてロビーへ戻った部屋は
+      //   「部屋の総寿命 > 30分」で即 expired 扱いになり、デッキ選択中の両者が bye で強制退室させられる。
+      (r.status === 'lobby' && now - r.lastActivity > LOBBY_TTL_MS) ||
       (r.status === 'playing' && (now - r.lastActivity > IDLE_TTL_MS || now - r.startedAt > HARD_TTL_MS)) ||
       r.status === 'ended';
     if (expired) {

@@ -3,7 +3,7 @@
 // mySeat は「ローカルプレイヤーがエンジン上のどちらの席か」（オフライン/ホスト='me'・ゲスト='cpu'）。
 // 盤面コンポーネントの視点反転（自席=画面下段）は全て mySeat 基準で行う。
 import { create } from 'zustand';
-import type { Seat, PlayerInfo, RoomConfig } from '../net/protocol';
+import type { Seat, PlayerInfo, RoomConfig, MatchResult } from '../net/protocol';
 import { DEFAULT_CONFIG } from '../net/protocol';
 
 export type ConnState = 'idle' | 'connecting' | 'ok' | 'reconnecting' | 'closed';
@@ -29,6 +29,9 @@ interface NetStore {
   oppLostAt: number | null;        // 相手の接続が切れた時刻（勝利宣言ボタンの表示判断・ローカル時計）
   lastEmote: { seat: Seat; k: number; id: number } | null; // 受信エモート（バブル表示用）
   replayActive: boolean;           // リプレイ再生中（操作を無効化）
+  lastResult: MatchResult | null;  // 直前の対戦結果（ロビーへ戻ったときに「前局の結果」として出す）
+  myDeckId: string | null;         // 直近で ready したデッキ（ロビー復帰時の既定選択）
+  lobbyEpoch: number;              // ロビーへ戻るたびに++。OnlineLobby のローカルstate（readySent等）を初期化するトリガ
   setMode: (m: NetStore['mode']) => void;
   setMySeat: (s: Seat) => void;
   setPhase: (p: NetPhase) => void;
@@ -46,6 +49,9 @@ interface NetStore {
   setOppLostAt: (t: number | null) => void;
   setLastEmote: (e: NetStore['lastEmote']) => void;
   setReplayActive: (b: boolean) => void;
+  setLastResult: (r: MatchResult | null) => void;
+  setMyDeckId: (id: string | null) => void;
+  bumpLobbyEpoch: () => void;
   resetNet: () => void;         // オフライン既定へ戻す（対戦終了/退室時）
 }
 
@@ -67,6 +73,10 @@ const DEFAULTS = {
   oppLostAt: null as number | null,
   lastEmote: null as NetStore['lastEmote'],
   replayActive: false,
+  // ★myDeckId / lobbyEpoch は resetNet（退室）でも初期化する。lastResult は前局の結果表示用。
+  lastResult: null as MatchResult | null,
+  myDeckId: null as string | null,
+  lobbyEpoch: 0,
 };
 
 export const useNetStore = create<NetStore>((set) => ({
@@ -88,6 +98,9 @@ export const useNetStore = create<NetStore>((set) => ({
   setOppLostAt: (oppLostAt) => set({ oppLostAt }),
   setLastEmote: (lastEmote) => set({ lastEmote }),
   setReplayActive: (replayActive) => set({ replayActive }),
+  setLastResult: (lastResult) => set({ lastResult }),
+  setMyDeckId: (myDeckId) => set({ myDeckId }),
+  bumpLobbyEpoch: () => set((s) => ({ lobbyEpoch: s.lobbyEpoch + 1 })),
   resetNet: () => set({ ...DEFAULTS }),
 }));
 

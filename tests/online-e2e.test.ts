@@ -384,4 +384,96 @@ async function waitReady(): Promise<void> {
 
     A.ws.close();
   }, 120000);
+
+  /* 終局 →「部屋に戻る」(to-lobby) → デッキと先攻設定を変えて再開できる。
+     ユーザー要望「もう一度でデッキ選択に戻りたい（退室して部屋を作り直すのが面倒）」の実スタック検証。
+     ★ここで守っているもの:
+       - ready が落ちる（落ちないと片方の準備完了で即開始してしまい、相手はデッキを変えられない）
+       - gameNo は進まない（進めると firstTurn:'alt' の交互先攻がズレる）
+       - 両者が同時に押しても2人目にエラーが出ない（冪等）
+       - 再開時に firstSeq=1（入力ログ/採番がリセットされている）＝新しいデッキで正しく始まる */
+  it('終局→「部屋に戻る」→デッキと先攻設定を変えて再開できる', async () => {
+    const raw = (code: string, token: string) => {
+      const ws = new WS(`${BASE.replace('http', 'ws')}/rooms/${code}/ws`, ['opcg', token]);
+      const msgs: any[] = [];
+      const waiters: Array<{ pred: (m: any) => boolean; res: (m: any) => void; t: any }> = [];
+      ws.on('message', (b: any) => {
+        const m = JSON.parse(String(b));
+        msgs.push(m);
+        for (let i = waiters.length - 1; i >= 0; i--) {
+          const w = waiters[i];
+          const hit = msgs.find(w.pred);
+          if (hit) { waiters.splice(i, 1); clearTimeout(w.t); w.res(hit); }
+        }
+      });
+      const wait = (pred: (m: any) => boolean, label: string, ms = 8000) => new Promise<any>((res, rej) => {
+        const hit = msgs.find(pred);
+        if (hit) return res(hit);
+        const t = setTimeout(() => rej(new Error('timeout: ' + label)), ms);
+        waiters.push({ pred, res, t });
+      });
+      const open = new Promise<void>((res, rej) => { ws.on('open', () => res()); ws.on('error', rej); });
+      return { ws, msgs, wait, open, send: (m: any) => ws.send(JSON.stringify(m)) };
+    };
+    const deckX = { leader: 'OP01-001', list: { 'OP01-016': 4 }, name: 'X' };
+    const deckY = { leader: 'OP02-001', list: { 'OP01-016': 4 }, name: 'Y' };
+
+    const tA = await signJWT({ uid: 401, un: 'lob-a', scope: 'match' }, SECRET, 60);
+    const tB = await signJWT({ uid: 402, un: 'lob-b', scope: 'match' }, SECRET, 60);
+    const mk = await realFetch(BASE + '/rooms', { method: 'POST', headers: { Authorization: 'Bearer ' + tA } });
+    const { code } = (await mk.json()) as any;
+
+    const A = raw(code, tA); await A.open; await A.wait((m) => m.t === 'joined', 'A joined');
+    const B = raw(code, tB); await B.open; await B.wait((m) => m.t === 'joined', 'B joined');
+
+    // 先攻=交互（alt）にして1局目を開始（同一ver）
+    A.send({ t: 'config', config: { clock: { mode: 'none' }, firstTurn: 'alt' } });
+    await B.wait((m) => m.t === 'config' && m.config.firstTurn === 'alt', 'config配布');
+    A.send({ t: 'ready', deck: deckX, ver: 'v1' });
+    B.send({ t: 'ready', deck: deckX, ver: 'v1' });
+    const st1 = await A.wait((m) => m.t === 'start', 'start1');
+    expect(st1.gameNo).toBe(1);
+    expect(st1.first).toBe('host');       // alt: 奇数ゲーム=host先攻
+    expect(st1.firstSeq).toBe(1);
+
+    // 終局を申告（両者一致 → D1未設定でも resultSaved になる）
+    const result = { winner: 'host', reason: 'ライフ0', turns: 8 };
+    A.send({ t: 'result', result });
+    B.send({ t: 'result', result });
+    await A.wait((m) => m.t === 'result-saved', 'result-saved');
+
+    // ★A が「部屋に戻る」→ 両者がロビーへ（片方が押せば戻る）
+    A.send({ t: 'to-lobby' });
+    const lbA = await A.wait((m) => m.t === 'lobby', 'A lobby');
+    const lbB = await B.wait((m) => m.t === 'lobby', 'B lobby');
+    expect(lbA.gameNo).toBe(1);                                   // ★gameNo は進めない（altの交互性を保つ）
+    expect(lbA.players.every((p: any) => p.ready === false)).toBe(true); // ★ready が落ちている＝デッキを選び直せる
+    expect(lbB.last).toEqual(result);                             // 前局の結果は残す
+    expect(lbA.config.firstTurn).toBe('alt');                     // 設定は保持
+
+    // ★冪等: B も押す（両者同時押しは最も起きやすい）→ エラーにならず lobby が返る
+    const errsBefore = B.msgs.filter((m: any) => m.t === 'error').length;
+    B.send({ t: 'to-lobby' });
+    await new Promise((r) => setTimeout(r, 400));
+    expect(B.msgs.filter((m: any) => m.t === 'error').length).toBe(errsBefore);
+
+    // ロビーなのでホストは設定を変えられる（status==='lobby' ゲートが復活している）
+    A.send({ t: 'config', config: { clock: { mode: 'none' }, firstTurn: 'guest' } });
+    await B.wait((m) => m.t === 'config' && m.config.firstTurn === 'guest', 'config再配布');
+
+    // ★デッキを変えて再開
+    A.send({ t: 'ready', deck: deckY, ver: 'v1' });
+    B.send({ t: 'ready', deck: deckX, ver: 'v1' });
+    const st2 = await A.wait((m) => m.t === 'start' && m.gameNo === 2, 'start2');
+    expect(st2.decks.host.leader).toBe(deckY.leader); // 新しいデッキで開始
+    expect(st2.first).toBe('guest');                  // 変更した設定が効く
+    expect(st2.firstSeq).toBe(1);                     // 採番がリセットされている
+
+    // 新局で入力が通る（seq が 1 から）
+    A.send({ t: 'input', d: { t: 'menu', uid: 1 } });
+    const in1 = await B.wait((m) => m.t === 'input' && m.seq === 1, '新局の入力');
+    expect(in1.seat).toBe('host');
+
+    A.ws.close(); B.ws.close();
+  }, 120000);
 });

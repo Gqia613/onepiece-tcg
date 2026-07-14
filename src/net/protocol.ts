@@ -65,7 +65,8 @@ export type C2S =
   | { t: 'emote'; k: number }                            // EMOTES のインデックス
   | { t: 'result'; result: MatchResult }                 // 終局申告（両者一致でD1記録）
   | { t: 'resync' }                                      // desync自動復旧: ログ再構築完了の申告
-  | { t: 'rematch' }
+  | { t: 'rematch' }                                     // 同じデッキで即再戦（両者が押したら開始。旧クライアント互換のため温存）
+  | { t: 'to-lobby' }                                   // ★終局後に部屋（ロビー）へ戻る＝デッキ・対戦設定を選び直す。片方が押せば両者が戻る
   | { t: 'leave' };
 
 // DO → クライアント
@@ -82,6 +83,8 @@ export type S2C =
   | { t: 'emote'; seat: RoomSeat; k: number }
   | { t: 'result-saved'; id: number | null }
   | { t: 'rematch-wait'; by: RoomSeat }
+  // 部屋（ロビー）へ戻った。ready は解除済み＝両者ともデッキ選択からやり直す。last=直前の対戦結果（記録済みのもののみ）
+  | { t: 'lobby'; gameNo: number; config: RoomConfig; players: PlayerInfo[]; last: MatchResult | null }
   | { t: 'bye'; reason: 'ttl' | 'closed' | 'left' }
   | { t: 'pong' }
   | { t: 'error'; code: 'not_found' | 'room_full' | 'bad_token' | 'expired' | 'same_user' | 'rate' | 'bad_state' | 'claim_rejected'; msg?: string };

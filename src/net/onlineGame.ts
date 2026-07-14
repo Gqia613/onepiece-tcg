@@ -13,7 +13,7 @@ import {
 } from './matchClient';
 import { resetLockstep, wireLockstep, setOnApplied, setOnBoundary, onRemoteInput, uiDispatch, lockstepNextSeq } from './dispatch';
 import { clockReset, clockNoteInput, clockStop } from './clock';
-import { seatOf, roomSeatOf, type S2C, type DeckPayload, type Seat, type RoomConfig, type RoomSeat, type MatchResult } from './protocol';
+import { seatOf, roomSeatOf, type S2C, type DeckPayload, type Seat, type RoomConfig, type RoomSeat, type MatchResult, type PlayerInfo } from './protocol';
 
 let watchersWired = false;
 let toastId = 2_000_000_000; // adapter の fxId と衝突しない帯域
@@ -82,12 +82,52 @@ export function forfeitOnline(): void {
 export function requestRematch(): void {
   sendMatch({ t: 'rematch' });
 }
+// 終局後に部屋（ロビー）へ戻る＝デッキと対戦設定を選び直して再戦する。片方が押せば両者が戻る（DO側で冪等）。
+export function requestLobby(): void {
+  sendMatch({ t: 'to-lobby' });
+}
 // 相手切断の裁定を要求（DOが猶予・接続状態を検証し、切断側の投了を代理発行）
 export function claimDisconnectWin(): void {
   sendMatch({ t: 'claim', reason: 'disconnect' });
 }
 export function sendEmote(k: number): void {
   sendMatch({ t: 'emote', k });
+}
+
+/* ★部屋（ロビー）へ戻る（WSは維持したまま。leaveOnline と違い退室はしない）。
+   実行順が重要:
+     ① netStore を先に完全に lobby へ。engine を先に落とすと、ルート再評価の瞬間に phase がまだ 'playing'/'ended' で
+        OnlineLobby が /battle/play へ navigate し直す（往復）／wireWatchers が playing 前提で動く余地が残る。
+     ② ネットの下回りをリセット。resetLockstep は必須（前局の nextSeq が残ると次局の seq=1.. が「適用済み」として
+        全て捨てられ盤面が1手も進まない／10秒の stall タイマーが残るとロビー上に desync モーダルが出る）。
+     ③ 最後にエンジンを作り直す（resetEngine が backToSelect + prompt/pick/fxQueue/end/logs を一括クリア）→ bump。
+        onlineGame は非コンポーネントで navigate を持てないため、G.inGame=false ＋ bump で
+        App のルートガード（/battle/play は inGame が偽なら /online へ）に遷移させる＝不変条件方式。 */
+export function applyLobbyReset(config: RoomConfig, players: PlayerInfo[], last: MatchResult | null): void {
+  const net = useNetStore.getState();
+  if (net.replayActive) return; // リプレイ再生中に盤面を壊さない
+
+  net.setPhase('lobby');
+  net.setConfig(config);
+  net.setPlayers(players);
+  net.setDesync(false);      // 残すと次局の入力が dispatch で全破棄される
+  net.setRecovering(false);
+  net.setVerMismatch(false);
+  net.setEarlyMulligan(null); // 残すと次局のマリガンで前局の選択が自動送信される
+  net.setOppLostAt(null);
+  net.setLastEmote(null);
+  net.setSending(false);
+  if (last) net.setLastResult(last);
+  net.bumpLobbyEpoch();      // OnlineLobby のローカルstate（readySent 等）を初期化
+
+  resetLockstep(1);
+  clockStop();
+  setMatchGame(0, 0);
+  lastStart = null; resultSent = false; recoveryAttempted = false; lastCanon = ''; lastCanonN = 0;
+
+  const es = useEngineStore.getState();
+  try { es.resetEngine(); } catch { /* ignore */ }
+  es.bump();
 }
 
 // 退室してオフライン既定へ戻す（ロビー/終了後/エラー時）
@@ -114,6 +154,13 @@ function handleMsg(m: S2C): void {
       net.setMySeat(seatOf(m.seat));
       net.setPlayers(m.players);
       net.setConfig(m.config);
+      /* ★取りこぼし回収: WSが切れている間に相手が「部屋に戻る」を押すと、復帰時に来るのは joined(status:'lobby') だけ
+         （welcome は status==='playing' のときしか来ない）。自分だけ盤面/終了画面に取り残されるのを防ぐ。
+         ★入室直後（phase は enterRoom で既に 'lobby'）では走らせない: CPU対戦中に部屋を作った人の盤面を壊すため。 */
+      if (m.status === 'lobby' && (net.phase === 'playing' || net.phase === 'ended')) {
+        applyLobbyReset(m.config, m.players, null);
+        return;
+      }
       if (m.status === 'lobby') net.setPhase('lobby');
       return;
     }
@@ -180,6 +227,12 @@ function handleMsg(m: S2C): void {
       if (seatOf(m.by) !== net.mySeat) toast('相手がもう一度対戦を希望しています');
       return;
     }
+    // 部屋（ロビー）へ戻った。ready は DO 側で解除済み＝両者ともデッキ選択からやり直す。
+    case 'lobby': {
+      applyLobbyReset(m.config, m.players, m.last);
+      toast('部屋に戻りました — デッキと対戦設定を選び直せます');
+      return;
+    }
     case 'bye': {
       toast(m.reason === 'ttl' ? '部屋が時間切れで閉じられました' : '部屋が閉じられました');
       leaveOnline();
@@ -187,6 +240,7 @@ function handleMsg(m: S2C): void {
     }
     case 'error': {
       if (m.code === 'claim_rejected') { toast('まだ勝利宣言できません（相手の切断から90秒必要です）'); return; }
+      if (m.code === 'bad_state') { toast('まだ対戦が終わっていません'); return; }
       const msg = m.code === 'not_found' ? '部屋が見つかりません'
         : m.code === 'room_full' ? '部屋が満室です'
         : m.code === 'rate' ? '操作が速すぎます'
