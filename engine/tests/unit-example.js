@@ -435,6 +435,50 @@ function setupG(leaderNo){G.active='me';G.turnSeq=5;G.winner=null;const mkP=(ln,
       ok(P.don.active===4 && P.don.rested===0, '例15e: ドン3枚アクティブ化');
       ok(P._noSummonTurn===G.turnSeq, '例15e: このターン登場不可(setSummonBan)');
     }
+    // 例16: ★「ライフを表/裏向きにする」コストは逆向きのライフにしか払えない（実対戦指摘 2026-07-16）
+    // 16a: 黄キッドL(OP10-099) flipLifeCost — ライフ上が裏向きなら発動でき、既に表向きなら発動できない
+    setupG('OP10-099'); { const P=G.players.me; P.isCPU=true;
+      const kid=mkc('OP12-118'); kid.rested=true; P.chars=[kid]; // コスト5《超新星》ボニー(3〜8の範囲)
+      P.life=[mkc('OP15-067'),mkc('OP15-067')];
+      await runFx(C['OP10-099'].fx.onTurnEnd,{side:'me',self:P.leader});
+      ok(P.life[0]._faceUp===true && kid.rested===false && kid.kwGrant.some(g=>g.kw==='blocker'), '例16a: 裏向きなら発動（表向き化+アクティブ+ブロッカー付与）');
+      kid.rested=true; kid.kwGrant=[];
+      await runFx(C['OP10-099'].fx.onTurnEnd,{side:'me',self:P.leader}); // ライフ上は既に表向き
+      ok(kid.rested===true && kid.kwGrant.length===0, '例16a: 既に表向きなら発動できない（コスト不成立）');
+    }
+    // 16b: lifeCost pos未指定 — ワイパー(OP15-114)「上から1枚を表向きにできる」は表向き済みだと不発
+    setupG('OP15-058'); { const P=G.players.me; P.isCPU=true; const O=G.players.cpu;
+      const w=mkc('OP15-114'); P.chars=[w];
+      const tgt=mkc('OP01-077'); tgt.owner='cpu'; O.chars=[tgt]; // 2000
+      P.life=[mkc('OP15-067')]; P.life[0]._faceUp=true;
+      await runFx(C['OP15-114'].fx.onPlay,{side:'me',self:w});
+      ok(O.chars.includes(tgt) && power(tgt)===2000, '例16b: 表向き済み→コスト払えず-2000もKOも起きない');
+      P.life[0]._faceUp=false;
+      await runFx(C['OP15-114'].fx.onPlay,{side:'me',self:w});
+      ok(P.life[0]._faceUp===true && !O.chars.includes(tgt), '例16b: 裏向きなら発動（-2000→パワー0以下KO）');
+    }
+    // 16c: lifeCost faceDown pos未指定 — ウルージ(OP15-099)「上から1枚を裏向きにできる」は裏向き済みだと不発
+    setupG('OP15-058'); { const P=G.players.me; P.isCPU=true;
+      const u=mkc('OP15-099'); P.chars=[u]; P.don.rested=1;
+      P.life=[mkc('OP15-067')]; // 裏向き
+      await runFx(C['OP15-099'].fx.act.fx,{side:'me',self:u});
+      ok(P.leader.attachedDon===0 && u.attachedDon===0, '例16c: 裏向き済み→コスト払えずドン付与なし');
+      P.life[0]._faceUp=true;
+      await runFx(C['OP15-099'].fx.act.fx,{side:'me',self:u});
+      ok(P.life[0]._faceUp===false, '例16c: 表向きなら裏向きにして発動');
+    }
+    // 16d: ST36-005キッド「上か下から1枚を表向きにできる」(pos:'choose') — 上が表向きでも下が裏向きなら払える
+    setupG('OP15-058'); { const P=G.players.me; P.isCPU=true;
+      const k=mkc('ST36-005'); P.chars=[k];
+      P.life=[mkc('OP15-067'),mkc('OP15-067'),mkc('OP15-067')];
+      P.life[0]._faceUp=true; // 上=表・下=裏 → 下を表向きにして発動できる
+      await runFx(C['ST36-005'].fx.act.fx,{side:'me',self:k});
+      ok(P.life[2]._faceUp===true, '例16d: 上か下型は裏向きが残る側（下）で払える');
+      P.life.forEach(l=>l._faceUp=true); k._actTurn=null;
+      const before=JSON.stringify(P.life.map(l=>!!l._faceUp));
+      await runFx(C['ST36-005'].fx.act.fx,{side:'me',self:k});
+      ok(JSON.stringify(P.life.map(l=>!!l._faceUp))===before, '例16d: 上下とも表向きなら払えない（不発）');
+    }
   }catch(e){ console.log('EXCEPTION:', e.message); fail++; }
   console.log('ユニットテスト: pass='+pass+' fail='+fail);
   process.exit(fail?1:0);
