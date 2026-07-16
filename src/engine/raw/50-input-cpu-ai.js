@@ -175,6 +175,25 @@
     //   →展開では温存し、捨てる手段では最優先で捨てる（CPUが大型を素出しして弱い問題の対策）。
     function isYamatoLeader(side) { const L = G.players[side] && G.players[side].leader; return !!(L && L.base && L.base.no === 'OP16-079'); }
     function yamatoReviveTarget(no) { return no === 'OP16-096' || no === 'OP16-097' || no === 'OP16-085'; }
+    // ★E53('luffyact'): 「コスト無しでドンをアクティブにするリーダー起動」（青緑ルフィOP16-022=ドン2枚アクティブ）を
+    //   展開の途中で使えば追加プレイの予算になる（実対戦の人間は毎ターン「支払い→起動→追加プレイ/付与」の順で皆勤）。
+    //   従来は起動ステップ(3)が展開(1)の後＝回収したドンをプレイに使えなかった。登場不可(setSummonBan)付きは対象外
+    //   （ミホークL等は展開後に使うのが正しい）。「起動で増えるドンで新たに払えるプレイがある」時だけ真を返す。
+    function donRampActReady(side) {
+      const P = G.players[side], L = P.leader;
+      if (!actUsable(L) || P.don.rested < 1) return false;
+      const act = L.base.fx.act;
+      if (act.cost && Object.keys(act.cost).length) return false;
+      const first = act.fx && act.fx[0];
+      if (!first) return false;
+      let ops = act.fx;
+      if (first.op === 'cond') { if (first.check && !checkCond(first.check, side, L)) return false; ops = first.then || []; }
+      const da = ops.find(o => o.op === 'donActivate');
+      if (!da || ops.some(o => o.op === 'setSummonBan')) return false;
+      const gain = Math.min(da.n || 1, P.don.rested);
+      return P.hand.some(c => c.base.type === 'CHAR' && !summonBanned(side, c)
+        && effCost(side, c) > P.don.active && effCost(side, c) <= P.don.active + gain);
+    }
     // ★起動メインを「今使う価値があるか」判定（無駄撃ち防止）。CPU(heuristic/puct両方)が条件未達/対象不在/無意味でも起動する問題の対策。
     //   ① 先頭が cond の起動は、条件を満たさない時は使わない（お玉「コスト8以上がいる場合」・6ヤマト「8ヤマトがトラッシュにある場合」等）。
     //   ② 相手キャラを対象にする効果(パワー減/KO/レスト/バウンス)なのに相手キャラが0なら使わない。
@@ -185,6 +204,12 @@
       if (!fx || !fx.length) return false;
       const first = fx[0];
       if (first.op === 'cond' && first.check && !checkCond(first.check, side, c)) return false;
+      // ④ ★E53: 先頭がコスト支払いop（then持ち）で中身が単一のcondに包まれている起動（ミホークL OP14-020
+      //   「カード1枚レスト→コスト5以上のキャラがいる場合ドン3アクティブ」等）は、cond不成立だとコストだけ
+      //   払って何も起きない＝純損。実対戦の人間は条件成立ターンからしか使わなかった（heur2部品 'actgate'）。
+      if (e53On(side, 'actgate') && first.op !== 'cond' && Array.isArray(first.then)
+        && first.then.length === 1 && first.then[0].op === 'cond'
+        && first.then[0].check && !checkCond(first.then[0].check, side, c)) return false;
       const ops = (first.op === 'cond' && Array.isArray(first.then)) ? first.then : fx;
       const P = G.players[side], D = G.players[opp(side)];
       const needOpp = ops.some(o => (o.op === 'powerMod' && o.side === 'opp') || ['ko', 'koZero', 'restChar', 'bounce', 'deckBottom', 'handToBottom'].includes(o.op));
@@ -203,6 +228,29 @@
     // 除去/パワー操作を撃つ価値のある相手キャラがいるか（雑魚への浪費を避ける）
     function oppHasWorthyTarget(side) {
       return G.players[opp(side)].chars.some(x => hasKw(x, 'blocker') || power(x) >= 5000 || (x.base.fx && (x.base.fx.onKO || x.base.fx.act)));
+    }
+    // ★E53('restpick'): 自分のカードをコストでレストにする時のCPU選択（restOwnAsCostが呼ぶ）。
+    //   従来は pool[0]＝並び順先頭のリーダーを問答無用で寝かせていた（自分のリーダーアタックの放棄）。
+    //   実対戦観察（緑ミホーク）: 人間は ①レスト時誘発持ち（ST32-003=1ドロー1捨て・OP14-119=相手ロック。自分の
+    //   ターン中のみ発火）②どうせ動けない登場したてのキャラ ③ステージ ④低価値キャラ の順で選び、リーダーと
+    //   アタックできる高パワーキャラは寝かせない。相手ターン中は逆で、リーダーのレストは実害ゼロ＝最安。
+    function cpuRestCostPick(side, pool) {
+      if (!pool || !pool.length) return null;
+      if (!e53On(side, 'restpick')) return pool[0];
+      const own = G.active === side;
+      const cost = (c) => {
+        let v;
+        if (c.base.type === 'LEADER') v = own ? 100 : 2;
+        else if (c.base.type === 'STAGE') v = 6;
+        else {
+          v = 10 + Math.min(10, scoreChar(c));
+          if (own && !canCardAttack(c)) v -= 12;           // 登場したて等このターン動けない＝寝かせても失うものが無い
+          if (!own && hasKw(c, 'blocker')) v += 8;         // 相手ターン中はブロッカーを寝かせない（壁を残す）
+        }
+        if (own && c.base.fx && c.base.fx.onSelfRested) v -= 20; // レスト誘発が利得（【自分のターン中】発火）
+        return v;
+      };
+      return pool.slice().sort((a, b) => cost(a) - cost(b))[0];
     }
     function eventWorth(side, c) {
       const fx = (c.base.fx.main && c.base.fx.main.fx) || [];
@@ -334,6 +382,14 @@
     function h2On(part) { const t = G._h2Parts; return !t || !!t[part]; }
     // ★E46採用テーブル: ステージ設置を既定で行うリーダー（測定で正方向のリーダーのみ掲載。詳細は heuristicTurn 2b のコメント）
     var STAGE_PLAY = { teach: 1 };
+    // ★E53採用テーブル: 実対戦観察（2026-07-13 青緑ルフィvs緑ミホーク4戦）由来の部品の既定on/off。
+    //   測定（measure-matchup 同一seedペア比較・2seed帯・対面=mihawk vs luffygb N=120）で全部品採用:
+    //   restpick 単離+27.5pt(p=0.000★)／actgate 単離+10.0pt(p=0.023★)／合成 band1+26.7・band2+19.2(共にp=0.000★)
+    //   luffyact band1+9.2pt(p=0.061)・band2+10.8pt(p=0.011★)＝2帯符号再現・合算 改善38/退行14。
+    //   再測定は既定を0に戻し heur2+OPCG_H2 で単離（例: OPCG_AGENT=heur2 OPCG_H2=restpick）。
+    //   restpick=restOwnAsCostのレスト対象選択 / actgate=コスト→cond不成立の起動抑止 / luffyact=無償ドン起動を展開予算に組込
+    var E53_DEF = { restpick: 1, actgate: 1, luffyact: 1 };
+    function e53On(side, part) { return !!E53_DEF[part] || (isHeur2(side) && h2On(part)); }
     /* ★E42a: cpuCanLethal の精密版（heur2ゲート）。相手の防御力を「手札枚数×0.5」でなく
        「アクティブブロッカー + 手札枚数×(hand+deckプールのカウンター平均)」で見積り、E40と同じ貪欲割当で判定。
        プールの多重集合は determinize と同じ情報水準（個々の手札は読まない＝セミフェア維持）。 */
@@ -494,7 +550,20 @@
           if (G._lineAvoid && typeof planAvoidPlay === 'function') cand = cand.filter(c => !planAvoidPlay(side, c));
           return cand.sort((a, b) => scoreChar(b) - scoreChar(a));
         })();
-        if (!pl.length) break;
+        if (!pl.length) {
+          // ★E53('luffyact'): アクティブドンが尽きても、無償ドン起動（青緑ルフィのドン2アクティブ）で
+          //   もう1体出せるなら、ここで起動して展開を続ける（人間の「支払い→起動→追加プレイ」の順序）。
+          if (e53On(side, 'luffyact') && donRampActReady(side)) {
+            const L = P.leader;
+            L._actTurn = G.turnSeq;
+            await fxNote(side, '起動メイン', L.base.name);
+            await runFx(L.base.fx.act.fx, { self: L, side });
+            render(); await sleep(160);
+            if (G.winner) return;
+            continue;
+          }
+          break;
+        }
         const c = pl[0];
         if (P.chars.length >= 5) {
           // 盤面が埋まっている：最弱キャラより十分強い時だけ入れ替え（無駄な入れ替えはしない）

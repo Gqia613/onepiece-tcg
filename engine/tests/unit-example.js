@@ -394,6 +394,47 @@ function setupG(leaderNo){G.active='me';G.turnSeq=5;G.winner=null;const mkP=(ln,
     ok(buildPlayer('cpu', bdDeck.id, true).deck.length===50, 'ビルダー: CPUも同デッキで50枚生成');
     ok(builderValidate({leaderNo:'OP15-058',list:{'OP15-067':4}}).ok===false, 'ビルダー: 50枚未満はNG');
     ok(cardLegalForLeader('OP15-067','OP15-058')===true, 'ビルダー: 同色カードは合法');
+
+    // 例15: ★E53 緑ミホークL(OP14-020)まわり — 実対戦観察(2026-07-13)由来のCPU挙動
+    // 15a: restOwnAsCost は「レストにできない」(restImmune)のカードをコストに使えない（82f2a41修正の回帰ガード）
+    setupG('OP14-020'); { const P=G.players.me; P.isCPU=true;
+      const m6=mkc('ST32-003'); m6.restImmuneUntil=G.turnSeq+1; P.chars=[m6]; P.leader.rested=true;
+      await doOp({op:'restOwnAsCost',count:1,then:[]},{side:'me',self:P.leader});
+      ok(m6.rested===false, '例15a: レスト不可のカードはrestOwnAsCostの対象外（コスト払えず不発）');
+    }
+    // 15b: cpuRestCostPick（heur2部品 restpick）はリーダーでなくレスト誘発持ち→動けないキャラを優先
+    setupG('OP14-020'); { const P=G.players.me; P.isCPU=true; P.agent='heur2'; G._h2Parts={restpick:1};
+      const m6=mkc('ST32-003'); const zoro=mkc('ST32-005'); P.chars=[zoro,m6];
+      const pick=cpuRestCostPick('me',[P.leader,...P.chars]);
+      ok(pick===m6, '例15b: レスト誘発持ち(ST32-003)を優先（リーダーは寝かせない）');
+      const pick2=cpuRestCostPick('me',[P.leader,zoro]);
+      ok(pick2!==P.leader, '例15b: 誘発持ち不在でもリーダーは選ばない');
+    }
+    // 15c: actWorthUsing（E53 'actgate'・既定採用）— コスト5以上のキャラ不在ならミホークL起動を使わない
+    setupG('OP14-020'); { const P=G.players.me; P.isCPU=true;
+      P.chars=[mkc('ST32-005')]; P.don.rested=3;
+      ok(actWorthUsing('me',P.leader)===false, '例15c: コスト5以上なし→起動しない（払い損防止・既定CPUで有効）');
+      P.chars.push(mkc('ST32-003')); // コスト6
+      ok(actWorthUsing('me',P.leader)===true, '例15c: コスト5以上あり→起動する');
+    }
+    // 15d: donRampActReady（heur2部品 luffyact）— 青緑ルフィL(OP16-022)の無償ドン起動が追加プレイを可能にする時だけ真
+    setupG('OP16-022'); { const P=G.players.me; P.isCPU=true; P.agent='heur2'; G._h2Parts={luffyact:1};
+      P.chars=[mkc('OP16-042')]; P.don.active=0; P.don.rested=2;
+      const pris=mkc('OP16-042'); pris.owner='me'; P.hand=[pris]; // 囚人c6: 0+2でも届かない→false
+      ok(donRampActReady('me')===false, '例15d: 起動しても払えないなら使わない');
+      P.don.active=4; // 4+2=6で囚人が出せる→true
+      ok(donRampActReady('me')===true, '例15d: 起動で新たに払える→使う');
+      P.chars=[mkc('ST32-005')]; // インペルダウン以外が場に→リーダーcond不成立→false
+      ok(donRampActReady('me')===false, '例15d: リーダー条件(全キャラ《インペルダウン》)不成立なら使わない');
+    }
+    // 15e: ミホークL起動の実効果 — カード1枚レスト→コスト5以上がいればドン3アクティブ+このターン登場不可
+    setupG('OP14-020'); { const P=G.players.me; P.isCPU=true; P.agent='heur2'; G._h2Parts={restpick:1};
+      const m6=mkc('ST32-003'); P.chars=[m6]; P.don.active=1; P.don.rested=3; P.deck=[mkc('ST32-005'),mkc('ST32-005')]; P.hand=[mkc('OP12-034')];
+      await runFx(C['OP14-020'].fx.act.fx,{side:'me',self:P.leader});
+      ok(m6.rested===true, '例15e: コストでST32-003がレスト');
+      ok(P.don.active===4 && P.don.rested===0, '例15e: ドン3枚アクティブ化');
+      ok(P._noSummonTurn===G.turnSeq, '例15e: このターン登場不可(setSummonBan)');
+    }
   }catch(e){ console.log('EXCEPTION:', e.message); fail++; }
   console.log('ユニットテスト: pass='+pass+' fail='+fail);
   process.exit(fail?1:0);

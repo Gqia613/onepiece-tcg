@@ -1080,7 +1080,7 @@
           if ([P.leader, P.stage, ...P.chars].filter(c => c && !c.rested && !isRestImmune(c) && matchFilter(c, opFilter(op))).length < cnt) break; // 「レストにできない」はコスト支払いにも使えない
           if (!(await confirmUse(side, 'レストにする', `カード${cnt}枚をレストにして効果を使いますか？`, 'レストして使う'))) break;
           const rested = [];
-          for (let i = 0; i < cnt; i++) { const pool = [P.leader, P.stage, ...P.chars].filter(c => c && !c.rested && !isRestImmune(c) && !rested.includes(c) && matchFilter(c, opFilter(op))); const t = P.isCPU ? pool[0] : await chooseCard(side, pool, `レストにするカードを選択（コスト ${i + 1}/${cnt}）`, 'ownBig', false); if (!t) break; t.rested = true; await fireSelfRested(t, 'ownEffect'); rested.push(t); }
+          for (let i = 0; i < cnt; i++) { const pool = [P.leader, P.stage, ...P.chars].filter(c => c && !c.rested && !isRestImmune(c) && !rested.includes(c) && matchFilter(c, opFilter(op))); const t = P.isCPU ? cpuRestCostPick(side, pool) : await chooseCard(side, pool, `レストにするカードを選択（コスト ${i + 1}/${cnt}）`, 'ownBig', false); if (!t) break; t.rested = true; await fireSelfRested(t, 'ownEffect'); rested.push(t); } // ★E53: CPUの選択は cpuRestCostPick（従来pool[0]=リーダー固定）
           if (rested.length < cnt) break; flog(side, `カード${cnt}枚をレストにした`);
           await runFx(op.then, ctx); break;
         }

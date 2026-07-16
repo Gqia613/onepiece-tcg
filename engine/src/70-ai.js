@@ -127,7 +127,10 @@
         else if (b.type === 'STAGE' && (b.cost || 0) <= P.don.active) acts.push({ k: 'stage', uid: c.uid });
         else if (b.type === 'EVENT' && b.fx && b.fx.main && effCost(side, c) <= P.don.active) acts.push({ k: 'event', uid: c.uid });
       }
-      for (const c of [...P.chars, ...(P.stage ? [P.stage] : [])]) {
+      // ★E53: リーダーも含める。番号キーリーダーの起動メイン（青緑ルフィOP16-022=ドン2アクティブ・
+      //   緑ミホークOP14-020=カードレスト→ドン3アクティブ等）が従来は探索候補に一切載らなかった（完全不可視）。
+      //   名前キーの測定済みリーダー(lucy/ace/nami/hancock/teach/enel/yamato/buggy)は fx.act を持たない＝挙動不変。
+      for (const c of [P.leader, ...P.chars, ...(P.stage ? [P.stage] : [])]) {
         if (c.base.fx && c.base.fx.act && c._actTurn !== G.turnSeq && !isNegated(c)) {
           const cost = c.base.fx.act.cost || {};
           if ((!cost.don || P.don.active >= cost.don) && (!cost.restSelf || !c.rested)) acts.push({ k: 'act', uid: c.uid });

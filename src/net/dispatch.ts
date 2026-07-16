@@ -124,7 +124,12 @@ export function createLockstep(deps: LockstepDeps): Lockstep {
     }
     if (G.attackSel) return (d.t === 'attack' || d.t === 'cancelAtk') && G.active === seat;
     if (G.active === seat && G.myActable && !G.busy && !G.promptState && !G.pendingChoice) {
-      return d.t === 'play' || d.t === 'menu' || d.t === 'endTurn' || d.t === 'attack';
+      // ★'attack' はここで受けない: attack/cancelAtk は UI 上 attackSel が立ってからしか送信されない
+      //   （interaction.ts の攻撃対象クリック）。入力が事前キューされる復帰リプレイでは、メニュー'atk'応答の
+      //   継続（beginAttack→attackSel設定）より先に直前バトルの非同期尻尾が busy=false を戻した隙に
+      //   attack が main 分岐から適用され、遅れて立った attackSel が残留→以降の入力が永久に配達不能になる
+      //   （実リプレイで再現した実バグ）。attackSel 分岐だけに限定すれば適用順が本来の因果に揃う。
+      return d.t === 'play' || d.t === 'menu' || d.t === 'endTurn';
     }
     return false;
   }
