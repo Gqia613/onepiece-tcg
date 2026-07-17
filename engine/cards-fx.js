@@ -301,7 +301,7 @@ window.CARD_FX = {
   // OP14-025: 【登場時】リーダーが「クロ」なら手札のコスト6以下《東の海》1枚を登場
   "OP14-025": {"onPlay":[{"op":"cond","check":{"leaderNameIncludes":"クロ"},"then":[{"op":"playCharFromHand","maxCost":6,"filter":{"traitIncludes":"東の海"},"count":1,"optional":true}]}]},
   // OP14-033: 【登場時】相手コスト5以下2枚を次相手エンド終了までレスト不可 ／【KO時】自カード1枚レスト：手札のコスト5以下の緑キャラ登場
-  "OP14-033": {"onPlay":[{"op":"restImmune","side":"opp","maxCost":5,"count":2,"duration":"untilNextEnd","optional":true}],"onKO":[{"op":"restOwnAsCost","then":[{"op":"playCharFromHand","maxCost":5,"filter":{"color":"緑"},"count":1,"optional":true}]}]},
+  "OP14-033": {"onPlay":[{"op":"restImmune","side":"opp","maxCost":5,"count":2,"duration":"untilNextEnd","optional":true}],"onKO":[{"op":"restOwnAsCost","then":[{"op":"playCharFromHand","filter":{"color":"緑","maxCost":5},"count":1,"optional":true}]}]},
   // OP14-046: 【起動メイン】自身をトラッシュ：魚人/人魚のリーダーかキャラ1枚を このターン中+2000
   "OP14-046": {"act":{"label":"自身トラッシュ:魚人/人魚に+2000","cost":{},"fx":[{"op":"trashSelfCost","then":[{"op":"powerMod","side":"self","leader":true,"amount":2000,"count":1,"filter":{"or":[{"traitIncludes":"魚人族"},{"traitIncludes":"人魚族"}]},"optional":true}]}]}},
   // OP14-052: 【ブロッカー】(text) 【登場時】手札3枚捨て：手札のコスト6以下《インペルダウン》1枚を登場
@@ -878,7 +878,7 @@ window.CARD_FX = {
   "OP12-118": {"onPlay":[{"op":"cond","check":{"restedCardsAtLeast":8},"then":[{"op":"draw","n":2},{"op":"discardOwn","n":1},{"op":"donActivate","n":1}]}]},
   /* ===== OP12 バッチ3（青・海軍/麦わら。新cond selfHandAtLeast/trashEventAtLeast・drawDiscarded） ===== */
   // OP12-040 クザン LEADER: 海軍の効果で手札が捨てられた時、捨てた枚数分ドロー（drawDiscarded）
-  "OP12-040": {"onSelfHandDiscarded":[{"op":"drawDiscarded"}]},
+  "OP12-040": {"onSelfHandDiscarded":{"srcOwnTrait":"海軍","fx":[{"op":"drawDiscarded"}]}},
   // OP12-041 サンジ LEADER: 【起動メイン】ドン-1：手札から元々コスト3以下の麦わらイベント1枚を発動 ／【アタック時】自ドン≤相手ドンでドン1レスト追加
   "OP12-041": {"act":{"label":"ドン-1:麦わらイベント発動","cost":{},"fx":[{"op":"donMinus","n":1},{"op":"playEventFromHand","filter":{"maxBaseCost":3,"traitIncludes":"麦わらの一味"},"optional":true}]},"onAttack":[{"op":"cond","check":{"donLEOpp":true},"then":[{"op":"donFromDeck","n":1,"mode":"rested"}]}]},
   // OP12-042 アルビダ: 元々コスト5以上のキャラが2枚以上でコスト+1 ／【登場時】相手の元々コスト1以下1枚をデッキ下
@@ -1365,7 +1365,7 @@ window.CARD_FX = {
   // OP10-098 解放: 【メイン】自分のキャラが相手より2枚以上少ないなら 相手の元々コスト6以下1枚＋コスト4以下1枚KO
   "OP10-098": {"main":{"fx":[{"op":"cond","check":{"selfCharsFewerBy":2},"then":[{"op":"ko","side":"opp","filter":{"maxBaseCost":6},"count":1,"optional":true},{"op":"ko","side":"opp","filter":{"maxBaseCost":4},"count":1,"optional":true}]}]}},
   // OP10-099 ユースタス・キッド LEADER: 【自分のターン終了時】ライフ上1枚を表向き：コスト3〜8の超新星1枚をアクティブにし次相手ターン終了まで【ブロッカー】
-  "OP10-099": {"onTurnEnd":[{"op":"flipLifeCost","then":[{"op":"activateOwnChar","count":1,"filter":{"traitIncludes":"超新星","minCost":3,"maxCost":8,"restedOnly":true},"grantKw":"blocker","grantDuration":"untilNextEnd"}]}]},
+  "OP10-099": {"onTurnEnd":[{"op":"flipLifeCost","then":[{"op":"activateOwnChar","count":1,"allowActive":true,"filter":{"traitIncludes":"超新星","minCost":3,"maxCost":8},"grantKw":"blocker","grantDuration":"untilNextEnd"}]}]},
   /* ===== OP10 バッチ6（黄・100-119。超新星＝ライフ操作） ===== */
   // OP10-100 イナズマ: 【ドン×1】【アタック時】お互いのライフ合計以下のコストの相手キャラ1枚をレスト
   "OP10-100": {"onAttack":[{"op":"cond","check":{"donX1":true},"then":[{"op":"restChar","side":"opp","filter":{"maxCostFrom":"totalLife"},"count":1,"optional":true}]}]},

@@ -479,6 +479,51 @@ function setupG(leaderNo){G.active='me';G.turnSeq=5;G.winner=null;const mkP=(ln,
       await runFx(C['ST36-005'].fx.act.fx,{side:'me',self:k});
       ok(JSON.stringify(P.life.map(l=>!!l._faceUp))===before, '例16d: 上下とも表向きなら払えない（不発）');
     }
+    // 例17: ★実対戦指摘（2026-07-18）3件の回帰
+    // 17a: OP14-033ペローナKO時 — 「コスト5以下の緑」限定（filter+トップレベルmaxCost併記でコスト無制限になり10cロー＆ベポが出せた系統バグ）
+    setupG('OP14-020'); { const P=G.players.me; P.isCPU=true;
+      const per=mkc('OP14-033'); P.chars=[mkc('ST32-002')]; // レストコスト用に1体
+      const lawbepo=mkc('ST24-004'); const zoro=mkc('ST32-005'); P.hand=[lawbepo,zoro]; // 10c緑 / 1c緑
+      await runFx(C['OP14-033'].fx.onKO,{side:'me',self:per});
+      ok(!P.chars.some(c=>c.no==='ST24-004'), '例17a: 10cロー＆ベポは出せない（コスト5以下限定）');
+      ok(P.chars.some(c=>c.no==='ST32-005'), '例17a: 1cゾロ（5c以下の緑）は出せる');
+    }
+    // 17b: OP01-086超過鞭糸 — 「アクティブのコスト3以下」限定（同型: filter{activeOnly}+maxCost:3併記）
+    setupG('OP15-058'); { const P=G.players.me; P.isCPU=true; const O=G.players.cpu;
+      const c5=mkc('ST32-002'); c5.owner='cpu'; O.chars=[c5]; // コスト5おでん・アクティブ
+      await runFx(C['OP01-086'].fx.counter.fx.slice(1),{side:'me',self:mkc('OP01-086')}); // bounce部分のみ
+      ok(O.chars.includes(c5), '例17b: コスト5はバウンスされない（3以下限定）');
+      const c1=mkc('EB01-015'); c1.owner='cpu'; O.chars=[c1]; // コスト1アプー・アクティブ
+      await runFx(C['OP01-086'].fx.counter.fx.slice(1),{side:'me',self:mkc('OP01-086')});
+      ok(!O.chars.includes(c1), '例17b: コスト1アクティブはバウンスされる');
+    }
+    // 17c: OP10-099黄キッドL — 既にアクティブの超新星にもブロッカーを付与できる（公式Q&A 830）
+    setupG('OP10-099'); { const P=G.players.me; P.isCPU=true;
+      const boni=mkc('OP12-118'); boni.rested=false; P.chars=[boni]; // アクティブのコスト5超新星
+      P.life=[mkc('OP15-067')];
+      await runFx(C['OP10-099'].fx.onTurnEnd,{side:'me',self:P.leader});
+      ok(boni.kwGrant.some(g=>g.kw==='blocker'), '例17c: アクティブのキャラにもブロッカー付与（Q&A830）');
+      ok(boni.rested===false, '例17c: アクティブのまま（アクティブ化は空振り）');
+    }
+    // 17d: OP12-040クザンL — 「自分の特徴《海軍》を持つカードの効果で」捨てられた時のみ捨てた枚数分ドロー
+    setupG('OP12-040'); { const P=G.players.me; P.isCPU=true; const O=G.players.cpu;
+      const koby=mkc('ST33-001'); P.chars=[koby]; // 海軍
+      P.hand=[mkc('ST33-004')]; P.deck=[mkc('ST33-002'),mkc('ST33-002'),mkc('ST33-002')];
+      await doOp({op:'discardOwn',n:1},{side:'me',self:koby});
+      ok(P.hand.length===1 && P.deck.length===2, '例17d: 海軍カードの効果の捨て→1ドロー');
+      // 非海軍（ST32-005ゾロ=超新星/麦わら）の効果による捨て→ドローしない
+      const zoro=mkc('ST32-005'); P.chars=[zoro]; P.hand=[mkc('ST33-004')];
+      const d0=P.deck.length;
+      await doOp({op:'discardOwn',n:1},{side:'me',self:zoro});
+      ok(P.hand.length===0 && P.deck.length===d0, '例17d: 非海軍カードの効果の捨て→ドローしない');
+      // 相手のカードの効果（oppDiscard）で捨てられた→ドローしない
+      P.hand=[mkc('ST33-004')]; const d1=P.deck.length;
+      const oppSaka=mkc('ST33-002'); oppSaka.owner='cpu'; O.chars=[oppSaka];
+      G.active='cpu';
+      await doOp({op:'oppDiscard',n:1},{side:'cpu',self:oppSaka});
+      ok(P.hand.length===0 && P.deck.length===d1, '例17d: 相手の効果の捨て→ドローしない（自分の海軍カード限定）');
+      G.active='me';
+    }
   }catch(e){ console.log('EXCEPTION:', e.message); fail++; }
   console.log('ユニットテスト: pass='+pass+' fail='+fail);
   process.exit(fail?1:0);

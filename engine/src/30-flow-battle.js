@@ -40,14 +40,21 @@
       { const O = G.players[opp(side)]; for (const c of O.chars.slice()) { const cfg = c.base.fx && c.base.fx.onOppEnter; if (!cfg || isNegated(c) || !O.chars.includes(c)) continue; if (cfg.when === 'oppTurn' && opp(side) === G.active) continue; if (cfg.when === 'selfTurn' && opp(side) !== G.active) continue; if (cfg.cond && !checkCond(cfg.cond, opp(side), c)) continue; if (cfg.once === 'turn') { if (c._oppEnterTurn === G.turnSeq) continue; c._oppEnterTurn = G.turnSeq; } await runFx(cfg.fx, { self: c, side: opp(side), entered: card }); } }
       render();
     }
-    // 「効果で自分の手札が捨てられた時」誘発（OP14-045クロオビ/049ジンベエ→速攻, 056ワダツミ→自身無効）。
-    // 手札を捨てる各op（discardOwn/discardCost/oppDiscard）から、捨てられた側を指定して呼ぶ。
-    async function fireHandDiscarded(side, n) {
+    // 「効果で自分の手札が捨てられた時」誘発（OP14-045クロオビ/049ジンベエ→速攻, 056ワダツミ→自身無効, OP12-040クザンL→捨てた枚数分ドロー）。
+    // 手札を捨てる各op/経路から、捨てられた側と「捨てさせた効果の発生源カード src」を指定して呼ぶ（不明ならnull）。
+    // fx は配列（無条件＝公式「効果で捨てられた時」）か cfg形式 {srcOwnTrait, fx}。
+    //   srcOwnTrait: 「自分の特徴《X》を持つカードの効果で」（OP12-040クザン=海軍）＝srcが自分のカードで特徴Xを持つ時のみ発動。
+    async function fireHandDiscarded(side, n, src) {
       const P = G.players[side]; n = n || 1;
       P._handDiscardedTurn = G.turnSeq; // 効果で自分の手札が捨てられたターン（cond selfHandDiscardedThisTurn＝ST33-004ボルサリーノのコスト-3）
       for (const c of [...P.chars.slice(), P.leader]) {
         if (c && c.base.fx && c.base.fx.onSelfHandDiscarded && (c === P.leader || P.chars.includes(c)) && !isNegated(c)) {
-          await runFx(c.base.fx.onSelfHandDiscarded, { self: c, side, discarded: n }); // ctx.discarded=捨てた枚数（OP12-040クザンが参照）
+          const cfg = c.base.fx.onSelfHandDiscarded;
+          const fx = Array.isArray(cfg) ? cfg : cfg.fx;
+          if (!Array.isArray(cfg) && cfg.srcOwnTrait
+            && !(src && src.owner === side && (src.base.traits || []).includes(cfg.srcOwnTrait))) continue; // 発生源が自分の特徴《X》カードでなければ不発
+          if (c === P.leader) await fxNote(side, 'リーダー効果', c.base.name); // クザンL等の誘発を可視化（静かに手札が増えて見落とされる対策）
+          await runFx(fx, { self: c, side, discarded: n }); // ctx.discarded=捨てた枚数（OP12-040クザンが参照）
         }
       }
     }
@@ -444,7 +451,7 @@
         if (!paid) { flog(attacker.owner, `攻撃税(手札${taxN}捨て)を払えず/払わずアタック中止`); if (AP.isCPU) { G.busy = true; } else { G.busy = false; G.myActable = true; } render(); return; }
         if (AP.isCPU) { const disc = AP.hand.slice().sort((a, b) => ((a.base.counter || 0) - (b.base.counter || 0)) || ((a.base.cost || 0) - (b.base.cost || 0))).slice(0, taxN); for (const c of disc) { AP.hand.splice(AP.hand.indexOf(c), 1); AP.trash.push(reset(c)); } }
         else { for (let i = 0; i < taxN; i++) { const c = await chooseFromHand(attacker.owner, AP.hand, `⚠ 攻撃税で捨てる（${i + 1}/${taxN}）`, null, false, 'danger'); if (!c) break; AP.hand.splice(AP.hand.indexOf(c), 1); AP.trash.push(reset(c)); } }
-        flog(attacker.owner, `攻撃税: 手札${taxN}枚を捨てた`); await fireHandDiscarded(attacker.owner, taxN);
+        flog(attacker.owner, `攻撃税: 手札${taxN}枚を捨てた`); await fireHandDiscarded(attacker.owner, taxN, null);
       }
       attacker.rested = true;
       const aSide = attacker.owner, dSide = opp(aSide);
@@ -540,7 +547,7 @@
               let pay;
               if (DP.isCPU) pay = (blkTarget.base.cost || 0) >= 3 && DP.hand.length >= 2;
               else pay = !!(await confirmUse(blkTarget.owner, '身代わり', `「${blkTarget.base.name}」のバトルKOの代わりに手札1枚を捨てますか？`, '捨てて守る'));
-              if (pay) { let dc; if (DP.isCPU) dc = DP.hand.slice().sort((a, b) => (a.base.counter || 0) - (b.base.counter || 0))[0]; else dc = await chooseFromHand(blkTarget.owner, DP.hand, '捨てるカードを選択'); if (dc) { DP.hand.splice(DP.hand.indexOf(dc), 1); DP.trash.push(reset(dc)); flog(blkTarget.owner, `手札1枚を捨てて「${blkTarget.base.name}」を守った`); bkoSubbed = true; } }
+              if (pay) { let dc; if (DP.isCPU) dc = DP.hand.slice().sort((a, b) => (a.base.counter || 0) - (b.base.counter || 0))[0]; else dc = await chooseFromHand(blkTarget.owner, DP.hand, '捨てるカードを選択'); if (dc) { DP.hand.splice(DP.hand.indexOf(dc), 1); DP.trash.push(reset(dc)); flog(blkTarget.owner, `手札1枚を捨てて「${blkTarget.base.name}」を守った`); bkoSubbed = true; await fireHandDiscarded(blkTarget.owner, 1, null); } }
             } }
           if (!bkoSubbed && !(await protectFromEffect(blkTarget, 'battle', attacker))) { animClass(blkTarget.uid, 'shake'); await sleep(180); await koCard(blkTarget, 'battle'); } // includeBattle の身代わりがあればバトルKOを肩代わり（attacker=属性条件バトル耐性のsource）
         }
@@ -887,7 +894,7 @@
         else if (power(target) >= 7000 && D.life.length >= 3) dest = koBait || D.leader;               // 重要キャラを守る
         if (!dest) return target;
         const disc = triggers.sort((a, b) => (a.base.counter || 0) - (b.base.counter || 0))[0];
-        consume(disc); if (dest === koBait) D._teachSacUid = koBait.uid;
+        consume(disc); await fireHandDiscarded(dSide, 1, D.leader); if (dest === koBait) D._teachSacUid = koBait.uid; // ★捨て誘発（発火漏れ修正 2026-07-18）
         flog(dSide, `【ティーチ】「${disc.base.name}」を捨て、対象を「${dest.base.type === 'LEADER' ? 'リーダー' : dest.base.name}」へ変更`);
         render(); await sleep(220); return dest;
       }
@@ -900,7 +907,7 @@
       if (!v || v === '__no') return target;
       const dest = dests.find(c => c.uid === +String(v).slice(3)); if (!dest) return target;
       const disc = await chooseFromHand(dSide, triggers, '捨てる【トリガー】カードを選択'); if (!disc) return target;
-      consume(disc);
+      consume(disc); await fireHandDiscarded(dSide, 1, D.leader); // ★捨て誘発（発火漏れ修正 2026-07-18）
       flog(dSide, `【ティーチ】対象を「${dest.base.type === 'LEADER' ? 'リーダー' : dest.base.name}」へ変更`);
       render(); await sleep(180); return dest;
     }

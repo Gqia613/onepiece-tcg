@@ -1752,10 +1752,15 @@ humanPick=function(c){return Promise.resolve((c||[])[0]||null);};
 
     // === OP12 バッチ2-6（緑/青/紫/黒/黄の代表） ===
     ok(['OP12-040','OP12-075','OP12-081','OP12-091','OP12-117'].every(no=>C[no]&&C[no].fx), 'OP12 後続バッチ: fx統合');
-    // OP12-040 クザンL: 効果で手札が捨てられた時、捨てた枚数分ドロー(drawDiscarded)
+    // OP12-040 クザンL: 「自分の特徴《海軍》を持つカードの効果で」手札が捨てられた時、捨てた枚数分ドロー(drawDiscarded)
+    // ★2026-07-18修正: 海軍源限定（公式文どおり）。srcなし/非海軍源の捨てではドローしない。
     { const me=LP('OP12-040'); me.deck=[I('OP15-067','me'),I('OP15-067','me'),I('OP15-067','me')]; me.hand=[I('OP15-067','me'),I('OP15-067','me')]; const h0=me.hand.length;
-      await doOp({op:'discardOwn',n:2},{side:'me'});
-      ok(me.hand.length===h0-2+2, 'OP12-040: 2枚捨て→2枚ドロー(drawDiscarded)'); }
+      const koby=I('ST33-001','me'); me.chars=[koby]; // 海軍カードが発生源
+      await doOp({op:'discardOwn',n:2},{side:'me',self:koby});
+      ok(me.hand.length===h0-2+2, 'OP12-040: 海軍カードの効果で2枚捨て→2枚ドロー(drawDiscarded)');
+      me.hand=[I('OP15-067','me')]; const d0=me.deck.length;
+      await doOp({op:'discardOwn',n:1},{side:'me'}); // 発生源不明(src無し)＝海軍条件を満たさない
+      ok(me.hand.length===0 && me.deck.length===d0, 'OP12-040: 非海軍/発生源不明の捨てではドローしない'); }
     // OP12-075 ミス・オールサンデー: 相手コスト3以下KO→相手がドン1追加
     { const me=LP('OP13-002'); G.players.cpu.isCPU=true; G.players.cpu.donMax=10; const d0=donTotal('cpu');
       C['__o3m__']={no:'__o3m__',name:'O3',type:'CHAR',color:[],cost:3,power:4000,counter:1000,traits:[]};

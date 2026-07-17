@@ -584,7 +584,16 @@
       return true;
     }
     // opの対象フィルタを構築（op.filter優先。無ければopの各フィールドから。既存opとの後方互換のため未指定は無視される）
-    function opFilter(op) { return op.filter || { type: op.targetType, trait: op.trait, traitIncludes: op.traitIncludes, traits: op.traits, name: op.name, nameIncludes: op.nameIncludes, minCost: op.minCost, maxCost: op.maxCost, maxBaseCost: op.maxBaseCost, minBaseCost: op.minBaseCost, minPower: op.minPower, maxPower: op.maxPower, minEffPower: op.minEffPower, maxEffPower: op.maxEffPower }; }
+    function opFilter(op) {
+      const top = { type: op.targetType, trait: op.trait, traitIncludes: op.traitIncludes, traits: op.traits, name: op.name, nameIncludes: op.nameIncludes, minCost: op.minCost, maxCost: op.maxCost, maxBaseCost: op.maxBaseCost, minBaseCost: op.minBaseCost, minPower: op.minPower, maxPower: op.maxPower, minEffPower: op.minEffPower, maxEffPower: op.maxEffPower };
+      if (!op.filter) return top;
+      // ★filterとトップレベル条件が併記されたopはトップレベル側が丸ごと無視されていた（実対戦指摘 2026-07-18:
+      //   OP14-033ペローナKO時=filter{緑}+maxCost:5 → コスト無制限で10cロー＆ベポが出せた。同型OP01-086等）。
+      //   両方を適用する（重複キーは filter 優先＝従来のfilter単独カードはバイト等価）。
+      const merged = {};
+      for (const k in top) if (top[k] !== undefined) merged[k] = top[k];
+      return Object.assign(merged, op.filter);
+    }
     function oppChars(side, f) { return G.players[opp(side)].chars.filter(c => matchFilter(c, f) && !isImmune(c)); }
     function ownChars(side, f) { return G.players[side].chars.filter(c => matchFilter(c, f)); }
 

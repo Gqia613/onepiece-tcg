@@ -165,7 +165,7 @@
         case 'setNoLifeToHand': { P._noLifeToHandTurn = G.turnSeq; flog(side, 'このターン、自分の効果でライフを手札に加えられない'); break; } // OP06-020ホーディL
         case 'setCantAttackLeader': { P._cantAttackLeaderTurn = G.turnSeq; flog(side, 'このターン、リーダーにアタックできない'); break; } // OP06-026コウシロウ
         case 'grantBattleImmune': { for (let i = 0; i < (op.count || 1); i++) { const cands = op.target === 'self' ? [self] : P.chars.filter(c => matchFilter(c, opFilter(op))); const t = op.target === 'self' ? self : (P.isCPU ? cands[0] : await chooseCard(side, cands, 'バトルKO耐性を与える対象', 'ownBig', op.optional)); if (!t) break; t._battleImmuneUntil = durSeq(op.duration || 'untilNextStart'); if (op.amount) addBuff(t, op.amount, durTag(op.duration === 'untilNextStart' ? 'untilNextStart' : 'turn', 'turn')); floatOn(t.uid, '無敵', 'buff'); if (op.target === 'self') break; } render(); break; } // 一時的にバトルでKOされない（OP06-030ドスン）
-        case 'drawDiscarded': { const k = ctx.discarded || 1; if (draw(side, k)) flog(side, `${k}ドロー`); break; } // 捨てた枚数分ドロー（OP12-040クザン）
+        case 'drawDiscarded': { const k = ctx.discarded || 1; if (draw(side, k)) flog(side, `【${(ctx.self && ctx.self.base.name) || '効果'}】捨てた${k}枚分ドロー`); break; } // 捨てた枚数分ドロー（OP12-040クザンL。ログに発生源名=見落とし対策）
         case 'counterRedirect': { const cands = P.chars.filter(c => matchFilter(c, opFilter(op))); const t = P.isCPU ? cands.slice().sort((a, b) => power(b) - power(a))[0] : await chooseCard(side, cands, 'アタックの対象にするキャラを選択', 'ownBig', op.optional !== false); if (t) G._counterRedirect = t; break; } // カウンター解決後にdeclareAttackが対象を差し替え（EB01-038オカマ道）
         case 'oppLifeAddFromDeck': { const O = G.players[o]; for (let i = 0; i < (op.n || 1); i++) { if (O.deck.length) { const c = O.deck.shift(); c._faceUp = false; O.life.unshift(c); } } flog(o, 'デッキの上から1枚をライフに加えた'); render(); break; } // 相手が自分のデッキ上をライフへ（ST07-010/015の選択肢）
         case 'searchToLife': { // デッキ上N枚からfilter一致1枚をライフの上へ（faceUp可）、残りはデッキ下（ST13-002エース）
@@ -198,6 +198,7 @@
             P.hand.splice(P.hand.indexOf(c), 1); P.trash.push(reset(c)); dn++;
             if (op.targetChoose === 'ownL') { const t = P.isCPU ? P.leader : await chooseCard(side, [P.leader, ...P.chars], `+${op.amount || 1000}する対象を選択`, 'ownBig', false); if (t) { addBuff(t, op.amount || 1000, durTag(op.duration, 'battle')); floatOn(t.uid, `+${op.amount || 1000}`, 'buff'); } }
           }
+          if (dn) await fireHandDiscarded(side, dn, ctx.self); // ★「効果で手札が捨てられた時」誘発（発火漏れ修正 2026-07-18）
           if (dn && !op.targetChoose && self) { addBuff(self, (op.amount || 1000) * dn, durTag(op.duration, 'battle')); floatOn(self.uid, `+${(op.amount || 1000) * dn}`, 'buff'); flog(side, `手札${dn}枚を捨てて+${(op.amount || 1000) * dn}`); }
           render(); break; }
         case 'bounceOwnAnyBuff': { // 自分のキャラを任意の枚数手札に戻し、1枚につき対象+amount（P-059世界のつづき）。CPUは戻さない
@@ -664,7 +665,7 @@
         case 'bottomOwn': { for (let i = 0; i < op.n; i++) { const c = await chooseFromHand(side, P.hand, 'デッキ下に置く手札を選択'); if (!c) break; P.hand.splice(P.hand.indexOf(c), 1); P.deck.push(reset(c)); } flog(side, `手札${op.n}枚をデッキ下`); break; }
         // デッキ上 look 枚から filter一致のキャラ1枚を登場、残りをデッキ下（OP11-051サンジ）。grantKwで登場時付与。
         case 'playFromDeck': { const all = op.look === 'all'; const look = all ? P.deck.splice(0, P.deck.length) : P.deck.splice(0, op.look || 5); const cands = look.filter(c => (c.base.type === 'CHAR' || c.base.type === 'STAGE') && matchFilter(c, op.filter || {})); const pc = P.isCPU ? cands.slice().sort((a, b) => (b.base.power || 0) - (a.base.power || 0))[0] : await chooseCard(side, cands, '登場させるカードを選択（任意）', 'ownBig', true); if (pc) { look.splice(look.indexOf(pc), 1); if (pc.base.type === 'STAGE') { if (P.stage) P.trash.push(reset(P.stage)); P.stage = pc; pc.owner = side; pc.rested = false; if (pc.base.fx && pc.base.fx.onPlay && !isNegated(pc)) await runFx(pc.base.fx.onPlay, { self: pc, side }); } else { await summon(side, pc, false); if (op.rested && P.chars.includes(pc)) pc.rested = true; if (op.grantKw && P.chars.includes(pc)) pc.kwGrant.push({ kw: op.grantKw, dur: durTag(op.grantDuration, 'turn') }); } } let pfdTop = false; if (op.restPos === 'choose' && !all && look.length && !P.isCPU) pfdTop = (await showPrompt({ side, title: '残りのカード', text: `残り${look.length}枚をデッキの上と下、どちらに置きますか？`, opts: [{ t: 'デッキの下', v: 'b', primary: true }, { t: 'デッキの上', v: 't' }] })) === 't'; if (pfdTop) { for (let i = look.length - 1; i >= 0; i--)P.deck.unshift(look[i]); } else for (const r of look) P.deck.push(r); if (all || op.shuffle) shuffle(P.deck); flog(side, all ? 'デッキから登場（シャッフル）' : `デッキ上${op.look || 5}枚から登場・残りはデッキの${pfdTop ? '上' : '下'}`); render(); break; } // restPos:'choose'=「残りをデッキの上か下に置く」（ST12-010/013/017） // look:'all'=デッキ全体から登場しシャッフル（OP08-071/073）／STAGE対応（OP08-100）／rested=レストで登場（OP08-007）
-        case 'discardOwn': { const n = op.all ? P.hand.length : (op.toSize != null ? Math.max(0, P.hand.length - op.toSize) : op.n); for (let i = 0; i < n; i++) { const c = await chooseFromHand(side, P.hand, '⚠ 捨てる手札を選択', null, false, 'danger'); if (!c) break; P.hand.splice(P.hand.indexOf(c), 1); P.trash.push(reset(c)); } if (n) { flog(side, `手札${n}枚を捨てた`); await fireHandDiscarded(side, n); } break; }
+        case 'discardOwn': { const n = op.all ? P.hand.length : (op.toSize != null ? Math.max(0, P.hand.length - op.toSize) : op.n); for (let i = 0; i < n; i++) { const c = await chooseFromHand(side, P.hand, '⚠ 捨てる手札を選択', null, false, 'danger'); if (!c) break; P.hand.splice(P.hand.indexOf(c), 1); P.trash.push(reset(c)); } if (n) { flog(side, `手札${n}枚を捨てた`); await fireHandDiscarded(side, n, ctx.self); } break; }
         case 'cond': if (checkCond(op.check, side, self)) await runFx(op.then, ctx); else { ctx._declined = true; if (op.else) await runFx(op.else, ctx); } break; // 条件不成立=未発動（onceゲート復元用マーカー）
         // 手札公開コスト: 手札の filter 一致カードを count 枚公開できる場合のみ then を実行（公開=手札に残す。任意）
         case 'revealCost': {
@@ -728,7 +729,7 @@
           ctx._committed = true; // 手札を捨てた＝効果を使用（onceゲート消費）
           for (const c of toDiscard) { P.hand.splice(P.hand.indexOf(c), 1); P.trash.push(reset(c)); }
           flog(side, `手札${cnt}枚を捨てた: ${toDiscard.map(c => c.base.name).join('、')}`);
-          await fireHandDiscarded(side, cnt);
+          await fireHandDiscarded(side, cnt, ctx.self);
           await runFx(op.then, ctx);
           break;
         }
@@ -851,9 +852,14 @@
           if (op.all) { const cands = ownChars(side, opFilter(op)).filter(c => c.rested); for (const t of cands) t.rested = false; if (cands.length || op.incLeader) flog(side, '自分のキャラをアクティブにした'); render(); break; }
           const actCnt = op.count != null ? op.count : 1; // ★count:0=「リーダーのみ」(incLeaderと併用)。旧 op.count||1 は0が1に丸められ余分なキャラ選択が発生していた
           for (let i = 0; i < actCnt; i++) {
-            const cc = ownChars(side, opFilter(op)).filter(c => c.rested);
-            const t = P.isCPU ? cc[0] : await chooseCard(side, cc, 'アクティブにする自分のキャラを選択', 'ownBig', op.optional);
-            if (!t) break; t.rested = false; flog(side, `「${t.base.name}」をアクティブにした`);
+            // ★allowActive: 既にアクティブのキャラも選べる（公式Q&A 830=OP10-099キッドL「すでにアクティブのキャラも、
+            //   この効果で【ブロッカー】を得ることができます」。アクティブ化は空振り・付与だけ適用される）
+            const cc = ownChars(side, opFilter(op)).filter(c => op.allowActive || c.rested);
+            const t = P.isCPU
+              ? (op.allowActive ? cc.slice().sort((a, b) => ((b.rested ? 1 : 0) - (a.rested ? 1 : 0)) || (power(b) - power(a)))[0] : cc[0]) // CPU: レスト優先→高パワー（アクティブ化の価値を捨てない）。従来カードはcc[0]のまま
+              : await chooseCard(side, cc, 'アクティブにする自分のキャラを選択', 'ownBig', op.optional);
+            if (!t) break;
+            if (t.rested) { t.rested = false; flog(side, `「${t.base.name}」をアクティブにした`); }
             if (op.grantKw) { t.kwGrant.push({ kw: op.grantKw, dur: durTag(op.grantDuration, 'turn') }); flog(side, `「${t.base.name}」に【${kwJa(op.grantKw)}】`); } // アクティブ化＋キーワード付与（OP10-099キッドL＝ブロッカー）
           }
           render(); break;
@@ -1113,7 +1119,7 @@
         // 相手のドン!!を n枚 ドンデッキに戻す（相手のドン総数を減らす）
         case 'oppDonMinus': { const O = G.players[o]; const k = Math.min(op.n || 1, O.don.active + O.don.rested); for (let i = 0; i < k; i++) { if (O.don.rested > 0) O.don.rested--; else if (O.don.active > 0) O.don.active--; } if (k) flog(side, `相手のドン!!-${k}（ドンデッキへ）`); render(); break; }
         // 相手が自身の手札 n枚を捨てる
-        case 'oppDiscard': { const O = G.players[o]; const k = Math.min(op.n || 1, O.hand.length); for (let i = 0; i < k; i++) { let c; if (O.isCPU) c = O.hand.slice().sort((a, b) => (a.base.cost || 0) - (b.base.cost || 0))[0]; else c = await chooseFromHand(o, O.hand.slice(), `捨てる手札（${i + 1}/${k}）`); if (!c) break; O.hand.splice(O.hand.indexOf(c), 1); O.trash.push(reset(c)); } if (k) { flog(side, `相手は手札${k}枚を捨てた`); await fireHandDiscarded(o, k); } render(); break; }
+        case 'oppDiscard': { const O = G.players[o]; const k = Math.min(op.n || 1, O.hand.length); for (let i = 0; i < k; i++) { let c; if (O.isCPU) c = O.hand.slice().sort((a, b) => (a.base.cost || 0) - (b.base.cost || 0))[0]; else c = await chooseFromHand(o, O.hand.slice(), `捨てる手札（${i + 1}/${k}）`); if (!c) break; O.hand.splice(O.hand.indexOf(c), 1); O.trash.push(reset(c)); } if (k) { flog(side, `相手は手札${k}枚を捨てた`); await fireHandDiscarded(o, k, ctx.self); } render(); break; }
         // 自分のトラッシュから filter一致のカードを count枚 手札に加える
         case 'trashToHand': { for (let i = 0; i < (op.count || 1); i++) { const cands = P.trash.filter(c => matchFilter(c, op.filter || {})); if (!cands.length) break; const t = P.isCPU ? (((G._linePickR || G._linePick) || []).map(no => cands.find(c => c.base.no === no)).find(Boolean) || cands[0]) : await chooseCard(side, cands, 'トラッシュから手札に加えるカード', 'ownBig', op.optional); if (!t) break; P.trash.splice(P.trash.indexOf(t), 1); P.hand.push(t); flog(side, `「${t.base.name}」を手札に加えた`); } render(); break; } // E49: _linePick=ライン実行中の回収対象steering
         // 自分のデッキの上 n枚をトラッシュに置く（ミル）
@@ -1138,7 +1144,7 @@
           const cnt = op.count || 1; const usedNames = [];
           const costCard = ctx._costCard; // diffColorFrom:'costCard'=コストで戻したキャラと異なる色のみ（EB01-020）
           for (let k = 0; k < cnt; k++) {
-            let cands = P.hand.filter(c => c.base.type === 'CHAR' && matchFilter(c, op.filter || { maxCost: op.maxCost, maxPower: op.maxPower, trait: op.trait }));
+            let cands = P.hand.filter(c => c.base.type === 'CHAR' && matchFilter(c, opFilter(op))); // ★opFilter=filterとトップレベル条件の併記を両方適用（旧: filter存在時にmaxCost等が無視される系統バグ）
             if (op.diffColorFrom === 'costCard' && costCard) cands = cands.filter(c => !(c.base.color || []).some(col => (costCard.base.color || []).includes(col))); // 戻したキャラと異なる色
             if (op.needsTrigger) cands = cands.filter(c => c.base.triggerText || (c.base.fx && c.base.fx.trigger));
             if (op.distinctName) cands = cands.filter(c => !usedNames.includes(normName(c.base.name))); // 「カード名の異なる」
@@ -1380,7 +1386,9 @@
           if (ow.isCPU) picks.push(...cands.slice().sort((a, b) => (a.base.cost || 0) - (b.base.cost || 0)).slice(0, dn));
           else { for (let i = 0; i < dn; i++) { const d = await chooseFromHand(target.owner, cands.filter(c => !picks.includes(c)), `「${target.base.name}」を守るため捨てるカードを選択（${i + 1}/${dn}）`); if (!d) break; picks.push(d); } if (picks.length < dn) continue; }
           for (const d of picks) { ow.hand.splice(ow.hand.indexOf(d), 1); ow.trash.push(reset(d)); }
-          flog(target.owner, `【${p.base.name}】手札${picks.length}枚を捨てて「${target.base.name}」を守った`); return true;
+          flog(target.owner, `【${p.base.name}】手札${picks.length}枚を捨てて「${target.base.name}」を守った`);
+          await fireHandDiscarded(target.owner, picks.length, p); // ★効果（身代わり持ちp）による捨て＝誘発対象（発火漏れ修正 2026-07-18）
+          return true;
         } else if (prot.pay === 'donToDeck') {
           const P = G.players[target.owner];
           if (P.don.active <= 0 && P.don.rested <= 0) continue; // 戻せるドンが無ければこの供給元では守れない
