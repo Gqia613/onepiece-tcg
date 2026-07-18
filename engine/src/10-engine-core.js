@@ -188,6 +188,7 @@
       if (c.oppLifeLeftThisTurn && G.players[opp(side)]._lifeLeftTurn !== G.turnSeq) return false; // 相手のライフがこのターンに離れている（P-120サンジ）
       if (c.selfHandDiscardedThisTurn && P._handDiscardedTurn !== G.turnSeq) return false; // 効果で自分の手札が捨てられているターン中（ST33-004ボルサリーノ）
       if (c.faceUpLifeAtLeast != null && P.life.filter(l => l._faceUp).length < c.faceUpLifeAtLeast) return false; // 自分の表向きライフN枚以上（PRB02-018エース）
+      if (c.lifeEndsFaceUp && !(P.life.length && (P.life[0]._faceUp || P.life[P.life.length - 1]._faceUp))) return false; // ライフの一番上か一番下が表向き＝「上か下から1枚を裏向きにできる」コストが払える（ST36-005・公式Q&A1412「上下とも裏向きなら発動できない」）
       if (c.leaderNameIncludes != null && !normName(P.leader.base.name).includes(normName(c.leaderNameIncludes))) return false;
       // 「自分のリーダーの『X』」＝カード名の完全一致（OP12-026/031/039・ST11-005）。
       // ★部分一致(leaderNameIncludes)で代用してはいけない: ST12-001「ロロノア・ゾロ＆サンジ」という別のリーダーが実在し、

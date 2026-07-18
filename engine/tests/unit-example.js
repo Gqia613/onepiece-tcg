@@ -567,10 +567,25 @@ function setupG(leaderNo){G.active='me';G.turnSeq=5;G.winner=null;const mkP=(ln,
       const atk=mkc('ST32-003'); atk.owner='cpu'; atk.summonedTurn=1; O.chars=[atk];
       await declareAttack(atk, P.leader);
       ok(P.life.length===0 && P.chars.includes(k), '例18c2: 効果不発ならリーダーが被弾（ライフ1→0）・キッドは無傷');
+      ok(k._oppAtkTurn!==G.turnSeq, '例18c2: 条件不成立なら【ターン1回】を消費しない');
       G.active='me'; G.winner=null;
     }
     // 18d: OP10-099黄キッドL — 付与先の選択は「1枚まで」＝任意（候補1枚でも自動確定せず選択モーダルが出る）
     ok(C['OP10-099'].fx.onTurnEnd[0].then[0].optional===true, '例18d: 黄キッドLのactivateOwnCharはoptional:true');
+    // 例19: ★ST36-005「発動しない時がある」調査（2026-07-18）— 発動可否は公式Q&A1412準拠（上か下が表向きの時だけ）
+    setupG('OP10-099'); { const P=G.players.me;
+      P.life=[mkc('OP15-067'),mkc('OP15-067'),mkc('OP15-067')];
+      ok(checkCond({lifeEndsFaceUp:true},'me')===false, '例19: 上下とも裏向き→発動不可（Q&A1412）');
+      P.life[1]._faceUp=true;
+      ok(checkCond({lifeEndsFaceUp:true},'me')===false, '例19: 真ん中だけ表向き→発動不可（上か下のみ対象）');
+      P.life[0]._faceUp=true;
+      ok(checkCond({lifeEndsFaceUp:true},'me')===true, '例19: 上が表向き→発動可');
+      P.life[0]._faceUp=false; P.life[2]._faceUp=true;
+      ok(checkCond({lifeEndsFaceUp:true},'me')===true, '例19: 下が表向き→発動可');
+      P.life=[];
+      ok(checkCond({lifeEndsFaceUp:true},'me')===false, '例19: ライフ0→発動不可');
+      ok(C['ST36-005'].fx.onOppAttack[0].check.lifeEndsFaceUp===true, '例19: ST36-005のcondは上か下の表向き判定（カットインも発動機会がある時だけ出る）');
+    }
   }catch(e){ console.log('EXCEPTION:', e.message); fail++; }
   console.log('ユニットテスト: pass='+pass+' fail='+fail);
   process.exit(fail?1:0);

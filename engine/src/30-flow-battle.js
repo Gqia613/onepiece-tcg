@@ -477,6 +477,8 @@
         if (c.base.fx && c.base.fx.onOppAttack && !isNegated(c)) {
           const onceGated = c.base.fx.onOppAttack.some(o => o.once === 'turn');
           if (onceGated && c._oppAtkTurn === G.turnSeq) continue;
+          const opsA = c.base.fx.onOppAttack;
+          if (opsA.every(o => o.op === 'cond' && o.check && !o.else) && !opsA.some(o => checkCond(o.check, dSide, c))) continue; // 全条件不成立＝発動機会なし。カットインを出さない（毎アタック出ると「発動しようとして失敗」に見える＝ST36-005指摘）
           const prevAtkTurn = c._oppAtkTurn;
           if (onceGated) c._oppAtkTurn = G.turnSeq;
           const octx = { self: c, side: dSide, attacker, target };
@@ -489,7 +491,9 @@
         const st = G.players[dSide].stage;
         if (st && st.base.fx && st.base.fx.onOppAttack && !isNegated(st)) {
           const onceGated = st.base.fx.onOppAttack.some(o => o.once === 'turn');
-          if (!(onceGated && st._oppAtkTurn === G.turnSeq)) {
+          const opsS = st.base.fx.onOppAttack;
+          const condDead = opsS.every(o => o.op === 'cond' && o.check && !o.else) && !opsS.some(o => checkCond(o.check, dSide, st)); // 全条件不成立＝カットインなし（キャラ側と同じ）
+          if (!condDead && !(onceGated && st._oppAtkTurn === G.turnSeq)) {
             const prevAtkTurn = st._oppAtkTurn;
             if (onceGated) st._oppAtkTurn = G.turnSeq;
             const octx = { self: st, side: dSide, attacker };

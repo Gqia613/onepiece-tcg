@@ -4084,7 +4084,7 @@ window.CARD_FX = {
   // ST36-005 キッド:【相手のアタック時】【ターン1回】ライフの上か下1枚を裏向きにできる：アタック対象を自分の元々のパワー5000以上の「キッド」に変更
   //   ／【起動メイン】【ターン1回】ライフの上か下1枚を表向きにできる：リーダーにレストのドン1枚まで付与
   //   ※「キャラ」限定でない→黄キッドL(元々5000)も変更先に選べる(incLeader)。対象変更はブロック前に即時反映（実対戦指摘 2026-07-18）。対象が居ないとコストだけ払うため cond で事前ガード。
-  "ST36-005": {"onOppAttack":[{"op":"cond","once":"turn","check":{"faceUpLifeAtLeast":1,"selfChar":{"name":"ユースタス・キッド","minPower":5000,"incLeader":true}},"then":[{"op":"lifeCost","action":"faceDown","pos":"choose","then":[{"op":"counterRedirect","incLeader":true,"filter":{"name":"ユースタス・キッド","minPower":5000},"optional":false}]}]}],"act":{"label":"ライフを表向き：リーダーにレストのドン‼1枚","cost":{},"fx":[{"op":"lifeCost","action":"faceUp","pos":"choose","then":[{"op":"donAttach","target":"leader","n":1}]}]}}
+  "ST36-005": {"onOppAttack":[{"op":"cond","once":"turn","check":{"lifeEndsFaceUp":true,"selfChar":{"name":"ユースタス・キッド","minPower":5000,"incLeader":true}},"then":[{"op":"lifeCost","action":"faceDown","pos":"choose","then":[{"op":"counterRedirect","incLeader":true,"filter":{"name":"ユースタス・キッド","minPower":5000},"optional":false}]}]}],"act":{"label":"ライフを表向き：リーダーにレストのドン‼1枚","cost":{},"fx":[{"op":"lifeCost","action":"faceUp","pos":"choose","then":[{"op":"donAttach","target":"leader","n":1}]}]}}
 });})();
 
 /* ===== audit駆動【トリガー】一括実装（docs/card-audit-workflow.md §5・頻出テンプレート順・318枚。既存fxへtriggerをマージ／パラレルは親を共有） ===== */
