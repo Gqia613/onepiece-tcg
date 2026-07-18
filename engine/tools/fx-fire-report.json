@@ -1,0 +1,3344 @@
+{
+ "date": "2026-07-18T16:00:01.844Z",
+ "games": 30,
+ "seed0": 910000,
+ "noWinner": 0,
+ "decks": [
+  {
+   "id": "enel",
+   "name": "紫エネル",
+   "cards": 15
+  },
+  {
+   "id": "lucy",
+   "name": "赤青ルーシー",
+   "cards": 15
+  },
+  {
+   "id": "ace",
+   "name": "赤青エース",
+   "cards": 15
+  },
+  {
+   "id": "nami",
+   "name": "青黄ナミ",
+   "cards": 16
+  },
+  {
+   "id": "hancock",
+   "name": "青黄ハンコック",
+   "cards": 16
+  },
+  {
+   "id": "teach",
+   "name": "黒黄ティーチ",
+   "cards": 15
+  },
+  {
+   "id": "yamato",
+   "name": "黒ヤマト",
+   "cards": 14
+  },
+  {
+   "id": "luffygb",
+   "name": "青緑ルフィ",
+   "cards": 17
+  },
+  {
+   "id": "mihawk",
+   "name": "緑ミホーク",
+   "cards": 17
+  },
+  {
+   "id": "buggy",
+   "name": "青バギー",
+   "cards": 11
+  },
+  {
+   "id": "kuzan",
+   "name": "青クザン",
+   "cards": 15
+  }
+ ],
+ "zeroFire": [
+  {
+   "no": "OP16-079",
+   "name": "ヤマト",
+   "type": "LEADER",
+   "decks": [
+    "黒ヤマト"
+   ],
+   "hooks": [
+    "onReviveFromTrash"
+   ],
+   "runnable": [
+    "onReviveFromTrash"
+   ],
+   "fired": {},
+   "totalFired": 0,
+   "appearedGames": 6
+  },
+  {
+   "no": "OP16-038",
+   "name": "行くぞ～～～!!!海軍本部～～～!!!",
+   "type": "EVENT",
+   "decks": [
+    "青緑ルフィ"
+   ],
+   "hooks": [
+    "main",
+    "counter"
+   ],
+   "runnable": [
+    "main",
+    "counter"
+   ],
+   "fired": {},
+   "totalFired": 0,
+   "appearedGames": 6
+  },
+  {
+   "no": "OP15-076",
+   "name": "雷獣",
+   "type": "EVENT",
+   "decks": [
+    "紫エネル"
+   ],
+   "hooks": [
+    "main",
+    "counter"
+   ],
+   "runnable": [
+    "main",
+    "counter"
+   ],
+   "fired": {},
+   "totalFired": 0,
+   "appearedGames": 5
+  },
+  {
+   "no": "OP04-056",
+   "name": "ゴムゴムの業火拳銃",
+   "type": "EVENT",
+   "decks": [
+    "赤青ルーシー"
+   ],
+   "hooks": [
+    "main",
+    "trigger"
+   ],
+   "runnable": [
+    "main",
+    "trigger"
+   ],
+   "fired": {},
+   "totalFired": 0,
+   "appearedGames": 4
+  },
+  {
+   "no": "ST22-015",
+   "name": "おれァ“白ひげ”だァア!!!!",
+   "type": "EVENT",
+   "decks": [
+    "赤青エース"
+   ],
+   "hooks": [
+    "main"
+   ],
+   "runnable": [
+    "main"
+   ],
+   "fired": {},
+   "totalFired": 0,
+   "appearedGames": 4
+  },
+  {
+   "no": "OP16-059",
+   "name": "ド派手大作戦に変更じゃァ～～～!!!",
+   "type": "EVENT",
+   "decks": [
+    "青バギー"
+   ],
+   "hooks": [
+    "main",
+    "counter"
+   ],
+   "runnable": [
+    "main",
+    "counter"
+   ],
+   "fired": {},
+   "totalFired": 0,
+   "appearedGames": 4
+  },
+  {
+   "no": "OP12-057",
+   "name": "アイス塊暴雉嘴",
+   "type": "EVENT",
+   "decks": [
+    "青クザン"
+   ],
+   "hooks": [
+    "counter",
+    "trigger"
+   ],
+   "runnable": [
+    "counter",
+    "trigger"
+   ],
+   "fired": {},
+   "totalFired": 0,
+   "appearedGames": 4
+  },
+  {
+   "no": "EB04-028",
+   "name": "アイスタイム",
+   "type": "EVENT",
+   "decks": [
+    "青クザン"
+   ],
+   "hooks": [
+    "main",
+    "trigger"
+   ],
+   "runnable": [
+    "main",
+    "trigger"
+   ],
+   "fired": {},
+   "totalFired": 0,
+   "appearedGames": 4
+  },
+  {
+   "no": "OP15-020",
+   "name": "火拳",
+   "type": "EVENT",
+   "decks": [
+    "赤青ルーシー"
+   ],
+   "hooks": [
+    "main"
+   ],
+   "runnable": [
+    "main"
+   ],
+   "fired": {},
+   "totalFired": 0,
+   "appearedGames": 3
+  },
+  {
+   "no": "OP15-057",
+   "name": "ドレスローザ王国",
+   "type": "STAGE",
+   "decks": [
+    "赤青ルーシー"
+   ],
+   "hooks": [
+    "onPlay",
+    "onOppAttack"
+   ],
+   "runnable": [
+    "onPlay",
+    "onOppAttack"
+   ],
+   "fired": {},
+   "totalFired": 0,
+   "appearedGames": 3
+  },
+  {
+   "no": "ST32-003",
+   "name": "ジュラキュール・ミホーク",
+   "type": "CHAR",
+   "decks": [
+    "緑ミホーク"
+   ],
+   "hooks": [
+    "onSelfRested",
+    "onPlay"
+   ],
+   "runnable": [
+    "onSelfRested",
+    "onPlay"
+   ],
+   "fired": {},
+   "totalFired": 0,
+   "appearedGames": 2
+  },
+  {
+   "no": "OP14-033",
+   "name": "ペローナ",
+   "type": "CHAR",
+   "decks": [
+    "緑ミホーク"
+   ],
+   "hooks": [
+    "onPlay",
+    "onKO"
+   ],
+   "runnable": [
+    "onPlay",
+    "onKO"
+   ],
+   "fired": {},
+   "totalFired": 0,
+   "appearedGames": 1
+  }
+ ],
+ "hookZero": [
+  {
+   "no": "OP15-021",
+   "name": "見てろよ!エース!!!",
+   "decks": [
+    "赤青ルーシー"
+   ],
+   "hook": "counter",
+   "firedOther": {
+    "main": 1
+   }
+  },
+  {
+   "no": "OP13-057",
+   "name": "\"力\"に屈したら男に生まれた意味がねェだろう",
+   "decks": [
+    "赤青エース"
+   ],
+   "hook": "main",
+   "firedOther": {
+    "counter": 2
+   }
+  },
+  {
+   "no": "OP15-119",
+   "name": "モンキー・D・ルフィ",
+   "decks": [
+    "青黄ナミ"
+   ],
+   "hook": "onOppEvent",
+   "firedOther": {
+    "onOppBlocker": 4
+   }
+  },
+  {
+   "no": "OP07-057",
+   "name": "芳香脚",
+   "decks": [
+    "青黄ハンコック"
+   ],
+   "hook": "trigger",
+   "firedOther": {
+    "main": 4
+   }
+  },
+  {
+   "no": "OP16-103",
+   "name": "ヴァン・オーガー",
+   "decks": [
+    "黒黄ティーチ"
+   ],
+   "hook": "trigger",
+   "firedOther": {
+    "onKO": 2
+   }
+  },
+  {
+   "no": "OP16-108",
+   "name": "シリュウ",
+   "decks": [
+    "黒黄ティーチ"
+   ],
+   "hook": "onPlay",
+   "firedOther": {
+    "trigger": 1
+   }
+  },
+  {
+   "no": "OP16-104",
+   "name": "カタリーナ・デボン",
+   "decks": [
+    "黒黄ティーチ"
+   ],
+   "hook": "trigger",
+   "firedOther": {
+    "onAttack": 3
+   }
+  },
+  {
+   "no": "OP16-116",
+   "name": "ゼハハハハハハ!!!",
+   "decks": [
+    "黒黄ティーチ"
+   ],
+   "hook": "main",
+   "firedOther": {
+    "trigger": 3
+   }
+  },
+  {
+   "no": "OP16-099",
+   "name": "その“縁”を切りに来た!!!",
+   "decks": [
+    "黒ヤマト"
+   ],
+   "hook": "counter",
+   "firedOther": {
+    "main": 5
+   }
+  },
+  {
+   "no": "OP13-040",
+   "name": "強ェとわかってんだから… 始めから全開だ!!!",
+   "decks": [
+    "青緑ルフィ",
+    "緑ミホーク"
+   ],
+   "hook": "counter",
+   "firedOther": {
+    "main": 1
+   }
+  },
+  {
+   "no": "OP12-037",
+   "name": "鬼気 九刀流 阿修羅 抜剣 亡者戯",
+   "decks": [
+    "青緑ルフィ",
+    "緑ミホーク"
+   ],
+   "hook": "counter",
+   "firedOther": {
+    "main": 3
+   }
+  },
+  {
+   "no": "OP07-056",
+   "name": "虜の矢",
+   "decks": [
+    "青バギー"
+   ],
+   "hook": "counter",
+   "firedOther": {
+    "trigger": 2
+   }
+  }
+ ],
+ "neverAppeared": [
+  {
+   "no": "OP14-039",
+   "name": "棺船",
+   "type": "STAGE",
+   "decks": [
+    "緑ミホーク"
+   ],
+   "hooks": [
+    "onPlay",
+    "onTurnEnd"
+   ],
+   "runnable": [
+    "onPlay",
+    "onTurnEnd"
+   ],
+   "fired": {},
+   "totalFired": 0,
+   "appearedGames": 0
+  }
+ ],
+ "cards": [
+  {
+   "no": "EB01-015",
+   "name": "スクラッチメン・アプー",
+   "type": "CHAR",
+   "decks": [
+    "緑ミホーク"
+   ],
+   "hooks": [
+    "onPlay"
+   ],
+   "runnable": [
+    "onPlay"
+   ],
+   "fired": {
+    "onPlay": 7
+   },
+   "totalFired": 7,
+   "appearedGames": 5
+  },
+  {
+   "no": "EB02-006",
+   "name": "ヤマト",
+   "type": "CHAR",
+   "decks": [
+    "赤青エース"
+   ],
+   "hooks": [
+    "act"
+   ],
+   "runnable": [
+    "act"
+   ],
+   "fired": {
+    "act": 2
+   },
+   "totalFired": 2,
+   "appearedGames": 4
+  },
+  {
+   "no": "EB03-053",
+   "name": "ナミ",
+   "type": "CHAR",
+   "decks": [
+    "青黄ナミ"
+   ],
+   "hooks": [
+    "onPlay",
+    "onKO"
+   ],
+   "runnable": [
+    "onPlay",
+    "onKO"
+   ],
+   "fired": {
+    "onPlay": 3,
+    "onKO": 1
+   },
+   "totalFired": 4,
+   "appearedGames": 6
+  },
+  {
+   "no": "EB03-055",
+   "name": "ニコ・ロビン",
+   "type": "CHAR",
+   "decks": [
+    "青黄ナミ"
+   ],
+   "hooks": [
+    "onPlay",
+    "onKO"
+   ],
+   "runnable": [
+    "onPlay",
+    "onKO"
+   ],
+   "fired": {
+    "onPlay": 12,
+    "onKO": 3
+   },
+   "totalFired": 15,
+   "appearedGames": 6
+  },
+  {
+   "no": "EB04-022",
+   "name": "イッショウ",
+   "type": "CHAR",
+   "decks": [
+    "青クザン"
+   ],
+   "hooks": [
+    "onPlay",
+    "onAttack"
+   ],
+   "runnable": [
+    "onPlay",
+    "onAttack"
+   ],
+   "fired": {
+    "onPlay": 3,
+    "onAttack": 7
+   },
+   "totalFired": 10,
+   "appearedGames": 4
+  },
+  {
+   "no": "EB04-028",
+   "name": "アイスタイム",
+   "type": "EVENT",
+   "decks": [
+    "青クザン"
+   ],
+   "hooks": [
+    "main",
+    "trigger"
+   ],
+   "runnable": [
+    "main",
+    "trigger"
+   ],
+   "fired": {},
+   "totalFired": 0,
+   "appearedGames": 4
+  },
+  {
+   "no": "EB04-058",
+   "name": "ボルサリーノ",
+   "type": "CHAR",
+   "decks": [
+    "青黄ナミ",
+    "青黄ハンコック",
+    "黒黄ティーチ"
+   ],
+   "hooks": [
+    "onPlay"
+   ],
+   "runnable": [
+    "onPlay"
+   ],
+   "fired": {
+    "onPlay": 20
+   },
+   "totalFired": 20,
+   "appearedGames": 14
+  },
+  {
+   "no": "OP04-056",
+   "name": "ゴムゴムの業火拳銃",
+   "type": "EVENT",
+   "decks": [
+    "赤青ルーシー"
+   ],
+   "hooks": [
+    "main",
+    "trigger"
+   ],
+   "runnable": [
+    "main",
+    "trigger"
+   ],
+   "fired": {},
+   "totalFired": 0,
+   "appearedGames": 4
+  },
+  {
+   "no": "OP06-043",
+   "name": "アラマキ",
+   "type": "CHAR",
+   "decks": [
+    "青クザン"
+   ],
+   "hooks": [
+    "act"
+   ],
+   "runnable": [
+    "act"
+   ],
+   "fired": {
+    "act": 16
+   },
+   "totalFired": 16,
+   "appearedGames": 3
+  },
+  {
+   "no": "OP06-050",
+   "name": "たしぎ",
+   "type": "CHAR",
+   "decks": [
+    "青クザン"
+   ],
+   "hooks": [
+    "onPlay"
+   ],
+   "runnable": [
+    "onPlay"
+   ],
+   "fired": {
+    "onPlay": 3
+   },
+   "totalFired": 3,
+   "appearedGames": 3
+  },
+  {
+   "no": "OP06-104",
+   "name": "菊之丞",
+   "type": "CHAR",
+   "decks": [
+    "青黄ナミ"
+   ],
+   "hooks": [
+    "onKO",
+    "trigger"
+   ],
+   "runnable": [
+    "onKO",
+    "trigger"
+   ],
+   "fired": {
+    "onKO": 3,
+    "trigger": 1
+   },
+   "totalFired": 4,
+   "appearedGames": 5
+  },
+  {
+   "no": "OP06-106",
+   "name": "光月日和",
+   "type": "CHAR",
+   "decks": [
+    "青黄ナミ"
+   ],
+   "hooks": [
+    "onPlay"
+   ],
+   "runnable": [
+    "onPlay"
+   ],
+   "fired": {
+    "onPlay": 1
+   },
+   "totalFired": 1,
+   "appearedGames": 5
+  },
+  {
+   "no": "OP07-056",
+   "name": "虜の矢",
+   "type": "EVENT",
+   "decks": [
+    "青バギー"
+   ],
+   "hooks": [
+    "counter",
+    "trigger"
+   ],
+   "runnable": [
+    "counter",
+    "trigger"
+   ],
+   "fired": {
+    "trigger": 2
+   },
+   "totalFired": 2,
+   "appearedGames": 3
+  },
+  {
+   "no": "OP07-057",
+   "name": "芳香脚",
+   "type": "EVENT",
+   "decks": [
+    "青黄ハンコック"
+   ],
+   "hooks": [
+    "main",
+    "trigger"
+   ],
+   "runnable": [
+    "main",
+    "trigger"
+   ],
+   "fired": {
+    "main": 4
+   },
+   "totalFired": 4,
+   "appearedGames": 5
+  },
+  {
+   "no": "OP07-115",
+   "name": "助けてクエーサ～!!!",
+   "type": "EVENT",
+   "decks": [
+    "青黄ナミ",
+    "青黄ハンコック"
+   ],
+   "hooks": [
+    "counter",
+    "trigger"
+   ],
+   "runnable": [
+    "counter",
+    "trigger"
+   ],
+   "fired": {
+    "trigger": 6,
+    "counter": 4
+   },
+   "totalFired": 10,
+   "appearedGames": 8
+  },
+  {
+   "no": "OP08-043",
+   "name": "エドワード・ニューゲート",
+   "type": "CHAR",
+   "decks": [
+    "赤青エース"
+   ],
+   "hooks": [
+    "onPlay"
+   ],
+   "runnable": [
+    "onPlay"
+   ],
+   "fired": {
+    "onPlay": 1
+   },
+   "totalFired": 1,
+   "appearedGames": 5
+  },
+  {
+   "no": "OP08-047",
+   "name": "ジョズ",
+   "type": "CHAR",
+   "decks": [
+    "赤青エース",
+    "青バギー"
+   ],
+   "hooks": [
+    "onPlay"
+   ],
+   "runnable": [
+    "onPlay"
+   ],
+   "fired": {
+    "onPlay": 12
+   },
+   "totalFired": 12,
+   "appearedGames": 9
+  },
+  {
+   "no": "OP08-050",
+   "name": "ナミュール",
+   "type": "CHAR",
+   "decks": [
+    "青黄ハンコック"
+   ],
+   "hooks": [
+    "onPlay"
+   ],
+   "runnable": [
+    "onPlay"
+   ],
+   "fired": {
+    "onPlay": 5
+   },
+   "totalFired": 5,
+   "appearedGames": 5
+  },
+  {
+   "no": "OP09-086",
+   "name": "ジーザス・バージェス",
+   "type": "CHAR",
+   "decks": [
+    "黒黄ティーチ"
+   ],
+   "hooks": [
+    "static"
+   ],
+   "runnable": [],
+   "fired": {},
+   "totalFired": 0,
+   "appearedGames": 6
+  },
+  {
+   "no": "OP09-093",
+   "name": "マーシャル・D・ティーチ",
+   "type": "CHAR",
+   "decks": [
+    "黒黄ティーチ"
+   ],
+   "hooks": [
+    "act"
+   ],
+   "runnable": [
+    "act"
+   ],
+   "fired": {
+    "act": 13
+   },
+   "totalFired": 13,
+   "appearedGames": 6
+  },
+  {
+   "no": "OP09-095",
+   "name": "ラフィット",
+   "type": "CHAR",
+   "decks": [
+    "黒黄ティーチ"
+   ],
+   "hooks": [
+    "act"
+   ],
+   "runnable": [
+    "act"
+   ],
+   "fired": {
+    "act": 6
+   },
+   "totalFired": 6,
+   "appearedGames": 5
+  },
+  {
+   "no": "OP09-096",
+   "name": "おれの時代だァ!!!!",
+   "type": "EVENT",
+   "decks": [
+    "黒黄ティーチ"
+   ],
+   "hooks": [
+    "main",
+    "trigger"
+   ],
+   "runnable": [
+    "main",
+    "trigger"
+   ],
+   "fired": {
+    "main": 4,
+    "trigger": 3
+   },
+   "totalFired": 7,
+   "appearedGames": 5
+  },
+  {
+   "no": "OP09-099",
+   "name": "ハチノス",
+   "type": "STAGE",
+   "decks": [
+    "黒黄ティーチ"
+   ],
+   "hooks": [
+    "act"
+   ],
+   "runnable": [
+    "act"
+   ],
+   "fired": {
+    "act": 32
+   },
+   "totalFired": 32,
+   "appearedGames": 6
+  },
+  {
+   "no": "OP09-118",
+   "name": "ゴール・D・ロジャー",
+   "type": "CHAR",
+   "decks": [
+    "赤青エース"
+   ],
+   "hooks": [
+    "static"
+   ],
+   "runnable": [],
+   "fired": {},
+   "totalFired": 0,
+   "appearedGames": 5
+  },
+  {
+   "no": "OP10-045",
+   "name": "キャベンディッシュ",
+   "type": "CHAR",
+   "decks": [
+    "赤青ルーシー",
+    "赤青エース"
+   ],
+   "hooks": [
+    "onAttack"
+   ],
+   "runnable": [
+    "onAttack"
+   ],
+   "fired": {
+    "onAttack": 3
+   },
+   "totalFired": 3,
+   "appearedGames": 8
+  },
+  {
+   "no": "OP11-041",
+   "name": "ナミ",
+   "type": "LEADER",
+   "decks": [
+    "青黄ナミ"
+   ],
+   "hooks": [
+    "onLifeLeave",
+    "onOppAttack"
+   ],
+   "runnable": [
+    "onLifeLeave",
+    "onOppAttack"
+   ],
+   "fired": {
+    "onLifeLeave": 26,
+    "onOppAttack": 12
+   },
+   "totalFired": 38,
+   "appearedGames": 6
+  },
+  {
+   "no": "OP11-106",
+   "name": "ゼウス",
+   "type": "CHAR",
+   "decks": [
+    "青黄ナミ"
+   ],
+   "hooks": [
+    "onPlay"
+   ],
+   "runnable": [
+    "onPlay"
+   ],
+   "fired": {
+    "onPlay": 8
+   },
+   "totalFired": 8,
+   "appearedGames": 6
+  },
+  {
+   "no": "OP12-031",
+   "name": "たしぎ",
+   "type": "CHAR",
+   "decks": [
+    "緑ミホーク"
+   ],
+   "hooks": [
+    "onPlay"
+   ],
+   "runnable": [
+    "onPlay"
+   ],
+   "fired": {
+    "onPlay": 2
+   },
+   "totalFired": 2,
+   "appearedGames": 2
+  },
+  {
+   "no": "OP12-034",
+   "name": "ペローナ",
+   "type": "CHAR",
+   "decks": [
+    "緑ミホーク"
+   ],
+   "hooks": [
+    "onPlay"
+   ],
+   "runnable": [
+    "onPlay"
+   ],
+   "fired": {
+    "onPlay": 6
+   },
+   "totalFired": 6,
+   "appearedGames": 4
+  },
+  {
+   "no": "OP12-037",
+   "name": "鬼気 九刀流 阿修羅 抜剣 亡者戯",
+   "type": "EVENT",
+   "decks": [
+    "青緑ルフィ",
+    "緑ミホーク"
+   ],
+   "hooks": [
+    "main",
+    "counter"
+   ],
+   "runnable": [
+    "main",
+    "counter"
+   ],
+   "fired": {
+    "main": 3
+   },
+   "totalFired": 3,
+   "appearedGames": 6
+  },
+  {
+   "no": "OP12-040",
+   "name": "クザン",
+   "type": "LEADER",
+   "decks": [
+    "青クザン"
+   ],
+   "hooks": [
+    "onSelfHandDiscarded"
+   ],
+   "runnable": [
+    "onSelfHandDiscarded"
+   ],
+   "fired": {
+    "onSelfHandDiscarded": 45
+   },
+   "totalFired": 45,
+   "appearedGames": 5
+  },
+  {
+   "no": "OP12-043",
+   "name": "クザン",
+   "type": "CHAR",
+   "decks": [
+    "青クザン"
+   ],
+   "hooks": [
+    "static",
+    "onPlay"
+   ],
+   "runnable": [
+    "onPlay"
+   ],
+   "fired": {
+    "onPlay": 12
+   },
+   "totalFired": 12,
+   "appearedGames": 5
+  },
+  {
+   "no": "OP12-047",
+   "name": "センゴク",
+   "type": "CHAR",
+   "decks": [
+    "青クザン"
+   ],
+   "hooks": [
+    "onPlay"
+   ],
+   "runnable": [
+    "onPlay"
+   ],
+   "fired": {
+    "onPlay": 5
+   },
+   "totalFired": 5,
+   "appearedGames": 5
+  },
+  {
+   "no": "OP12-051",
+   "name": "ヒナ",
+   "type": "CHAR",
+   "decks": [
+    "青クザン"
+   ],
+   "hooks": [
+    "act"
+   ],
+   "runnable": [
+    "act"
+   ],
+   "fired": {
+    "act": 1
+   },
+   "totalFired": 1,
+   "appearedGames": 5
+  },
+  {
+   "no": "OP12-056",
+   "name": "モンキー・Ｄ・ガープ",
+   "type": "CHAR",
+   "decks": [
+    "青クザン"
+   ],
+   "hooks": [
+    "onPlay"
+   ],
+   "runnable": [
+    "onPlay"
+   ],
+   "fired": {
+    "onPlay": 3
+   },
+   "totalFired": 3,
+   "appearedGames": 4
+  },
+  {
+   "no": "OP12-057",
+   "name": "アイス塊暴雉嘴",
+   "type": "EVENT",
+   "decks": [
+    "青クザン"
+   ],
+   "hooks": [
+    "counter",
+    "trigger"
+   ],
+   "runnable": [
+    "counter",
+    "trigger"
+   ],
+   "fired": {},
+   "totalFired": 0,
+   "appearedGames": 4
+  },
+  {
+   "no": "OP12-071",
+   "name": "シャーロット・プリン",
+   "type": "CHAR",
+   "decks": [
+    "紫エネル"
+   ],
+   "hooks": [
+    "onPlay"
+   ],
+   "runnable": [
+    "onPlay"
+   ],
+   "fired": {
+    "onPlay": 4
+   },
+   "totalFired": 4,
+   "appearedGames": 5
+  },
+  {
+   "no": "OP12-112",
+   "name": "ベビー５",
+   "type": "CHAR",
+   "decks": [
+    "青黄ナミ",
+    "黒黄ティーチ"
+   ],
+   "hooks": [
+    "trigger"
+   ],
+   "runnable": [
+    "trigger"
+   ],
+   "fired": {
+    "trigger": 2
+   },
+   "totalFired": 2,
+   "appearedGames": 7
+  },
+  {
+   "no": "OP12-118",
+   "name": "ジュエリー・ボニー",
+   "type": "CHAR",
+   "decks": [
+    "緑ミホーク"
+   ],
+   "hooks": [
+    "onPlay"
+   ],
+   "runnable": [
+    "onPlay"
+   ],
+   "fired": {
+    "onPlay": 4
+   },
+   "totalFired": 4,
+   "appearedGames": 4
+  },
+  {
+   "no": "OP12-119",
+   "name": "バーソロミュー・くま",
+   "type": "CHAR",
+   "decks": [
+    "青黄ナミ",
+    "青黄ハンコック"
+   ],
+   "hooks": [
+    "onPlay",
+    "onKO"
+   ],
+   "runnable": [
+    "onPlay",
+    "onKO"
+   ],
+   "fired": {
+    "onPlay": 5,
+    "onKO": 4
+   },
+   "totalFired": 9,
+   "appearedGames": 7
+  },
+  {
+   "no": "OP13-002",
+   "name": "ポートガス・D・エース",
+   "type": "LEADER",
+   "decks": [
+    "赤青エース"
+   ],
+   "hooks": [
+    "onOppAttack"
+   ],
+   "runnable": [
+    "onOppAttack"
+   ],
+   "fired": {
+    "onOppAttack": 29
+   },
+   "totalFired": 29,
+   "appearedGames": 5
+  },
+  {
+   "no": "OP13-016",
+   "name": "モンキー・D・ガープ",
+   "type": "CHAR",
+   "decks": [
+    "赤青エース"
+   ],
+   "hooks": [
+    "onPlay"
+   ],
+   "runnable": [
+    "onPlay"
+   ],
+   "fired": {
+    "onPlay": 9
+   },
+   "totalFired": 9,
+   "appearedGames": 5
+  },
+  {
+   "no": "OP13-031",
+   "name": "トラファルガー・ロー",
+   "type": "CHAR",
+   "decks": [
+    "緑ミホーク"
+   ],
+   "hooks": [
+    "static",
+    "onPlay"
+   ],
+   "runnable": [
+    "onPlay"
+   ],
+   "fired": {
+    "onPlay": 8
+   },
+   "totalFired": 8,
+   "appearedGames": 5
+  },
+  {
+   "no": "OP13-040",
+   "name": "強ェとわかってんだから… 始めから全開だ!!!",
+   "type": "EVENT",
+   "decks": [
+    "青緑ルフィ",
+    "緑ミホーク"
+   ],
+   "hooks": [
+    "main",
+    "counter"
+   ],
+   "runnable": [
+    "main",
+    "counter"
+   ],
+   "fired": {
+    "main": 1
+   },
+   "totalFired": 1,
+   "appearedGames": 5
+  },
+  {
+   "no": "OP13-042",
+   "name": "エドワード・ニューゲート",
+   "type": "CHAR",
+   "decks": [
+    "赤青エース",
+    "青黄ナミ"
+   ],
+   "hooks": [
+    "onPlay"
+   ],
+   "runnable": [
+    "onPlay"
+   ],
+   "fired": {
+    "onPlay": 20
+   },
+   "totalFired": 20,
+   "appearedGames": 8
+  },
+  {
+   "no": "OP13-043",
+   "name": "お玉",
+   "type": "CHAR",
+   "decks": [
+    "赤青エース"
+   ],
+   "hooks": [
+    "onPlay"
+   ],
+   "runnable": [
+    "onPlay"
+   ],
+   "fired": {
+    "onPlay": 8
+   },
+   "totalFired": 8,
+   "appearedGames": 4
+  },
+  {
+   "no": "OP13-054",
+   "name": "ヤマト",
+   "type": "CHAR",
+   "decks": [
+    "赤青エース"
+   ],
+   "hooks": [
+    "onPlay"
+   ],
+   "runnable": [
+    "onPlay"
+   ],
+   "fired": {
+    "onPlay": 2
+   },
+   "totalFired": 2,
+   "appearedGames": 5
+  },
+  {
+   "no": "OP13-057",
+   "name": "\"力\"に屈したら男に生まれた意味がねェだろう",
+   "type": "EVENT",
+   "decks": [
+    "赤青エース"
+   ],
+   "hooks": [
+    "main",
+    "counter"
+   ],
+   "runnable": [
+    "main",
+    "counter"
+   ],
+   "fired": {
+    "counter": 2
+   },
+   "totalFired": 2,
+   "appearedGames": 4
+  },
+  {
+   "no": "OP14-020",
+   "name": "ジュラキュール・ミホーク",
+   "type": "LEADER",
+   "decks": [
+    "緑ミホーク"
+   ],
+   "hooks": [
+    "static",
+    "act"
+   ],
+   "runnable": [
+    "act"
+   ],
+   "fired": {
+    "act": 22
+   },
+   "totalFired": 22,
+   "appearedGames": 5
+  },
+  {
+   "no": "OP14-033",
+   "name": "ペローナ",
+   "type": "CHAR",
+   "decks": [
+    "緑ミホーク"
+   ],
+   "hooks": [
+    "onPlay",
+    "onKO"
+   ],
+   "runnable": [
+    "onPlay",
+    "onKO"
+   ],
+   "fired": {},
+   "totalFired": 0,
+   "appearedGames": 1
+  },
+  {
+   "no": "OP14-039",
+   "name": "棺船",
+   "type": "STAGE",
+   "decks": [
+    "緑ミホーク"
+   ],
+   "hooks": [
+    "onPlay",
+    "onTurnEnd"
+   ],
+   "runnable": [
+    "onPlay",
+    "onTurnEnd"
+   ],
+   "fired": {},
+   "totalFired": 0,
+   "appearedGames": 0
+  },
+  {
+   "no": "OP14-041",
+   "name": "ボア・ハンコック",
+   "type": "LEADER",
+   "decks": [
+    "青黄ハンコック"
+   ],
+   "hooks": [
+    "onAllyEnter",
+    "onAllyLeave"
+   ],
+   "runnable": [
+    "onAllyEnter",
+    "onAllyLeave"
+   ],
+   "fired": {
+    "onAllyEnter": 17,
+    "onAllyLeave": 1
+   },
+   "totalFired": 18,
+   "appearedGames": 6
+  },
+  {
+   "no": "OP14-096",
+   "name": "浸食輪廻",
+   "type": "EVENT",
+   "decks": [
+    "黒ヤマト"
+   ],
+   "hooks": [
+    "main",
+    "counter"
+   ],
+   "runnable": [
+    "main",
+    "counter"
+   ],
+   "fired": {
+    "main": 6,
+    "counter": 2
+   },
+   "totalFired": 8,
+   "appearedGames": 5
+  },
+  {
+   "no": "OP14-103",
+   "name": "グロリオーサ(ニョン婆)",
+   "type": "CHAR",
+   "decks": [
+    "青黄ハンコック"
+   ],
+   "hooks": [
+    "onPlay",
+    "trigger"
+   ],
+   "runnable": [
+    "onPlay",
+    "trigger"
+   ],
+   "fired": {
+    "trigger": 3,
+    "onPlay": 6
+   },
+   "totalFired": 9,
+   "appearedGames": 5
+  },
+  {
+   "no": "OP14-104",
+   "name": "ゲッコー・モリア",
+   "type": "CHAR",
+   "decks": [
+    "青黄ハンコック"
+   ],
+   "hooks": [
+    "onPlay",
+    "trigger"
+   ],
+   "runnable": [
+    "onPlay",
+    "trigger"
+   ],
+   "fired": {
+    "trigger": 3,
+    "onPlay": 3
+   },
+   "totalFired": 6,
+   "appearedGames": 4
+  },
+  {
+   "no": "OP14-105",
+   "name": "ゴルゴン三姉妹",
+   "type": "CHAR",
+   "decks": [
+    "青黄ハンコック"
+   ],
+   "hooks": [
+    "act",
+    "trigger"
+   ],
+   "runnable": [
+    "act",
+    "trigger"
+   ],
+   "fired": {
+    "act": 4,
+    "trigger": 2
+   },
+   "totalFired": 6,
+   "appearedGames": 4
+  },
+  {
+   "no": "OP14-107",
+   "name": "シャクヤク",
+   "type": "CHAR",
+   "decks": [
+    "青黄ハンコック"
+   ],
+   "hooks": [
+    "onPlay",
+    "trigger"
+   ],
+   "runnable": [
+    "onPlay",
+    "trigger"
+   ],
+   "fired": {
+    "trigger": 2,
+    "onPlay": 4
+   },
+   "totalFired": 6,
+   "appearedGames": 5
+  },
+  {
+   "no": "OP14-108",
+   "name": "シルバーズ・レイリー",
+   "type": "CHAR",
+   "decks": [
+    "青黄ナミ",
+    "青黄ハンコック"
+   ],
+   "hooks": [
+    "onPlay",
+    "trigger"
+   ],
+   "runnable": [
+    "onPlay",
+    "trigger"
+   ],
+   "fired": {
+    "trigger": 1,
+    "onPlay": 5
+   },
+   "totalFired": 6,
+   "appearedGames": 8
+  },
+  {
+   "no": "OP14-112",
+   "name": "ボア・ハンコック",
+   "type": "CHAR",
+   "decks": [
+    "青黄ハンコック"
+   ],
+   "hooks": [
+    "onPlay",
+    "trigger"
+   ],
+   "runnable": [
+    "onPlay",
+    "trigger"
+   ],
+   "fired": {
+    "onPlay": 6,
+    "trigger": 2
+   },
+   "totalFired": 8,
+   "appearedGames": 6
+  },
+  {
+   "no": "OP14-113",
+   "name": "マーガレット",
+   "type": "CHAR",
+   "decks": [
+    "青黄ハンコック"
+   ],
+   "hooks": [
+    "onPlay",
+    "trigger"
+   ],
+   "runnable": [
+    "onPlay",
+    "trigger"
+   ],
+   "fired": {
+    "trigger": 3,
+    "onPlay": 5
+   },
+   "totalFired": 8,
+   "appearedGames": 4
+  },
+  {
+   "no": "OP14-114",
+   "name": "ラン",
+   "type": "CHAR",
+   "decks": [
+    "青黄ハンコック"
+   ],
+   "hooks": [
+    "act",
+    "trigger"
+   ],
+   "runnable": [
+    "act",
+    "trigger"
+   ],
+   "fired": {
+    "trigger": 4,
+    "act": 4
+   },
+   "totalFired": 8,
+   "appearedGames": 6
+  },
+  {
+   "no": "OP14-119",
+   "name": "ジュラキュール・ミホーク",
+   "type": "CHAR",
+   "decks": [
+    "緑ミホーク"
+   ],
+   "hooks": [
+    "onSelfRested",
+    "onOppAttack"
+   ],
+   "runnable": [
+    "onSelfRested",
+    "onOppAttack"
+   ],
+   "fired": {
+    "onSelfRested": 3,
+    "onOppAttack": 1
+   },
+   "totalFired": 4,
+   "appearedGames": 4
+  },
+  {
+   "no": "OP15-002",
+   "name": "ルーシー",
+   "type": "LEADER",
+   "decks": [
+    "赤青ルーシー"
+   ],
+   "hooks": [],
+   "runnable": [],
+   "fired": {},
+   "totalFired": 0,
+   "appearedGames": 5
+  },
+  {
+   "no": "OP15-020",
+   "name": "火拳",
+   "type": "EVENT",
+   "decks": [
+    "赤青ルーシー"
+   ],
+   "hooks": [
+    "main"
+   ],
+   "runnable": [
+    "main"
+   ],
+   "fired": {},
+   "totalFired": 0,
+   "appearedGames": 3
+  },
+  {
+   "no": "OP15-021",
+   "name": "見てろよ!エース!!!",
+   "type": "EVENT",
+   "decks": [
+    "赤青ルーシー"
+   ],
+   "hooks": [
+    "main",
+    "counter"
+   ],
+   "runnable": [
+    "main",
+    "counter"
+   ],
+   "fired": {
+    "main": 1
+   },
+   "totalFired": 1,
+   "appearedGames": 2
+  },
+  {
+   "no": "OP15-032",
+   "name": "ブルック",
+   "type": "CHAR",
+   "decks": [
+    "青緑ルフィ"
+   ],
+   "hooks": [
+    "onPlay",
+    "act"
+   ],
+   "runnable": [
+    "onPlay",
+    "act"
+   ],
+   "fired": {
+    "onPlay": 1,
+    "act": 1
+   },
+   "totalFired": 2,
+   "appearedGames": 2
+  },
+  {
+   "no": "OP15-040",
+   "name": "ヴィオラ",
+   "type": "CHAR",
+   "decks": [
+    "赤青ルーシー"
+   ],
+   "hooks": [
+    "onPlay"
+   ],
+   "runnable": [
+    "onPlay"
+   ],
+   "fired": {
+    "onPlay": 5
+   },
+   "totalFired": 5,
+   "appearedGames": 4
+  },
+  {
+   "no": "OP15-042",
+   "name": "キュロス",
+   "type": "CHAR",
+   "decks": [
+    "赤青ルーシー"
+   ],
+   "hooks": [
+    "onPlay",
+    "onKO"
+   ],
+   "runnable": [
+    "onPlay",
+    "onKO"
+   ],
+   "fired": {
+    "onPlay": 10,
+    "onKO": 3
+   },
+   "totalFired": 13,
+   "appearedGames": 5
+  },
+  {
+   "no": "OP15-044",
+   "name": "コアラ",
+   "type": "CHAR",
+   "decks": [
+    "赤青ルーシー"
+   ],
+   "hooks": [
+    "onKO"
+   ],
+   "runnable": [
+    "onKO"
+   ],
+   "fired": {
+    "onKO": 5
+   },
+   "totalFired": 5,
+   "appearedGames": 4
+  },
+  {
+   "no": "OP15-046",
+   "name": "サボ",
+   "type": "CHAR",
+   "decks": [
+    "赤青ルーシー"
+   ],
+   "hooks": [
+    "onPlay"
+   ],
+   "runnable": [
+    "onPlay"
+   ],
+   "fired": {
+    "onPlay": 12
+   },
+   "totalFired": 12,
+   "appearedGames": 5
+  },
+  {
+   "no": "OP15-047",
+   "name": "サンジ",
+   "type": "CHAR",
+   "decks": [
+    "赤青ルーシー"
+   ],
+   "hooks": [
+    "onPlay"
+   ],
+   "runnable": [
+    "onPlay"
+   ],
+   "fired": {
+    "onPlay": 3
+   },
+   "totalFired": 3,
+   "appearedGames": 4
+  },
+  {
+   "no": "OP15-052",
+   "name": "レオ",
+   "type": "CHAR",
+   "decks": [
+    "赤青ルーシー",
+    "青黄ナミ"
+   ],
+   "hooks": [
+    "static"
+   ],
+   "runnable": [],
+   "fired": {},
+   "totalFired": 0,
+   "appearedGames": 7
+  },
+  {
+   "no": "OP15-053",
+   "name": "レベッカ",
+   "type": "CHAR",
+   "decks": [
+    "赤青ルーシー"
+   ],
+   "hooks": [
+    "onPlay"
+   ],
+   "runnable": [
+    "onPlay"
+   ],
+   "fired": {
+    "onPlay": 7
+   },
+   "totalFired": 7,
+   "appearedGames": 4
+  },
+  {
+   "no": "OP15-054",
+   "name": "誰にも渡さねェよ!“あいつ”の形見だ",
+   "type": "EVENT",
+   "decks": [
+    "赤青ルーシー"
+   ],
+   "hooks": [
+    "main"
+   ],
+   "runnable": [
+    "main"
+   ],
+   "fired": {
+    "main": 3
+   },
+   "totalFired": 3,
+   "appearedGames": 4
+  },
+  {
+   "no": "OP15-056",
+   "name": "“メラメラの実”はおれが食っていいか？",
+   "type": "EVENT",
+   "decks": [
+    "赤青ルーシー"
+   ],
+   "hooks": [
+    "main",
+    "trigger"
+   ],
+   "runnable": [
+    "main",
+    "trigger"
+   ],
+   "fired": {
+    "main": 3,
+    "trigger": 1
+   },
+   "totalFired": 4,
+   "appearedGames": 2
+  },
+  {
+   "no": "OP15-057",
+   "name": "ドレスローザ王国",
+   "type": "STAGE",
+   "decks": [
+    "赤青ルーシー"
+   ],
+   "hooks": [
+    "onPlay",
+    "onOppAttack"
+   ],
+   "runnable": [
+    "onPlay",
+    "onOppAttack"
+   ],
+   "fired": {},
+   "totalFired": 0,
+   "appearedGames": 3
+  },
+  {
+   "no": "OP15-058",
+   "name": "エネル",
+   "type": "LEADER",
+   "decks": [
+    "紫エネル"
+   ],
+   "hooks": [],
+   "runnable": [],
+   "fired": {},
+   "totalFired": 0,
+   "appearedGames": 5
+  },
+  {
+   "no": "OP15-060",
+   "name": "エネル",
+   "type": "CHAR",
+   "decks": [
+    "紫エネル"
+   ],
+   "hooks": [
+    "static",
+    "act"
+   ],
+   "runnable": [
+    "act"
+   ],
+   "fired": {
+    "act": 14
+   },
+   "totalFired": 14,
+   "appearedGames": 5
+  },
+  {
+   "no": "OP15-061",
+   "name": "オーム",
+   "type": "CHAR",
+   "decks": [
+    "紫エネル"
+   ],
+   "hooks": [
+    "onPlay",
+    "onAttack"
+   ],
+   "runnable": [
+    "onPlay",
+    "onAttack"
+   ],
+   "fired": {
+    "onPlay": 2,
+    "onAttack": 2
+   },
+   "totalFired": 4,
+   "appearedGames": 5
+  },
+  {
+   "no": "OP15-063",
+   "name": "ゲダツ",
+   "type": "CHAR",
+   "decks": [
+    "紫エネル"
+   ],
+   "hooks": [
+    "onPlay",
+    "onKO"
+   ],
+   "runnable": [
+    "onPlay",
+    "onKO"
+   ],
+   "fired": {
+    "onPlay": 3,
+    "onKO": 1
+   },
+   "totalFired": 4,
+   "appearedGames": 3
+  },
+  {
+   "no": "OP15-066",
+   "name": "サトリ",
+   "type": "CHAR",
+   "decks": [
+    "紫エネル"
+   ],
+   "hooks": [
+    "onPlay",
+    "onAttack"
+   ],
+   "runnable": [
+    "onPlay",
+    "onAttack"
+   ],
+   "fired": {
+    "onPlay": 4,
+    "onAttack": 4
+   },
+   "totalFired": 8,
+   "appearedGames": 5
+  },
+  {
+   "no": "OP15-067",
+   "name": "シュラ",
+   "type": "CHAR",
+   "decks": [
+    "紫エネル"
+   ],
+   "hooks": [
+    "onPlay"
+   ],
+   "runnable": [
+    "onPlay"
+   ],
+   "fired": {
+    "onPlay": 1
+   },
+   "totalFired": 1,
+   "appearedGames": 4
+  },
+  {
+   "no": "OP15-069",
+   "name": "ノラ",
+   "type": "CHAR",
+   "decks": [
+    "紫エネル"
+   ],
+   "hooks": [
+    "static"
+   ],
+   "runnable": [],
+   "fired": {},
+   "totalFired": 0,
+   "appearedGames": 3
+  },
+  {
+   "no": "OP15-070",
+   "name": "フザ",
+   "type": "CHAR",
+   "decks": [
+    "紫エネル"
+   ],
+   "hooks": [
+    "static"
+   ],
+   "runnable": [],
+   "fired": {},
+   "totalFired": 0,
+   "appearedGames": 2
+  },
+  {
+   "no": "OP15-074",
+   "name": "放電",
+   "type": "EVENT",
+   "decks": [
+    "紫エネル"
+   ],
+   "hooks": [
+    "main",
+    "counter"
+   ],
+   "runnable": [
+    "main",
+    "counter"
+   ],
+   "fired": {
+    "main": 1,
+    "counter": 1
+   },
+   "totalFired": 2,
+   "appearedGames": 3
+  },
+  {
+   "no": "OP15-075",
+   "name": "神の裁き",
+   "type": "EVENT",
+   "decks": [
+    "紫エネル"
+   ],
+   "hooks": [
+    "main",
+    "counter"
+   ],
+   "runnable": [
+    "main",
+    "counter"
+   ],
+   "fired": {
+    "counter": 5,
+    "main": 1
+   },
+   "totalFired": 6,
+   "appearedGames": 4
+  },
+  {
+   "no": "OP15-076",
+   "name": "雷獣",
+   "type": "EVENT",
+   "decks": [
+    "紫エネル"
+   ],
+   "hooks": [
+    "main",
+    "counter"
+   ],
+   "runnable": [
+    "main",
+    "counter"
+   ],
+   "fired": {},
+   "totalFired": 0,
+   "appearedGames": 5
+  },
+  {
+   "no": "OP15-077",
+   "name": "雷龍",
+   "type": "EVENT",
+   "decks": [
+    "紫エネル"
+   ],
+   "hooks": [
+    "main"
+   ],
+   "runnable": [
+    "main"
+   ],
+   "fired": {
+    "main": 7
+   },
+   "totalFired": 7,
+   "appearedGames": 3
+  },
+  {
+   "no": "OP15-078",
+   "name": "万雷",
+   "type": "EVENT",
+   "decks": [
+    "紫エネル"
+   ],
+   "hooks": [
+    "main",
+    "counter"
+   ],
+   "runnable": [
+    "main",
+    "counter"
+   ],
+   "fired": {
+    "main": 6,
+    "counter": 1
+   },
+   "totalFired": 7,
+   "appearedGames": 5
+  },
+  {
+   "no": "OP15-113",
+   "name": "ロロノア・ゾロ",
+   "type": "CHAR",
+   "decks": [
+    "青黄ハンコック"
+   ],
+   "hooks": [
+    "onPlay"
+   ],
+   "runnable": [
+    "onPlay"
+   ],
+   "fired": {
+    "onPlay": 3
+   },
+   "totalFired": 3,
+   "appearedGames": 3
+  },
+  {
+   "no": "OP15-118",
+   "name": "エネル",
+   "type": "CHAR",
+   "decks": [
+    "紫エネル"
+   ],
+   "hooks": [
+    "static",
+    "onPlay"
+   ],
+   "runnable": [
+    "onPlay"
+   ],
+   "fired": {
+    "onPlay": 12
+   },
+   "totalFired": 12,
+   "appearedGames": 5
+  },
+  {
+   "no": "OP15-119",
+   "name": "モンキー・D・ルフィ",
+   "type": "CHAR",
+   "decks": [
+    "青黄ナミ"
+   ],
+   "hooks": [
+    "static",
+    "onOppEvent",
+    "onOppBlocker"
+   ],
+   "runnable": [
+    "onOppEvent",
+    "onOppBlocker"
+   ],
+   "fired": {
+    "onOppBlocker": 4
+   },
+   "totalFired": 4,
+   "appearedGames": 4
+  },
+  {
+   "no": "OP16-022",
+   "name": "モンキー・Ｄ・ルフィ",
+   "type": "LEADER",
+   "decks": [
+    "青緑ルフィ"
+   ],
+   "hooks": [
+    "act"
+   ],
+   "runnable": [
+    "act"
+   ],
+   "fired": {
+    "act": 36
+   },
+   "totalFired": 36,
+   "appearedGames": 6
+  },
+  {
+   "no": "OP16-026",
+   "name": "エンポリオ・イワンコフ",
+   "type": "CHAR",
+   "decks": [
+    "青緑ルフィ"
+   ],
+   "hooks": [
+    "onPlay"
+   ],
+   "runnable": [
+    "onPlay"
+   ],
+   "fired": {
+    "onPlay": 1
+   },
+   "totalFired": 1,
+   "appearedGames": 3
+  },
+  {
+   "no": "OP16-027",
+   "name": "ジンベエ",
+   "type": "CHAR",
+   "decks": [
+    "青緑ルフィ"
+   ],
+   "hooks": [
+    "static"
+   ],
+   "runnable": [],
+   "fired": {},
+   "totalFired": 0,
+   "appearedGames": 0
+  },
+  {
+   "no": "OP16-032",
+   "name": "ボア・ハンコック",
+   "type": "CHAR",
+   "decks": [
+    "青緑ルフィ"
+   ],
+   "hooks": [
+    "static",
+    "onPlay"
+   ],
+   "runnable": [
+    "onPlay"
+   ],
+   "fired": {
+    "onPlay": 8
+   },
+   "totalFired": 8,
+   "appearedGames": 4
+  },
+  {
+   "no": "OP16-034",
+   "name": "モンキー・Ｄ・ルフィ",
+   "type": "CHAR",
+   "decks": [
+    "青緑ルフィ"
+   ],
+   "hooks": [
+    "static",
+    "onPlay"
+   ],
+   "runnable": [
+    "onPlay"
+   ],
+   "fired": {
+    "onPlay": 6
+   },
+   "totalFired": 6,
+   "appearedGames": 5
+  },
+  {
+   "no": "OP16-037",
+   "name": "Mr.3(ギャルディーノ)",
+   "type": "CHAR",
+   "decks": [
+    "青緑ルフィ"
+   ],
+   "hooks": [
+    "onPlay"
+   ],
+   "runnable": [
+    "onPlay"
+   ],
+   "fired": {
+    "onPlay": 1
+   },
+   "totalFired": 1,
+   "appearedGames": 1
+  },
+  {
+   "no": "OP16-038",
+   "name": "行くぞ～～～!!!海軍本部～～～!!!",
+   "type": "EVENT",
+   "decks": [
+    "青緑ルフィ"
+   ],
+   "hooks": [
+    "main",
+    "counter"
+   ],
+   "runnable": [
+    "main",
+    "counter"
+   ],
+   "fired": {},
+   "totalFired": 0,
+   "appearedGames": 6
+  },
+  {
+   "no": "OP16-041",
+   "name": "バギー",
+   "type": "LEADER",
+   "decks": [
+    "青バギー"
+   ],
+   "hooks": [
+    "onAllyLeave"
+   ],
+   "runnable": [
+    "onAllyLeave"
+   ],
+   "fired": {
+    "onAllyLeave": 3
+   },
+   "totalFired": 3,
+   "appearedGames": 5
+  },
+  {
+   "no": "OP16-042",
+   "name": "インペルダウンの囚人",
+   "type": "CHAR",
+   "decks": [
+    "青緑ルフィ",
+    "青バギー"
+   ],
+   "hooks": [],
+   "runnable": [],
+   "fired": {},
+   "totalFired": 0,
+   "appearedGames": 10
+  },
+  {
+   "no": "OP16-045",
+   "name": "クロコダイル",
+   "type": "CHAR",
+   "decks": [
+    "青緑ルフィ",
+    "青バギー"
+   ],
+   "hooks": [
+    "static",
+    "onPlay"
+   ],
+   "runnable": [
+    "onPlay"
+   ],
+   "fired": {
+    "onPlay": 18
+   },
+   "totalFired": 18,
+   "appearedGames": 8
+  },
+  {
+   "no": "OP16-048",
+   "name": "バギー",
+   "type": "CHAR",
+   "decks": [
+    "青緑ルフィ",
+    "青バギー"
+   ],
+   "hooks": [
+    "onPlay",
+    "onOppAttack"
+   ],
+   "runnable": [
+    "onPlay",
+    "onOppAttack"
+   ],
+   "fired": {
+    "onPlay": 7,
+    "onOppAttack": 15
+   },
+   "totalFired": 22,
+   "appearedGames": 9
+  },
+  {
+   "no": "OP16-050",
+   "name": "ミス・オリーブ",
+   "type": "CHAR",
+   "decks": [
+    "青バギー"
+   ],
+   "hooks": [
+    "static",
+    "onPlay"
+   ],
+   "runnable": [
+    "onPlay"
+   ],
+   "fired": {
+    "onPlay": 6
+   },
+   "totalFired": 6,
+   "appearedGames": 3
+  },
+  {
+   "no": "OP16-054",
+   "name": "Mr.1(ダズ・ボーネス)",
+   "type": "CHAR",
+   "decks": [
+    "青緑ルフィ",
+    "青バギー"
+   ],
+   "hooks": [
+    "static",
+    "onPlay"
+   ],
+   "runnable": [
+    "onPlay"
+   ],
+   "fired": {
+    "onPlay": 25
+   },
+   "totalFired": 25,
+   "appearedGames": 10
+  },
+  {
+   "no": "OP16-055",
+   "name": "Mr.2・ボン・クレー(ベンサム)",
+   "type": "CHAR",
+   "decks": [
+    "青緑ルフィ",
+    "青バギー"
+   ],
+   "hooks": [
+    "onPlay",
+    "onAttack"
+   ],
+   "runnable": [
+    "onPlay",
+    "onAttack"
+   ],
+   "fired": {
+    "onPlay": 20,
+    "onAttack": 1
+   },
+   "totalFired": 21,
+   "appearedGames": 9
+  },
+  {
+   "no": "OP16-056",
+   "name": "Mr.3(ギャルディーノ)",
+   "type": "CHAR",
+   "decks": [
+    "青緑ルフィ",
+    "青バギー"
+   ],
+   "hooks": [
+    "act"
+   ],
+   "runnable": [
+    "act"
+   ],
+   "fired": {
+    "act": 4
+   },
+   "totalFired": 4,
+   "appearedGames": 9
+  },
+  {
+   "no": "OP16-059",
+   "name": "ド派手大作戦に変更じゃァ～～～!!!",
+   "type": "EVENT",
+   "decks": [
+    "青バギー"
+   ],
+   "hooks": [
+    "main",
+    "counter"
+   ],
+   "runnable": [
+    "main",
+    "counter"
+   ],
+   "fired": {},
+   "totalFired": 0,
+   "appearedGames": 4
+  },
+  {
+   "no": "OP16-079",
+   "name": "ヤマト",
+   "type": "LEADER",
+   "decks": [
+    "黒ヤマト"
+   ],
+   "hooks": [
+    "onReviveFromTrash"
+   ],
+   "runnable": [
+    "onReviveFromTrash"
+   ],
+   "fired": {},
+   "totalFired": 0,
+   "appearedGames": 6
+  },
+  {
+   "no": "OP16-080",
+   "name": "マーシャル・Ｄ・ティーチ",
+   "type": "LEADER",
+   "decks": [
+    "黒黄ティーチ"
+   ],
+   "hooks": [],
+   "runnable": [],
+   "fired": {},
+   "totalFired": 0,
+   "appearedGames": 6
+  },
+  {
+   "no": "OP16-081",
+   "name": "お玉",
+   "type": "CHAR",
+   "decks": [
+    "黒ヤマト"
+   ],
+   "hooks": [
+    "act"
+   ],
+   "runnable": [
+    "act"
+   ],
+   "fired": {
+    "act": 2
+   },
+   "totalFired": 2,
+   "appearedGames": 4
+  },
+  {
+   "no": "OP16-082",
+   "name": "錦えもん",
+   "type": "CHAR",
+   "decks": [
+    "黒ヤマト"
+   ],
+   "hooks": [
+    "static",
+    "onPlay"
+   ],
+   "runnable": [
+    "onPlay"
+   ],
+   "fired": {
+    "onPlay": 17
+   },
+   "totalFired": 17,
+   "appearedGames": 6
+  },
+  {
+   "no": "OP16-084",
+   "name": "光月モモの助",
+   "type": "CHAR",
+   "decks": [
+    "黒ヤマト"
+   ],
+   "hooks": [
+    "act"
+   ],
+   "runnable": [
+    "act"
+   ],
+   "fired": {
+    "act": 1
+   },
+   "totalFired": 1,
+   "appearedGames": 6
+  },
+  {
+   "no": "OP16-085",
+   "name": "光月モモの助",
+   "type": "CHAR",
+   "decks": [
+    "黒ヤマト"
+   ],
+   "hooks": [
+    "onPlay"
+   ],
+   "runnable": [
+    "onPlay"
+   ],
+   "fired": {
+    "onPlay": 1
+   },
+   "totalFired": 1,
+   "appearedGames": 5
+  },
+  {
+   "no": "OP16-087",
+   "name": "しのぶ",
+   "type": "CHAR",
+   "decks": [
+    "黒ヤマト"
+   ],
+   "hooks": [
+    "onPlay"
+   ],
+   "runnable": [
+    "onPlay"
+   ],
+   "fired": {
+    "onPlay": 9
+   },
+   "totalFired": 9,
+   "appearedGames": 5
+  },
+  {
+   "no": "OP16-091",
+   "name": "ナミ",
+   "type": "CHAR",
+   "decks": [
+    "黒ヤマト"
+   ],
+   "hooks": [
+    "onPlay"
+   ],
+   "runnable": [
+    "onPlay"
+   ],
+   "fired": {
+    "onPlay": 9
+   },
+   "totalFired": 9,
+   "appearedGames": 6
+  },
+  {
+   "no": "OP16-092",
+   "name": "ニコ・ロビン",
+   "type": "CHAR",
+   "decks": [
+    "黒ヤマト"
+   ],
+   "hooks": [
+    "onPlay"
+   ],
+   "runnable": [
+    "onPlay"
+   ],
+   "fired": {
+    "onPlay": 10
+   },
+   "totalFired": 10,
+   "appearedGames": 5
+  },
+  {
+   "no": "OP16-095",
+   "name": "モンキー・Ｄ・ルフィ",
+   "type": "CHAR",
+   "decks": [
+    "黒ヤマト"
+   ],
+   "hooks": [
+    "static",
+    "onPlay"
+   ],
+   "runnable": [
+    "onPlay"
+   ],
+   "fired": {
+    "onPlay": 6
+   },
+   "totalFired": 6,
+   "appearedGames": 4
+  },
+  {
+   "no": "OP16-096",
+   "name": "ヤマト",
+   "type": "CHAR",
+   "decks": [
+    "黒ヤマト"
+   ],
+   "hooks": [
+    "static",
+    "onKO"
+   ],
+   "runnable": [
+    "onKO"
+   ],
+   "fired": {
+    "onKO": 2
+   },
+   "totalFired": 2,
+   "appearedGames": 6
+  },
+  {
+   "no": "OP16-097",
+   "name": "ヤマト",
+   "type": "CHAR",
+   "decks": [
+    "黒ヤマト"
+   ],
+   "hooks": [
+    "onPlay"
+   ],
+   "runnable": [
+    "onPlay"
+   ],
+   "fired": {
+    "onPlay": 9
+   },
+   "totalFired": 9,
+   "appearedGames": 6
+  },
+  {
+   "no": "OP16-098",
+   "name": "ヤマト",
+   "type": "CHAR",
+   "decks": [
+    "黒ヤマト"
+   ],
+   "hooks": [
+    "onPlay",
+    "act"
+   ],
+   "runnable": [
+    "onPlay",
+    "act"
+   ],
+   "fired": {
+    "onPlay": 14,
+    "act": 12
+   },
+   "totalFired": 26,
+   "appearedGames": 6
+  },
+  {
+   "no": "OP16-099",
+   "name": "その“縁”を切りに来た!!!",
+   "type": "EVENT",
+   "decks": [
+    "黒ヤマト"
+   ],
+   "hooks": [
+    "main",
+    "counter"
+   ],
+   "runnable": [
+    "main",
+    "counter"
+   ],
+   "fired": {
+    "main": 5
+   },
+   "totalFired": 5,
+   "appearedGames": 4
+  },
+  {
+   "no": "OP16-103",
+   "name": "ヴァン・オーガー",
+   "type": "CHAR",
+   "decks": [
+    "黒黄ティーチ"
+   ],
+   "hooks": [
+    "onKO",
+    "trigger"
+   ],
+   "runnable": [
+    "onKO",
+    "trigger"
+   ],
+   "fired": {
+    "onKO": 2
+   },
+   "totalFired": 2,
+   "appearedGames": 5
+  },
+  {
+   "no": "OP16-104",
+   "name": "カタリーナ・デボン",
+   "type": "CHAR",
+   "decks": [
+    "黒黄ティーチ"
+   ],
+   "hooks": [
+    "onAttack",
+    "trigger"
+   ],
+   "runnable": [
+    "onAttack",
+    "trigger"
+   ],
+   "fired": {
+    "onAttack": 3
+   },
+   "totalFired": 3,
+   "appearedGames": 6
+  },
+  {
+   "no": "OP16-108",
+   "name": "シリュウ",
+   "type": "CHAR",
+   "decks": [
+    "黒黄ティーチ"
+   ],
+   "hooks": [
+    "onPlay",
+    "trigger"
+   ],
+   "runnable": [
+    "onPlay",
+    "trigger"
+   ],
+   "fired": {
+    "trigger": 1
+   },
+   "totalFired": 1,
+   "appearedGames": 4
+  },
+  {
+   "no": "OP16-109",
+   "name": "ドクQ",
+   "type": "CHAR",
+   "decks": [
+    "黒黄ティーチ"
+   ],
+   "hooks": [
+    "onKO",
+    "trigger"
+   ],
+   "runnable": [
+    "onKO",
+    "trigger"
+   ],
+   "fired": {
+    "trigger": 4,
+    "onKO": 4
+   },
+   "totalFired": 8,
+   "appearedGames": 4
+  },
+  {
+   "no": "OP16-110",
+   "name": "バスコ・ショット",
+   "type": "CHAR",
+   "decks": [
+    "黒黄ティーチ"
+   ],
+   "hooks": [
+    "onKO",
+    "trigger"
+   ],
+   "runnable": [
+    "onKO",
+    "trigger"
+   ],
+   "fired": {
+    "onKO": 6,
+    "trigger": 4
+   },
+   "totalFired": 10,
+   "appearedGames": 6
+  },
+  {
+   "no": "OP16-116",
+   "name": "ゼハハハハハハ!!!",
+   "type": "EVENT",
+   "decks": [
+    "黒黄ティーチ"
+   ],
+   "hooks": [
+    "main",
+    "trigger"
+   ],
+   "runnable": [
+    "main",
+    "trigger"
+   ],
+   "fired": {
+    "trigger": 3
+   },
+   "totalFired": 3,
+   "appearedGames": 5
+  },
+  {
+   "no": "OP16-119",
+   "name": "マーシャル・Ｄ・ティーチ",
+   "type": "CHAR",
+   "decks": [
+    "黒黄ティーチ"
+   ],
+   "hooks": [
+    "onPlay",
+    "trigger"
+   ],
+   "runnable": [
+    "onPlay",
+    "trigger"
+   ],
+   "fired": {
+    "onPlay": 7,
+    "trigger": 4
+   },
+   "totalFired": 11,
+   "appearedGames": 6
+  },
+  {
+   "no": "P-096",
+   "name": "少女",
+   "type": "CHAR",
+   "decks": [
+    "青黄ナミ"
+   ],
+   "hooks": [
+    "onPlay",
+    "act"
+   ],
+   "runnable": [
+    "onPlay",
+    "act"
+   ],
+   "fired": {
+    "onPlay": 3,
+    "act": 5
+   },
+   "totalFired": 8,
+   "appearedGames": 6
+  },
+  {
+   "no": "PRB02-008",
+   "name": "マルコ",
+   "type": "CHAR",
+   "decks": [
+    "赤青エース",
+    "青黄ナミ"
+   ],
+   "hooks": [
+    "onKO"
+   ],
+   "runnable": [
+    "onKO"
+   ],
+   "fired": {
+    "onKO": 9
+   },
+   "totalFired": 9,
+   "appearedGames": 10
+  },
+  {
+   "no": "ST17-004",
+   "name": "ボア・ハンコック",
+   "type": "CHAR",
+   "decks": [
+    "青黄ハンコック"
+   ],
+   "hooks": [
+    "onPlay"
+   ],
+   "runnable": [
+    "onPlay"
+   ],
+   "fired": {
+    "onPlay": 8
+   },
+   "totalFired": 8,
+   "appearedGames": 5
+  },
+  {
+   "no": "ST22-002",
+   "name": "イゾウ",
+   "type": "CHAR",
+   "decks": [
+    "赤青エース"
+   ],
+   "hooks": [
+    "onPlay",
+    "onOppAttack"
+   ],
+   "runnable": [
+    "onPlay",
+    "onOppAttack"
+   ],
+   "fired": {
+    "onPlay": 6,
+    "onOppAttack": 53
+   },
+   "totalFired": 59,
+   "appearedGames": 4
+  },
+  {
+   "no": "ST22-015",
+   "name": "おれァ“白ひげ”だァア!!!!",
+   "type": "EVENT",
+   "decks": [
+    "赤青エース"
+   ],
+   "hooks": [
+    "main"
+   ],
+   "runnable": [
+    "main"
+   ],
+   "fired": {},
+   "totalFired": 0,
+   "appearedGames": 4
+  },
+  {
+   "no": "ST23-001",
+   "name": "ウタ",
+   "type": "CHAR",
+   "decks": [
+    "赤青エース"
+   ],
+   "hooks": [],
+   "runnable": [],
+   "fired": {},
+   "totalFired": 0,
+   "appearedGames": 5
+  },
+  {
+   "no": "ST24-002",
+   "name": "キッド＆キラー",
+   "type": "CHAR",
+   "decks": [
+    "緑ミホーク"
+   ],
+   "hooks": [
+    "onPlay",
+    "onOppAttack"
+   ],
+   "runnable": [
+    "onPlay",
+    "onOppAttack"
+   ],
+   "fired": {
+    "onPlay": 6,
+    "onOppAttack": 6
+   },
+   "totalFired": 12,
+   "appearedGames": 4
+  },
+  {
+   "no": "ST24-004",
+   "name": "ロー＆ベポ",
+   "type": "CHAR",
+   "decks": [
+    "緑ミホーク"
+   ],
+   "hooks": [
+    "onPlay"
+   ],
+   "runnable": [
+    "onPlay"
+   ],
+   "fired": {
+    "onPlay": 7
+   },
+   "totalFired": 7,
+   "appearedGames": 5
+  },
+  {
+   "no": "ST30-014",
+   "name": "Mr.3(ギャルディーノ)",
+   "type": "CHAR",
+   "decks": [
+    "青緑ルフィ"
+   ],
+   "hooks": [
+    "act"
+   ],
+   "runnable": [
+    "act"
+   ],
+   "fired": {
+    "act": 9
+   },
+   "totalFired": 9,
+   "appearedGames": 5
+  },
+  {
+   "no": "ST32-001",
+   "name": "錦えもん",
+   "type": "CHAR",
+   "decks": [
+    "緑ミホーク"
+   ],
+   "hooks": [
+    "onPlay"
+   ],
+   "runnable": [
+    "onPlay"
+   ],
+   "fired": {
+    "onPlay": 6
+   },
+   "totalFired": 6,
+   "appearedGames": 4
+  },
+  {
+   "no": "ST32-002",
+   "name": "光月おでん",
+   "type": "CHAR",
+   "decks": [
+    "緑ミホーク"
+   ],
+   "hooks": [
+    "onPlay"
+   ],
+   "runnable": [
+    "onPlay"
+   ],
+   "fired": {
+    "onPlay": 1
+   },
+   "totalFired": 1,
+   "appearedGames": 5
+  },
+  {
+   "no": "ST32-003",
+   "name": "ジュラキュール・ミホーク",
+   "type": "CHAR",
+   "decks": [
+    "緑ミホーク"
+   ],
+   "hooks": [
+    "onSelfRested",
+    "onPlay"
+   ],
+   "runnable": [
+    "onSelfRested",
+    "onPlay"
+   ],
+   "fired": {},
+   "totalFired": 0,
+   "appearedGames": 2
+  },
+  {
+   "no": "ST32-005",
+   "name": "ロロノア・ゾロ",
+   "type": "CHAR",
+   "decks": [
+    "緑ミホーク"
+   ],
+   "hooks": [
+    "onPlay"
+   ],
+   "runnable": [
+    "onPlay"
+   ],
+   "fired": {
+    "onPlay": 10
+   },
+   "totalFired": 10,
+   "appearedGames": 5
+  },
+  {
+   "no": "ST33-001",
+   "name": "コビー",
+   "type": "CHAR",
+   "decks": [
+    "青クザン"
+   ],
+   "hooks": [
+    "onPlay"
+   ],
+   "runnable": [
+    "onPlay"
+   ],
+   "fired": {
+    "onPlay": 2
+   },
+   "totalFired": 2,
+   "appearedGames": 4
+  },
+  {
+   "no": "ST33-002",
+   "name": "サカズキ",
+   "type": "CHAR",
+   "decks": [
+    "青クザン"
+   ],
+   "hooks": [
+    "onAttack",
+    "onKO"
+   ],
+   "runnable": [
+    "onAttack",
+    "onKO"
+   ],
+   "fired": {
+    "onAttack": 1,
+    "onKO": 2
+   },
+   "totalFired": 3,
+   "appearedGames": 4
+  },
+  {
+   "no": "ST33-003",
+   "name": "スモーカー",
+   "type": "CHAR",
+   "decks": [
+    "青クザン"
+   ],
+   "hooks": [
+    "onPlay"
+   ],
+   "runnable": [
+    "onPlay"
+   ],
+   "fired": {
+    "onPlay": 2
+   },
+   "totalFired": 2,
+   "appearedGames": 3
+  },
+  {
+   "no": "ST33-004",
+   "name": "ボルサリーノ",
+   "type": "CHAR",
+   "decks": [
+    "青クザン"
+   ],
+   "hooks": [],
+   "runnable": [],
+   "fired": {},
+   "totalFired": 0,
+   "appearedGames": 5
+  },
+  {
+   "no": "ST33-005",
+   "name": "モンキー・Ｄ・ガープ",
+   "type": "CHAR",
+   "decks": [
+    "青クザン"
+   ],
+   "hooks": [
+    "onPlay"
+   ],
+   "runnable": [
+    "onPlay"
+   ],
+   "fired": {
+    "onPlay": 1
+   },
+   "totalFired": 1,
+   "appearedGames": 5
+  }
+ ]
+}

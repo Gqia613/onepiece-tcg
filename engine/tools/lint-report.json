@@ -1,0 +1,486 @@
+{
+ "generatedAt": "2026-07-18T16:10:35.767Z",
+ "sets": null,
+ "vocab": {
+  "doOpOps": 169,
+  "knownOps": 214,
+  "hooks": [
+   "act",
+   "condBlocker",
+   "condRush",
+   "costMod",
+   "counter",
+   "main",
+   "onAllyEnter",
+   "onAllyLeave",
+   "onAttack",
+   "onBattleEndVsChar",
+   "onBlock",
+   "onDonAttached",
+   "onDonReturned",
+   "onExtraDraw",
+   "onKO",
+   "onLeaderAttack",
+   "onLeaderHitLife",
+   "onLifeLeave",
+   "onLifeToHand",
+   "onLifeZero",
+   "onOppAttack",
+   "onOppBlocker",
+   "onOppBounce",
+   "onOppEnter",
+   "onOppEvent",
+   "onOppKO",
+   "onOppLifeLeave",
+   "onOppRested",
+   "onOwnRest",
+   "onPlay",
+   "onReviveFromTrash",
+   "onSelfEvent",
+   "onSelfHandDiscarded",
+   "onSelfRested",
+   "onTrigger",
+   "onTurnEnd",
+   "onTurnStart",
+   "static",
+   "trigger"
+  ]
+ },
+ "summary": {
+  "errors": 0,
+  "warns": 86
+ },
+ "errors": [],
+ "warns": [
+  {
+   "no": "EB01-033",
+   "code": "W1 optional漏れ",
+   "evidence": "徴《W7》を持つキャラカード1枚までを、登場させる。"
+  },
+  {
+   "no": "EB01-050",
+   "code": "W1 optional漏れ",
+   "evidence": "る場合、自分のデッキの上から1枚までを、ライフの上に加える。"
+  },
+  {
+   "no": "EB01-057",
+   "code": "W1 optional漏れ",
+   "evidence": "れた時、自分のデッキの上から1枚までを、ライフの上に加える。"
+  },
+  {
+   "no": "EB01-060",
+   "code": "W1 optional漏れ",
+   "evidence": "からコスト7以下の「エネル」1枚までを、登場させる。その後、"
+  },
+  {
+   "no": "EB03-031",
+   "code": "W1 optional漏れ",
+   "evidence": "にあるコスト7以下のイベント1枚までの、【メイン】効果を発動"
+  },
+  {
+   "no": "EB03-042",
+   "code": "W1 optional漏れ",
+   "evidence": "ャラカードか「ニコ・ロビン」1枚までを、登場させる。"
+  },
+  {
+   "no": "EB04-013",
+   "code": "W1 optional漏れ",
+   "evidence": "特徴《ミンク族》を持つキャラ2枚までとリーダーを、アクティブ"
+  },
+  {
+   "no": "EB04-031",
+   "code": "W1 optional漏れ",
+   "evidence": "をアクティブで追加し、さらに1枚までをレストで追加する。"
+  },
+  {
+   "no": "EB04-041",
+   "code": "W1 optional漏れ",
+   "evidence": "ワー6000以下の「サンジ」1枚までを、登場させる。【トリ"
+  },
+  {
+   "no": "EB04-047",
+   "code": "W1 optional漏れ",
+   "evidence": "WORD》を持つキャラカード1枚までを、登場させる。"
+  },
+  {
+   "no": "EB04-058",
+   "code": "W1 optional漏れ",
+   "evidence": "の場合、自分のデッキの上から1枚までを、ライフの上に加える。"
+  },
+  {
+   "no": "OP01-059",
+   "code": "W1 optional漏れ",
+   "evidence": "の特徴《ワノ国》を持つキャラ1枚までを、アクティブにする。"
+  },
+  {
+   "no": "OP01-063",
+   "code": "W1 optional漏れ",
+   "evidence": "イベントの場合、相手のライフ1枚までを、持ち主のデッキの下に"
+  },
+  {
+   "no": "OP01-098",
+   "code": "W1 optional漏れ",
+   "evidence": "ら「人造悪魔の実SMILE」1枚までを公開し、手札に加え、デ"
+  },
+  {
+   "no": "OP03-040",
+   "code": "W1 optional漏れ",
+   "evidence": "上から1枚をトラッシュに置いてもよい。"
+  },
+  {
+   "no": "OP03-076",
+   "code": "W2 once漏れ",
+   "evidence": "【自分のターン中】【ターン1回】自分の手札2枚を捨てるこ"
+  },
+  {
+   "no": "OP03-099",
+   "code": "W1 optional漏れ",
+   "evidence": "】自分か相手のライフの上から1枚までを見て、ライフの上か下に"
+  },
+  {
+   "no": "OP03-114",
+   "code": "W1 optional漏れ",
+   "evidence": "つ場合、自分のデッキの上から1枚までを、ライフの上に加える。"
+  },
+  {
+   "no": "OP03-120",
+   "code": "W1 optional漏れ",
+   "evidence": "の場合、相手のライフの上から1枚までを、トラッシュに置く。"
+  },
+  {
+   "no": "OP04-040",
+   "code": "W1 optional漏れ",
+   "evidence": "代わりに自分のデッキの上から1枚までを、ライフの上に加えるこ"
+  },
+  {
+   "no": "OP04-060",
+   "code": "W1 optional漏れ",
+   "evidence": "つ場合、自分のデッキの上から1枚までを、ライフの上に加える。"
+  },
+  {
+   "no": "OP04-069",
+   "code": "W3 リーダー対象漏れ",
+   "evidence": "ン中、相手のアタックしているリーダーかキャラと同じパワーになる。【"
+  },
+  {
+   "no": "OP05-031",
+   "code": "W1 optional漏れ",
+   "evidence": "分のレストのコスト1のキャラ1枚までを、アクティブにする。"
+  },
+  {
+   "no": "OP05-068",
+   "code": "W1 optional漏れ",
+   "evidence": "《麦わらの一味》を持つキャラ1枚までを、アクティブにする。"
+  },
+  {
+   "no": "OP05-100",
+   "code": "W1 optional漏れ",
+   "evidence": "上から1枚をトラッシュに置いてもよい。キャラの「モンキー・D"
+  },
+  {
+   "no": "OP06-026",
+   "code": "W1 optional漏れ",
+   "evidence": "以下の属性(斬)を持つキャラ1枚までを、アクティブにする。そ"
+  },
+  {
+   "no": "OP06-060",
+   "code": "W1 optional漏れ",
+   "evidence": "の「ヴィンスモーク・イチジ」1枚までを、登場させる。"
+  },
+  {
+   "no": "OP06-064",
+   "code": "W1 optional漏れ",
+   "evidence": "5の「ヴィンスモーク・ニジ」1枚までを、登場させる。"
+  },
+  {
+   "no": "OP06-066",
+   "code": "W1 optional漏れ",
+   "evidence": "の「ヴィンスモーク・ヨンジ」1枚までを、登場させる。"
+  },
+  {
+   "no": "OP06-068",
+   "code": "W1 optional漏れ",
+   "evidence": "「ヴィンスモーク・レイジュ」1枚までを、登場させる。"
+  },
+  {
+   "no": "OP06-104",
+   "code": "W1 optional漏れ",
+   "evidence": "の場合、自分のデッキの上から1枚までを、ライフの上に加える。"
+  },
+  {
+   "no": "OP07-042",
+   "code": "W1 optional漏れ",
+   "evidence": "枚を持ち主のデッキの下に置いてもよい。"
+  },
+  {
+   "no": "OP07-078",
+   "code": "W1 optional漏れ",
+   "evidence": "の場合、自分の「フォクシー」1枚までを、アクティブにする。"
+  },
+  {
+   "no": "OP07-117",
+   "code": "W1 optional漏れ",
+   "evidence": "《エッグヘッド》を持つキャラ1枚までを、アクティブにする。"
+  },
+  {
+   "no": "OP08-031",
+   "code": "W1 optional漏れ",
+   "evidence": "特徴《ミンク族》を持つキャラ1枚までを、アクティブにする。"
+  },
+  {
+   "no": "OP08-039",
+   "code": "W1 optional漏れ",
+   "evidence": "特徴《ミンク族》を持つキャラ1枚までを、アクティブにする。"
+  },
+  {
+   "no": "OP08-109",
+   "code": "W1 optional漏れ",
+   "evidence": "る場合、自分のデッキの上から1枚までを、ライフの上に加える。"
+  },
+  {
+   "no": "OP08-119",
+   "code": "W1 optional漏れ",
+   "evidence": "その後、自分のデッキの上から1枚までを、ライフの上に加え、相"
+  },
+  {
+   "no": "OP09-007",
+   "code": "W1 optional漏れ",
+   "evidence": "パワー4000以下のリーダー1枚までを、このターン中、パワー"
+  },
+  {
+   "no": "OP09-012",
+   "code": "W1 optional漏れ",
+   "evidence": "このキャラをトラッシュに置いてもよい。"
+  },
+  {
+   "no": "OP09-029",
+   "code": "W1 optional漏れ",
+   "evidence": "ODYSSEY》を持つキャラ1枚までを、アクティブにする。"
+  },
+  {
+   "no": "OP09-061",
+   "code": "W1 optional漏れ",
+   "evidence": "をアクティブで追加し、さらに1枚までをレストで追加する。"
+  },
+  {
+   "no": "OP09-064",
+   "code": "W1 optional漏れ",
+   "evidence": "キッド海賊団》を持つリーダー1枚までを、アクティブにする。"
+  },
+  {
+   "no": "OP09-105",
+   "code": "W1 optional漏れ",
+   "evidence": "つ場合、自分のデッキの上から1枚までを、ライフの上に加える。"
+  },
+  {
+   "no": "OP09-106",
+   "code": "W1 optional漏れ",
+   "evidence": "のリーダーの「ニコ・ロビン」1枚までを、このターン中、パワー"
+  },
+  {
+   "no": "OP10-003",
+   "code": "W2 once漏れ",
+   "evidence": "にする。【相手のターン中】【ターン1回】自分がイベントを発動した"
+  },
+  {
+   "no": "OP10-029",
+   "code": "W1 optional漏れ",
+   "evidence": "ODYSSEY》を持つキャラ1枚までを、アクティブにする。"
+  },
+  {
+   "no": "OP10-034",
+   "code": "W1 optional漏れ",
+   "evidence": "イフの上から1枚を手札に加えてもよい。"
+  },
+  {
+   "no": "OP10-037",
+   "code": "W1 optional漏れ",
+   "evidence": "ODYSSEY》を持つキャラ1枚までを、アクティブにする。"
+  },
+  {
+   "no": "OP10-109",
+   "code": "W1 optional漏れ",
+   "evidence": "KO時】相手のライフの上から1枚までを、トラッシュに置く。"
+  },
+  {
+   "no": "OP11-025",
+   "code": "W2 once漏れ",
+   "evidence": "【相手のアタック時】【ターン1回】自分のドン‼1枚とこのキ"
+  },
+  {
+   "no": "OP11-067",
+   "code": "W1 optional漏れ",
+   "evidence": "グ・マム海賊団》を持つキャラ2枚までを、アクティブにする。そ"
+  },
+  {
+   "no": "OP11-073",
+   "code": "W1 optional漏れ",
+   "evidence": "トと同じ場合、自分のリーダー1枚までを、このターン中、パワー"
+  },
+  {
+   "no": "OP12-057",
+   "code": "W1 optional漏れ",
+   "evidence": "ター】自分のリーダーかキャラ1枚までを、このバトル中、パワー"
+  },
+  {
+   "no": "OP12-058",
+   "code": "W1 optional漏れ",
+   "evidence": "キャラカードの場合、登場させてもよい。登場させた場合、そのキ"
+  },
+  {
+   "no": "OP12-059",
+   "code": "W1 optional漏れ",
+   "evidence": "以上ある場合、自分のリーダー1枚までを、このバトル中、パワー"
+  },
+  {
+   "no": "OP12-081",
+   "code": "W2 once漏れ",
+   "evidence": "る場合、カード1枚を引く。【ターン1回】相手が、元々のコスト8以"
+  },
+  {
+   "no": "OP12-107",
+   "code": "W1 optional漏れ",
+   "evidence": "KO時】自分のデッキの上から1枚までを、ライフの上に加える。"
+  },
+  {
+   "no": "OP13-001",
+   "code": "W1 optional漏れ",
+   "evidence": "《麦わらの一味》を持つキャラ1枚までを、このバトル中、パワー"
+  },
+  {
+   "no": "OP13-100",
+   "code": "W2 once漏れ",
+   "evidence": "【自分のターン中】【ターン1回】自分の【トリガー】を持つ"
+  },
+  {
+   "no": "OP13-104",
+   "code": "W1 optional漏れ",
+   "evidence": "の場合、自分のデッキの上から1枚までを、ライフの上に加える。"
+  },
+  {
+   "no": "OP14-077",
+   "code": "W1 optional漏れ",
+   "evidence": "ター】自分のリーダーかキャラ1枚までを、このバトル中、パワー"
+  },
+  {
+   "no": "OP14-078",
+   "code": "W1 optional漏れ",
+   "evidence": "場合、自分のリーダーかキャラ1枚までを、このバトル中、パワー"
+  },
+  {
+   "no": "OP14-088",
+   "code": "W1 optional漏れ",
+   "evidence": "き、相手のコスト1のステージ1枚までを、KOする。"
+  },
+  {
+   "no": "OP14-091",
+   "code": "W1 optional漏れ",
+   "evidence": "を含む特徴を持つキャラカード1枚までを、登場させる。"
+  },
+  {
+   "no": "OP14-115",
+   "code": "W1 optional漏れ",
+   "evidence": "KO時】自分のデッキの上から1枚までを、ライフの上に加える。"
+  },
+  {
+   "no": "OP15-014",
+   "code": "W1 optional漏れ",
+   "evidence": "ドレスローザ》を持つイベント1枚までを、発動する。"
+  },
+  {
+   "no": "OP15-046",
+   "code": "W1 optional漏れ",
+   "evidence": "ドレスローザ》を持つイベント1枚までを、発動する。"
+  },
+  {
+   "no": "OP15-061",
+   "code": "W1 optional漏れ",
+   "evidence": "6枚以下の場合、相手のキャラ1枚までを、このターン中、パワー"
+  },
+  {
+   "no": "OP15-091",
+   "code": "W1 optional漏れ",
+   "evidence": "時】相手のトラッシュのカード1枚までを、持ち主のデッキの下に"
+  },
+  {
+   "no": "OP15-116",
+   "code": "W1 optional漏れ",
+   "evidence": "その後、自分のデッキの上から1枚までを、ライフの上に加え、自"
+  },
+  {
+   "no": "OP15-119",
+   "code": "W1 optional漏れ",
+   "evidence": "した時、自分のライフの上から1枚までを公開する。公開したカー"
+  },
+  {
+   "no": "OP16-075",
+   "code": "W1 optional漏れ",
+   "evidence": "をアクティブで追加し、さらに1枚までをレストで追加する。"
+  },
+  {
+   "no": "P-046",
+   "code": "W1 optional漏れ",
+   "evidence": "好きな順番でデッキの下に置いてもよい。そうした場合、置いた枚"
+  },
+  {
+   "no": "P-077",
+   "code": "W1 optional漏れ",
+   "evidence": "。その後、自分の紫のステージ1枚までをアクティブにする。"
+  },
+  {
+   "no": "P-077",
+   "code": "W2 once漏れ",
+   "evidence": "【ターン1回】自分の場のドン‼が2枚以"
+  },
+  {
+   "no": "P-117",
+   "code": "W1 optional漏れ",
+   "evidence": "上から1枚をトラッシュに置いてもよい。"
+  },
+  {
+   "no": "ST04-001",
+   "code": "W1 optional漏れ",
+   "evidence": "ことができる)：相手のライフ1枚までをトラッシュに置く。"
+  },
+  {
+   "no": "ST08-013",
+   "code": "W1 optional漏れ",
+   "evidence": "トルした相手のキャラをKOしてもよい。そうした場合、このキャ"
+  },
+  {
+   "no": "ST10-013",
+   "code": "W1 optional漏れ",
+   "evidence": "とができる)：自分のリーダー1枚までを、次の自分のターン開始"
+  },
+  {
+   "no": "ST13-007",
+   "code": "W1 optional漏れ",
+   "evidence": "5の「サボ」の場合、登場させてもよい。登場させた場合、自分の"
+  },
+  {
+   "no": "ST13-010",
+   "code": "W1 optional漏れ",
+   "evidence": "D・エース」の場合、登場させてもよい。登場させた場合、自分の"
+  },
+  {
+   "no": "ST13-014",
+   "code": "W1 optional漏れ",
+   "evidence": "D・ルフィ」の場合、登場させてもよい。登場させた場合、自分の"
+  },
+  {
+   "no": "ST15-003",
+   "code": "W1 optional漏れ",
+   "evidence": "KOされた時、自分のリーダー1枚までを、このターン中、パワー"
+  },
+  {
+   "no": "ST20-002",
+   "code": "W1 optional漏れ",
+   "evidence": "上から1枚をトラッシュに置いてもよい。【トリガー】自分の手"
+  },
+  {
+   "no": "ST36-002",
+   "code": "W1 optional漏れ",
+   "evidence": "つ場合、自分のデッキの上から1枚までを、ライフの上に加える。"
+  }
+ ]
+}
