@@ -420,9 +420,10 @@
           break;
         }
         case 'powerCopy': {
-          const cands = oppChars(side, {});
-          if (!cands.length) break;
-          const t = await chooseCard(side, cands, 'パワーをコピーする相手キャラ1枚', null, true);
+          // ★fromAttacker: アタック中のカード（リーダー含む）のパワーをコピー（OP04-069。onOppAttackのoctxがctx.attackerを供給）
+          const t = op.fromAttacker
+            ? ctx.attacker
+            : await (async () => { const cands = oppChars(side, {}); return cands.length ? chooseCard(side, cands, 'パワーをコピーする相手キャラ1枚', null, true) : null; })();
           if (t && self) {
             // 「元々のパワーを選んだキャラと同じにする」= base を setBase で“置換”（加算でない）。
             // ★複数回発動（再アタック/先読みの模擬発動）でも累積して膨らまないよう、自前(_pc)の setBase は入れ替える。
@@ -439,7 +440,7 @@
         case 'leaderBuffPerChar': { const n = P.chars.filter(c => matchFilter(c, op.filter || {})).length; const amt = (op.amount || 1000) * n; if (amt) { addBuff(P.leader, amt, durTag(op.duration, 'turnEnd')); floatOn(P.leader.uid, `+${amt}`, 'buff'); flog(side, `リーダーをキャラ${n}枚分パワー+${amt}`); } break; } // 自分のキャラ1枚につきリーダー+amount（P-024海賊王に）
         case 'leaderDoubleAttack': P.leader.kwGrant.push({ kw: 'doubleAttack', dur: 'turn' }); if (op.amount) addBuff(P.leader, op.amount, 'turnEnd'); flog(side, 'リーダーに【ダブルアタック】'); break;
         case 'counterBuff': if (ctx.target) { addBuff(ctx.target, op.amount, op.duration || 'battle'); floatOn(ctx.target.uid, `+${op.amount}`, 'buff'); } break;
-        case 'donMinus': { const ok = await returnDonChoose(side, op.n, op.fromActive); if (!ok) { ctx._declined = true; return false; } ctx._committed = true; await fireDonReturned(side, op.n); break; }
+        case 'donMinus': { const ok = await returnDonChoose(side, op.n, op.fromActive); if (!ok) { ctx._declined = true; return false; } ctx._committed = true; await fireDonReturned(side, op.n); if (op.then) await runFx(op.then, ctx); break; } // ★op.thenは支払い成功時に必ず実行（runFxに汎用then実行は無い。「ドン‼-N:効果」型19枚が支払いのみで不発だった）
         case 'donAttach': {
           let targets = [];
           if (op.target === 'leader') targets = [P.leader];
@@ -565,11 +566,11 @@
           }
           break;
         }
-        case 'lifeAddFromDeck': { for (let i = 0; i < op.n; i++) { if (P.deck.length) { const c = P.deck.shift(); if (op.faceUp) c._faceUp = true; P.life.unshift(c); } } flog(side, `デッキ上${op.n}枚をライフに${op.faceUp ? '表向きで' : ''}加えた`); break; }
+        case 'lifeAddFromDeck': { let la = 0; for (let i = 0; i < op.n; i++) { if (!P.deck.length) break; if (op.optional && !(await confirmUse(side, 'ライフに追加', 'デッキの上から1枚をライフの上に加えますか？', '加える', '加えない'))) { if (!la) ctx._declined = true; break; } const c = P.deck.shift(); if (op.faceUp) c._faceUp = true; P.life.unshift(c); la++; } if (la) flog(side, `デッキ上${la}枚をライフに${op.faceUp ? '表向きで' : ''}加えた`); break; } // ★「1枚まで」= optional:true で辞退可（黄はライフ枚数条件を切らない辞退に実益。CPUは常に追加）
         case 'flipLifeUp': { if (P.life.length) { P.life[0]._faceUp = true; flog(side, '自分のライフの一番上を表向きにした'); floatOn(P.leader.uid, 'LIFE表', 'heal'); render(); await sleep(160); } break; }
-        case 'lifeTrash': { // side:'both'=お互いのライフ上1枚トラッシュ（OP11-102ケイミー）／'opp'=相手のみ／既定=自分
+        case 'lifeTrash': { // side:'both'=お互いのライフ上1枚トラッシュ（OP11-102ケイミー）／'opp'=相手のみ／既定=自分。「1枚まで」= optional:true で決定者（効果コントローラー）が辞退可（lifeTrashはfireLifeLeftで相手のライフ離脱時効果を誘発するため辞退が正解の局面がある）
           const sides = op.side === 'both' ? [side, o] : op.side === 'opp' ? [o] : [side];
-          for (const sd of sides) { const PP = G.players[sd]; const c = PP.life.shift(); if (c) { PP.trash.push(c); flog(side, sd === side ? '自ライフ1枚をトラッシュ' : '相手ライフ1枚をトラッシュ'); await fireLifeLeft(sd); } }
+          for (const sd of sides) { const PP = G.players[sd]; if (!PP.life.length) continue; if (op.optional && !(await confirmUse(side, 'ライフをトラッシュ', sd === side ? '自分のライフの上から1枚をトラッシュに置きますか？' : '相手のライフの上から1枚をトラッシュに置きますか？', '置く', '置かない'))) continue; const c = PP.life.shift(); if (c) { PP.trash.push(c); flog(side, sd === side ? '自ライフ1枚をトラッシュ' : '相手ライフ1枚をトラッシュ'); await fireLifeLeft(sd); } }
           render(); break;
         }
         case 'activateSelf': { if (self) { self.rested = false; flog(side, `「${self.base.name}」をアクティブにした`); render(); } break; } // このキャラをアクティブにする（OP11-107チョンマゲ＝ターン終了時）
@@ -1123,7 +1124,7 @@
         // 自分のトラッシュから filter一致のカードを count枚 手札に加える
         case 'trashToHand': { for (let i = 0; i < (op.count || 1); i++) { const cands = P.trash.filter(c => matchFilter(c, op.filter || {})); if (!cands.length) break; const t = P.isCPU ? (((G._linePickR || G._linePick) || []).map(no => cands.find(c => c.base.no === no)).find(Boolean) || cands[0]) : await chooseCard(side, cands, 'トラッシュから手札に加えるカード', 'ownBig', op.optional); if (!t) break; P.trash.splice(P.trash.indexOf(t), 1); P.hand.push(t); flog(side, `「${t.base.name}」を手札に加えた`); } render(); break; } // E49: _linePick=ライン実行中の回収対象steering
         // 自分のデッキの上 n枚をトラッシュに置く（ミル）
-        case 'deckToTrash': { if (op.optional && !(await confirmUse(side, 'デッキをトラッシュ', `デッキの上から${op.n || 1}枚をトラッシュに置きますか？`, '置く', '置かない'))) break; const k = Math.min(op.n || 1, P.deck.length); for (let i = 0; i < k; i++) P.trash.push(reset(P.deck.shift())); if (k) flog(side, `デッキ上${k}枚をトラッシュ`); render(); break; }
+        case 'deckToTrash': { if (op.optional && !(await confirmUse(side, 'デッキをトラッシュ', `デッキの上から${op.n || 1}枚をトラッシュに置きますか？`, '置く', '置かない'))) { ctx._declined = true; break; } const k = Math.min(op.n || 1, P.deck.length); for (let i = 0; i < k; i++) P.trash.push(reset(P.deck.shift())); if (k) flog(side, `デッキ上${k}枚をトラッシュ`); if (k >= (op.n || 1) && op.then) await runFx(op.then, ctx); render(); break; } // ★then=コスト完済時のみ実行（OP12-090。デッキ不足で全額払えなければ効果なし）
         // 自分の手札またはトラッシュから filter一致のキャラ1枚を登場
         case 'playFromHandOrTrash': {
           const cands = [...P.hand, ...P.trash].filter(c => c.base.type === 'CHAR' && matchFilter(c, op.filter));
@@ -1166,8 +1167,8 @@
         // 両者の場のキャラすべてを、このキャラ以外KOする（OP08-119カイドウ＆リンリン）
         case 'koAllExceptSelf': { for (const sd of ['me', 'cpu']) { const PP = G.players[sd]; for (const t of PP.chars.slice()) { if (t === self) continue; if (sd === o && (isKoImmune(t) || await protectFromEffect(t, 'ko', self))) continue; await koCard(t, sd === side ? 'ownEffect' : 'oppEffect'); } } break; }
         case 'trashToLife': {
-          const cands = P.trash.filter(c => c.base.type === 'CHAR' && (c.base.cost || 0) <= (op.maxCost != null ? op.maxCost : 99) && (!op.trait || (c.base.traits || []).includes(op.trait)));
-          const c = await chooseCard(side, cands, 'トラッシュからライフ上に置くキャラを選択', 'ownBig', op.optional);
+          const cands = P.trash.filter(c => (op.anyCard ? true : c.base.type === 'CHAR') && (c.base.cost || 0) <= (op.maxCost != null ? op.maxCost : 99) && (!op.trait || (c.base.traits || []).includes(op.trait))); // ★anyCard=「カード1枚まで」型はイベント/ステージも可（OP16-108。OP14-104は公式が「キャラカード」なのでCHAR限定のまま）
+          const c = await chooseCard(side, cands, op.anyCard ? 'トラッシュからライフ上に置くカードを選択' : 'トラッシュからライフ上に置くキャラを選択', 'ownBig', op.optional);
           if (c) { P.trash.splice(P.trash.indexOf(c), 1); const rc = reset(c); if (op.faceUp) rc._faceUp = true; P.life.unshift(rc); floatOn(P.leader.uid, 'LIFE+1', 'heal'); flog(side, `トラッシュの「${c.base.name}」をライフ上に${op.faceUp ? '表向きで' : ''}追加`); await sleep(150); }
           break;
         }

@@ -84,7 +84,8 @@ async function pg(g) {
       const nos = [d.leader, ...Object.keys(d.list)];
       meta.decks.push({ id: d.id, name: d.name, nos });
       for (const no of nos) { if (meta.cards[no]) continue; const b = C[no] || {}; const hooks = Object.keys(b.fx || {});
-        meta.cards[no] = { name: b.name || no, type: b.type || '', hooks, runnable: hooks.filter(k => k !== 'static') }; }
+        meta.cards[no] = { name: b.name || no, type: b.type || '', hooks, runnable: hooks.filter(k => k !== 'static' && k !== 'onReviveFromTrash') }; }
+        // onReviveFromTrash は config型フック（checkReviveTrigger が消費・runFx非経由）＝構造的にカウント不能のため計測対象外（OP16-079で誤検出の実例）
     }
     require('fs').writeSync(1, 'FXMETA ' + JSON.stringify(meta) + '\\n');  // ★console.logだと直後のprocess.exitで8KB超が切れる（パイプ非同期書き込み）
   }

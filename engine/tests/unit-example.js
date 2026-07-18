@@ -601,6 +601,165 @@ function setupG(leaderNo){G.active='me';G.turnSeq=5;G.winner=null;const mkP=(ln,
     { const y=dblSetup(2); await declareAttack(y, G.players.me.leader);
       ok(G.players.me.life.length===0 && !G.winner, '例20c: ライフ2ならダブルアタックで2枚削れる（勝敗なし）');
       G.active='me'; }
+    // ── 例21〜30: カード効果修正群（2026-07-19）のフルフロー回帰 ──
+    // 人間プロンプトの台本応答: vals を先頭から順に返す（'pick0'=最初のpick:候補）。尽きたら既定の自動応答。
+    const _autoPrompt=showPrompt; let promptCalls=0;
+    const scriptPrompt=(vals)=>{ promptCalls=0; showPrompt=function(cfg){ promptCalls++; const o=(cfg.opts||[]).filter(x=>!x.disabled); let v=vals.length?vals.shift():null; if(v==='pick0'){ const p=o.find(x=>String(x.v).indexOf('pick:')===0); v=p?p.v:(o[0]&&o[0].v); } else if(v==null){ const p=o.find(x=>String(x.v).indexOf('pick:')===0)||o[0]; v=p&&p.v; } if(cfg.onPick)cfg.onPick(v); return Promise.resolve(v); }; };
+    const resetPrompt=()=>{ showPrompt=_autoPrompt; };
+    // 例21: ★「ドン‼-N：効果」型の then 実行（OP11-063サディちゃん）— 支払い成功時のみ後続が走る（19枚系統バグの本丸）
+    setupG('OP16-022'); { const P=G.players.me, O=G.players.cpu; P.isCPU=true; // OP16-022=《インペルダウン》リーダー
+      const sadi=mkc('OP11-063'); P.chars=[sadi]; P.don.active=1; P.don.rested=0;
+      const low=mkc('OP15-067'); low.owner='cpu'; const big=mkc('ST32-002'); big.owner='cpu'; O.chars=[low,big]; // コスト1／コスト5
+      const c21={self:sadi,side:'me'};
+      await runFx(C['OP11-063'].fx.onPlay, c21);
+      ok(donTotal('me')===0 && c21._committed===true, '例21: ドン-1を支払い発動');
+      ok(low.rested===true, '例21: 支払い後にthenが実行され相手コスト3以下がレスト');
+      ok(big.rested===false, '例21: コスト5(>3)は対象外');
+      // ドン0=支払えない→then不実行（不発）
+      setupG('OP16-022'); const P21=G.players.me, O21=G.players.cpu; P21.isCPU=true;
+      const sadi2=mkc('OP11-063'); P21.chars=[sadi2]; P21.don.active=0; P21.don.rested=0;
+      const low2=mkc('OP15-067'); low2.owner='cpu'; O21.chars=[low2];
+      const c21b={self:sadi2,side:'me'};
+      await runFx(C['OP11-063'].fx.onPlay, c21b);
+      ok(low2.rested===false && c21b._declined===true && !c21b._committed, '例21: ドン不足はthen不実行（不発・未使用マーカー）');
+    }
+    // 例22: OP12-069クロコダイル【相手のアタック時】【ターン1回】ドン-1→+2000 — 同一ターン2回目のアタックでは発動しない（フルフロー）
+    setupG('OP01-062'); { const P=G.players.me, O=G.players.cpu; // OP01-062=『B・W』リーダー（onDonReturned等の干渉なし）
+      G.active='cpu'; G.busy=false; G.myActable=true; G.firstPlayer='me'; P.isCPU=true;
+      const croc=mkc('OP12-069'); croc.summonedTurn=1; P.chars=[croc];
+      P.don.active=3; P.don.rested=0; P.life=[mkc('OP15-067'),mkc('OP15-067')]; P.deck=[mkc('OP15-067')];
+      O.life=[mkc('OP15-067')]; O.deck=[mkc('OP15-067')];
+      const a1=mkc('ST32-005'); a1.owner='cpu'; a1.summonedTurn=1;
+      const a2=mkc('ST32-005'); a2.owner='cpu'; a2.summonedTurn=1; O.chars=[a1,a2];
+      await declareAttack(a1, P.leader);
+      ok(donTotal('me')===2 && croc._oppAtkTurn===G.turnSeq, '例22: 1回目のアタックでドン-1を支払い発動（ターン1回を消費）');
+      G.busy=false; G.myActable=true;
+      await declareAttack(a2, P.leader);
+      ok(donTotal('me')===2, '例22: 同一ターン2回目のアタックでは発動しない（ドン不変）');
+      G.active='me';
+    }
+    // 例23: ★W2 onceゲート3種
+    // 23a: OP03-076ロブ・ルッチL【起動メイン】【ターン1回】— 同一ターンに2回使えない（_actTurn/actUsable）
+    setupG('OP03-076'); { const P=G.players.me; P.isCPU=true;
+      P.leader.rested=true; P.hand=[mkc('OP15-067'),mkc('OP15-067')];
+      await leaderActivate('me');
+      ok(P.leader.rested===false && P.hand.length===0, '例23a: 手札2捨てでリーダーがアクティブ');
+      ok(P.leader._actTurn===G.turnSeq && actUsable(P.leader)===false, '例23a: 【ターン1回】を消費（actUsable=false）');
+      P.leader.rested=true; P.hand=[mkc('OP15-067'),mkc('OP15-067')];
+      await leaderActivate('me');
+      ok(P.leader.rested===true && P.hand.length===2, '例23a: 同一ターン2回目は使えない（手札もレストも不変）');
+    }
+    // 23b: OP11-025イシリー【相手のアタック時】【ターン1回】ドン1レスト+自身レスト→+1000 — 同一ターン1回のみ（フルフロー）
+    setupG('OP10-099'); { const P=G.players.me, O=G.players.cpu;
+      G.active='cpu'; G.busy=false; G.myActable=true; G.firstPlayer='me'; P.isCPU=true;
+      const ish=mkc('OP11-025'); ish.summonedTurn=1; P.chars=[ish];
+      P.don.active=2; P.don.rested=0; P.life=[mkc('OP15-067'),mkc('OP15-067')]; P.deck=[mkc('OP15-067')];
+      O.life=[mkc('OP15-067')]; O.deck=[mkc('OP15-067')];
+      const b1=mkc('ST32-005'); b1.owner='cpu'; b1.summonedTurn=1;
+      const b2=mkc('ST32-005'); b2.owner='cpu'; b2.summonedTurn=1; O.chars=[b1,b2];
+      await declareAttack(b1, P.leader);
+      ok(P.don.active===1 && P.don.rested===1 && ish._oppAtkTurn===G.turnSeq, '例23b: 1回目=ドン1をレストして発動（ターン1回を消費）');
+      G.busy=false; G.myActable=true;
+      await declareAttack(b2, P.leader);
+      ok(P.don.active===1 && P.don.rested===1, '例23b: 同一ターン2回目は発動しない（ドン不変）');
+      G.active='me';
+    }
+    // 23c: OP13-100ボニーL onAllyEnter【ターン1回】— トリガー持ち2枚目の登場では再発動しない
+    setupG('OP13-100'); { const P=G.players.me; P.isCPU=true;
+      P.don.active=0; P.don.rested=4;
+      const attSum=()=>(P.leader.attachedDon||0)+P.chars.reduce((s,c)=>s+(c.attachedDon||0),0);
+      await summon('me', mkc('OP14-089'), true); // 【トリガー】持ちキャラ
+      ok(attSum()===2 && P.don.rested===2 && P.leader._allyEnterTurn===G.turnSeq, '例23c: 1枚目の登場でレストのドン2付与');
+      await summon('me', mkc('OP14-089'), true);
+      ok(attSum()===2 && P.don.rested===2, '例23c: 同一ターン2枚目のトリガー持ち登場では再発動しない');
+    }
+    // 例24: ST20-002クラッカー leaveProtect — 相手の効果KO時にライフ上1枚トラッシュで身代わり（pay:'selfLifeTrash'修正の回帰）
+    setupG('OP10-099'); { const P=G.players.me, O=G.players.cpu; P.isCPU=true;
+      const cr=mkc('ST20-002'); P.chars=[cr]; P.life=[mkc('OP15-067')];
+      await doOp({op:'ko',side:'opp',count:1},{side:'cpu',self:O.leader});
+      ok(P.chars.includes(cr), '例24: 効果KOをライフ1枚トラッシュで身代わり（キャラ生存）');
+      ok(P.life.length===0 && P.trash.length===1 && !P.trash.includes(cr), '例24: コスト=ライフ-1（キャラはトラッシュに行かない）');
+      // ライフ0なら保護不可
+      setupG('OP10-099'); const P24=G.players.me, O24=G.players.cpu; P24.isCPU=true;
+      const cr2=mkc('ST20-002'); P24.chars=[cr2]; P24.life=[];
+      await doOp({op:'ko',side:'opp',count:1},{side:'cpu',self:O24.leader});
+      ok(!P24.chars.includes(cr2) && P24.trash.includes(cr2), '例24: ライフ0なら保護できずKO');
+    }
+    // 例25: OP09-061ルフィL — ドン2枚以上の返却でのみアクティブ1+レスト1を補充（Q752）。不成立はonce未消費（Q753型）
+    setupG('OP09-061'); { const P=G.players.me; P.isCPU=true; P.don.active=2; P.don.rested=0;
+      await doOp({op:'donMinus',n:2},{side:'me',self:P.leader});
+      ok(P.don.active===1 && P.don.rested===1 && donTotal('me')===2, '例25: 2枚返却→ドン2枚（アクティブ1+レスト1）補充');
+      setupG('OP09-061'); const P25=G.players.me; P25.isCPU=true; P25.don.active=2; P25.don.rested=0;
+      await doOp({op:'donMinus',n:1},{side:'me',self:P25.leader});
+      ok(P25.don.active===1 && P25.don.rested===0, '例25: 1枚返却では補充されない');
+      // 同ターン「1枚返却→2枚返却」: 1回目の不成立は【ターン1回】未消費なので2枚返却時に発動
+      setupG('OP09-061'); const P25b=G.players.me; P25b.isCPU=true; P25b.don.active=3; P25b.don.rested=0;
+      await doOp({op:'donMinus',n:1},{side:'me',self:P25b.leader});
+      ok(P25b.don.active===2 && P25b.don.rested===0, '例25: 先の1枚返却は不発');
+      await doOp({op:'donMinus',n:2},{side:'me',self:P25b.leader});
+      ok(P25b.don.active===1 && P25b.don.rested===1, '例25: 同ターンでも2枚返却時に発動（once復元・Q753型）');
+    }
+    // 例26: ST36-002キラー lifeAddFromDeck の optionalゲート — 人間は確認で辞退でき、CPUはプロンプトなしで追加
+    setupG('OP10-099'); { const P=G.players.me; // me=人間・《キッド海賊団》リーダー
+      const kil=mkc('ST36-002'); P.chars=[kil]; P.deck=[mkc('OP15-067'),mkc('OP15-067')]; P.life=[];
+      scriptPrompt(['n']);
+      const c26={self:kil,side:'me'};
+      await runFx(C['ST36-002'].fx.onPlay, c26);
+      ok(P.life.length===0 && P.deck.length===2 && c26._declined===true, '例26: 「加えない」→ライフ不変（辞退）');
+      scriptPrompt(['y']);
+      await runFx(C['ST36-002'].fx.onPlay, {self:kil,side:'me'});
+      ok(P.life.length===1 && P.deck.length===1, '例26: 「加える」→デッキ上1枚がライフへ（+1）');
+      resetPrompt();
+      setupG('OP10-099'); const P26=G.players.me; P26.isCPU=true;
+      const kil2=mkc('ST36-002'); P26.chars=[kil2]; P26.deck=[mkc('OP15-067')]; P26.life=[];
+      scriptPrompt([]); // promptCalls計測用（応答は既定の自動）
+      await runFx(C['ST36-002'].fx.onPlay, {self:kil2,side:'me'});
+      ok(P26.life.length===1 && promptCalls===0, '例26: CPUはプロンプトなしでライフ+1');
+      resetPrompt();
+    }
+    // 例27: OP10-109ホーキンス【KO時】lifeTrash(opp,optional) — 人間は辞退でき、承諾で相手ライフ-1
+    setupG('OP10-099'); { const O=G.players.cpu; // me=人間（効果コントローラー）
+      O.life=[mkc('OP15-067'),mkc('OP15-067')]; O.trash=[];
+      scriptPrompt(['n']);
+      await runFx(C['OP10-109'].fx.onKO, {self:mkc('OP10-109'),side:'me'});
+      ok(O.life.length===2 && O.trash.length===0, '例27: 辞退→相手ライフ不変');
+      scriptPrompt(['y']);
+      await runFx(C['OP10-109'].fx.onKO, {self:mkc('OP10-109'),side:'me'});
+      ok(O.life.length===1 && O.trash.length===1, '例27: 承諾→相手ライフ-1');
+      resetPrompt();
+    }
+    // 例28: OP04-069ベンサム — ドン-1→powerCopy fromAttacker: 元々のパワーがアタッカー（相手リーダー）と同値に（フルフロー）
+    setupG('OP10-099'); { const P=G.players.me, O=G.players.cpu;
+      G.active='cpu'; G.busy=false; G.myActable=true; G.firstPlayer='me'; P.isCPU=true;
+      const bon=mkc('OP04-069'); bon.summonedTurn=1; P.chars=[bon]; // 元々4000
+      P.don.active=1; P.don.rested=0; P.life=[mkc('OP15-067'),mkc('OP15-067')]; P.deck=[mkc('OP15-067')];
+      O.leader.owner='cpu'; // setupGのmkcはowner:'me'のまま＝リーダーをアタッカーにする時は明示必須
+      O.life=[mkc('OP15-067')]; O.deck=[mkc('OP15-067')];
+      await declareAttack(O.leader, P.leader); // 相手リーダー(5000)のアタック
+      ok(donTotal('me')===0, '例28: ドン-1を支払った');
+      ok(power(bon)===5000 && power(bon)===power(O.leader), '例28: 元々のパワーがアタッカーと同値の5000に（加算でなく置換）');
+      G.active='me';
+      ok(power(bon)===5000, '例28: バトル終了後もこのターン中は持続（turnEnd）');
+    }
+    // 例29: OP01-059べべんっ‼ activateOwnChar(optional) — 候補1枚でも自動選択されず、辞退でレストのまま
+    setupG('OP10-099'); { const P=G.players.me; // me=人間
+      const wano=mkc('OP14-089'); wano.rested=true; P.chars=[wano]; // コスト3《ワノ国》・レスト
+      P.hand=[mkc('OP01-006')]; // 《ワノ国》の捨てコスト
+      scriptPrompt(['y','pick0','__skip']); // 捨て確認→捨て札選択→対象選択で「選ばない」
+      await runFx(C['OP01-059'].fx.main.fx, {self:mkc('OP01-059'),side:'me'});
+      resetPrompt();
+      ok(P.hand.length===0, '例29: コスト（ワノ国1枚捨て）は支払われた');
+      ok(promptCalls===3, '例29: 候補1枚でも対象選択プロンプトが出る（自動確定しない）');
+      ok(wano.rested===true, '例29: 辞退（null選択）でレストのまま');
+    }
+    // 例30: OP16-108シリュウ trashToLife anyCard — コスト6以下《黒ひげ海賊団》はイベント(OP09-097闇水)も候補に入る
+    setupG('OP10-099'); { const P=G.players.me; P.isCPU=true;
+      const shi=mkc('OP16-108'); P.chars=[shi];
+      P.hand=[mkc('OP15-067')]; P.trash=[mkc('OP09-097')]; P.life=[]; // 闇水=コスト2イベント《黒ひげ海賊団》
+      await runFx(C['OP16-108'].fx.onPlay, {self:shi,side:'me'});
+      ok(P.life.length===1 && P.life[0].no==='OP09-097' && P.life[0]._faceUp===true, '例30: トラッシュのイベントがanyCardで候補に入りライフ上へ表向きで追加');
+      ok(P.hand.length===0 && !P.trash.some(c=>c.no==='OP09-097'), '例30: 手札1枚捨てコストを支払い、闇水はトラッシュから移動');
+    }
   }catch(e){ console.log('EXCEPTION:', e.message); fail++; }
   console.log('ユニットテスト: pass='+pass+' fail='+fail);
   process.exit(fail?1:0);

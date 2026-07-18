@@ -9,6 +9,7 @@
                        ※redirect等、doOp外で解釈されるopがあるため和集合で照合（誤ERRORゼロを優先）
      E2 unknown-hook … fxトップレベルキーがエンジンsrcのどこからも参照されない（typo→永久に不発）
      E3 broken-ref   … cards-fx.js の別番号参照(Rマップ)の指す先が無い/未反映、または CARD_FX キーがDBに無い番号
+     E4 then-dropped … op が then を持つのに doOp の case が op.then を実行しない（コストだけ払って効果不発。donMinus 19枚の実例）
    WARN（official-full.json の text/trigger との突合ヒューリスティック。誤検知あり=要トリアージ一覧）:
      W1 optional漏れ … 任意マーカー（てもよい/することができる/N枚まで）があるのに fx に optional が無い
                        ノイズ抑制: ドン操作系（上限まで自動＝設計近似）／コスト句「できる：」＋コスト系op／
@@ -49,6 +50,21 @@ for (const m of srcAll.matchAll(/\[((?:'[A-Za-z0-9_]+'(?:,\s*)?)+)\]\.includes\(
   for (const x of m[1].matchAll(/'([A-Za-z0-9_]+)'/g)) CMP_OPS.add(x[1]);
 const KNOWN_OPS = new Set([...DOOP_OPS, ...CMP_OPS]);
 
+// E4語彙: doOp caseの本文が op.then を参照するop（then消費者）。fall-through（空case）は次caseの本文を継承
+const THEN_OK = new Set();
+{
+  const tf = rd('src/20-targeting-fx.js');
+  const st = tf.indexOf('switch (op.op)');
+  const body = st >= 0 ? tf.slice(st) : tf;
+  const cs = [...body.matchAll(/case '([A-Za-z0-9_]+)':/g)];
+  const segs = cs.map((m, i) => body.slice(m.index + m[0].length, i + 1 < cs.length ? cs[i + 1].index : undefined));
+  for (let i = cs.length - 1; i >= 0; i--) {
+    const own = /op\.then/.test(segs[i]);
+    const fallThrough = segs[i].trim().length < 5 && i + 1 < cs.length && THEN_OK.has(cs[i + 1][1]);
+    if (own || fallThrough) THEN_OK.add(cs[i][1]);
+  }
+}
+
 // 有効フック名: エンジンsrcの .fx.XXX 参照 + fireSimpleReact('key') + 00-data.js のメタキー(fxe.XXX)
 const JS_BUILTIN = new Set(['length', 'push', 'pop', 'some', 'every', 'filter', 'map', 'slice', 'forEach', 'find', 'includes', 'indexOf', 'concat', 'join', 'sort', 'shift', 'unshift', 'reduce', 'keys', 'entries', 'hasOwnProperty', 'call', 'apply', 'bind', 'toString']);
 const HOOKS = new Set();
@@ -73,6 +89,10 @@ function walkOps(no, node, pathStr, opNames) {
   if (typeof node.op === 'string') {
     opNames.add(node.op);
     if (!KNOWN_OPS.has(node.op)) err(no, 'E1 unknown-op', pathStr, `op:"${node.op}" はdoOpのcaseにもsrcの.op比較サイトにも存在しない`);
+    // E4: thenを持つのにdoOp caseがop.thenを実行しない＝コストだけ払って効果不発の型（donMinus 19枚の実例）。
+    //     doOp外解釈のop（CMP_OPS）は消費箇所を静的特定できないため対象外
+    if (Array.isArray(node.then) && DOOP_OPS.has(node.op) && !CMP_OPS.has(node.op) && !THEN_OK.has(node.op))
+      err(no, 'E4 then-dropped', pathStr, `op:"${node.op}" のdoOp caseはop.thenを実行しない（支払いのみで効果不発）`);
   }
   for (const k in node) { const v = node[k]; if (v && typeof v === 'object') walkOps(no, v, `${pathStr}.${k}`, opNames); }
 }
@@ -172,8 +192,9 @@ for (const o of official) {
   //   ・negateChoose の filter/maxCost/charsOnly 無指定（既定プールがリーダー込み）
   //   ・onDonAttached フック（リーダー常駐フック＝リーダーかキャラへの付与で発火）
   //   ・counterBuff × バトル中文脈（アタック対象に適用＝公式は任意の自リーダー/キャラだが、バトルに効くのは防御側のみの意図的近似）
+  //   ・powerCopy fromAttacker（アタック中のカード参照＝リーダー込み。OP04-069）
   const negateNoFilter = /"op":"negateChoose","[^{]*}/.test(fxs) || /"op":"negateChoose"}/.test(fxs);
-  if (!/leader|ownl/i.test(fxs) && ![...opNames].some(n => LEADER_NATIVE_OPS.has(n)) && !negateNoFilter && !fx.onDonAttached) {
+  if (!/leader|ownl|fromattacker/i.test(fxs) && ![...opNames].some(n => LEADER_NATIVE_OPS.has(n)) && !negateNoFilter && !fx.onDonAttached) {
     for (const m of text.matchAll(/リーダー(か|または)[^。]{0,14}?キャラ|キャラ(か|または)[^。]{0,14}?リーダー/g)) {
       const after = text.slice(m.index + m[0].length, m.index + m[0].length + 8);
       if (/^が(いる|ある)場合/.test(after)) continue;

@@ -1,5 +1,5 @@
 {
- "date": "2026-07-18T16:00:01.844Z",
+ "date": "2026-07-18T16:57:01.713Z",
  "games": 30,
  "seed0": 910000,
  "noWinner": 0,
@@ -61,23 +61,6 @@
   }
  ],
  "zeroFire": [
-  {
-   "no": "OP16-079",
-   "name": "ヤマト",
-   "type": "LEADER",
-   "decks": [
-    "黒ヤマト"
-   ],
-   "hooks": [
-    "onReviveFromTrash"
-   ],
-   "runnable": [
-    "onReviveFromTrash"
-   ],
-   "fired": {},
-   "totalFired": 0,
-   "appearedGames": 6
-  },
   {
    "no": "OP16-038",
    "name": "行くぞ～～～!!!海軍本部～～～!!!",
@@ -2593,9 +2576,7 @@
    "hooks": [
     "onReviveFromTrash"
    ],
-   "runnable": [
-    "onReviveFromTrash"
-   ],
+   "runnable": [],
    "fired": {},
    "totalFired": 0,
    "appearedGames": 6

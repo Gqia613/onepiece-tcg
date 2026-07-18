@@ -194,8 +194,11 @@
       for (const c of [...P.chars.slice(), P.leader]) { // リーダーのonDonReturnedも誘発（OP09-061ルフィL）
         if (c && c.base.fx && c.base.fx.onDonReturned && (c === P.leader || P.chars.includes(c)) && !isNegated(c)) {
           if (c.base.fx.onDonReturned.some(o => o.once === 'turn') && c._donRetTurn === G.turnSeq) continue;
+          const prevDR = c._donRetTurn;
           c._donRetTurn = G.turnSeq;
-          await runFx(c.base.fx.onDonReturned, { self: c, side });
+          const rctx = { self: c, side };
+          await runFx(c.base.fx.onDonReturned, rctx);
+          if (c.base.fx.onDonReturned.some(o => o.once === 'turn') && rctx._declined && !rctx._committed) c._donRetTurn = prevDR; // ★条件不成立・辞退なら【ターン1回】未消費（fireLifeLeftと同型。ドン-1×1枚返却→cond不成立の後、同ターンの2枚以上返却で発動できる）
         }
       }
       G._lastDonReturned = 0;
