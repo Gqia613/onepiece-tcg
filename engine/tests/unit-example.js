@@ -524,6 +524,53 @@ function setupG(leaderNo){G.active='me';G.turnSeq=5;G.winner=null;const mkP=(ln,
       ok(P.hand.length===0 && P.deck.length===d1, '例17d: 相手の効果の捨て→ドローしない（自分の海軍カード限定）');
       G.active='me';
     }
+    // 例18: ★実対戦指摘（2026-07-18）ST36-005/OP10-099 の対象選択まわり
+    // 18a: ST36-005の対象変更は「キャラ」限定でない→リーダー黄キッド(元々5000の「ユースタス・キッド」)も変更先に選べる(incLeader)
+    setupG('OP10-099'); { const P=G.players.me; P.isCPU=true; G._counterRedirect=null;
+      await doOp({op:'counterRedirect',incLeader:true,filter:{name:'ユースタス・キッド',minPower:5000},optional:false},{side:'me',self:P.leader});
+      ok(G._counterRedirect===P.leader, '例18a: キッドキャラ不在でもリーダー黄キッドを変更先に選べる');
+      G._counterRedirect=null;
+      const k=mkc('ST36-005'); P.chars=[k];
+      await doOp({op:'counterRedirect',incLeader:true,filter:{name:'ユースタス・キッド',minPower:5000},optional:false},{side:'me',self:P.leader});
+      ok(G._counterRedirect===k, '例18a: リーダー(5000)とキャラ(7000)が両方候補→CPUはパワー最大を選ぶ');
+      G._counterRedirect=null;
+    }
+    // 18b: 名前不一致リーダーはincLeaderでも対象外＋condのselfChar incLeader対応
+    setupG('OP15-058'); { const P=G.players.me; P.isCPU=true; G._counterRedirect=null;
+      await doOp({op:'counterRedirect',incLeader:true,filter:{name:'ユースタス・キッド',minPower:5000},optional:false},{side:'me',self:P.leader});
+      ok(G._counterRedirect==null, '例18b: 「ユースタス・キッド」でないリーダーは変更先にならない');
+      ok(checkCond({selfChar:{name:'ユースタス・キッド',minPower:5000,incLeader:true}},'me')===false, '例18b: cond selfChar+incLeaderもキッド不在なら不成立');
+    }
+    setupG('OP10-099'); {
+      ok(checkCond({selfChar:{name:'ユースタス・キッド',minPower:5000,incLeader:true}},'me')===true, '例18b: 黄キッドLならキャラ0でもcond成立');
+      ok(checkCond({selfChar:{name:'ユースタス・キッド',minPower:5000}},'me')===false, '例18b: incLeaderなし(従来)はキャラのみを数える');
+    }
+    // 18c: フルフロー — 相手7000がリーダーへアタック→ST36-005の【相手のアタック時】でブロック前に対象がST36-005へ切り替わる
+    setupG('OP10-099'); { const P=G.players.me; P.isCPU=true; const O=G.players.cpu;
+      G.active='cpu'; G.busy=false; G.myActable=true; G.firstPlayer='me';
+      const k=mkc('ST36-005'); k.summonedTurn=1; P.chars=[k];
+      P.life=[mkc('OP15-067')]; P.life[0]._faceUp=true; P.deck=[mkc('OP15-067')];
+      O.life=[mkc('OP15-067')]; O.deck=[mkc('OP15-067')];
+      const atk=mkc('ST32-003'); atk.owner='cpu'; atk.summonedTurn=1; O.chars=[atk]; // 7000
+      await declareAttack(atk, P.leader);
+      ok(P.life.length===1 && !G.winner, '例18c: 対象変更によりリーダーは殴られずライフ無傷');
+      ok(P.life[0]._faceUp===false, '例18c: コスト（ライフ1枚を裏向き）を支払った');
+      ok(!P.chars.includes(k) && P.trash.includes(k), '例18c: バトルは変更後の対象(7000キッド)と解決＝相打ちKO');
+      G.active='me';
+    }
+    // 18c2: 効果が使えない（上下とも裏向き＝コスト不払）ならリーダーがそのまま殴られる（判別の逆側）
+    setupG('OP10-099'); { const P=G.players.me; P.isCPU=true; const O=G.players.cpu;
+      G.active='cpu'; G.busy=false; G.myActable=true; G.firstPlayer='me';
+      const k=mkc('ST36-005'); k.summonedTurn=1; P.chars=[k];
+      P.life=[mkc('OP15-067')]; P.deck=[mkc('OP15-067')]; // 裏向き→faceDownコスト払えず発動不可
+      O.life=[mkc('OP15-067')]; O.deck=[mkc('OP15-067')];
+      const atk=mkc('ST32-003'); atk.owner='cpu'; atk.summonedTurn=1; O.chars=[atk];
+      await declareAttack(atk, P.leader);
+      ok(P.life.length===0 && P.chars.includes(k), '例18c2: 効果不発ならリーダーが被弾（ライフ1→0）・キッドは無傷');
+      G.active='me'; G.winner=null;
+    }
+    // 18d: OP10-099黄キッドL — 付与先の選択は「1枚まで」＝任意（候補1枚でも自動確定せず選択モーダルが出る）
+    ok(C['OP10-099'].fx.onTurnEnd[0].then[0].optional===true, '例18d: 黄キッドLのactivateOwnCharはoptional:true');
   }catch(e){ console.log('EXCEPTION:', e.message); fail++; }
   console.log('ユニットテスト: pass='+pass+' fail='+fail);
   process.exit(fail?1:0);

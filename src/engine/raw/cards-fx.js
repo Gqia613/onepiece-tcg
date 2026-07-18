@@ -1365,7 +1365,7 @@ window.CARD_FX = {
   // OP10-098 解放: 【メイン】自分のキャラが相手より2枚以上少ないなら 相手の元々コスト6以下1枚＋コスト4以下1枚KO
   "OP10-098": {"main":{"fx":[{"op":"cond","check":{"selfCharsFewerBy":2},"then":[{"op":"ko","side":"opp","filter":{"maxBaseCost":6},"count":1,"optional":true},{"op":"ko","side":"opp","filter":{"maxBaseCost":4},"count":1,"optional":true}]}]}},
   // OP10-099 ユースタス・キッド LEADER: 【自分のターン終了時】ライフ上1枚を表向き：コスト3〜8の超新星1枚をアクティブにし次相手ターン終了まで【ブロッカー】
-  "OP10-099": {"onTurnEnd":[{"op":"flipLifeCost","then":[{"op":"activateOwnChar","count":1,"allowActive":true,"filter":{"traitIncludes":"超新星","minCost":3,"maxCost":8},"grantKw":"blocker","grantDuration":"untilNextEnd"}]}]},
+  "OP10-099": {"onTurnEnd":[{"op":"flipLifeCost","then":[{"op":"activateOwnChar","count":1,"optional":true,"allowActive":true,"filter":{"traitIncludes":"超新星","minCost":3,"maxCost":8},"grantKw":"blocker","grantDuration":"untilNextEnd"}]}]},
   /* ===== OP10 バッチ6（黄・100-119。超新星＝ライフ操作） ===== */
   // OP10-100 イナズマ: 【ドン×1】【アタック時】お互いのライフ合計以下のコストの相手キャラ1枚をレスト
   "OP10-100": {"onAttack":[{"op":"cond","check":{"donX1":true},"then":[{"op":"restChar","side":"opp","filter":{"maxCostFrom":"totalLife"},"count":1,"optional":true}]}]},
@@ -4083,8 +4083,8 @@ window.CARD_FX = {
   "ST36-004": {"onPlay":[{"op":"discardCost","count":1,"optional":true,"filter":{"trait":"超新星"},"then":[{"op":"draw","n":2}]}]},
   // ST36-005 キッド:【相手のアタック時】【ターン1回】ライフの上か下1枚を裏向きにできる：アタック対象を自分の元々のパワー5000以上の「キッド」に変更
   //   ／【起動メイン】【ターン1回】ライフの上か下1枚を表向きにできる：リーダーにレストのドン1枚まで付与
-  //   ※counterRedirect はブロック宣言後に対象を差し替える（公式はブロック前）。対象が居ないとコストだけ払うため cond で事前ガード。
-  "ST36-005": {"onOppAttack":[{"op":"cond","once":"turn","check":{"faceUpLifeAtLeast":1,"selfChar":{"name":"ユースタス・キッド","minPower":5000}},"then":[{"op":"lifeCost","action":"faceDown","pos":"choose","then":[{"op":"counterRedirect","filter":{"name":"ユースタス・キッド","minPower":5000},"optional":false}]}]}],"act":{"label":"ライフを表向き：リーダーにレストのドン‼1枚","cost":{},"fx":[{"op":"lifeCost","action":"faceUp","pos":"choose","then":[{"op":"donAttach","target":"leader","n":1}]}]}}
+  //   ※「キャラ」限定でない→黄キッドL(元々5000)も変更先に選べる(incLeader)。対象変更はブロック前に即時反映（実対戦指摘 2026-07-18）。対象が居ないとコストだけ払うため cond で事前ガード。
+  "ST36-005": {"onOppAttack":[{"op":"cond","once":"turn","check":{"faceUpLifeAtLeast":1,"selfChar":{"name":"ユースタス・キッド","minPower":5000,"incLeader":true}},"then":[{"op":"lifeCost","action":"faceDown","pos":"choose","then":[{"op":"counterRedirect","incLeader":true,"filter":{"name":"ユースタス・キッド","minPower":5000},"optional":false}]}]}],"act":{"label":"ライフを表向き：リーダーにレストのドン‼1枚","cost":{},"fx":[{"op":"lifeCost","action":"faceUp","pos":"choose","then":[{"op":"donAttach","target":"leader","n":1}]}]}}
 });})();
 
 /* ===== audit駆動【トリガー】一括実装（docs/card-audit-workflow.md §5・頻出テンプレート順・318枚。既存fxへtriggerをマージ／パラレルは親を共有） ===== */

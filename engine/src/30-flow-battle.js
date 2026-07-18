@@ -505,6 +505,9 @@
         render();
         return;
       }
+      // 【相手のアタック時】効果の対象変更（ST36-005キッド）: 宣言時効果の解決直後＝ブロック・カウンターの前に反映する
+      //   （旧: カウンター後の消費だけだったため、演出・ブロック・カウンターが旧対象のまま進み「対象が切り替わらない」ように見えた）
+      if (G._counterRedirect) { target = G._counterRedirect; G._counterRedirect = null; G._atkTo = target.uid; flog(dSide, `アタック対象を「${target.base.type === 'LEADER' ? 'リーダー' : target.base.name}」に変更`); showAtkAnnounce(aSide, attacker, target); render(); await sleep(300); }
       // 黒ひげ(ティーチ)リーダー: 手札のトリガーを捨ててアタック対象を変更
       if (!isNegated(G.players[dSide].leader)) { target = await teachRedirect(dSide, attacker, target); target = await leaderRedirect(dSide, attacker, target); G._atkTo = target.uid; }
       // ブロック
