@@ -586,6 +586,21 @@ function setupG(leaderNo){G.active='me';G.turnSeq=5;G.winner=null;const mkP=(ln,
       ok(checkCond({lifeEndsFaceUp:true},'me')===false, '例19: ライフ0→発動不可');
       ok(C['ST36-005'].fx.onOppAttack[0].check.lifeEndsFaceUp===true, '例19: ST36-005のcondは上か下の表向き判定（カットインも発動機会がある時だけ出る）');
     }
+    // 例20: ★【ダブルアタック】vs ライフ1枚 — ライフを1枚削るだけで勝利にはならない（公式Q&A36/400。実対戦指摘 2026-07-18）
+    const dblSetup=(lifeN)=>{ setupG('OP10-099'); const P=G.players.me,O=G.players.cpu;
+      G.active='cpu'; G.busy=false; G.myActable=true; G.firstPlayer='me'; P.isCPU=true;
+      P.life=[]; for(let i=0;i<lifeN;i++) P.life.push(mkc('OP15-067'));
+      P.deck=[mkc('OP15-067')]; O.life=[mkc('OP15-067'),mkc('OP15-067')]; O.deck=[mkc('OP15-067'),mkc('OP15-067')];
+      const y=mkc('OP01-121'); y.owner='cpu'; y.summonedTurn=1; O.chars=[y]; return y; };
+    { const y=dblSetup(1); await declareAttack(y, G.players.me.leader);
+      ok(G.players.me.life.length===0 && !G.winner, '例20a: ライフ1にダブルアタック→1枚減るだけで敗北しない（Q&A36）');
+      G.active='me'; }
+    { const y=dblSetup(0); await declareAttack(y, G.players.me.leader);
+      ok(G.winner==='cpu', '例20b: ライフ0への新たなアタックは従来どおり敗北');
+      G.active='me'; G.winner=null; }
+    { const y=dblSetup(2); await declareAttack(y, G.players.me.leader);
+      ok(G.players.me.life.length===0 && !G.winner, '例20c: ライフ2ならダブルアタックで2枚削れる（勝敗なし）');
+      G.active='me'; }
   }catch(e){ console.log('EXCEPTION:', e.message); fail++; }
   console.log('ユニットテスト: pass='+pass+' fail='+fail);
   process.exit(fail?1:0);

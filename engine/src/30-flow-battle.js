@@ -583,6 +583,7 @@
       const D = G.players[dSide];
       for (let t = 0; t < times; t++) {
         if (G.winner) return; // 勝敗確定後は追加ダメージ解決を打ち切る
+        if (t > 0 && D.life.length === 0) { flog(dSide, '【ダブルアタック】残りのダメージはライフが無いため受けない'); break; } // ★公式Q&A36: ライフ1枚に2ダメージでも勝利にならない。Q&A400: 2発目以降は「ライフが1枚以上あるなら」処理（1発目のトリガーでライフが増えていれば受ける）。敗北はライフ0の状態で新たにダメージを受けた時（t=0）のみ
         animClass(D.leader.uid, 'dmg'); spawnAt(D.leader.uid, 'slash'); shakeScreen(); floatOn(D.leader.uid, '-1', 'dmg'); sfx('hit');
         if (t > 0) { floatOn(D.leader.uid, '×' + (t + 1) + ' COMBO!', 'dmg'); shakeScreen(); } // ダブルアタック2発目以降のコンボ強調
         await sleep(300);
