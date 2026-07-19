@@ -760,6 +760,45 @@ function setupG(leaderNo){G.active='me';G.turnSeq=5;G.winner=null;const mkP=(ln,
       ok(P.life.length===1 && P.life[0].no==='OP09-097' && P.life[0]._faceUp===true, '例30: トラッシュのイベントがanyCardで候補に入りライフ上へ表向きで追加');
       ok(P.hand.length===0 && !P.trash.some(c=>c.no==='OP09-097'), '例30: 手札1枚捨てコストを支払い、闇水はトラッシュから移動');
     }
+    // 例31: OP16-048バギー【ターン1回】相手がアタックした時、囚人にブロッカー付与 —
+    //   スキップ=未発動ならターン1回を消費せず同ターンの次アタックで再度選べる（実対戦指摘）。
+    //   付与したブロッカーは現在のアタックをそのままブロックできる（Q&A1361）
+    setupG('OP01-062'); { const P=G.players.me, O=G.players.cpu; // 防御側=me(人間)・干渉のないリーダー
+      G.active='cpu'; G.busy=false; G.myActable=true; G.firstPlayer='me';
+      const buggy=mkc('OP16-048'); buggy.summonedTurn=1;
+      const pris=mkc('OP16-042'); pris.summonedTurn=1; P.chars=[buggy,pris]; // 囚人P6000
+      P.hand=[]; P.life=[mkc('OP15-067'),mkc('OP15-067'),mkc('OP15-067')]; P.deck=[mkc('OP15-067')];
+      O.life=[mkc('OP15-067')]; O.deck=[mkc('OP15-067')];
+      const a1=mkc('ST32-005'); a1.owner='cpu'; a1.summonedTurn=1;              // P2000=リーダーに届かない（手札汚染なし）
+      const a2=mkc('OP01-065'); a2.owner='cpu'; a2.summonedTurn=1;              // P7000バニラ
+      const a3=mkc('OP01-065'); a3.owner='cpu'; a3.summonedTurn=1; O.chars=[a1,a2,a3];
+      scriptPrompt(['__skip']); // アタック1: 付与対象の選択をスキップ
+      await declareAttack(a1, P.leader);
+      ok(promptCalls===1 && !hasKw(pris,'blocker'), '例31a: スキップ→ブロッカー未付与（プロンプトは付与選択のみ）');
+      ok(buggy._oppAtkTurn!==G.turnSeq, '例31a: 未発動なら【ターン1回】を消費しない');
+      G.busy=false; G.myActable=true;
+      scriptPrompt(['pick0']); // アタック2: 再表示された選択で囚人に付与 → 続くブロック確認は既定応答(先頭=blk:)でそのままブロック
+      await declareAttack(a2, P.leader);
+      ok(promptCalls===2 && P.life.length===3, '例31b: 同ターンの次アタックで再度選択でき、付与→現在のアタックをブロックしライフ無傷（Q&A1361）');
+      ok(!P.chars.includes(pris) && P.trash.includes(pris) && buggy._oppAtkTurn===G.turnSeq, '例31b: 囚人は7000にKOされ、今度は【ターン1回】を消費');
+      G.busy=false; G.myActable=true;
+      scriptPrompt([]);
+      await declareAttack(a3, P.leader);
+      ok(promptCalls===0 && P.life.length===2, '例31c: 発動済みの3回目は選択なし（ターン1回）・リーダー被弾');
+      resetPrompt(); G.active='me';
+    }
+    // 例31d: 囚人が場にいない場合は発動機会なし＝選択もカットインも出さず、ターン1回も消費しない（cond事前スキップ）
+    setupG('OP01-062'); { const P=G.players.me, O=G.players.cpu;
+      G.active='cpu'; G.busy=false; G.myActable=true; G.firstPlayer='me';
+      const buggy=mkc('OP16-048'); buggy.summonedTurn=1; P.chars=[buggy];
+      P.hand=[]; P.life=[mkc('OP15-067')]; P.deck=[mkc('OP15-067')];
+      O.life=[mkc('OP15-067')]; O.deck=[mkc('OP15-067')];
+      const a1=mkc('OP01-065'); a1.owner='cpu'; a1.summonedTurn=1; O.chars=[a1];
+      scriptPrompt([]);
+      await declareAttack(a1, P.leader);
+      ok(promptCalls===0 && buggy._oppAtkTurn!==G.turnSeq, '例31d: 囚人不在なら選択なし・ターン1回未消費');
+      resetPrompt(); G.active='me';
+    }
   }catch(e){ console.log('EXCEPTION:', e.message); fail++; }
   console.log('ユニットテスト: pass='+pass+' fail='+fail);
   process.exit(fail?1:0);

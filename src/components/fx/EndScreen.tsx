@@ -42,6 +42,9 @@ export function EndScreen() {
   const [rematchAsked, setRematchAsked] = useState(false);
   const [lobbyAsked, setLobbyAsked] = useState(false);
   useEffect(() => { if (!end) { setRematchAsked(false); setLobbyAsked(false); } }, [end]); // 成立（end消滅）でリセット
+  // DOが「部屋に戻る」を拒否（bad_state）したら押し直せる状態へ戻す。放置すると「部屋に戻っています…」のまま詰む
+  const lobbyNak = useNetStore((s) => s.lobbyNak);
+  useEffect(() => { setLobbyAsked(false); }, [lobbyNak]);
 
   const win = !!end?.win;
   // 粒子/雨は end が出ている間は固定（再生成でチラつかせない）。win 切替で作り直す。

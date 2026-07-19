@@ -32,6 +32,7 @@ interface NetStore {
   lastResult: MatchResult | null;  // 直前の対戦結果（ロビーへ戻ったときに「前局の結果」として出す）
   myDeckId: string | null;         // 直近で ready したデッキ（ロビー復帰時の既定選択）
   lobbyEpoch: number;              // ロビーへ戻るたびに++。OnlineLobby のローカルstate（readySent等）を初期化するトリガ
+  lobbyNak: number;                // 「部屋に戻る」がDOに拒否された(bad_state)たびに++。EndScreenがボタンを押し直せる状態に戻すトリガ
   setMode: (m: NetStore['mode']) => void;
   setMySeat: (s: Seat) => void;
   setPhase: (p: NetPhase) => void;
@@ -52,6 +53,7 @@ interface NetStore {
   setLastResult: (r: MatchResult | null) => void;
   setMyDeckId: (id: string | null) => void;
   bumpLobbyEpoch: () => void;
+  bumpLobbyNak: () => void;
   resetNet: () => void;         // オフライン既定へ戻す（対戦終了/退室時）
 }
 
@@ -77,6 +79,7 @@ const DEFAULTS = {
   lastResult: null as MatchResult | null,
   myDeckId: null as string | null,
   lobbyEpoch: 0,
+  lobbyNak: 0,
 };
 
 export const useNetStore = create<NetStore>((set) => ({
@@ -101,6 +104,7 @@ export const useNetStore = create<NetStore>((set) => ({
   setLastResult: (lastResult) => set({ lastResult }),
   setMyDeckId: (myDeckId) => set({ myDeckId }),
   bumpLobbyEpoch: () => set((s) => ({ lobbyEpoch: s.lobbyEpoch + 1 })),
+  bumpLobbyNak: () => set((s) => ({ lobbyNak: s.lobbyNak + 1 })),
   resetNet: () => set({ ...DEFAULTS }),
 }));
 

@@ -557,7 +557,7 @@ window.CARD_FX = {
   "OP16-044": {"static":[{"op":"staticKeyword","kw":"blocker"}]},
   "OP16-045": {"static":[{"op":"staticKeyword","kw":"blocker"}],"onPlay":[{"op":"bounceOwnCharCost","filter":{"minCost":2},"then":[{"op":"playCharFromHand","filter":{"maxCost":2,"traitIncludes":"インペルダウン"},"count":1,"optional":true}]}]},
   "OP16-047": {"act":{"label":"相手手札2枚デッキ下","cost":{"restSelf":true},"fx":[{"op":"cond","check":{"oppHandAtLeast":8},"then":[{"op":"oppHandToBottom","n":2}]}]}},
-  "OP16-048": {"onPlay":[{"op":"cond","check":{"leaderTrait":"インペルダウン"},"then":[{"op":"draw","n":1},{"op":"playSpecificFromHand","nameIncludes":"インペルダウンの囚人","choose":true,"optional":true}]}],"onOppAttack":[{"op":"giveKeyword","target":"chooseOwn","kw":"blocker","duration":"turn","filter":{"name":"インペルダウンの囚人"},"once":"turn"}]},
+  "OP16-048": {"onPlay":[{"op":"cond","check":{"leaderTrait":"インペルダウン"},"then":[{"op":"draw","n":1},{"op":"playSpecificFromHand","nameIncludes":"インペルダウンの囚人","choose":true,"optional":true}]}],"onOppAttack":[{"op":"cond","once":"turn","check":{"selfChar":{"name":"インペルダウンの囚人"}},"then":[{"op":"giveKeyword","target":"chooseOwn","kw":"blocker","duration":"turn","filter":{"name":"インペルダウンの囚人"}}]}]},
   "OP16-049": {"act":{"label":"自分をレストにしてドロー","cost":{"restSelf":true},"fx":[{"op":"draw","n":1}]}},
   "OP16-050": {"static":[{"op":"staticKeyword","kw":"blocker"}],"onPlay":[{"op":"bounceOwnCharCost","filter":{"minCost":2},"then":[{"op":"draw","n":2},{"op":"discardOwn","n":1}]}]},
   "OP16-051": {"onPlay":[{"op":"cond","check":{"not":{"selfHand":{"min":6}}},"then":[{"op":"draw","n":2}]}]},

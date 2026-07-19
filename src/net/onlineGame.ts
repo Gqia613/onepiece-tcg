@@ -20,6 +20,7 @@ let toastId = 2_000_000_000; // adapter の fxId と衝突しない帯域
 let lastCanon = '';   // 直近のターン境界の正準JSON（desync時のデバッグdumpに使用）
 let lastCanonN = 0;
 let resultSent = false;          // 終局申告は1ゲーム1回
+let lastResultMsg: MatchResult | null = null; // 直近の終局申告（WS断で落ちた場合の再送用。DOのresult受理は冪等）
 let recoveryAttempted = false;   // desync自動復旧は1ゲーム1回だけ試す
 // 復旧・リマッチ再現用に直近のゲーム開始情報を保持
 let lastStart: { gameNo: number; seed: number; decks: Record<RoomSeat, DeckPayload>; names: Record<RoomSeat, string>; first: RoomSeat | null; config: RoomConfig; startTs: number } | null = null;
@@ -84,6 +85,13 @@ export function requestRematch(): void {
 }
 // 終局後に部屋（ロビー）へ戻る＝デッキと対戦設定を選び直して再戦する。片方が押せば両者が戻る（DO側で冪等）。
 export function requestLobby(): void {
+  /* ★終局申告を先に再送する（冪等）: 申告はゲームごとに1回しか送らないため、終局の瞬間にWSが
+     切断/再接続中だと申告がDOに届かないまま失われる。DOは「両者の申告」が無いと to-lobby を
+     bad_state で拒否する設計（生きた対局からの逃亡防止）なので、申告が欠けたままだと
+     「部屋に戻っています…」から永遠に進まなくなる。 */
+  if (lastResultMsg && useNetStore.getState().phase === 'ended') {
+    try { sendMatch({ t: 'result', result: lastResultMsg }); } catch { /* ignore */ }
+  }
   sendMatch({ t: 'to-lobby' });
 }
 // 相手切断の裁定を要求（DOが猶予・接続状態を検証し、切断側の投了を代理発行）
@@ -123,7 +131,7 @@ export function applyLobbyReset(config: RoomConfig, players: PlayerInfo[], last:
   resetLockstep(1);
   clockStop();
   setMatchGame(0, 0);
-  lastStart = null; resultSent = false; recoveryAttempted = false; lastCanon = ''; lastCanonN = 0;
+  lastStart = null; resultSent = false; lastResultMsg = null; recoveryAttempted = false; lastCanon = ''; lastCanonN = 0;
 
   const es = useEngineStore.getState();
   try { es.resetEngine(); } catch { /* ignore */ }
@@ -162,6 +170,12 @@ function handleMsg(m: S2C): void {
         return;
       }
       if (m.status === 'lobby') net.setPhase('lobby');
+      /* ★再接続時の終局申告リカバリ: 終局の瞬間にWSが切れていると申告が失われたまま（1ゲーム1回送信のため）。
+         DO側がまだ playing のまま＝申告が揃っていない可能性が高いので、冪等な result を送り直しておく。
+         これが無いと「部屋に戻る」が bad_state で拒否され続ける。 */
+      if (m.status === 'playing' && net.phase === 'ended' && lastResultMsg) {
+        try { sendMatch({ t: 'result', result: lastResultMsg }); } catch { /* ignore */ }
+      }
       return;
     }
     case 'peer': {
@@ -240,7 +254,7 @@ function handleMsg(m: S2C): void {
     }
     case 'error': {
       if (m.code === 'claim_rejected') { toast('まだ勝利宣言できません（相手の切断から90秒必要です）'); return; }
-      if (m.code === 'bad_state') { toast('まだ対戦が終わっていません'); return; }
+      if (m.code === 'bad_state') { net.bumpLobbyNak(); toast('まだ対戦が終わっていません — もう一度お試しください'); return; } // lobbyNak++ = EndScreenの「部屋に戻る」を押し直せる状態に戻す
       const msg = m.code === 'not_found' ? '部屋が見つかりません'
         : m.code === 'room_full' ? '部屋が満室です'
         : m.code === 'rate' ? '操作が速すぎます'
@@ -284,6 +298,7 @@ function bootGame(gameNo: number, seed: number, decks: Record<RoomSeat, DeckPayl
   resetLockstep(1);
   setMatchGame(gameNo, 0);
   resultSent = false;
+  lastResultMsg = null;
   recoveryAttempted = false;
   clockReset(config.clock, startTs, Date.now());
 
@@ -400,6 +415,7 @@ function wireWatchers(): void {
         reason: (end?.reason as string) || (drawEnd ? '時間切れ（両者敗北）' : ''),
         turns: G.turnDisp || G.turnSeq || 0,
       };
+      lastResultMsg = result;
       try { sendMatch({ t: 'result', result }); } catch { /* ignore */ }
     }
   });

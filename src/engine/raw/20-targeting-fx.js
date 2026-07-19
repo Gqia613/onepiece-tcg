@@ -497,6 +497,7 @@
           if (op.target === 'self') t = self;
           else if (op.target === 'chooseOwn') t = await chooseCard(side, P.chars.filter(c => matchFilter(c, opFilter(op))), `【${kwJa(op.kw)}】を与える対象`, 'ownBig', true);
           else if (op.target === 'chooseOwnL') t = await chooseCard(side, [P.leader, ...P.chars].filter(c => matchFilter(c, opFilter(op))), `【${kwJa(op.kw)}】を与える対象（リーダーかキャラ）`, 'ownBig', true);
+          if (!t && (op.target === 'chooseOwn' || op.target === 'chooseOwnL')) ctx._declined = true; // ★選択スキップ/候補0=未発動。【ターン1回】を消費しない（OP16-048=スキップ後も同ターンの次アタックで再度選べる）
           if (t) { t.kwGrant.push({ kw: op.kw, dur: durTag(op.duration, 'turn'), self: t === self }); flog(side, `「${t.base.name}」に【${kwJa(op.kw)}】`); } // self=自己付与（効果無効で失う。OP15-060エネルのブロッカー等）
           break;
         }
