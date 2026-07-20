@@ -10,6 +10,7 @@ import { useNavigate } from 'react-router-dom';
 import { useEngineStore } from '../../state/engineStore';
 import { useNetStore } from '../../state/netStore';
 import { uiDispatch } from '../../net/dispatch';
+import { recordCpuInput } from '../../net/cpuRecorder';
 import { Icon } from '../ui/Icon';
 
 export function Controls() {
@@ -61,7 +62,7 @@ export function Controls() {
             <span className="hb-tip">光る相手カードを選択／攻撃キャラをもう一度押すと取消</span>
           <span className="hb-tip-s">光る相手をタップ／再タップで取消</span>
           </div>
-          <button className="phasebtn ghost" onClick={() => { if (online) void uiDispatch({ t: 'cancelAtk' }); else engine.cancelAttackSel(); }}>
+          <button className="phasebtn ghost" onClick={() => { if (online) void uiDispatch({ t: 'cancelAtk' }); else { recordCpuInput({ t: 'cancelAtk' }); engine.cancelAttackSel(); } }}>
             取消
           </button>
         </div>
@@ -93,7 +94,7 @@ export function Controls() {
       const ok = await engine.confirmUse(mySeat, 'ターンを終了しますか？', text, 'ターンを終了する', 'まだ続ける', { local: true });
       if (!ok) return;
       if (online) void uiDispatch({ t: 'endTurn' });
-      else engine.uiEndTurn(mySeat);
+      else { recordCpuInput({ t: 'endTurn' }); void engine.uiEndTurn(mySeat); }
     };
     // 「このターンはキャラを登場できない」等の全体制限は、手札が丸ごとグレーになるだけで理由が見えない
     // （例: OP14-020ミホークLの起動メイン）。制限中だけヒントバーで理由を常時表示する。

@@ -14,6 +14,8 @@ import { IMG, IMG_BIG } from '../engine/img';
 import { DeckListModal } from '../components/deck/DeckListModal';
 import { Icon } from '../components/ui/Icon';
 import { deleteCloudDeck } from '../state/decks';
+import { beginCpuRecording } from '../net/cpuRecorder';
+import { useAuth } from '../state/auth';
 
 // 元 renderSelect の tier 昇順ソート（src/60-screens-init.js:12-13）。
 const TIER_RANK: Record<string, number> = { 'TIER 1': 1, 'TIER 2': 2, 'TIER 3': 3 };
@@ -198,9 +200,24 @@ export default function DeckSelect() {
     e.G.cpuMode = 'strong';
     e.G.aiOn = false;
     e.G.cpuStrength = 'strong'; // 互換
+    // CPU戦リプレイ内部収集: シードを明示してからシャッフル（startGame）＝同コミットで再現可能にする
+    const seedArr = new Uint32Array(1);
+    crypto.getRandomValues(seedArr);
+    const seed = (seedArr[0] >>> 0) || 1;
+    e.seedRng(seed);
+    const firstPref = (e.G.firstPref || 'random') as 'random' | 'me' | 'cpu';
     // startGame は同期部で盤面を立ち上げ(inGame=true)→そのままマリガンのモーダルを出して待機する。
     // 先に /battle/play へ遷移して盤面を表示してから解決を待つ（マリガンは盤面の上に出る）。
     const started = e.startGame(e.G.sel!.me as string, e.G.sel!.cpu as string);
+    // デッキ名は id から引き直す（randomStart は G.sel を書き換えた直後に呼ぶ＝render時の meDeck/cpuDeck が古い）
+    const nameOf = (id: unknown) => allDecks.find((d) => d.id === id)?.name || String(id);
+    beginCpuRecording(e, {
+      seed,
+      firstPref,
+      deckIds: { me: String(e.G.sel!.me), cpu: String(e.G.sel!.cpu) },
+      deckNames: { me: nameOf(e.G.sel!.me), cpu: nameOf(e.G.sel!.cpu) },
+      playerName: useAuth.getState().user?.username || '',
+    });
     useEngineStore.getState().bump();
     navigate('/battle/play');
     await started;

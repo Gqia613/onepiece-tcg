@@ -9,6 +9,7 @@ import { IMG } from './img';
 import { useEngineStore } from '../state/engineStore';
 import { useNetStore } from '../state/netStore';
 import { uiDispatch } from '../net/dispatch';
+import { recordCpuInput } from '../net/cpuRecorder';
 
 export type CardCtx = 'board' | 'hand' | 'life' | 'don';
 export type Highlight =
@@ -40,7 +41,7 @@ export function resolveCardClick(
     if (pick.uids.has(card.uid)) {
       const choose = () => {
         if (online) { void uiDispatch({ t: 'prompt', v: 'pick:' + card.uid }); }
-        else pick.resolve(card);
+        else { recordCpuInput({ t: 'prompt', v: 'pick:' + card.uid }); pick.resolve(card); }
       };
       return { highlight: pick.danger ? 'danger' : 'selectable', onClick: choose, clickable: true };
     }
@@ -55,14 +56,14 @@ export function resolveCardClick(
     const atk = G.attackSel.attacker;
     // 選択中の攻撃役は 'attacker'（.felt.selecting の減光除外＋金ハイライト）。atk-active は攻撃アニメ用で別物。
     if (card === atk) {
-      const cancel = () => { if (online) { void uiDispatch({ t: 'cancelAtk' }); } else engine.cancelAttackSel(); };
+      const cancel = () => { if (online) { void uiDispatch({ t: 'cancelAtk' }); } else { recordCpuInput({ t: 'cancelAtk' }); engine.cancelAttackSel(); } };
       return { highlight: 'attacker', onClick: cancel, clickable: true };
     }
     try {
       if (engine.legalTargets(mySeat, atk).includes(card)) {
         const attack = () => {
           if (online) { void uiDispatch({ t: 'attack', auid: atk.uid, tuid: card.uid }); }
-          else void engine.declareAttack(atk, card);
+          else { recordCpuInput({ t: 'attack', auid: atk.uid, tuid: card.uid }); void engine.declareAttack(atk, card); }
         };
         return { highlight: 'targetable', onClick: attack, clickable: true };
       }
@@ -90,7 +91,7 @@ export function resolveCardClick(
       const usable = canAtk || canDon || hasAct;
       const openMenu = () => {
         if (online) { void uiDispatch({ t: 'menu', uid: card.uid }); }
-        else void runExclusive(engine, mySeat, online, () => engine.openOwnMenu(card));
+        else void runExclusive(engine, mySeat, online, () => { recordCpuInput({ t: 'menu', uid: card.uid }); return engine.openOwnMenu(card); });
       };
       // 'actable'（.card.actable に legal-glow あり）。'usable' は doncard 専用でカードには効かない。
       return { highlight: usable ? 'actable' : undefined, onClick: openMenu, clickable: true };
@@ -143,6 +144,7 @@ async function confirmPlayHand(engine: EngineAPI, card: Card, seat: Side, online
   // G.busy は runExclusive が立てているためここでは見ない。
   if (!ok || !G.players[seat].hand.includes(card) || G.active !== seat || !G.myActable) return;
   if (online) { await uiDispatch({ t: 'play', uid: card.uid }); return; }
+  recordCpuInput({ t: 'play', uid: card.uid });
   try { await engine.tryPlayHand(card); } catch { /* エンジン側で toast 済み */ }
 }
 

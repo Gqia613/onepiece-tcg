@@ -62,3 +62,22 @@ CREATE TABLE IF NOT EXISTS matches (
 );
 CREATE INDEX IF NOT EXISTS idx_matches_host ON matches(host_uid, id DESC);
 CREATE INDEX IF NOT EXISTS idx_matches_guest ON matches(guest_uid, id DESC);
+
+-- CPU戦（オフライン対戦）のリプレイ内部収集（functions/api/match/cpu.js が終局時に書き込む。
+-- 学習・解析用＝UI表示なし。replay はオンラインの matches.replay と同形＋cpu:{agent,ver,...}。
+-- 再現は同ビルド（ver=コミット）の worktree で人間入力を再生し、CPU手はシード済みエンジンが再計算する）。
+CREATE TABLE IF NOT EXISTS cpu_matches (
+  id         INTEGER PRIMARY KEY AUTOINCREMENT,
+  uid        TEXT NOT NULL,               -- users.id は UUID 文字列
+  name       TEXT,                        -- プレイヤー名（記録時点）
+  leader     TEXT,                        -- プレイヤー側リーダーのカード番号
+  cpu_leader TEXT,
+  winner     TEXT NOT NULL,               -- 'host'(プレイヤー) | 'guest'(CPU) | 'draw'
+  reason     TEXT,
+  turns      INTEGER,
+  seed       INTEGER NOT NULL,
+  ver        TEXT,                        -- ビルドID（リプレイはこのコミットの worktree で行う）
+  replay     TEXT,                        -- JSON {seed, decks, names, first, inputs, cpu:{agent,cpuMode,aiOn,firstPref,deckIds,ver}}
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_cpu_matches_uid ON cpu_matches(uid, id DESC);
