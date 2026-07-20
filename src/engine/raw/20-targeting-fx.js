@@ -166,7 +166,24 @@
         case 'setCantAttackLeader': { P._cantAttackLeaderTurn = G.turnSeq; flog(side, 'このターン、リーダーにアタックできない'); break; } // OP06-026コウシロウ
         case 'grantBattleImmune': { for (let i = 0; i < (op.count || 1); i++) { const cands = op.target === 'self' ? [self] : P.chars.filter(c => matchFilter(c, opFilter(op))); const t = op.target === 'self' ? self : (P.isCPU ? cands[0] : await chooseCard(side, cands, 'バトルKO耐性を与える対象', 'ownBig', op.optional)); if (!t) break; t._battleImmuneUntil = durSeq(op.duration || 'untilNextStart'); if (op.amount) addBuff(t, op.amount, durTag(op.duration === 'untilNextStart' ? 'untilNextStart' : 'turn', 'turn')); floatOn(t.uid, '無敵', 'buff'); if (op.target === 'self') break; } render(); break; } // 一時的にバトルでKOされない（OP06-030ドスン）
         case 'drawDiscarded': { const k = ctx.discarded || 1; if (draw(side, k)) flog(side, `【${(ctx.self && ctx.self.base.name) || '効果'}】捨てた${k}枚分ドロー`); break; } // 捨てた枚数分ドロー（OP12-040クザンL。ログに発生源名=見落とし対策）
-        case 'counterRedirect': { const pool = op.incLeader ? [P.leader, ...P.chars] : P.chars; const cands = pool.filter(c => matchFilter(c, opFilter(op))); const t = P.isCPU ? cands.slice().sort((a, b) => power(b) - power(a))[0] : await chooseCard(side, cands, 'アタックの対象にするカードを選択', 'ownBig', op.optional !== false); if (t) G._counterRedirect = t; break; } // 対象変更の予約。カウンターイベント発は counterStep後・【相手のアタック時】発はブロック前に declareAttack が消費。incLeader=「キャラ」限定でない効果はリーダーも選べる（ST36-005=元々5000以上の「ユースタス・キッド」→黄キッドLも可）
+        case 'counterRedirect': { // 対象変更の予約。カウンターイベント発は counterStep後・【相手のアタック時】発はブロック前に declareAttack が消費。incLeader=「キャラ」限定でない効果はリーダーも選べる（ST36-005=元々5000以上の「ユースタス・キッド」→黄キッドLも可）
+          const pool = op.incLeader ? [P.leader, ...P.chars] : P.chars; const cands = pool.filter(c => matchFilter(c, opFilter(op)));
+          let t;
+          if (P.isCPU) {
+            t = cands.slice().sort((a, b) => power(b) - power(a))[0]; // 既定: 最高パワー
+            // ★E55 redirect: リダイレクト先の方針化（game3 ST36-005の使い分け: T11はリーダーへ流してトリガー2ドロー・T13は9000壁へ流して無償否定）
+            if (typeof e55On === 'function' && e55On(side, 'redirect') && t) {
+              const ap = ctx.attacker ? power(ctx.attacker) : null; // カウンターイベント発はctxにattackerが無い＝①はスキップし②③で判断
+              const wall = ap != null ? cands.filter(c => c.base.type === 'CHAR' && !c.rested && power(c) > ap).sort((a, b) => power(b) - power(a))[0] : null;
+              if (wall) t = wall; // ①攻撃側パワー超のアクティブキャラ＝完全否定（壁はレストせず無償で攻撃1回を消す）
+              else if (P.life.length >= 3) { if (cands.includes(P.leader)) t = P.leader; } // ②高ライフはリーダーでライフ受け＋トリガー期待
+              else if (P.life.length <= 1) {
+                if (op.optional !== false) t = null; // ③低ライフの任意効果は発動辞退（どこへ流しても損）
+                else { const ch = cands.filter(c => c.base.type === 'CHAR').sort((a, b) => power(a) - power(b)); if (ch.length) t = ch[0]; } // 強制(ST36-005=lifeCost支払い済み・optional:false)は辞退できない＝最小キャラで受けてリーダーの致死被弾だけは避ける
+              }
+            }
+          } else t = await chooseCard(side, cands, 'アタックの対象にするカードを選択', 'ownBig', op.optional !== false);
+          if (t) G._counterRedirect = t; break; }
         case 'oppLifeAddFromDeck': { const O = G.players[o]; for (let i = 0; i < (op.n || 1); i++) { if (O.deck.length) { const c = O.deck.shift(); c._faceUp = false; O.life.unshift(c); } } flog(o, 'デッキの上から1枚をライフに加えた'); render(); break; } // 相手が自分のデッキ上をライフへ（ST07-010/015の選択肢）
         case 'searchToLife': { // デッキ上N枚からfilter一致1枚をライフの上へ（faceUp可）、残りはデッキ下（ST13-002エース）
           const lookN = Math.min(op.look || 5, P.deck.length); if (!lookN) break;

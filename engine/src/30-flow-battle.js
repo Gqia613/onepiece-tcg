@@ -647,6 +647,8 @@
         if (safeMin) {
           if (onlyOne && D.life.length <= 2) return null;   // 最後の1体は致死回避用に温存
           if (D.life.length <= 3) return safeMin;           // ライフを守りたい局面は無償の有利ブロック（相手のアタック1回を消す）
+          // ★E55 survblock: 生存ブロック（power>攻撃側）は壁を失わず無償で攻撃1回を無効化できるため高ライフでも行う（game5: 9000壁の生存ブロック多用。上の温存判断は変えない）
+          if (typeof e55On === 'function' && e55On(dSide, 'survblock')) return safeMin;
           return null;                                      // ライフに余裕→受けてドロー
         }
         if (D.life.length <= 2) return blockers.sort((a, b) => power(b) - power(a))[0]; // 生存不可でも相打ち覚悟で止める
@@ -654,7 +656,8 @@
       }
       // キャラが攻撃された：自分が安全な時だけ、高価値キャラを生存ブロッカーで無償肩代わり（ブロッカーはリーダー防御に温存）
       const safe = D.life.length - incomingLeaderDmg(dSide, attacker) >= 2;
-      if (safe && safeMin && scoreChar(target) >= 9) {
+      // ★E55 survblock: 守る対象がコスト4以上の主力キャラなら scoreChar 閾値未満でも生存ブロックで肩代わり（game5: 主力を無償の生存ブロックで守る型）
+      if (safe && safeMin && (scoreChar(target) >= 9 || (typeof e55On === 'function' && e55On(dSide, 'survblock') && (target.base.cost || 0) >= 4))) {
         if (onlyOne && D.life.length <= 2) return null;
         return safeMin;
       }
@@ -784,11 +787,17 @@
         // （素受けしすぎ＝指摘3対策。止められない/小さすぎるアタックはefficientが自動でskip＝手札は浪費しない）
         else if (lifeAfter <= 3 && D.hand.length >= 3) { mode = 'efficient'; maxCards = 1; allowBig = true; }
         else mode = 'skip'; // 高ライフ(4+)→素受け（実質ドロー）でカウンター温存
+        // ★E55 knownlife: 自分のライフの一番上が表向きの強トリガー（自分で仕込んだ）なら非致死の被弾は受けて発動させる（game3 T11: 仕込んだP-088の登場を見込んでノーカウンター受け）
+        if (typeof e55On === 'function' && e55On(dSide, 'knownlife') && mode === 'efficient' && D.life[0] && D.life[0]._faceUp && (D.life[0].base.trigger || (D.life[0].base.fx && D.life[0].base.fx.trigger))) mode = 'skip';
       } else {
         // 自分が今ターン負けそうな時は、キャラを守るためにカウンターを切らない（手札は致死回避＝リーダー防御へ温存）
         const safe = D.life.length - incoming >= 2; // 残りの被弾を最大で食らってもライフが2枚以上残るか
         const sc = scoreChar(target); // キャラの価値。低価値は見捨てる
-        if (!safe) mode = 'skip';                                    // 致死圏：キャラは見捨て、カウンターはリーダー防御へ温存
+        // ★E55 reko: 守っても相手の別の未行動アタッカー（power≥対象の防衛後パワー）に再KOされるキャラは守らない＝二重払い禁止
+        //   （game5: michiruは守った直後に別アタッカーで再KOされカウンター5枚浪費→手札0が敗着。カウンターのバフはバトル終了で失効＝防衛後パワーは素のpower(target)）
+        const rekill = typeof e55On === 'function' && e55On(dSide, 'reko') &&
+          [A.leader, ...A.chars].some(c => !c.rested && c !== attacker && !(c.base.type === 'CHAR' && c.summonedTurn === G.turnSeq && !hasKw(c, 'rush')) && power(c) >= power(target));
+        if (!safe || rekill) mode = 'skip';                          // 致死圏：キャラは見捨て、カウンターはリーダー防御へ温存
         else if (sc >= 11) { mode = 'efficient'; maxCards = 2; allowBig = true; }
         else if (sc >= 8) { mode = 'efficient'; maxCards = 1; allowBig = false; }
         else mode = 'skip';
@@ -829,6 +838,25 @@
         const tB = assessThreat(dSide, 'now', { wallOverride: wallAll });                          // 受けた場合の残り攻撃
         const lethalLine = D.life.length + 1;
         if (tA.effHits >= lethalLine && tB.effHits + hitsThis >= lethalLine) return;
+      }
+      // ★E55 alloc: 目前の1アタックに総動員せず、相手の残りアタック列まで含めた「受け/止め」割当を合計カウンター最小で選ぶ
+      //   （game5 T10: tikumaruは要求3000の2本を素受けし、止めコスト最小の列だけ止めてライフ0を許容＝目前総動員の手札約2.5倍浪費を解消）。
+      //   止めコストの高いアタックから順にライフ予算（0まで受けてよい＝敗北は「ライフ0でさらに被弾」のみ）へ割当てる貪欲近似。
+      //   ブロッカーは数えない（止めコストを過大評価＝守り側に倒れる保守近似）。割当が「このアタックは受け」かつ残りを壁で止め切れる時だけ素受け。
+      if (typeof e55On === 'function' && e55On(dSide, 'alloc')) {
+        const Lp = power(D.leader); // このバトルのカウンターはバトル終了で失効＝残アタックの要求は素のリーダーパワー基準
+        const rem = [A.leader, ...A.chars]
+          .filter(c => !c.rested && c !== attacker && !(c.base.type === 'CHAR' && c.summonedTurn === G.turnSeq && !hasKw(c, 'rush')))
+          .map(c => ({ cost: Math.max(0, power(c) - Lp) + 1000, hits: hasKw(c, 'doubleAttack') ? 2 : 1 }));
+        if (rem.length >= 1) { // 残りアタック列がある（=未行動アタッカーが複数）時だけ発火。単発は従来の survival で守る
+          const wallAll = numSum + evSum + lucyVal + aceVal;
+          const cur = { cost: need0 + 1000, hits: dbl ? 2 : 1 };
+          const list = [cur, ...rem];
+          let budget = D.life.length; const take = new Set();
+          for (const a of list.slice().sort((x, y) => y.cost / y.hits - x.cost / x.hits)) { if (a.hits <= budget) { budget -= a.hits; take.add(a); } }
+          const stopSum = list.reduce((s, a) => s + (take.has(a) ? 0 : a.cost), 0);
+          if (take.has(cur) && stopSum <= wallAll) return; // このアタックは受け＝手札を温存（残りは以降の cpuCounter が同じ割当で止める）
+        }
       }
       // 数値カウンターを最小枚数で（1枚で耐えられるなら最小の1枚／足りなければ大きい順に最小枚数）
       const ascN = D.hand.filter(c => cval(c) > 0).sort((a, b) => cval(a) - cval(b));

@@ -258,6 +258,10 @@
       const allOps = []; const collect = arr => { for (const o of arr || []) { allOps.push(o); if (o.then) collect(o.then); if (o.fx) collect(o.fx); if (o.options) for (const op of o.options) collect(op.fx); } };
       collect(fx);
       const has = (...ops) => allOps.some(o => ops.includes(o.op));
+      // ★E55 chip: 相手手札≥4なら「カウンター・ブロック不能のライフ削り」は撃つ価値あり（game5 T9: アタック1点より確実な1点）
+      if (e55On(side, 'chip') && G.players[opp(side)].hand.length >= 4 && allOps.some(o => (o.op === 'lifeTrash' && o.side === 'opp') || o.op === 'oppDamage')) return true;
+      // ★E55 restcombo: 相手キャラレスト系メインは「ブロッカー無力化→顔へ高打点/Wアタック」コンボが立つなら価値あり（game1 T8）
+      if (e55On(side, 'restcombo') && mainHasOppRest(c) && restComboReady(side)) return true;
       // 相手キャラ除去・妨害系 → 価値ある標的がいる時のみ
       if (has('ko', 'trashChar', 'bounce', 'deckBottom', 'restChar', 'koZero', 'lock', 'restImmune', 'setAttackBan', 'denyBlocker', 'negateChoose', 'selectKoIfCostEqualsDon')) return oppHasWorthyTarget(side);
       if (allOps.some(o => o.op === 'powerMod' && o.side === 'opp')) return oppHasWorthyTarget(side);
@@ -276,6 +280,8 @@
       if (!isRemovalMain && G.players[opp(side)].chars.some(x => x.base.no === 'OP15-119')) return false;
       if (!(c.base.fx && c.base.fx.counter)) return true; // 非両用はそのまま
       const P = G.players[side];
+      // ★E55 restcombo: レストコンボ成立時は両用イベントでもカウンター温存より優先して使う（game1 T8: 鬼気九刀流→ブロック不能の2ライフ）
+      if (e55On(side, 'restcombo') && mainHasOppRest(c) && restComboReady(side)) return true;
       if (P.life.length <= 3 || (plan && plan.aggression === 'low')) return false; // 攻められそう→カウンターとして温存
       const fx = (c.base.fx.main && c.base.fx.main.fx) || [];
       const allOps = []; const collect = arr => { for (const o of arr || []) { allOps.push(o); if (o.then) collect(o.then); if (o.fx) collect(o.fx); } };
@@ -412,6 +418,139 @@
     //              単離測定=合算 改善8/退行5（b1 mihawk +4.2pt p=0.063・他は±1局）＝対人間向け部品として採用
     var E54_DEF = { margin2: 1, kohand: 1, utilko: 1, margin2c: 1, kocap: 1, marginmax: 1 };
     function e54On(side, part) { return !!E54_DEF[part] || (isHeur2(side) && h2On(part)); }
+    // ★E55採用テーブル: 7/19実対戦リプレイ研究（docs/pm/replay-study-20260719.md）由来の13部品。
+    //   単離測定は OPCG_AGENT=heur2 OPCG_H2=<part>。採用時に1へ（測定結果は各部品の実装コメントと experiments.md）。
+    //   測定（同一seedペア・2帯・teach↔enel両視点+mihawk→luffygb・N=120）と採否:
+    //   ✅採用8: survblock(Σ+1.7pt 改善12/退行10=発火最多) / restcombo(Σ+0.7pt 4/3) /
+    //           pump・trade・refund・actatk・chip・redirect(全て±0=対面に該当局面なし＝無害。リプレイ実証済みの対人間部品)
+    //           合成測定=Σ+0.8pt 改善13/退行12＝負の相互作用なし
+    //   ❌不採用5（実装再設計が必要な知見つき・再測定は heur2+OPCG_H2）:
+    //     order(Σ-9.2pt 3/14・b1mihawk-5.8★)=素で殴らせた中間アタックが生存ブロックされ丸損。「吸わせる」には中間打点がブロッカーを倒せる必要がある
+    //     alloc(Σ-8.3pt 3/13)=受け過ぎでそのまま押し切られる列が発生。受け判断に相手の次ターン打点予測が要る
+    //     reko(Σ-3.3pt 0/4)=防衛全廃は行き過ぎ。相手の2手目を消費させる価値が残る（防衛コスト2枚以上の時だけskip等に絞る）
+    //     chase(-0.8 0/1)=現行スコアで既に追撃可能・加点は不要 / knownlife(-0.8 1/2)=効果が薄くnicheすぎる
+    //   攻撃系: order=詰めの上乗せ順序制御 / pump=相手の被アタック時ポンプ織り込み / chase=ブロック直後のレストブロッカー追撃
+    //          trade=相手L1での交換収支加点 / refund=ドン払い戻し先出し / actatk=キャラ・ステージ起動の攻撃前皆勤 / chip=カウンター不能ライフ削り優先 / restcombo=ブロッカー無力化コンボ
+    //   防御系: alloc=ターン列単位の防御割当 / reko=再KOチェック / survblock=生存ブロック / knownlife=既知ライフの受け価値
+    //   効果系: redirect=リダイレクトのCPU方針
+    var E55_DEF = { order: 0, pump: 1, chase: 0, trade: 1, refund: 1, actatk: 1, chip: 1, restcombo: 1, alloc: 0, reko: 0, survblock: 1, knownlife: 0, redirect: 1 };
+    function e55On(side, part) { return !!E55_DEF[part] || (isHeur2(side) && h2On(part)); }
+    /* ===== ★E55 攻撃系ヘルパー（各部品は e55On ゲート越しにのみ呼ばれる＝既定バイト不変） ===== */
+    // ★E55 pump: 相手のリーダー/場/ステージの fx.onOppAttack のうち「ドンだけで払えるリーダーのパワー上昇」の最大量。
+    //   走査は保守的＝restDonForBuff（OP13-001型・poolは常にリーダーを含む）と、restDonCost/donMinus→then内の
+    //   leaderBuff/powerMod(side:self,leader)だけを数える。discardCost等の手札コスト形・costGuess等の不確定形は無視
+    //   （手札消費はむしろ攻撃側の利得＝カウンタードレイン。誤爆させない）。根拠: game1 michiruは+2000ポンプに同値突撃5回全不発。
+    function oppLeaderPumpDon(side) {
+      const dSide = opp(side), D = G.players[dSide];
+      if ((D.don.active || 0) < 1) return 0;
+      let amt = 0;
+      for (const src of [D.leader, ...D.chars, ...(D.stage ? [D.stage] : [])]) {
+        if (!src || isNegated(src) || !src.base.fx || !Array.isArray(src.base.fx.onOppAttack)) continue;
+        for (const o of src.base.fx.onOppAttack) {
+          try {
+            if (o.op === 'restDonForBuff') {
+              if (o.cond && !checkCond(o.cond, dSide, src)) continue;
+              amt = Math.max(amt, Math.min(D.don.active, o.maxN || 99) * (o.amount || 2000));
+            } else if ((o.op === 'restDonCost' && D.don.active >= (o.n || 1)) || (o.op === 'donMinus' && donTotal(dSide) >= (o.n || 1))) {
+              let boost = 0;
+              const walk = arr => { for (const p of arr || []) {
+                if (p.op === 'leaderBuff' || (p.op === 'powerMod' && p.side === 'self' && (p.amount || 0) > 0 && (p.leader || p.target === 'selfAndLeader'))) boost = Math.max(boost, p.amount || 0);
+                else if (p.op === 'cond') { if (!p.check || checkCond(p.check, dSide, src)) walk(p.then); }
+              } };
+              walk(o.then);
+              amt = Math.max(amt, boost);
+            }
+          } catch (e) { }
+        }
+      }
+      return amt;
+    }
+    // ★E55 restcombo: 「相手キャラレスト系メイン→ブロック不能の顔攻撃」コンボの成立条件。
+    //   相手のアクティブブロッカー≥1 かつ 自分に顔へ届く高打点(素で+2000以上=カウンター2枚要求)/ダブルアタックが控えている。
+    //   根拠: game1 T8 鬼気九刀流→ブロッカー無力化→ダブルアタックで2ライフ。
+    function restComboReady(side) {
+      const P = G.players[side], D = G.players[opp(side)];
+      if (!canAttackThisTurn(side)) return false;
+      if (!D.chars.some(c => !c.rested && hasKw(c, 'blocker'))) return false;
+      const Lp = power(D.leader);
+      return [P.leader, ...P.chars].some(a => canCardAttack(a) && canTargetLeader(a)
+        && (hasKw(a, 'doubleAttack') || power(a) >= Lp + 2000));
+    }
+    // main効果が「相手キャラレスト」を含むか（restDonCost等のコストthen内も見る）
+    function mainHasOppRest(c) {
+      const fx = c.base.fx && c.base.fx.main && c.base.fx.main.fx; if (!Array.isArray(fx)) return false;
+      let hit = false;
+      const walk = arr => { for (const o of arr || []) { if (o.op === 'restChar' && o.side === 'opp') hit = true; if (o.then) walk(o.then); if (o.fx) walk(o.fx); } };
+      walk(fx);
+      return hit;
+    }
+    // ★E55 chip: 登場時に「カウンター・ブロック不能のライフ削り」を持つか。根拠: game5 T9 8cキッド(OP10-112)のレスト登場+ライフトラッシュ。
+    function chipOnPlay(c) {
+      const fx = c.base.fx && c.base.fx.onPlay; if (!Array.isArray(fx)) return false;
+      let hit = false;
+      const walk = arr => { for (const o of arr || []) { if ((o.op === 'lifeTrash' && o.side === 'opp') || o.op === 'oppDamage') hit = true; if (o.then) walk(o.then); if (o.fx) walk(o.fx); } };
+      walk(fx);
+      return hit;
+    }
+    // ★E55 refund: onPlayのドン回復量とプレイ制限（setSummonBan）。cond付きは今の状態で評価（保守的: 不明形は数えない）
+    function refundOnPlayInfo(side, c) {
+      const fx = c.base.fx && c.base.fx.onPlay; if (!Array.isArray(fx)) return null;
+      let n = 0, ban = false, banMin = null;
+      const walk = ops => { for (const o of ops || []) {
+        if (o.op === 'donActivate') n += o.all ? 99 : (o.n || 1);
+        else if (o.op === 'setSummonBan') { if (o.minBaseCost != null) banMin = o.minBaseCost; else ban = true; }
+        else if (o.op === 'cond') { try { if (!o.check || checkCond(o.check, side, c)) walk(o.then); } catch (e) { } }
+      } };
+      walk(fx);
+      return n > 0 ? { n, ban, banMin } : null;
+    }
+    // 「払い戻し後の残ドンで追加プレイが可能になる」時だけ真（どの順でも同じなら並べ替えない）。根拠: game1/2 6ドンから10コスト分展開。
+    function refundEnablesExtra(side, c, cand) {
+      const info = refundOnPlayInfo(side, c);
+      if (!info || info.ban) return false;
+      const P = G.players[side];
+      const cost = effCost(side, c);
+      const gain = Math.min(info.n, P.don.rested + cost);   // donActivateはレストのドンから＝支払い直後のレスト分が上限
+      if (gain <= 0) return false;
+      const after = P.don.active - cost + gain;
+      return cand.some(c2 => c2 !== c && (info.banMin == null || (c2.base.cost || 0) < info.banMin)
+        && effCost(side, c2) <= after && effCost(side, c2) > P.don.active - cost);
+    }
+    // ★E55 actatk: 起動メインが「このターンの攻撃を増やす系」（rush付与/自キャラ・リーダーのアクティブ化/ドン付与・回復）か
+    function attackBoostAct(c) {
+      const act = c.base.fx && c.base.fx.act; if (!act || !Array.isArray(act.fx)) return false;
+      let hit = false;
+      const walk = arr => { for (const o of arr || []) {
+        if (o.op === 'activateOwnChar' || o.op === 'donAttach' || o.op === 'donAttachAll' || o.op === 'donActivate'
+          || (o.op === 'giveKeyword' && (o.kw === 'rush' || o.kw === 'rushChar'))) hit = true;
+        if (o.then) walk(o.then); if (o.fx) walk(o.fx);
+      } };
+      walk(act.fx);
+      return hit;
+    }
+    // ★E55 actatk: 攻撃増強系のキャラ/ステージ起動をアタック直前・各アタック後に走査して起動（EB04-007即起動・サニー号皆勤。
+    //   「リーダーがキャラとバトル済み」等の条件(OP12-020型)はアタック中にしか成立しない＝ターン冒頭の一括走査では永久に不発だった）。
+    async function tryAttackBoostActs(side) {
+      const P = G.players[side];
+      for (const c of [...P.chars, ...(P.stage ? [P.stage] : [])]) {
+        if (c._actTurn === G.turnSeq || !actUsable(c) || !attackBoostAct(c) || !actWorthUsing(side, c)) continue;
+        // 無駄撃ちガード: アクティブ化系は寝ている自カードがいる時だけ／ドン付与・回復系はレストのドンがある時だけ（rush付与は常に可）
+        const ops = []; const walk = arr => { for (const o of arr || []) { ops.push(o); if (o.then) walk(o.then); if (o.fx) walk(o.fx); } };
+        walk(c.base.fx.act.fx);
+        const okAct = ops.some(o => o.op === 'activateOwnChar') && [P.leader, ...P.chars].some(x => x.rested);
+        const okDon = ops.some(o => o.op === 'donAttach' || o.op === 'donAttachAll' || o.op === 'donActivate') && P.don.rested >= 1;
+        const okRush = ops.some(o => o.op === 'giveKeyword' && (o.kw === 'rush' || o.kw === 'rushChar'));
+        if (!okAct && !okDon && !okRush) continue;
+        const cost = c.base.fx.act.cost || {};
+        if (cost.don) payDon(side, cost.don);
+        if (cost.restSelf) c.rested = true;
+        c._actTurn = G.turnSeq;
+        await fxNote(side, '起動メイン', c.base.name);
+        await runFx(c.base.fx.act.fx, { self: c, side });
+        await sleep(160);
+        if (G.winner) return;
+      }
+    }
     /* ★E42a: cpuCanLethal の精密版（heur2ゲート）。相手の防御力を「手札枚数×0.5」でなく
        「アクティブブロッカー + 手札枚数×(hand+deckプールのカウンター平均)」で見積り、E40と同じ貪欲割当で判定。
        プールの多重集合は determinize と同じ情報水準（個々の手札は読まない＝セミフェア維持）。 */
@@ -468,6 +607,8 @@
       const aggr = plan && plan.aggression;
       const lethal = plan && plan.lethal;                 // リーサル成立時は全攻撃をリーダーに集中
       const oppActiveBlockers = D.chars.filter(c => !c.rested && hasKw(c, 'blocker')).length;
+      // ★E55 pump: 相手の被アタック時ポンプ(ドンだけで払える形)の最大量。0=部品OFF or ポンプ無し
+      const pumpAmt = e55On(side, 'pump') ? oppLeaderPumpDon(side) : 0;
       let best = null;
       for (const a of attackers) {
         const pw = power(a);
@@ -496,11 +637,14 @@
             if (!cBlk && fxc && (fxc.act || fxc.onAttack || fxc.static || fxc.onOppAttack || fxc.onTurnEnd)) score += 7;
             score += Math.max(0, 6000 - pw) / 4000;
           }
+          // ★E55 chase: ブロックでレストした敵ブロッカーは同ターン内の追撃でKO/手札ドレイン（game2 T8/T10。KO枝はレスト対象のみ走査済み）
+          if (e55On(side, 'chase') && cBlk && donNeed <= 2) score += 4;
           if (isBlk && holdBlk) score -= 30;
           if (!best || score > best.score) best = { attacker: a, target: c, score, donNeed };
         }
         // (2) リーダーへアタック＝勝ち筋。ライフが減るほど価値が跳ね上がる
-        const donL = Math.max(0, Math.ceil((Lp - pw) / 1000));
+        // ★E55 pump: ポンプを上回るまで追加ドンを要求＝「相手がドンだけで無効化できる攻撃」は要求超過で自然に候補除外（game1の同値突撃5回全不発の根絶）
+        const donL = Math.max(0, Math.ceil((Lp + (pumpAmt > 0 ? pumpAmt + 1000 : 0) - pw) / 1000));
         if (donL <= spare && canTargetLeader(a)) {
           const L = D.life.length;
           let score = 18 + (L <= 4 ? 4 : 0) + (L <= 3 ? 8 : 0) + (L <= 2 ? 20 : 0) + (L <= 1 ? 30 : 0);
@@ -509,6 +653,8 @@
           if (hasKw(a, 'banish')) score += 4;             // トリガー回避
           if (isUnblockable(a) && oppActiveBlockers > 0) score += 6;
           if (aggr === 'high') score += 8; else if (aggr === 'low') score -= 5;
+          // ★E55 trade: 相手ライフ≤1は素受け不能＝毎回カウンター強制。攻撃は「自ドン vs 相手のカード消費」の交換で黒字（game3 T10）
+          if (e55On(side, 'trade') && !lethal && D.life.length <= 1) score += Math.min(D.hand.length, 4);
           score -= donL * 2;                              // 付与は控えめ減点（リーダー圧は基本得）
           // ★採用(ユーザー観察・4ドン付与同値の抑制): 低パワー役に2ドン以上付与してリーダーへ同値アタックは、相手がカウンター1枚(手札>0)で
           //   防げて付与ドンを丸ごと使い切る大損(probe実測 enel16→4・lucy9→5に削減)。詰め(lethal)・相手手札0(防げない)は別。
@@ -529,13 +675,17 @@
       // ★E54 marginmax: 上乗せの上限。既定+2 → marginmax採用時は「相手の理論最大カウンター(手札×2000)を超える要求」まで
       //   （それ以上積んでも要求は増えない=過剰付与しない。手札1枚なら2×1=+2で従来と同一）
       const marginCap = e54On(side, 'marginmax') ? 2 * D.hand.length : 2;
-      if (e54On(side, 'margin2') && best.target === D.leader && (D.life.length <= 2 || lethal) && D.hand.length >= 1) {
+      // ★E55 order: 相手のアクティブブロッカーが残り、かつ自分に未行動の別アタッカーがいる間は上乗せを抑止
+      //   （game3 T14: 人間は0/0/+4/+6配分＝先の攻撃で素〜同値で殴ってブロック/カウンターを吸わせ、最終攻撃だけに残ドンを集中。
+      //     現行は最初の攻撃に積んでブロックされると付与ドンが丸損）。ブロッカー枯渇後/最後のアタッカーで一括適用（capは適用時点の相手手札で再計算）
+      const holdMargin = e55On(side, 'order') && oppActiveBlockers >= 1 && attackers.some(x => x !== best.attacker);
+      if (!holdMargin && e54On(side, 'margin2') && best.target === D.leader && (D.life.length <= 2 || lethal) && D.hand.length >= 1) {
         const extra = Math.min(marginCap, Math.max(0, spare - best.donNeed));
         for (let i = 0; i < extra && P.don.active > 0; i++) { best.attacker.attachedDon++; P.don.active--; }
       }
       // ★E54 margin2c: パワー5000以上のキャラへのKO狙いも上乗せ（同値はカウンター1000×1枚で守られ、
       //   守られたキャラは盤面に残って毎ターン殴り続ける=将来損失。カウンター要求を引き上げて守りにくくする）
-      if (e54On(side, 'margin2c') && best.target !== D.leader && power(best.target) >= 5000 && D.hand.length >= 1) {
+      if (!holdMargin && e54On(side, 'margin2c') && best.target !== D.leader && power(best.target) >= 5000 && D.hand.length >= 1) {
         const extra = Math.min(marginCap, Math.max(0, spare - best.donNeed));
         for (let i = 0; i < extra && P.don.active > 0; i++) { best.attacker.attachedDon++; P.don.active--; }
       }
@@ -598,7 +748,16 @@
           if (isYamatoLeader(side)) { const alt = cand.filter(c => !yamatoReviveTarget(c.base.no)); if (alt.length) cand = alt; }
           // ★E50(G._lineAvoidゲート): ライン専用パーツ(plan.avoid=しのぶ等)は素出ししない（コンボはライン経由のみ・手札はカウンター温存）
           if (G._lineAvoid && typeof planAvoidPlay === 'function') cand = cand.filter(c => !planAvoidPlay(side, c));
-          return cand.sort((a, b) => scoreChar(b) - scoreChar(a));
+          // ★E55 chip: 相手手札≥4はカウンター/ブロック不能のライフ削り（登場時lifeTrash等）持ちを優先展開（game5 T9: 8cキッドのレスト登場+ライフトラッシュ）
+          const chipOn = e55On(side, 'chip') && G.players[opp(side)].hand.length >= 4;
+          const sc = (x) => scoreChar(x) + ((chipOn && chipOnPlay(x)) ? 4 : 0);
+          cand = cand.sort((a, b) => sc(b) - sc(a));
+          // ★E55 refund: onPlayのドン回復持ちは「払い戻し後の残ドンで追加プレイが可能になる」時だけ先頭へ（game1/2: 人間は6ドンから10コスト分展開）
+          if (e55On(side, 'refund') && cand.length >= 2) {
+            const rf = cand.find(x => refundEnablesExtra(side, x, cand));
+            if (rf && rf !== cand[0]) cand = [rf, ...cand.filter(x => x !== rf)];
+          }
+          return cand;
         })();
         if (!pl.length) {
           // ★E53('luffyact'): アクティブドンが尽きても、無償ドン起動（青緑ルフィのドン2アクティブ）で
@@ -656,7 +815,9 @@
       // 3) 起動効果（エネル等）。エネルのリーダー効果は第2ターン以降ほぼ常に得（ドンランプ＋付与）なので毎ターン使う
       if (P.leader.base.leader === 'enel' && P.turnsTaken >= 2 && P._enelUsedTurn !== G.turnSeq) await leaderActivate(side);
       // 起動メインはキャラだけでなくステージ（ハチノス/マリンフォード等）も対象にする
-      for (const c of [P.leader, ...P.chars, ...(P.stage ? [P.stage] : [])]) { if (actUsable(c)) { const cost = c.base.fx.act.cost || {}; if (actWorthUsing(side, c)) { if (cost.don) payDon(side, cost.don); if (cost.restSelf) c.rested = true; c._actTurn = G.turnSeq; await fxNote(side, '起動メイン', c.base.name); await runFx(c.base.fx.act.fx, { self: c, side }); await sleep(160); } } }
+      // ★E55 actatk: 攻撃増強系（rush付与/アクティブ化/ドン付与）のキャラ/ステージ起動はここで使わずアタックループ側へ回す
+      //   （アクティブ化系はターン冒頭だと寝ている自カードがおらず空撃ちになる。リーダーは従来どおりここで起動）
+      for (const c of [P.leader, ...P.chars, ...(P.stage ? [P.stage] : [])]) { if (actUsable(c)) { const cost = c.base.fx.act.cost || {}; if (e55On(side, 'actatk') && c !== P.leader && canAttackThisTurn(side) && attackBoostAct(c)) continue; if (actWorthUsing(side, c)) { if (cost.don) payDon(side, cost.don); if (cost.restSelf) c.rested = true; c._actTurn = G.turnSeq; await fxNote(side, '起動メイン', c.base.name); await runFx(c.base.fx.act.fx, { self: c, side }); await sleep(160); } } }
       // 4) アタック（リーサルが見えたらリーダー集中、そうでなければ盤面と圧を使い分け）
       if (canAttackThisTurn(side)) {
         if ((isHeur2(side) && h2On('lethal')) ? threatCanLethal(side) : cpuCanLethal(side)) { plan.lethal = true; plan.donReserve = 0; }   // ★E42a: heur2はプール期待値のリーサル判定
@@ -671,6 +832,9 @@
         const usePol = G._polAttack && typeof pickPolicyModel === 'function' && pickPolicyModel(side);
         let a = 0;
         while (a++ < 12) {
+          // ★E55 actatk: 各アタックの前に攻撃増強系のキャラ/ステージ起動を再走査（EB04-007即起動・サニー号皆勤。
+          //   「リーダーがバトル済み」等の条件が攻撃中に成立する型はここでしか拾えない）
+          if (e55On(side, 'actatk')) { await tryAttackBoostActs(side); if (G.winner) return; }
           if (G._polImprove && typeof improvedAttack === 'function') {
             // Stage C(DAgger): 教師＝1-ply価値先読みが「正解ラベル」を出す（improvedAttackはフックで記録）。
             // 状態分布は【生徒】が作る＝着手は方策ネット(未学習ならheuristic)で実行。世代ごとに分布が動く＝真の反復。
