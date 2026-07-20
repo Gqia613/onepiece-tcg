@@ -799,6 +799,26 @@ function setupG(leaderNo){G.active='me';G.turnSeq=5;G.winner=null;const mkP=(ln,
       ok(promptCalls===0 && buggy._oppAtkTurn!==G.turnSeq, '例31d: 囚人不在なら選択なし・ターン1回未消費');
       resetPrompt(); G.active='me';
     }
+    // 例32: ★E54 アタック判断のカウンター意識（cpuPickAttack直接呼び）
+    // 32a margin2: 相手残ライフ2以下+手札ありなら、リーダー攻撃は同値でなく+2000上乗せ（カウンター2枚要求）
+    setupG('OP01-062'); { const P=G.players.me, O=G.players.cpu; P.isCPU=true; G.active='me';
+      const atk=mkc('OP01-065'); atk.summonedTurn=1; P.chars=[atk]; P.don.active=5; // P7000バニラ vs リーダー5000
+      O.life=[mkc('OP15-067'),mkc('OP15-067')]; O.hand=[mkc('OP15-067')]; O.deck=[mkc('OP15-067')];
+      const pick=cpuPickAttack('me',{});
+      ok(pick && pick.target===O.leader && pick.attacker.attachedDon===2 && P.don.active===3, '例32a: margin2=残ライフ2で同値でなく+2000上乗せ（付与2・要求2枚）');
+    }
+    // 32b kohand: ドン付与のブロッカーKO狙いは相手手札が厚いと見送る（手札2枚以下なら実行）
+    setupG('OP01-062'); { const P=G.players.me, O=G.players.cpu; P.isCPU=true; G.active='me';
+      const atk=mkc('ST32-005'); atk.summonedTurn=1; P.chars=[atk]; P.don.active=3; // P2000
+      const blk=mkc('OP01-065'); blk.owner='cpu'; blk.rested=true; blk.base=Object.assign({},blk.base,{blocker:true}); O.chars=[blk]; // レストの5000ブロッカー(3ドン同値KO圏)
+      O.life=[mkc('OP15-067'),mkc('OP15-067'),mkc('OP15-067'),mkc('OP15-067')]; O.deck=[mkc('OP15-067')];
+      O.hand=[mkc('OP15-067'),mkc('OP15-067'),mkc('OP15-067'),mkc('OP15-067'),mkc('OP15-067'),mkc('OP15-067'),mkc('OP15-067'),mkc('OP15-067')]; // 手札8枚
+      const pickFat=cpuPickAttack('me',{});
+      ok(!pickFat || pickFat.target!==blk, '例32b: kohand=手札8枚相手へのドン付与ブロッカーKOは見送る');
+      atk.attachedDon=0; P.don.active=3; O.hand=[mkc('OP15-067')]; // 手札1枚なら従来どおり狙う
+      const pickThin=cpuPickAttack('me',{});
+      ok(pickThin && pickThin.target===blk, '例32b: 手札1枚なら従来どおりブロッカーKOを狙う');
+    }
   }catch(e){ console.log('EXCEPTION:', e.message); fail++; }
   console.log('ユニットテスト: pass='+pass+' fail='+fail);
   process.exit(fail?1:0);

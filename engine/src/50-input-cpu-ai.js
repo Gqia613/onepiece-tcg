@@ -390,6 +390,19 @@
     //   restpick=restOwnAsCostのレスト対象選択 / actgate=コスト→cond不成立の起動抑止 / luffyact=無償ドン起動を展開予算に組込
     var E53_DEF = { restpick: 1, actgate: 1, luffyact: 1 };
     function e53On(side, part) { return !!E53_DEF[part] || (isHeur2(side) && h2On(part)); }
+    // ★E54採用テーブル: アタック判断のカウンター意識（実対戦観察 2026-07-20 由来）。再測定は既定を0に戻し OPCG_AGENT=heur2 OPCG_H2=<part> で単離。
+    //   測定（measure-matchup 同一seedペア・2seed帯・teach↔enel両視点+mihawk→luffygb・N=120）:
+    //   margin2 単離=全8ライン正方向・合算 改善33/退行4（mihawk両帯有意 +7.5pt p=0.012★ / +5.8pt p=0.039★）
+    //   utilko 単離=合算 改善19/退行7（enel +5.0pt p=0.070 ほか・両帯合計正方向）
+    //   kohand 単離=対CPU中立〜微負(2/5)。CPU防御側はキャラをカウンターで守らないため計測に写らない＝対人間の丸損手
+    //   （2000+3ドンでブロッカー同値KO→手札厚でカウンター1枚で守られる）削減が目的。「勝率中立だが明確な無駄手を消す」前例（太ドン同値除外）と同じ扱いで採用。
+    //   合成=全6ライン正方向・合算 改善45/退行14（b2 mihawk +7.5pt p=0.035★）＝負の相互作用なし。
+    //   margin2 = リーダー攻撃の+2000上乗せ（相手が守り始める局面=残ライフ2以下 or 詰めのみ。カウンター要求を2枚に引き上げる。
+    //             序盤は同値のままでよい=どうせライフで受けられるので上乗せは丸損、という観察に基づくゲート）
+    //   kohand  = ドン付与KO狙いを相手手札厚で減点（手札3枚以上は守られて付与ドン丸損。2枚以下なら通る、という観察）
+    //   utilko  = フリーで取れる「効果持ち小型」のKO価値↑＋同点なら小型アタッカーに仕事をさせ大型はリーダーへ温存
+    var E54_DEF = { margin2: 1, kohand: 1, utilko: 1 };
+    function e54On(side, part) { return !!E54_DEF[part] || (isHeur2(side) && h2On(part)); }
     /* ★E42a: cpuCanLethal の精密版（heur2ゲート）。相手の防御力を「手札枚数×0.5」でなく
        「アクティブブロッカー + 手札枚数×(hand+deckプールのカウンター平均)」で見積り、E40と同じ貪欲割当で判定。
        プールの多重集合は determinize と同じ情報水準（個々の手札は読まない＝セミフェア維持）。 */
@@ -461,6 +474,15 @@
                            : (7 + power(c) / 1500 + (c.base.cost || 0) * 0.5);  // レスト済み雑魚の除去は低価値（heur2でKO価値↑↓を測定→7が最適と確認）
           if (pri.some(n => c.base.name.includes(n) || n.includes(c.base.name))) score += 12;
           score -= donNeed * (cBlk ? 3 : 9);              // 雑魚をドン付与で倒すのはテンポ損→強く減点（指摘3対策）
+          // ★E54 kohand: ドンを沈めるKO狙いは相手手札が厚いほどカウンターで守られて丸損（観察: 手札2枚以下なら通る）
+          if (e54On(side, 'kohand') && donNeed > 0) score -= donNeed * Math.max(0, D.hand.length - 2) * 1.5;
+          // ★E54 utilko: フリーで取れる「効果持ち小型」は雑魚扱いしない（起動/アタック時/常在持ち=生かすと仕事を続ける栓）。
+          //   同点なら小さいアタッカーに小型の仕事をさせ、大型はリーダーへ温存する
+          if (e54On(side, 'utilko') && donNeed === 0) {
+            const fxc = c.base.fx;
+            if (!cBlk && fxc && (fxc.act || fxc.onAttack || fxc.static || fxc.onOppAttack || fxc.onTurnEnd)) score += 7;
+            score += Math.max(0, 6000 - pw) / 4000;
+          }
           if (isBlk && holdBlk) score -= 30;
           if (!best || score > best.score) best = { attacker: a, target: c, score, donNeed };
         }
@@ -489,6 +511,12 @@
       }
       if (!best || best.score <= 0) return null;            // 価値ある攻撃が無ければ終了
       for (let i = 0; i < best.donNeed && P.don.active > 0; i++) { best.attacker.attachedDon++; P.don.active--; }
+      // ★E54 margin2: 相手が「ライフで受ける」をやめて守り始める局面（残ライフ2以下 or 詰め）では同値でなく+2000上乗せし、
+      //   カウンター要求を2枚（+2000と+1000）に引き上げる（観察: +1000上乗せは2000カウンター1枚で足りてしまい要求が甘い）
+      if (e54On(side, 'margin2') && best.target === D.leader && (D.life.length <= 2 || lethal) && D.hand.length >= 1) {
+        const extra = Math.min(2, Math.max(0, spare - best.donNeed));
+        for (let i = 0; i < extra && P.don.active > 0; i++) { best.attacker.attachedDon++; P.don.active--; }
+      }
       return { attacker: best.attacker, target: best.target };
     }
     async function heuristicTurn(side) {
