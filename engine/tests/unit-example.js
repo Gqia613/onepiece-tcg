@@ -819,6 +819,19 @@ function setupG(leaderNo){G.active='me';G.turnSeq=5;G.winner=null;const mkP=(ln,
       const pickThin=cpuPickAttack('me',{});
       ok(pickThin && pickThin.target===blk, '例32b: 手札1枚なら従来どおりブロッカーKOを狙う');
     }
+    // 32c margin2c: パワー5000以上のキャラKOは+2000上乗せ（守られると残って毎ターン殴られる）。5000未満は従来どおり同値
+    setupG('OP01-062'); { const P=G.players.me, O=G.players.cpu; P.isCPU=true; G.active='me';
+      const atk=mkc('ST32-003'); atk.summonedTurn=1; P.chars=[atk]; P.don.active=5; // P7000
+      const big=mkc('OP01-065'); big.owner='cpu'; big.rested=true; big.base=Object.assign({},big.base,{blocker:true}); O.chars=[big]; // レストの7000ブロッカー…ではなくP7000。同値KO圏
+      O.life=[mkc('OP15-067'),mkc('OP15-067'),mkc('OP15-067'),mkc('OP15-067')]; O.hand=[mkc('OP15-067')]; O.deck=[mkc('OP15-067')];
+      const pick=cpuPickAttack('me',{});
+      ok(pick && pick.target===big && pick.attacker.attachedDon===2, '例32c: 5000以上のキャラKOは+2000上乗せ（付与2）');
+      // 5000未満（P2000ブロッカー）は上乗せしない
+      const small=mkc('ST32-005'); small.owner='cpu'; small.rested=true; small.base=Object.assign({},small.base,{blocker:true}); O.chars=[small];
+      atk.attachedDon=0; P.don.active=5;
+      const pick2=cpuPickAttack('me',{});
+      ok(pick2 && pick2.target===small && pick2.attacker.attachedDon===0, '例32c: 5000未満のキャラKOは従来どおり同値（上乗せなし）');
+    }
   }catch(e){ console.log('EXCEPTION:', e.message); fail++; }
   console.log('ユニットテスト: pass='+pass+' fail='+fail);
   process.exit(fail?1:0);

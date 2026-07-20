@@ -401,7 +401,10 @@
     //             序盤は同値のままでよい=どうせライフで受けられるので上乗せは丸損、という観察に基づくゲート）
     //   kohand  = ドン付与KO狙いを相手手札厚で減点（手札3枚以上は守られて付与ドン丸損。2枚以下なら通る、という観察）
     //   utilko  = フリーで取れる「効果持ち小型」のKO価値↑＋同点なら小型アタッカーに仕事をさせ大型はリーダーへ温存
-    var E54_DEF = { margin2: 1, kohand: 1, utilko: 1 };
+    //   margin2c = キャラへのKO狙いも対象パワー5000以上なら+2000上乗せ（カウンター1枚で守られるとそのキャラは残って
+    //              毎ターン殴り続ける=将来損失が大きい。要求を2枚に引き上げる、というユーザー知見 2026-07-20追補）。
+    //              単離測定=合算 改善16/退行10（b1 mihawk +5.0pt p=0.180・他は中立）＝kohandと同型の対人間向け部品として採用
+    var E54_DEF = { margin2: 1, kohand: 1, utilko: 1, margin2c: 1 };
     function e54On(side, part) { return !!E54_DEF[part] || (isHeur2(side) && h2On(part)); }
     /* ★E42a: cpuCanLethal の精密版（heur2ゲート）。相手の防御力を「手札枚数×0.5」でなく
        「アクティブブロッカー + 手札枚数×(hand+deckプールのカウンター平均)」で見積り、E40と同じ貪欲割当で判定。
@@ -514,6 +517,12 @@
       // ★E54 margin2: 相手が「ライフで受ける」をやめて守り始める局面（残ライフ2以下 or 詰め）では同値でなく+2000上乗せし、
       //   カウンター要求を2枚（+2000と+1000）に引き上げる（観察: +1000上乗せは2000カウンター1枚で足りてしまい要求が甘い）
       if (e54On(side, 'margin2') && best.target === D.leader && (D.life.length <= 2 || lethal) && D.hand.length >= 1) {
+        const extra = Math.min(2, Math.max(0, spare - best.donNeed));
+        for (let i = 0; i < extra && P.don.active > 0; i++) { best.attacker.attachedDon++; P.don.active--; }
+      }
+      // ★E54 margin2c: パワー5000以上のキャラへのKO狙いも+2000上乗せ（同値はカウンター1000×1枚で守られ、
+      //   守られたキャラは盤面に残って毎ターン殴り続ける=将来損失。要求を2枚に引き上げて守りにくくする）
+      if (e54On(side, 'margin2c') && best.target !== D.leader && power(best.target) >= 5000 && D.hand.length >= 1) {
         const extra = Math.min(2, Math.max(0, spare - best.donNeed));
         for (let i = 0; i < extra && P.don.active > 0; i++) { best.attacker.attachedDon++; P.don.active--; }
       }
