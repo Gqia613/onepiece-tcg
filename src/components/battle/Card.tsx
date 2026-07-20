@@ -89,7 +89,10 @@ export function Card({ card, ctx }: { card: TCard; ctx: CardCtx }) {
   if ((card as any).frozen) kwChips.push('凍結');
   // 「レストにできない」（restImmune）＝アタックもブロックもできず、レスト効果の対象にもならない。
   // 盤面からは全く読み取れない状態なので必ず出す（OP16-032 ハンコック等）。
-  if ((card as any).restImmuneUntil != null) kwChips.push('レスト不可');
+  // ★turnSeq境界チェック必須: restImmuneUntil はエンジンの clearNegation が失効時にnull化するが、
+  //   フィールドが残っていても turnSeq>restImmuneUntil なら効果は切れている（isRestImmuneと同じ<=境界）。
+  //   これを見ずに !=null だけで出すと相手エンドフェイズ後まで「レスト不可」が残留した（実バグ）。
+  if ((card as any).restImmuneUntil != null && engine?.G && engine.G.turnSeq <= (card as any).restImmuneUntil) kwChips.push('レスト不可');
   // 【ブロッカー】を発動できない（denyBlocker）状態。ブロッカーなのにブロック選択に出ない理由を可視化。
   if ((card as any).noBlockSeq != null && engine?.G && (card as any).noBlockSeq === engine.G.turnSeq) kwChips.push('ブロック不可');
 

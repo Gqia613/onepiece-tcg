@@ -406,7 +406,11 @@
     //              単離測定=合算 改善16/退行10（b1 mihawk +5.0pt p=0.180・他は中立）＝kohandと同型の対人間向け部品として採用
     //   kocap    = 3ドン以上沈めるキャラKO狙いは相手手札>0なら候補除外（実対戦指摘「2000に7ドンで9000ブロッカーへ同値」の根絶。
     //              heuristicのKO枝とpuctのcandidateActions両経路に適用。単離測定=全6ライン±0の完全中立＝対CPUで失うもの無し）
-    var E54_DEF = { margin2: 1, kohand: 1, utilko: 1, margin2c: 1, kocap: 1 };
+    //   marginmax= 上乗せ上限を+2固定から「相手の理論最大カウンター（手札×2000）を超える要求まで」に引き上げ
+    //              （ユーザー知見: 大事なのは相手にカウンターを合計いくら要求できるか。同値2回=要求2000より
+    //                5000+6ドン=11000の1回=要求5000+が圧倒的に得。手札1枚なら+2で従来と同じ=過剰付与しない）。
+    //              単離測定=合算 改善8/退行5（b1 mihawk +4.2pt p=0.063・他は±1局）＝対人間向け部品として採用
+    var E54_DEF = { margin2: 1, kohand: 1, utilko: 1, margin2c: 1, kocap: 1, marginmax: 1 };
     function e54On(side, part) { return !!E54_DEF[part] || (isHeur2(side) && h2On(part)); }
     /* ★E42a: cpuCanLethal の精密版（heur2ゲート）。相手の防御力を「手札枚数×0.5」でなく
        「アクティブブロッカー + 手札枚数×(hand+deckプールのカウンター平均)」で見積り、E40と同じ貪欲割当で判定。
@@ -522,14 +526,17 @@
       for (let i = 0; i < best.donNeed && P.don.active > 0; i++) { best.attacker.attachedDon++; P.don.active--; }
       // ★E54 margin2: 相手が「ライフで受ける」をやめて守り始める局面（残ライフ2以下 or 詰め）では同値でなく+2000上乗せし、
       //   カウンター要求を2枚（+2000と+1000）に引き上げる（観察: +1000上乗せは2000カウンター1枚で足りてしまい要求が甘い）
+      // ★E54 marginmax: 上乗せの上限。既定+2 → marginmax採用時は「相手の理論最大カウンター(手札×2000)を超える要求」まで
+      //   （それ以上積んでも要求は増えない=過剰付与しない。手札1枚なら2×1=+2で従来と同一）
+      const marginCap = e54On(side, 'marginmax') ? 2 * D.hand.length : 2;
       if (e54On(side, 'margin2') && best.target === D.leader && (D.life.length <= 2 || lethal) && D.hand.length >= 1) {
-        const extra = Math.min(2, Math.max(0, spare - best.donNeed));
+        const extra = Math.min(marginCap, Math.max(0, spare - best.donNeed));
         for (let i = 0; i < extra && P.don.active > 0; i++) { best.attacker.attachedDon++; P.don.active--; }
       }
-      // ★E54 margin2c: パワー5000以上のキャラへのKO狙いも+2000上乗せ（同値はカウンター1000×1枚で守られ、
-      //   守られたキャラは盤面に残って毎ターン殴り続ける=将来損失。要求を2枚に引き上げて守りにくくする）
+      // ★E54 margin2c: パワー5000以上のキャラへのKO狙いも上乗せ（同値はカウンター1000×1枚で守られ、
+      //   守られたキャラは盤面に残って毎ターン殴り続ける=将来損失。カウンター要求を引き上げて守りにくくする）
       if (e54On(side, 'margin2c') && best.target !== D.leader && power(best.target) >= 5000 && D.hand.length >= 1) {
-        const extra = Math.min(2, Math.max(0, spare - best.donNeed));
+        const extra = Math.min(marginCap, Math.max(0, spare - best.donNeed));
         for (let i = 0; i < extra && P.don.active > 0; i++) { best.attacker.attachedDon++; P.don.active--; }
       }
       return { attacker: best.attacker, target: best.target };

@@ -358,6 +358,11 @@ humanPick=function(c){return Promise.resolve((c||[])[0]||null);};
     G.active='me'; ri.rested=false; ok(!canCardAttack(ri),'OP16-032: restImmuneはアタック不可');
     G.active='cpu'; await runFx([{op:'restChar',side:'opp',count:1}],{self:I('OP16-032','cpu'),side:'cpu'});
     ok(!ri.rested,'OP16-032: restImmuneはrestChar対象外');
+    // 失効タイミング(clearNegation)の回帰: restImmuneUntil=6(=付与時turnSeq5+1)。相手(me)エンドフェイズ終了時=turnSeq6でフィールドが必ずnullになる
+    // ＝「レスト不可」表示チップ(Card.tsxはrestImmuneUntil!=nullで出す)が相手ターン後まで残らない。旧の大なり判定は自分の次ターン(7)まで残った実バグ。
+    // ※harnessはString.rawテンプレート内なのでバックティック使用禁止(既存コメントも同様に言葉で表記)。
+    G.turnSeq=5; clearNegation(); ok(ri.restImmuneUntil!=null,'OP16-032: 付与ターン終了(turnSeq5)ではまだ失効しない=相手ターン中は継続');
+    G.turnSeq=6; clearNegation(); ok(ri.restImmuneUntil==null,'OP16-032: 相手エンドフェイズ終了(turnSeq6)でrestImmuneUntilクリア=レスト不可表示が残らない');
     G.turnSeq=7; ok(!isRestImmune(ri),'OP16-032: 自分の次ターンで失効');
     // OP16-084: コスト20以上(しのぶ+20)→トラッシュ→コスト9モモの助(OP16-085)登場 / 20未満は不発
     G.players={cpu:mkP('OP11-041',true),me:mkP('OP13-002',false)}; G.active='cpu'; G.turnSeq=5;
@@ -2470,7 +2475,8 @@ humanPick=function(c){return Promise.resolve((c||[])[0]||null);};
       await runFx(C['ST36-005'].fx.act.fx,{self:kid,side:'me'});
       ok(me.life[0]._faceUp===true && me.leader.attachedDon===1 && me.don.rested===0, 'ST36-005起動メイン: ライフを表向き→リーダーにレストのドン1枚を付与'); }
   }catch(e){ console.log('EXCEPTION:', e.message); fail++; }
-  console.log('Phase3 fxテスト: pass='+pass+' fail='+fail);
+  // ★console.log直後のprocess.exitはパイプ先で最終行が切れる（8KB超のstdout truncation・既知の罠）→ 同期writeで確実に流す
+  require('fs').writeSync(1, 'Phase3 fxテスト: pass='+pass+' fail='+fail+'\n');
   process.exit(fail?1:0);
 })();
 `;

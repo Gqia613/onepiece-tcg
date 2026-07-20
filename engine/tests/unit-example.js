@@ -844,6 +844,16 @@ function setupG(leaderNo){G.active='me';G.turnSeq=5;G.winner=null;const mkP=(ln,
       const pick2=cpuPickAttack('me',{});
       ok(pick2 && pick2.target===big && pick2.attacker.attachedDon===7, '例32d: 相手手札0なら7ドン同値KOは許可（確実に通る）');
     }
+    // 32e marginmax: 上乗せは「相手の理論最大カウンター(手札×2000)を超える要求」まで積む（同値2回=要求2000より1回の大要求が得）
+    setupG('OP01-062'); { const P=G.players.me, O=G.players.cpu; P.isCPU=true; G.active='me';
+      P.leader.rested=true;
+      const atk=mkc('OP01-065'); atk.summonedTurn=1; atk.base=Object.assign({},atk.base,{power:5000}); P.chars=[atk]; P.don.active=7; // P5000
+      const big=mkc('ST32-003'); big.owner='cpu'; big.rested=true; big.base=Object.assign({},big.base,{power:7000,blocker:true}); O.chars=[big];
+      O.life=[mkc('OP15-067'),mkc('OP15-067'),mkc('OP15-067'),mkc('OP15-067')];
+      O.hand=[mkc('OP15-067'),mkc('OP15-067'),mkc('OP15-067')]; O.deck=[mkc('OP15-067')]; // 手札3枚=理論最大カウンター6000
+      const pick=cpuPickAttack('me',{});
+      ok(pick && pick.target===big && pick.attacker.attachedDon===7, '例32e: marginmax=5000+7ドン(同値2+上乗せ5)=12000で要求5000（手札3枚の上限近くまで積む）');
+    }
   }catch(e){ console.log('EXCEPTION:', e.message); fail++; }
   console.log('ユニットテスト: pass='+pass+' fail='+fail);
   process.exit(fail?1:0);
