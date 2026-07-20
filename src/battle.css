@@ -2538,6 +2538,10 @@ button.hb-chip:not(.zero):not([disabled]):hover {
   padding: 15px 20px;
   min-width: 300px;
   max-width: min(560px, 92%);
+  /* 縦に収まらない場合（ドン付与10択など）はモーダル全体を内部スクロール＝選択肢が見切れない */
+  max-height: calc(100vh - 70px);
+  max-height: calc(100dvh - 70px);
+  overflow-y: auto;
   box-shadow: var(--elev-3), 0 0 30px -10px rgba(255, 200, 87, .4);
   text-align: center;
   display: none
@@ -5459,7 +5463,8 @@ button.hb-chip:not(.zero):not([disabled]):hover {
     flex-direction: column;
   }
 
-  /* 見出し・ヘッダー・ボタンは縮まない（＝常に見える）。中央のカード候補だけが伸縮＆スクロール */
+  /* 見出し・ヘッダー・ボタンは縮まない（＝常に見える）。伸縮＆スクロールするのは
+     カード候補(.opt-cards)と、テキスト選択肢のみの場合の .opts（下の専用ルール） */
   .prompt h3,
   .prompt p,
   .prompt .pp-src,
@@ -5467,8 +5472,7 @@ button.hb-chip:not(.zero):not([disabled]):hover {
   .prompt .pp-warn,
   .prompt .opt-count,
   .prompt .prompt-atkhead,
-  .prompt .prompt-peek-btn,
-  .prompt .opts {
+  .prompt .prompt-peek-btn {
     flex: 0 0 auto;
   }
 
@@ -5486,11 +5490,25 @@ button.hb-chip:not(.zero):not([disabled]):hover {
     font-size: 12px;
   }
 
-  /* 選択肢は縦積みフル幅・タップ高48px。取消(ghost)は末尾＋ギャップで物理的に分離 */
+  /* 選択肢は縦積みフル幅・タップ高48px。取消(ghost)は末尾＋ギャップで物理的に分離。
+     テキストボタンが多い場合（ドン付与10択など）はシート高を超えた分を内部スクロール
+     ＝最後の選択肢まで必ず到達できる */
   .prompt .opts {
     flex-direction: column;
+    /* ベースの flex-wrap:wrap のままだと高さ制約時に2列目へ折り返す＝縦1列固定 */
+    flex-wrap: nowrap;
     align-items: stretch;
     gap: 10px;
+    flex: 0 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+  }
+
+  /* カード候補(.opt-cards)と併存する場合（カウンター等の下部ボタン）は従来どおり
+     ボタンを常時表示し、スクロールは .opt-cards 側だけに担わせる */
+  .prompt .opt-cards ~ .opts {
+    flex: 0 0 auto;
+    overflow-y: visible;
   }
 
   .opt {
