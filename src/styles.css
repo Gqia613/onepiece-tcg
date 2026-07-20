@@ -699,3 +699,13 @@ html, body, #root { height: 100%; margin: 0; }
   margin: 4px 0 10px;
   width: min(560px, 100%);
 }
+
+/* モバイル発熱対策（タッチ端末のみ）: シェルの常時トップバーは、常時アニメの背景(aurora)上の
+   backdrop-filter が毎フレーム再ぼかしになるため、不透明寄りの静的背景に置き換える（battle.css の同施策と対）。 */
+@media (pointer: coarse) {
+  .topbar {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    background: linear-gradient(180deg, rgba(16, 34, 58, .97), rgba(7, 16, 30, .96));
+  }
+}

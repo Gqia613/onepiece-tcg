@@ -7106,3 +7106,33 @@ button.hb-chip:not(.zero):not([disabled]):hover {
   color: #ffd9d2;
   border-color: rgba(255, 106, 77, .6);
 }
+
+/* ============ モバイル発熱対策（タッチ端末のみ・E56系） ============
+   常時アニメの背景(aurora)の上に backdrop-filter が乗ると、背後が毎フレーム変わる＝
+   ぼかしが毎フレーム再計算されて GPU が休めない（スマホ発熱の主因）。
+   タッチ端末ではオーロラを静止し、常時表示要素（topbar/hintbar/preview）のぼかしを
+   不透明寄りの静的背景に置き換える。一時表示（モーダル/メニュー/通知ピル/trashfan）の
+   ぼかしは背景静止後は安価なので残す。DeckSelect の puct 縮小（G._puctCap）と対の施策。 */
+@media (pointer: coarse) {
+  body::before {
+    animation: none;
+  }
+
+  #topbar {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    background: linear-gradient(180deg, rgba(16, 34, 58, .97), rgba(7, 16, 30, .96));
+  }
+
+  .hintbar {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    background: rgba(10, 22, 40, .92);
+  }
+
+  #preview {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    background: rgba(14, 30, 52, .96);
+  }
+}
