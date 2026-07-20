@@ -404,7 +404,9 @@
     //   margin2c = キャラへのKO狙いも対象パワー5000以上なら+2000上乗せ（カウンター1枚で守られるとそのキャラは残って
     //              毎ターン殴り続ける=将来損失が大きい。要求を2枚に引き上げる、というユーザー知見 2026-07-20追補）。
     //              単離測定=合算 改善16/退行10（b1 mihawk +5.0pt p=0.180・他は中立）＝kohandと同型の対人間向け部品として採用
-    var E54_DEF = { margin2: 1, kohand: 1, utilko: 1, margin2c: 1 };
+    //   kocap    = 3ドン以上沈めるキャラKO狙いは相手手札>0なら候補除外（実対戦指摘「2000に7ドンで9000ブロッカーへ同値」の根絶。
+    //              heuristicのKO枝とpuctのcandidateActions両経路に適用。単離測定=全6ライン±0の完全中立＝対CPUで失うもの無し）
+    var E54_DEF = { margin2: 1, kohand: 1, utilko: 1, margin2c: 1, kocap: 1 };
     function e54On(side, part) { return !!E54_DEF[part] || (isHeur2(side) && h2On(part)); }
     /* ★E42a: cpuCanLethal の精密版（heur2ゲート）。相手の防御力を「手札枚数×0.5」でなく
        「アクティブブロッカー + 手札枚数×(hand+deckプールのカウンター平均)」で見積り、E40と同じ貪欲割当で判定。
@@ -472,6 +474,10 @@
           if (!c.rested) continue;
           const donNeed = Math.max(0, Math.ceil((power(c) - pw) / 1000));
           if (donNeed > spare) continue;                  // ドンを足しても届かない→対象外
+          // ★E54 kocap: 3ドン以上沈めるキャラKO狙いは相手が1枚でもカウンターを構えられるなら候補から除外
+          //   （実対戦指摘: 2000に7ドン付与して9000ブロッカーへ同値＝カウンター1000×1枚で全ドン丸損の最弱手。
+          //     ブロッカーはパワー比例で加点される一方ドン代の減点が軽く、この型がスコア上勝ってしまっていた）。相手手札0なら確実に通るので許可
+          if (e54On(side, 'kocap') && donNeed >= 3 && D.hand.length > 0) continue;
           const cBlk = hasKw(c, 'blocker');
           let score = cBlk ? (28 + power(c) / 700 + (c.base.cost || 0) * 1.2)   // ブロッカー＝ライフ圧の栓。除去は最優先級
                            : (7 + power(c) / 1500 + (c.base.cost || 0) * 0.5);  // レスト済み雑魚の除去は低価値（heur2でKO価値↑↓を測定→7が最適と確認）

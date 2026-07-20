@@ -410,6 +410,10 @@
             if (G._atkDonVar && D.hand.length > 0 && need + 1 <= P.don.active) acts.push({ k: 'attack', auid: a.auid, tuid: a.tuid, extraDon: 1 });
             continue;
           }
+          // ★E54 kocap(cpuPickAttackと同方針): 3ドン以上沈めるキャラKOは相手手札>0なら候補除外
+          //   （「2000に7ドンで9000ブロッカーへ同値」型＝カウンター1枚で全ドン丸損。探索経路にも同じ穴があった）
+          const needC = Math.max(0, Math.ceil((power(tg) - power(at)) / 1000));
+          if (typeof e54On === 'function' && e54On(side, 'kocap') && needC >= 3 && D.hand.length > 0) continue;
           const threat = hasKw(tg, 'blocker') || power(tg) >= 5000 || (tg.base.fx && (tg.base.fx.onKO || tg.base.fx.act));
           if (threat) acts.push(a);                                        // 脅威キャラのKOのみ
         } else if (a.k === 'act') {                                        // ★起動メインは「今使う価値がある」時だけ候補化（heuristicのactWorthUsingをpuctにも適用）

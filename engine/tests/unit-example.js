@@ -832,6 +832,18 @@ function setupG(leaderNo){G.active='me';G.turnSeq=5;G.winner=null;const mkP=(ln,
       const pick2=cpuPickAttack('me',{});
       ok(pick2 && pick2.target===small && pick2.attacker.attachedDon===0, '例32c: 5000未満のキャラKOは従来どおり同値（上乗せなし）');
     }
+    // 32d kocap: 「2000に7ドン付与して9000ブロッカーへ同値」（実対戦報告の実ケース）を候補から除外。相手手札0なら確実に通るので許可
+    setupG('OP01-062'); { const P=G.players.me, O=G.players.cpu; P.isCPU=true; G.active='me';
+      P.leader.rested=true; // リーダーは攻撃済み想定＝アタッカーは2000のみ
+      const atk=mkc('ST32-005'); atk.summonedTurn=1; P.chars=[atk]; P.don.active=7; // P2000
+      const big=mkc('OP01-065'); big.owner='cpu'; big.rested=true; big.base=Object.assign({},big.base,{power:9000,blocker:true}); O.chars=[big];
+      O.life=[mkc('OP15-067'),mkc('OP15-067'),mkc('OP15-067'),mkc('OP15-067')]; O.hand=[mkc('OP15-067')]; O.deck=[mkc('OP15-067')];
+      const pick=cpuPickAttack('me',{});
+      ok(!pick || pick.target!==big, '例32d: kocap=相手手札ありの「2000+7ドン同値9000ブロッカーKO」は候補除外');
+      atk.attachedDon=0; P.don.active=7; O.hand=[]; // 手札0＝カウンター不能なら確実に通るので許可
+      const pick2=cpuPickAttack('me',{});
+      ok(pick2 && pick2.target===big && pick2.attacker.attachedDon===7, '例32d: 相手手札0なら7ドン同値KOは許可（確実に通る）');
+    }
   }catch(e){ console.log('EXCEPTION:', e.message); fail++; }
   console.log('ユニットテスト: pass='+pass+' fail='+fail);
   process.exit(fail?1:0);
