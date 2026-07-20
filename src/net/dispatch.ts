@@ -64,12 +64,22 @@ export function createLockstep(deps: LockstepDeps): Lockstep {
   let stallTimer: ReturnType<typeof setTimeout> | null = null;
   let endTurnsApplied = 0;   // 適用済み endTurn の累計（境界番号）
   let boundaryNotified = 0;  // onBoundary を発火済みの境界番号
+  /* ★inflight-applyゲート（m12実バグの修正）: 直前入力の適用チェーン（attack=バトル全体・play/menu=効果解決全体・
+     endTurn=ターン切替チェーン）が settle するまで、メインフェイズ入力（play/menu/endTurn）を配達しない。
+     入力が事前キューされる復帰(resume)リプレイでは、エンジンの非同期チェーンに「一瞬停泊に見える過渡窓」
+     （バトル残尾の busy=false 窓・beginTurn のドンフェイズ前）があり、そこへ次入力が滑り込むと
+     無音no-op→以降のプロンプト応答が恒久配達不能→10秒後desyncになる。prompt/attackSel 分岐は対象外
+     （親の適用が await している最中に応答を受けるのが正常系＝ここを塞ぐとデッドロック）。 */
+  let inflight = 0;
+  let applyEpoch = 0;
 
   function reset(startSeq = 1): void {
     queue.length = 0;
     nextSeq = startSeq;
     endTurnsApplied = 0;
     boundaryNotified = 0;
+    inflight = 0;
+    applyEpoch++;
     if (stallTimer) { realClearTimeout(stallTimer); stallTimer = null; }
     for (const p of pendingEchoes.splice(0)) { realClearTimeout(p.timer); p.reject(new Error('lockstep-reset')); }
     deps.sending.set(false);
@@ -129,6 +139,7 @@ export function createLockstep(deps: LockstepDeps): Lockstep {
       //   継続（beginAttack→attackSel設定）より先に直前バトルの非同期尻尾が busy=false を戻した隙に
       //   attack が main 分岐から適用され、遅れて立った attackSel が残留→以降の入力が永久に配達不能になる
       //   （実リプレイで再現した実バグ）。attackSel 分岐だけに限定すれば適用順が本来の因果に揃う。
+      if (inflight > 0) return false; // ★直前入力の適用チェーンが未settle＝過渡窓。settle後のpump再入で配達される
       return d.t === 'play' || d.t === 'menu' || d.t === 'endTurn';
     }
     return false;
@@ -181,6 +192,8 @@ export function createLockstep(deps: LockstepDeps): Lockstep {
       try { onBoundary?.(endTurnsApplied); } catch { /* ignore */ }
     }
     let p: Promise<void>;
+    const ep = applyEpoch;
+    inflight++;
     try { p = applyInput(seat, d, true); }
     catch (e) { console.warn('[lockstep] 入力適用に失敗', d, e); p = Promise.resolve(); }
     if (d.t === 'endTurn') endTurnsApplied++;
@@ -189,7 +202,7 @@ export function createLockstep(deps: LockstepDeps): Lockstep {
     try { onApplied?.(seat, d); } catch { /* ignore */ }
     deps.bump();
     p.catch((e) => console.warn('[lockstep] 入力適用に失敗', d, e))
-      .finally(() => { deps.bump(); pump(); });
+      .finally(() => { if (ep === applyEpoch) inflight = Math.max(0, inflight - 1); deps.bump(); pump(); });
     pump(); // 同期プレフィックス分（プロンプトが開いた等）を即判定
   }
 
@@ -206,7 +219,7 @@ export function createLockstep(deps: LockstepDeps): Lockstep {
         return;
       }
       case 'cancelAtk': { eng.cancelAttackSel(); return; }
-      case 'endTurn': { eng.uiEndTurn(seat); return; }
+      case 'endTurn': { await eng.uiEndTurn(seat); return; } // ★awaitでターン切替チェーン（endTurn→beginTurn）をinflightに載せる＝次入力はドンフェイズ完了後にのみ配達
       case 'forfeit': {
         if (!G.winner && typeof eng.lose === 'function') eng.lose(seat, (d as any).reason || '投了');
         return;

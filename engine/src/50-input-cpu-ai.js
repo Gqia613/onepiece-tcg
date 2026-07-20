@@ -115,7 +115,7 @@
         flog(side, '「' + b.name + '」を使用'); cardReveal(side, b.no, b.name, 'イベント発動', 'event'); await runFx(b.fx.main.fx, { self: card, side }); P.trash.push(reset(card)); render(); await luffyReveal(side); await fireOppEvent(side);
       }
     }
-    function uiEndTurn(side) { side = side || 'me'; if (G.busy || G.active !== side || !G.myActable || G.promptState || G.pendingChoice) return; G.attackSel = null; G.busy = true; G.myActable = false; render(); endTurn(side); } // side省略時は従来どおり'me'（バニラのボタン互換）
+    function uiEndTurn(side) { side = side || 'me'; if (G.busy || G.active !== side || !G.myActable || G.promptState || G.pendingChoice) return; G.attackSel = null; G.busy = true; G.myActable = false; render(); return endTurn(side); } // side省略時は従来どおり'me'。★endTurnのPromiseを返す＝ロックステップのinflightゲートがターン切替チェーンの静定を追跡できる（m12 resume停止バグの修正）
     function setTab(t) { // 部分更新：フル再描画せずパネルの表示切替のみ（ログのスクロール位置を保つ）
       G._tab = t; const hintsActive = t !== 'log';
       const hp = document.getElementById('hintsPanel'), lp = document.getElementById('logPanel');

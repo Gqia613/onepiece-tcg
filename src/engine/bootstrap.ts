@@ -94,7 +94,7 @@ export interface EngineAPI {
   startGame: (meDeck: string, cpuDeck: string, opts?: { cpuHuman?: boolean }) => Promise<void>;
   beginTurn: (side: 'me' | 'cpu') => Promise<void>;
   endTurn: (side: 'me' | 'cpu') => Promise<void> | void;
-  uiEndTurn: (side?: 'me' | 'cpu') => void;
+  uiEndTurn: (side?: 'me' | 'cpu') => void | Promise<void>;
   seedRng: (seed: number) => void;
   rngState: (v?: number) => number;
   findCard: (uid: number) => any;
