@@ -200,6 +200,9 @@ export default function DeckSelect() {
     e.G.cpuMode = 'strong';
     e.G.aiOn = false;
     e.G.cpuStrength = 'strong'; // 互換
+    // モバイル発熱対策: タッチ端末では puct 探索量に上限（deep 9/2/8 → 6/2/6 相当）。
+    // min 適用なので既定が浅いリーダー(det3)と enel(mcts) は不変（engine/src/70-ai.js の G._puctCap）。
+    e.G._puctCap = window.matchMedia('(pointer: coarse)').matches ? { det: 6, width: 6 } : null;
     // CPU戦リプレイ内部収集: シードを明示してからシャッフル（startGame）＝同コミットで再現可能にする
     const seedArr = new Uint32Array(1);
     crypto.getRandomValues(seedArr);

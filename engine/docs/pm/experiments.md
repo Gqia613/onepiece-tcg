@@ -386,6 +386,17 @@
 - ★学び: ①リプレイ由来のS級仮説でも「実装の第一形」はメーターで退行しうる＝人間の型は複数条件の合成（tikumaruの素アタックは"倒せる素"だった）で、単一ゲートの移植では壊れる ②プリセット対面で発火しない部品（pump等6件）はメーターが原理的に盲目＝「無害確認＋実対戦リプレイでの再評価」を採用サイクルに明文化 ③actatkはstudy前提が不正確（キャラ/ステージ起動は既に皆勤）で、真の欠陥は「アタック中にしか条件成立しない起動が永久不発」だった＝観察→実装前に現行コードの再確認を必須に。
 - 検証: 全部品ONのCPU対CPU 30戦×2 noWinner=0・全テスト緑。不採用5部品はフラグ0で温存（heur2+OPCG_H2で再測定可能）。
 
+## E56 / 2026-07-20: モバイル発熱対策＝puct探索量の上限 `G._puctCap`（deep 9/2/8→6/2/6） → ✅採用（強さ有意差なし・探索約半減）
+
+- 背景: ユーザー報告「スマホでプレイ中に端末が熱くなる」。調査で発熱源は3系統: ①CPU戦AI＝webは全CPU戦をpuct固定（DeckSelect）・Web Worker無し・`_sim`中は `sleep=Promise.resolve()`（10-engine-core.js）でマイクロタスク連続実行＝1CPUターンで最大千回規模のフルターンロールアウト＋数百回の全状態JSONクローンをyield無しでメインスレッド実行（数百ms〜数秒のCPU100%バースト） ②常時GPU負荷＝全画面auroraアニメ（battle.css）×常時表示要素の `backdrop-filter: blur`（topbar/preview/hintbar）の毎フレーム再ぼかし ③Wake Lockの画面常時点灯（NetSideEffects）。本実験は①のCPU計算量への対策（②③は別対応）。
+- 仮説: deep プロファイルは E34 で det12/w10 が飽和と判明済み＝逓減域。det9/look2/w8 → det6/look2/w6（enelの既定と同水準・1手あたり最大ロールアウト 81→42＝約48%減）でも対h効果は大きく落ちない。
+- 測定: 同一seedペア＋符号検定。hero(puct縮小/現行を同seedで対比) vs villain(heuristic)、2マッチアップ×2帯 N=60=計240ペア。
+  - teach vs enel: **+1.7pt**(改善7/退行6 p=1.000)／**0.0pt**(4/4)＝完全保持。lucy vs hancock: **-1.7pt**(1/2)／**-5.0pt**(3/6 p=0.508)。**合算 改善15/退行18 p=0.728＝有意差なし**（点推定≈-1pt）。※lucy対hancockは対hが3〜12%の劣勢対面でflip自体が稀＝情報量は限定的。
+- 実装: エンジン `G._puctCap`＝puctTurnで opt.det/look/width に **min適用**（未設定なら既定バイト不変。既定が浅い非curatedリーダー(det3/1/5)と enel(mcts直行) は不変）。`_HASH_SKIP` に `_puctCap`/`_lastPuctOpt`（実効値のデバッグ記録）を追加。web は DeckSelect.start() で `(pointer: coarse)` 端末のみ `{det:6,width:6}` を設定し、cpu_matches リプレイメタ（replay.cpu.puctCap）に記録＝再生時はこの値の再現が必須。回帰: ai-core 9c（cap適用で実効値が縮む＋1局完走）。
+- ✅採用: モバイル（タッチ端末）のみ縮小。デスクトップは現行 9/2/8 のまま。
+- 追補（同日・②GPU常時負荷も対応）: `@media (pointer: coarse)` で aurora（body::before）の常時アニメを静止し、常時表示要素（#topbar/.topbar/.hintbar/#preview）の backdrop-filter を不透明寄りの静的背景に置換（battle.css 末尾＋styles.css 末尾）。一時表示（モーダル/メニュー/通知ピル/trashfan）のぼかしは背景静止後は安価なので温存。デスクトップは見た目不変。③Wake Lock は未対応（仕様の可能性が高く要ユーザー判断）。
+- ★学び: ①E34の飽和知見の裏面＝逓減域では探索を約半分に削っても対h効果はほぼ保持される（teachで完全保持）＝「深さは強さの余剰予算」としてデバイス性能に応じて配分できる ②knobは「上書き（_puctDet）」でなく「上限（min）」型にすると、既定が浅いリーダーを誤って強化・重量化する事故を構造的に防げる。
+
 ## 台帳サマリ（2026-07-03 時点・opcg-pm）
 
 - 再構成した実験: **33件**（基盤2・運用1・事故1を含む）。採用✅ 10件／棄却❌ 16件前後／中立・その他。

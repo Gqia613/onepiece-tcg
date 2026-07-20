@@ -148,6 +148,20 @@ function chk(name, cond) { if (cond) pass++; else { fail++; console.log('  ✗ '
   try { await playPuct(34); } finally { declareAttack = _declOrig; }
   chk('puct: 届かない自滅アタックが実プレイで0（パワー未満で寝ない）', _futileAtk === 0);
 
+  // 9c) ★G._puctCap: 探索量の上限（モバイル発熱対策）。deep既定(teach=det9/look2/w8)が cap まで縮み、1局完走する。
+  async function playPuctCap(seed) {
+    G._puctCap = { det: 1, look: 1, width: 3 };
+    G.players = {}; G.winner = null; G.inGame = false; seedRng(seed);
+    startGame('teach', 'enel'); G.players.me.isCPU = true; G.players.me.agent = 'puct'; G.players.cpu.agent = 'heuristic';
+    let it = 0; while (!(G.winner && !G._sim) && it < 3000000) { await new Promise(r => setImmediate(r)); it++; }
+    G._puctCap = null;
+    return G.winner;
+  }
+  const wcap = await playPuctCap(31);
+  const eo = G._lastPuctOpt || {};
+  chk('puctCap 1局完走（勝者確定・フリーズ無し）', wcap === 'me' || wcap === 'cpu');
+  chk('puctCap: 実効探索量が上限まで縮む(det1/look1/w3)', eo.det === 1 && eo.look === 1 && eo.width === 3);
+
   // 10) ★ハイブリッド基盤(Phase0-2)＋puct2(Phase5)の回帰
   chk('エージェント登録: hybrid/hybridoff/puct2', !!(AGENTS.hybrid && AGENTS.hybridoff && AGENTS.puct2));
   // G._shape の評価シェイピングが evalWinProb(手作りフォールバック)を動かす／null時は不変

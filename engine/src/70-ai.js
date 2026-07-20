@@ -64,6 +64,7 @@
       '_atkFrom', '_atkTo', // 攻撃グロー（UIアダプタが設定＝演出専用）
       '_pubHand',      // サーチ公開マーク（AI決定化専用。_sim中は付かない＝リプレイと差が出る）
       '_planOverride', '_hintsOn', // AI専用
+      '_puctCap', '_lastPuctOpt',  // 端末ローカルの探索上限（モバイル発熱対策）と実効値記録＝ゲーム状態ではない
     ]);
     // G の正準直列化（キーソート・除外規則込み）。hashGameState の入力そのもの＝desyncデバッグの一次資料。
     function canonGameState(src) {
@@ -707,6 +708,14 @@
       if (PUCT_SKIP[leaderKeyOf(side)] && !G._puctNoSkip) return heuristicTurn(side);  // 苦手リーダーは素のheuristic
       const dp = PUCT_DEPTH[leaderKeyOf(side)] || {};                  // リーダー別の既定深さ（無ければ標準）。G._puct* で上書き可
       const opt = { det: G._puctDet || dp.det || 3, look: G._puctLook != null ? G._puctLook : (dp.look != null ? dp.look : 1), width: G._puctWidth || dp.width || 5 };
+      // ★G._puctCap: 探索量の上限（モバイル発熱対策）。min適用＝既定が浅いリーダー(det3)や enel(mcts) は変えない。
+      if (G._puctCap) {
+        const cap = G._puctCap;
+        if (cap.det) opt.det = Math.min(opt.det, cap.det);
+        if (cap.look != null) opt.look = Math.min(opt.look, cap.look);
+        if (cap.width) opt.width = Math.min(opt.width, cap.width);
+      }
+      G._lastPuctOpt = opt;                                            // テスト・デバッグ用の実効値記録
       try {
         let guard = 0;
         while (guard++ < 14 && !G.winner) {

@@ -100,7 +100,8 @@ async function upload(r: CpuRecording): Promise<void> {
     inputs: r.inputs,
     // agent はマリガン中は startGame 既定のまま・終了後に puct が設定される（DeckSelect.start() の順序）。
     // リプレイ実装時は同じ順序を再現すること（CPUのマリガン判断が変わり以降が全てズレる）。
-    cpu: { agent: 'puct', cpuMode: 'strong', aiOn: false, firstPref: r.meta.firstPref, deckIds: r.meta.deckIds, ver },
+    // puctCap: モバイル端末の探索上限（G._puctCap）。CPUの着手が変わるため、リプレイ再生時は同値を設定すること。
+    cpu: { agent: 'puct', cpuMode: 'strong', aiOn: false, puctCap: G._puctCap || null, firstPref: r.meta.firstPref, deckIds: r.meta.deckIds, ver },
   };
   const body = JSON.stringify({
     ver,
