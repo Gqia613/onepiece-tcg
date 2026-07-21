@@ -1085,7 +1085,7 @@ window.CARD_FX = {
   "OP11-061": {"main":{"fx":[{"op":"deckBottom","side":"opp","filter":{"maxBaseCost":4},"count":1,"optional":true}]}},
   /* ===== OP11 バッチ4（紫・ビッグ・マム。costGuess・peekOppDeck・oppTrashToBottom） ===== */
   // OP11-062 シャーロット・カタクリ LEADER: 【アタック時】/【相手のアタック時】ドン-1：相手デッキ上を見る→リーダー+1000
-  "OP11-062": {"onAttack":[{"op":"donMinus","n":1,"once":"turn","then":[{"op":"peekOppDeck"},{"op":"leaderBuff","amount":1000,"duration":"battle"}]}],"onOppAttack":[{"op":"donMinus","n":1,"once":"turn","then":[{"op":"peekOppDeck"},{"op":"leaderBuff","amount":1000,"duration":"battle"}]}]},
+  "OP11-062": {"onAttack":[{"op":"donMinus","n":1,"once":"turn","optional":true,"then":[{"op":"peekOppDeck"},{"op":"leaderBuff","amount":1000,"duration":"battle"}]}],"onOppAttack":[{"op":"donMinus","n":1,"once":"turn","optional":true,"then":[{"op":"peekOppDeck"},{"op":"leaderBuff","amount":1000,"duration":"battle"}]}]},
   // OP11-063 サディちゃん: 【登場時】ドン-1：インペルダウンリーダーなら相手コスト3以下1枚レスト
   "OP11-063": {"onPlay":[{"op":"donMinus","n":1,"then":[{"op":"cond","check":{"leaderTraitIncludes":"インペルダウン"},"then":[{"op":"restChar","side":"opp","filter":{"maxCost":3},"count":1,"optional":true}]}]}]},
   // OP11-065 シャーロット・アナナ: 「アナナ」以外の自分の紫・ビッグ・マム海賊団キャラがいれば【ブロッカー】を得る
@@ -4062,7 +4062,7 @@ window.CARD_FX = {
   // ST34-004 リンリン:【登場時】ドン‼-4・手札1枚を捨てられる：デッキ上1枚までライフの上へ→相手キャラ1枚までを このターン中 元々のパワー0
   "ST34-004": {"onPlay":[{"op":"donMinus","n":4},{"op":"discardCost","count":1,"optional":true,"then":[{"op":"lifeAddFromDeck","n":1},{"op":"setPower","side":"opp","value":0,"count":1,"optional":true,"duration":"turn"}]}]},
   // ST34-005 タマゴ男爵＆ペコムズ:【アタック時】ドン‼-1：相手の元々のパワー2000以下キャラ1枚までKO
-  "ST34-005": {"onAttack":[{"op":"donMinus","n":1},{"op":"ko","side":"opp","filter":{"maxPower":2000},"count":1,"optional":true}]},
+  "ST34-005": {"onAttack":[{"op":"donMinus","n":1,"optional":true,"then":[{"op":"ko","side":"opp","filter":{"maxPower":2000},"count":1,"optional":true}]}]},
   // ST35-001 ハック:【ブロッカー】(text由来) ／【登場時】相手の元々のパワー2000以下キャラ1枚までKO
   "ST35-001": {"onPlay":[{"op":"ko","side":"opp","filter":{"maxPower":2000},"count":1,"optional":true}]},
   // ST35-002 リンドバーグ:【登場時】相手キャラ1枚までを このターン中 -3000

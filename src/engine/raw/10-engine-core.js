@@ -123,22 +123,42 @@
     async function returnDonChoose(side, n, fromActive) {
       const P = G.players[side];
       if (fromActive) { if (P.don.active < n) return false; P.don.active -= n; flog(side, 'アクティブのドン!!-' + n + '（ドンデッキへ戻す）'); render(); return true; } // 「アクティブのドンを戻す」限定
-      if (P.don.active + P.don.rested < n) return false;   // 戻せるドンが足りない→効果は不発
+      // ★公式裁定: 「ドン!!-○」はリーダー/ステージ/キャラに付与済みのドンも含め、各エリアから自由に選んで戻せる。
+      //   従来は active+rested（コストエリア）しか見ず、ドンを盤面へ付与し切ると「ドン!!-N」効果が支払い不能で不発だった
+      //   （紫カタクリL OP11-062 の毎アタック「ドン!!-1」が最頻の被害＝実対戦報告。CLAUDE.md §4「どこからでも→ドンデッキへ戻す」の設計意図に整合）。
+      const attCards = () => [P.leader, P.stage, ...P.chars].filter(c => c && c.attachedDon > 0);
+      if (P.don.active + P.don.rested + attCards().reduce((s, c) => s + c.attachedDon, 0) < n) return false; // 戻せるドンが総数で足りない→効果は不発
       for (let i = 0; i < n; i++) {
         const hasA = P.don.active > 0, hasR = P.don.rested > 0;
-        if (!hasA && !hasR) return false;
-        let useRested;
-        if (hasA && hasR) {
-          if (P.isCPU) useRested = true;                  // CPUは使用済み(レスト)を優先
+        if (hasA || hasR) {
+          // 既定はコストエリア優先（付与ドンは盤面パワーに直結するため温存）。コストエリアが尽きた時だけ付与ドンを外す。
+          let useRested;
+          if (hasA && hasR) {
+            if (P.isCPU) useRested = true;                  // CPUは使用済み(レスト)を優先
+            else {
+              const v = await showPrompt({
+                side, title: 'ドン!!-' + n, text: 'ドンデッキに戻すドンを選んでください（残りアクティブ ' + P.don.active + ' / レスト ' + P.don.rested + '）',
+                opts: [{ t: 'レストのドンを戻す', v: 'r', primary: true }, { t: 'アクティブのドンを戻す', v: 'a' }]
+              });
+              useRested = v !== 'a';
+            }
+          } else useRested = hasR;
+          if (useRested) P.don.rested--; else P.don.active--;
+        } else {
+          // コストエリアが空＝付与済みドンを戻す（公式裁定で可能）。どのカードから外すかを選ぶ。
+          const atts = attCards();
+          let target;
+          if (atts.length === 1) target = atts[0];
+          else if (P.isCPU) target = atts.find(c => c !== P.leader) || atts[0]; // CPUはリーダー(主力)を温存し、キャラの付与を先に外す
           else {
             const v = await showPrompt({
-              side, title: 'ドン!!-' + n, text: 'ドンデッキに戻すドンを選んでください（残りアクティブ ' + P.don.active + ' / レスト ' + P.don.rested + '）',
-              opts: [{ t: 'レストのドンを戻す', v: 'r', primary: true }, { t: 'アクティブのドンを戻す', v: 'a' }]
+              side, title: 'ドン!!-' + n, text: 'ドンデッキに戻す、付与されているドン!!を選んでください',
+              opts: atts.map((c, idx) => ({ t: '「' + c.base.name + '」の付与ドン(' + c.attachedDon + ')', v: 'att:' + idx, primary: idx === 0 }))
             });
-            useRested = v !== 'a';
+            const idx = parseInt(String(v).slice(4), 10); target = atts[Number.isFinite(idx) ? idx : 0] || atts[0];
           }
-        } else useRested = hasR;
-        if (useRested) P.don.rested--; else P.don.active--;
+          target.attachedDon--; flog(side, '「' + target.base.name + '」の付与ドン!!-1（ドンデッキへ戻す）');
+        }
       }
       flog(side, 'ドン!!-' + n + '（ドンデッキへ戻す）'); render();
       return true;

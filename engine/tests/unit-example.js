@@ -30,6 +30,41 @@ function setupG(leaderNo){G.active='me';G.turnSeq=5;G.winner=null;const mkP=(ln,
     ok(E.chars[0].attachedDon===4, 'エネル: キャラにレスト4付与');
     ok(donTotal('me')===5, 'エネル: 合計ドン=5');
 
+    // 例3c: 「ドン!!-N」は付与済みドン(attachedDon)も戻せる（公式裁定: リーダー/ステージ/キャラ/コストエリアから自由に選択）。
+    //       紫カタクリL OP11-062 のように盤面へドンを付与し切るとコストエリアが空になり、従来は毎アタックの「ドン!!-1」が支払い不能で不発だった回帰。
+    setupG('OP11-062'); { const P3=G.players.me; P3.don.active=0; P3.don.rested=0; P3.leader.attachedDon=2;
+      const before=donTotal('me'); const ctx={side:'me',self:P3.leader};
+      await doOp({op:'donMinus',n:1},ctx);
+      ok(ctx._committed && !ctx._declined && P3.leader.attachedDon===1 && donTotal('me')===before-1, '例3c: コストエリア空でも付与ドンを戻して「ドン!!-1」が成立'); }
+    // コストエリアにドンがあれば優先し、付与ドンは温存
+    setupG('OP11-062'); { const P4=G.players.me; P4.don.active=0; P4.don.rested=1; P4.leader.attachedDon=2;
+      await doOp({op:'donMinus',n:1},{side:'me',self:P4.leader});
+      ok(P4.don.rested===0 && P4.leader.attachedDon===2, '例3c: コストエリアのドンを優先し付与ドンは温存'); }
+    // 戻せるドンが総数で不足なら支払い不能で不発（_declined・盤面不変）
+    setupG('OP11-062'); { const P5=G.players.me; P5.don.active=0; P5.don.rested=0; P5.leader.attachedDon=0;
+      const ctx5={side:'me',self:P5.leader}; await doOp({op:'donMinus',n:1},ctx5);
+      ok(ctx5._declined && !ctx5._committed, '例3c: 戻せるドンが無ければ支払い不能で不発(_declined)'); }
+
+    // 例3d: 「ドン‼-N：」の任意発動確認（optional:true→confirmUse）。人間は発動する/しないを選べる（公式の任意コスト）。
+    //       紫カタクリL OP11-062 の【アタック時】/【相手のアタック時】で「発動しない」選択肢が無く強制発動していた回帰。
+    // 承諾（既定stubはprimary='y'を返す）→ 付与ドンを戻して発動
+    setupG('OP11-062'); { const P=G.players.me; P.don.active=0; P.don.rested=0; P.leader.attachedDon=2;
+      const before=donTotal('me'); const ctx={side:'me',self:P.leader};
+      await doOp({op:'donMinus',n:1,optional:true,then:[{op:'leaderBuff',amount:1000,duration:'battle'}]},ctx);
+      ok(ctx._committed && donTotal('me')===before-1, '例3d: 確認で「発動する」→ドン‼-1を払い効果発動'); }
+    // 辞退（showPromptを'n'に差し替え）→ ドン消費なし・不発・_declined（【ターン1回】未消費の根拠）
+    setupG('OP11-062'); { const P=G.players.me; P.don.active=1; P.don.rested=0;
+      const _sp=showPrompt; showPrompt=function(cfg){return Promise.resolve('n');};
+      const before=donTotal('me'); const ctx={side:'me',self:P.leader};
+      await doOp({op:'donMinus',n:1,optional:true,then:[{op:'leaderBuff',amount:1000,duration:'battle'}]},ctx);
+      showPrompt=_sp;
+      ok(ctx._declined && !ctx._committed && donTotal('me')===before, '例3d: 確認で「発動しない」→ドン消費なし・不発(_declined)'); }
+    // CPUは確認なしで自動発動（confirmUseがCPUにtrueを返す）
+    setupG('OP11-062'); { const P=G.players.me; P.isCPU=true; P.don.active=1; P.don.rested=0;
+      const before=donTotal('me'); const ctx={side:'me',self:P.leader};
+      await doOp({op:'donMinus',n:1,optional:true,then:[{op:'leaderBuff',amount:1000,duration:'battle'}]},ctx);
+      ok(ctx._committed && donTotal('me')===before-1, '例3d: CPUは確認なしで自動発動'); }
+
     // 例3b: OP15-060エネルの自己付与【ブロッカー】は効果無効中は失う（外部付与は残る）。
     //       10コスト黒ティーチOP09-093でnegateしても次ターンもブロックできたバグの回帰（自己付与がkwGrantで外部付与と誤認されていた）。
     setupG('OP15-058'); { const P2=G.players.me; const enel=mkc('OP15-060'); P2.chars=[enel]; P2.don.active=0; P2.don.rested=0;

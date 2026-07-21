@@ -470,8 +470,11 @@
       if (attacker.base.fx && attacker.base.fx.onAttack && !isNegated(attacker)) {
         const onceGated = attacker.base.fx.onAttack.some(o => o.once === 'turn'); // 【アタック時】/【ブロック時】【ターン1回】は両タイミング共有(_onceAtkBlkTurn)
         if (!(onceGated && attacker._onceAtkBlkTurn === G.turnSeq)) {
+          const prevOnce = attacker._onceAtkBlkTurn;
           if (onceGated) attacker._onceAtkBlkTurn = G.turnSeq;
-          await fxNote(aSide, 'アタック時効果', attacker.base.name); await runFx(attacker.base.fx.onAttack, { self: attacker, side: aSide });
+          const actx = { self: attacker, side: aSide };
+          await fxNote(aSide, 'アタック時効果', attacker.base.name); await runFx(attacker.base.fx.onAttack, actx);
+          if (onceGated && actx._declined && !actx._committed) attacker._onceAtkBlkTurn = prevOnce; // 任意効果を発動辞退しただけなら【ターン1回】未消費（onOppAttackと対称）
         }
       }
       if (!isNegated(G.players[aSide].leader)) await leaderOnAttack(attacker);
