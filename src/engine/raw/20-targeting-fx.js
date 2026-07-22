@@ -241,7 +241,7 @@
           flog(side, `デッキ上${op.look}枚を確認: ${look.map(c => c.base.name).join('、')}`);
           const picked = []; const cnt = op.count || 1; // count枚まで手札に加える
           for (let n = 0; n < cnt; n++) {
-            const cands = look.filter(c => !picked.includes(c) && matchFilter(c, op.filter) && (!op.exclude || c.base.name !== op.exclude));
+            const cands = look.filter(c => !picked.includes(c) && matchFilter(c, op.filter) && (!op.exclude || normName(c.base.name) !== normName(op.exclude)));
             if (!cands.length) break;
             let pick = null;
             if (G.players[side].isCPU) {
@@ -333,10 +333,20 @@
         case 'deckBottom': {
           if (op.condLeader && !checkCond(op.condLeader, side, self)) break;
           if (op.all) { for (const sd of [o, side]) { const PP = G.players[sd]; for (const t of PP.chars.slice()) { if (!matchFilter(t, opFilter(op))) continue; if (sd === o && (isImmune(t) || await protectFromEffect(t, 'deckBottom'))) continue; removeCharTo(t, G.players[t.owner].deck); flog(side, `「${t.base.name}」をデッキ下へ`); await checkAllyLeave(t.owner, t, t.owner === side ? 'ownEffect' : 'oppEffect'); } } render(); break; } // 「コストN以下のキャラすべて」＝両者の場が対象（OP05-058）
-          const cands = oppChars(side, opFilter(op));
-          const t = await chooseCard(side, cands, `デッキ下に送る相手キャラを選択`, 'oppBig', op.optional);
-          if (t && !(await protectFromEffect(t, 'deckBottom'))) { removeCharTo(t, G.players[t.owner].deck); flog(side, `「${t.base.name}」をデッキ下へ`); await checkAllyLeave(t.owner, t, 'oppEffect'); }
-          break;
+          // side省略=相手 / 'own'=自分 / 'any'=両者（公式textの無指定「キャラ」は両者対象）。count枚まで順に選択。
+          const dbPool = () => op.side === 'any' ? [...oppChars(side, opFilter(op)), ...P.chars.filter(c => matchFilter(c, opFilter(op)))]
+            : (op.side === 'own' || op.side === 'self') ? P.chars.filter(c => matchFilter(c, opFilter(op)))
+              : oppChars(side, opFilter(op));
+          const dbSent = [];
+          for (let i = 0; i < (op.count || 1); i++) {
+            const cands = dbPool().filter(c => !dbSent.includes(c));
+            const t = await chooseCard(side, cands, progText('デッキ下に送るキャラを選択', i, op.count || 1), op.side === 'own' ? 'ownBig' : 'oppBig', op.optional);
+            if (!t) break;
+            dbSent.push(t);
+            if (t.owner !== side && (await protectFromEffect(t, 'deckBottom'))) continue;
+            removeCharTo(t, G.players[t.owner].deck); flog(side, `「${t.base.name}」をデッキ下へ`); await checkAllyLeave(t.owner, t, t.owner === side ? 'ownEffect' : 'oppEffect');
+          }
+          render(); break;
         }
         case 'restChar': {
           // PRB02-006ゾロ: 相手のターン中、相手の効果でレストになる場合、代わりに他の自キャラ1枚をレストにできる（置換）
@@ -409,6 +419,10 @@
         }
         case 'powerMod': {
           const dur = op.battle ? 'battle' : durTag(op.duration, 'turnEnd');
+          if (op.samePrev) { // 「そのカードを、…パワー+N」＝直前のpowerModが選んだ同一対象へ再付与（OP06-038。再選択させると別カードを選べてしまう）
+            for (const t of (ctx._pmPicked || [])) { if (op.amount) { addBuff(t, op.amount, dur); floatOn(t.uid, `${op.amount > 0 ? '+' : ''}${op.amount}`, op.amount > 0 ? 'buff' : 'dmg'); } }
+            render(); break;
+          }
           if (op.target === 'self') { // 「このキャラは…パワー+N」= ctx.self自身に付与（選択なし）
             if (self) { const amt = op.perAttachedDon ? (op.amount * (self.attachedDon || 0)) : op.amount; if (amt) { addBuff(self, amt, dur); floatOn(self.uid, `${amt > 0 ? '+' : ''}${amt}`, amt > 0 ? 'buff' : 'dmg'); } }
             break;
@@ -419,7 +433,7 @@
             for (const t of cands.filter(Boolean)) { const amt = op.perAttachedDon ? (op.amount * (t.attachedDon || 0)) : op.amount; if (amt) { addBuff(t, amt, dur); floatOn(t.uid, `${amt > 0 ? '+' : ''}${amt}`, amt > 0 ? 'buff' : 'dmg'); } } // perAttachedDon: 付与ドン1枚につき amount
             render(); break;
           }
-          const pmPicked = [];
+          const pmPicked = []; ctx._pmPicked = pmPicked; // samePrev用に同一ctx内へ記録（参照共有＝ループ中の追加も見える）
           for (let i = 0; i < (op.count || 1); i++) {
             let cands;
             if (op.leader && op.side === 'self') cands = [P.leader, ...P.chars].filter(c => matchFilter(c, opFilter(op)));

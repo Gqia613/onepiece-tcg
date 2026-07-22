@@ -143,6 +143,40 @@ function setupG(leaderNo){G.active='me';G.turnSeq=5;G.winner=null;const mkP=(ln,
       await runFx(C['OP01-063'].fx.act.fx,{self:ar,side:'me'});
       ok(cpu.life.length===1, '例3h-6: 手札0→何も起きない(Q&A157)'); }
 
+    // 例3i: 意味照合バッチ1の修正（2026-07-23）
+    // OP06-038: 「そのカードを+2000」＝2回目は同一対象（samePrev）
+    setupG('OP13-002'); { const me=G.players.me; const c1=mkc('OP15-067'); me.chars=[c1];
+      for(let i=0;i<8;i++){const r=mkc('ST01-006');r.rested=true;me.chars.push(r);} // レスト8枚
+      const p0=power(c1);
+      const _hp=humanPick; humanPick=function(cands){return Promise.resolve(cands.find(x=>x===c1)||cands[0]);};
+      await runFx(C['OP06-038'].fx.counter.fx,{self:mkc('OP06-038'),side:'me'});
+      humanPick=_hp;
+      ok(power(c1)===p0+4000, '例3i: OP06-038は同一カードに+2000×2（samePrev）'); }
+    // OP09-072: コスト原子性＝手札捨てを辞退したらドンは減らない
+    setupG('OP13-002'); { const me=G.players.me; me.don={active:3,rested:0}; me.hand=[mkc('ST01-006')];
+      const _hp=humanPick; humanPick=function(){return Promise.resolve(null);}; // 捨てを辞退
+      await runFx(C['OP09-072'].fx.onPlay,{self:mkc('OP09-072'),side:'me'});
+      humanPick=_hp;
+      ok(donTotal('me')===3 && me.hand.length===1, '例3i: OP09-072は捨て辞退でドン未消費（原子性）'); }
+    // OP10-119: ドン付与は超新星リーダー限定
+    setupG('OP13-002'); { const me=G.players.me; me.don={active:0,rested:1}; me.hand=[];
+      await runFx(C['OP10-119'].fx.onPlay,{self:mkc('OP10-119'),side:'me'});
+      ok(me.leader.attachedDon===0, '例3i: OP10-119は非超新星リーダーへ付与しない'); }
+    setupG('OP01-001'); { const me=G.players.me; me.don={active:0,rested:1}; me.hand=[];
+      await runFx(C['OP10-119'].fx.onPlay,{self:mkc('OP10-119'),side:'me'});
+      ok(me.leader.attachedDon===1, '例3i: 超新星リーダーには付与する'); }
+    // deckBottom: count対応（OP06-058 mainで2枚送れる）
+    setupG('OP13-002'); { const cpu=G.players.cpu; const a=mkc('OP15-067'),b=mkc('OP15-067'); a.owner='cpu';b.owner='cpu'; cpu.chars=[a,b]; cpu.deck=[];
+      await runFx(C['OP06-058'].fx.main.fx,{self:mkc('OP06-058'),side:'me'});
+      ok(cpu.chars.length===0 && cpu.deck.length===2, '例3i: OP06-058 mainは2枚までデッキ下（count対応）'); }
+    // search exclude の全半角正規化（OP10-111が全角Ｄルフィを除外できる）
+    setupG('OP13-002'); { const me=G.players.me;
+      const zen=Object.values(C).find(c=>c.type==='CHAR'&&/モンキー・Ｄ・ルフィ/.test(c.name||'')&&(c.traits||[]).includes('超新星'));
+      if(zen){ me.deck=[mkc(zen.no)];
+        await runFx(C['OP10-111'].fx.onPlay,{self:mkc('OP10-111'),side:'me'});
+        ok(me.hand.length===0, '例3i: search excludeが全角Ｄルフィも除外（正規化）'); }
+      else ok(true,'(全角Ｄ超新星ルフィなし=スキップ)'); }
+
     // 例3g: トリガーの空撃ち抑止 — 「全てcond包み・全check不成立」のトリガー（P-088ロー「超新星＋ライフ合計5以下なら登場」）は
     //       発動しても何も起こらずカードがトラッシュへ行くだけの純損（実対戦報告）。人間には発動UIを出さず・CPUも発動せず手札へ。
     // フルフロー: cond不成立（防御側リーダー非超新星）→ P-088はトラッシュでなく手札へ

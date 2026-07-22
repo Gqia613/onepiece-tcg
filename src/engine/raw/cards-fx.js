@@ -1402,7 +1402,7 @@ window.CARD_FX = {
   // OP10-118 モンキー・D・ルフィ(c6): ターン1回相手効果でKOされない ／【アタック時】トラッシュ3枚をデッキ下：相手手札5以上なら相手1枚捨て
   "OP10-118": {"static":[{"op":"leaveProtect","targetSelf":true,"onlyKO":true,"once":"turn","pay":"free"}],"onAttack":[{"op":"trashToDeckCost","n":3,"then":[{"op":"cond","check":{"oppHandAtLeast":5},"then":[{"op":"oppDiscard","n":1}]}]}]},
   // OP10-119 トラファルガー・ロー(c7): 【登場時】手札から超新星キャラ1枚をライフ上に裏向きで加える→超新星リーダーにレストのドン1付与
-  "OP10-119": {"onPlay":[{"op":"handCharToLife","filter":{"traitIncludes":"超新星"}},{"op":"donAttach","target":"leader","n":1}]},
+  "OP10-119": {"onPlay":[{"op":"handCharToLife","filter":{"traitIncludes":"超新星"}},{"op":"cond","check":{"leaderTraitIncludes":"超新星"},"then":[{"op":"donAttach","target":"leader","n":1}]}]},
   /* ===== OP09（エモーショナルメモリーズ）バッチ1（赤・001-021＝赤髪海賊団） ===== */
   // OP09-002 ウタ: 【登場時】デッキ上5枚から赤髪海賊団1枚を手札に
   "OP09-002": {"onPlay":[{"op":"search","look":5,"count":1,"filter":{"traitIncludes":"赤髪海賊団"},"optional":true}]},
@@ -1528,7 +1528,7 @@ window.CARD_FX = {
   // OP09-070 ナミ(c3): 【登場時】ドン-1：リーダーかキャラ1枚にレストのドン2付与
   "OP09-070": {"onPlay":[{"op":"donMinus","n":1},{"op":"donAttach","target":"chooseOwn","n":2}]},
   // OP09-072 フランキー(c4): 【ブロッカー】 ／【登場時】ドン-2＋手札1枚捨て：2ドロー
-  "OP09-072": {"onPlay":[{"op":"donMinus","n":2},{"op":"discardCost","count":1,"optional":true,"then":[{"op":"draw","n":2}]}]},
+  "OP09-072": {"onPlay":[{"op":"cond","check":{"donAtLeast":2},"then":[{"op":"discardCost","count":1,"optional":true,"then":[{"op":"donMinus","n":2,"then":[{"op":"draw","n":2}]}]}]}]},
   // OP09-073 ブルック(c6): 【アタック時】ドン-1：相手キャラ2枚を-2000
   "OP09-073": {"onAttack":[{"op":"donMinus","n":1},{"op":"powerMod","side":"opp","amount":-2000,"duration":"turn","count":2,"optional":true}]},
   // OP09-074 ベポ: 【自分のターン中】【ターン1回】ドンが戻された時、リーダーかキャラ1枚を+1000
@@ -2059,7 +2059,7 @@ window.CARD_FX = {
   // OP06-036 リューマ(c4): 【登場時】/【KO時】相手のレストのコスト4以下1枚KO
   "OP06-036": {"onPlay":[{"op":"ko","side":"opp","filter":{"restedOnly":true,"maxCost":4},"count":1,"optional":true}],"onKO":[{"op":"ko","side":"opp","filter":{"restedOnly":true,"maxCost":4},"count":1,"optional":true}]},
   // OP06-038 一大・三千・大千・世界: 【カウンター】リーダーかキャラ+2000→レストのカード8枚以上ならさらに+2000
-  "OP06-038": {"counter":{"cost":0,"fx":[{"op":"powerMod","side":"self","leader":true,"amount":2000,"battle":true,"count":1,"optional":true},{"op":"cond","check":{"restedCardsAtLeast":8},"then":[{"op":"powerMod","side":"self","leader":true,"amount":2000,"battle":true,"count":1,"optional":true}]}]}},
+  "OP06-038": {"counter":{"cost":0,"fx":[{"op":"powerMod","side":"self","leader":true,"amount":2000,"battle":true,"count":1,"optional":true},{"op":"cond","check":{"restedCardsAtLeast":8},"then":[{"op":"powerMod","samePrev":true,"amount":2000,"battle":true}]}]}},
   // OP06-039 お前じゃ退屈凌ぎにもなりゃしねェ!!!: 【メイン】相手コスト6以下1枚レスト か 相手のレストのコスト6以下1枚KO
   "OP06-039": {"main":{"fx":[{"op":"chooseOption","options":[{"label":"相手コスト6以下1枚をレスト","fx":[{"op":"restChar","side":"opp","filter":{"maxCost":6},"count":1,"optional":true}]},{"label":"相手のレストのコスト6以下1枚KO","fx":[{"op":"ko","side":"opp","filter":{"restedOnly":true,"maxCost":6},"count":1,"optional":true}]}]}]}},
   // OP06-040 矢武鮫: 【メイン】相手のレストのコスト3以下2枚KO
@@ -4469,7 +4469,7 @@ window.CARD_FX = {
   "OP05-114": [{"op":"ko","side":"opp","filter":{"maxCostFrom":"oppLife"},"count":1,"optional":true}],
   "OP06-031": [{"op":"playCharFromHand","filter":{"maxCost":3,"or":[{"trait":"魚人族"},{"trait":"人魚族"}]},"count":1,"optional":true}],
   "OP06-057": [{"op":"playCharFromHand","filter":{"minCost":2,"maxCost":2},"count":1,"optional":true}],
-  "OP06-058": [{"op":"deckBottom","filter":{"maxCost":5},"optional":true}],
+  "OP06-058": [{"op":"deckBottom","side":"any","filter":{"maxCost":5},"optional":true}],
   "OP06-059": [{"op":"scry","n":5}],
   "OP06-077": [{"op":"deckBottom","filter":{"maxCost":4},"optional":true}],
   "OP06-108": [{"op":"powerMod","side":"self","leader":true,"filter":{"trait":"ワノ国"},"amount":2000,"duration":"turn","count":1,"optional":true}],
@@ -4501,7 +4501,7 @@ window.CARD_FX = {
   "OP10-098": [{"op":"negateChoose","leaderOnly":true,"duration":"turn"},{"op":"negateChoose","charsOnly":true,"duration":"turn"}],
   "OP10-113": [{"op":"discardCost","count":1,"then":[{"op":"cond","check":{"leaderTrait":"超新星"},"then":[{"op":"playSelf"}]}]}],
   "OP10-115": [{"op":"ko","side":"opp","filter":{"maxCostFrom":"oppLife"},"count":1,"optional":true}],
-  "OP11-061": [{"op":"deckBottom","filter":{"maxCost":1},"optional":true}],
+  "OP11-061": [{"op":"deckBottom","side":"any","filter":{"maxCost":1},"optional":true}],
   "OP11-116": [{"op":"charToLife","filter":{"maxCost":4},"faceUp":true,"pos":"choose","optional":true}],
   "OP12-057": [{"op":"discardCost","count":1,"then":[{"op":"draw","n":1}]}],
   "OP12-075": [{"op":"donMinus","n":1},{"op":"playSelf"}],
