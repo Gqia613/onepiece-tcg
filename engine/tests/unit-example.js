@@ -72,6 +72,21 @@ function setupG(leaderNo){G.active='me';G.turnSeq=5;G.winner=null;const mkP=(ln,
       await doOp({op:'donMinus',n:1,optional:true,then:[{op:'leaderBuff',amount:1000,duration:'battle'}]},ctx);
       ok(ctx._committed && donTotal('me')===before-1, '例3d: CPUは確認なしで自動発動'); }
 
+    // 例3f: ★E57 evgate — CPUは「先頭コストを支払えない/直後のcondが不成立」のイベントを能動プレイしない（無駄撃ち抑止）。
+    //       fx-fire-coverage実測: 30試合で9回、イベントカード+プレイコストを消費して効果不発だった（OP16-038等）。
+    // restDonCost n:6 — イベントのプレイコスト支払い後の残アクティブドンで判定
+    setupG('OP11-041'); { const P=G.players.me; const ev=mkc('OP16-038');
+      P.don.active=6; P.don.rested=0; // OP16-038はコスト1想定→支払い後active5<6で不能
+      const evc=effCost('me',ev);
+      P.don.active=5+evc; ok(!eventMainUsable('me',ev), '例3f: restDonCost6が残ドン不足なら不使用');
+      P.don.active=6+evc; // ドンは足りるがcond(インペルダウン5種)不成立→コスト→単一cond包みの判定で不使用
+      ok(!eventMainUsable('me',ev), '例3f: ドンが足りてもcond不成立なら不使用（純損防止）'); }
+    // donMinus n:1 — 付与ドン込みの総ドンで判定（returnDonChooseと同じ母集団）
+    setupG('OP15-058'); { const P=G.players.me; const ev=mkc('OP15-074');
+      P.don.active=0; P.don.rested=0; P.leader.attachedDon=0;
+      ok(!eventMainUsable('me',ev), '例3f: donMinus1が総ドン0なら不使用');
+      P.leader.attachedDon=1; ok(eventMainUsable('me',ev), '例3f: 付与ドン1あればdonMinus1は使用可'); }
+
     // 例3e: 「相手のデッキの上を見る」(peekOppDeck)は完了ボタンを押すまでカードを大写し（reveal付きshowPrompt）。人間のみ。OP11-062/070。
     setupG('OP11-062'); { const P=G.players.me; G.players.cpu.deck=[mkc('OP15-067')];
       let seen=null; const _sp=showPrompt; showPrompt=function(cfg){ seen=cfg; return Promise.resolve((cfg.opts&&cfg.opts[0]||{}).v); };

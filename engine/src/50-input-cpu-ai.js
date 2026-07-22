@@ -273,6 +273,7 @@
     }
     // 両用(main/counter)イベントは守りに残す。緊急の除去価値が高い時だけ main を使う（指摘1対策）
     function cpuShouldPlayEvent(side, c, plan) {
+      if (e57On(side, 'evgate') && !eventMainUsable(side, c)) return false; // ★E57: 払えないコスト/不成立condのイベントを無駄撃ちしない
       if (!eventWorth(side, c)) return false;
       const mfx = (c.base.fx.main && c.base.fx.main.fx) || [];
       const isRemovalMain = mfx.some(o => ['ko', 'bounce', 'deckBottom', 'restChar', 'koZero', 'lock'].includes(o.op));
@@ -435,6 +436,34 @@
     //   効果系: redirect=リダイレクトのCPU方針
     var E55_DEF = { order: 0, pump: 1, chase: 0, trade: 1, refund: 1, actatk: 1, chip: 1, restcombo: 1, alloc: 0, reko: 0, survblock: 1, knownlife: 0, redirect: 1 };
     function e55On(side, part) { return !!E55_DEF[part] || (isHeur2(side) && h2On(part)); }
+    // ★E57採用テーブル: fx-fire-coverage（発火の質監査）実測由来。evgate=イベントmainの「支払い不能コスト/不成立cond」プレイの抑止。
+    //   測定（measure-matchup 同一seedペア・luffygb vs mihawk N=120）: band1 +3.3pt(改善4/退行0) / band2 +2.5pt(改善4/退行1)
+    //   ＝2帯符号再現・合算 改善8/退行1(符号検定p≈0.039★)。buggy vs enel は±0（発火機会が稀）。退行機構なし→採用。
+    var E57_DEF = { evgate: 1 };
+    function e57On(side, part) { return !!E57_DEF[part] || (isHeur2(side) && h2On(part)); }
+    // ★E57 evgate: イベントの main が「今の盤面で先頭コストを支払えない／払っても直後のcondが不成立」なら能動プレイしない。
+    //   fx-fire-coverage 実測(30試合)で restDonCost/donMinus系イベントの無駄撃ち9回（イベントカード+プレイコストを消費して効果不発。
+    //   OP16-038/OP14-096/OP13-040/OP16-059/OP15-074）。actgate（E53・リーダー起動版）のイベント版。
+    //   判定は保守的＝実測で無駄撃ちした型（restDonCost/donMinus/revealCost/discardCost/先頭cond/コスト→単一cond包み）のみ。不明なopは通す。
+    function eventMainUsable(side, c) {
+      const P = G.players[side];
+      const fx = (c.base.fx && c.base.fx.main && c.base.fx.main.fx) || [];
+      const first = fx[0]; if (!first) return true;
+      // 先頭が cond: 不成立ならプレイしても何も起きない（リーダー起動の同型判定は actgate 手前で常時実施済み）
+      if (first.op === 'cond' && first.check && !checkCond(first.check, side, c)) return false;
+      const evCost = effCost(side, c); // イベント自体のプレイコストを支払った後の残ドンで内部コストを払う
+      if (first.op === 'restDonCost' && P.don.active - evCost < (first.n || 1)) return false;
+      if (first.op === 'donMinus') { // 「ドン‼-N」は付与ドン込みでどこからでも戻せる（returnDonChooseと同じ母集団。プレイコスト支払いはレスト化＝総ドン不変）
+        const att = [P.leader, P.stage, ...P.chars].reduce((s, x) => s + ((x && x.attachedDon) || 0), 0);
+        if (P.don.active + P.don.rested + att < (first.n || 1)) return false;
+      }
+      if (first.op === 'revealCost' && P.hand.filter(x => x !== c && matchFilter(x, first.filter || {})).length < (first.count || 1)) return false;
+      if (first.op === 'discardCost' && P.hand.filter(x => x !== c).length < (first.count || 1)) return false;
+      // コスト→単一cond包み（OP16-038型）: コストを払っても cond 不成立なら何も起きない＝純損（actgateのイベント版）
+      if (Array.isArray(first.then) && first.then.length === 1 && first.then[0].op === 'cond'
+        && first.then[0].check && !checkCond(first.then[0].check, side, c)) return false;
+      return true;
+    }
     /* ===== ★E55 攻撃系ヘルパー（各部品は e55On ゲート越しにのみ呼ばれる＝既定バイト不変） ===== */
     // ★E55 pump: 相手のリーダー/場/ステージの fx.onOppAttack のうち「ドンだけで払えるリーダーのパワー上昇」の最大量。
     //   走査は保守的＝restDonForBuff（OP13-001型・poolは常にリーダーを含む）と、restDonCost/donMinus→then内の

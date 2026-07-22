@@ -397,6 +397,16 @@
 - 追補（同日・②GPU常時負荷も対応）: `@media (pointer: coarse)` で aurora（body::before）の常時アニメを静止し、常時表示要素（#topbar/.topbar/.hintbar/#preview）の backdrop-filter を不透明寄りの静的背景に置換（battle.css 末尾＋styles.css 末尾）。一時表示（モーダル/メニュー/通知ピル/trashfan）のぼかしは背景静止後は安価なので温存。デスクトップは見た目不変。③Wake Lock は未対応（仕様の可能性が高く要ユーザー判断）。
 - ★学び: ①E34の飽和知見の裏面＝逓減域では探索を約半分に削っても対h効果はほぼ保持される（teachで完全保持）＝「深さは強さの余剰予算」としてデバイス性能に応じて配分できる ②knobは「上書き（_puctDet）」でなく「上限（min）」型にすると、既定が浅いリーダーを誤って強化・重量化する事故を構造的に防げる。
 
+## E57 / 2026-07-23: CPUイベント無駄撃ちゲート `evgate`（払えないコスト/不成立condのイベントを能動プレイしない） → ✅採用（2帯符号再現・合算p≈0.039★）
+
+- 背景: **fx-fire-coverage を「発火の質」監査に昇格**（att=試行/com=成立(hashGameState前後差分)/dec=辞退シグナル/noop 分類。旧版は runFx呼び出し=発火のカウントで「呼ばれたが支払い失敗でno-op」＝紫カタクリL OP11-062 の実バグ型を原理的に捕捉できなかった）。初回30試合の[A]トリアージで、**CPUが先頭コスト（restDonCost/donMinus）を支払えない状態でイベントをプレイし、イベントカード＋プレイコストを消費して効果不発**が9回/30試合（OP16-038/OP14-096/OP13-040/OP16-059/OP15-074）。
+- 仮説: E53 actgate（リーダー起動のコスト→cond不成立抑止・単離+10.0pt★）のイベント版。純粋な資源の無駄の防止＝退行機構が無い。
+- 実装: `eventMainUsable(side,c)`＝mainの先頭opで判定（①先頭cond不成立 ②restDonCost: プレイコスト支払い後の残アクティブ不足 ③donMinus: 付与ドン込み総ドン不足（returnDonChooseと同じ母集団） ④revealCost/discardCost: 自身を除く手札不足 ⑤コスト→単一cond包みの不成立＝OP16-038型）。不明なopは通す（保守的）。`cpuShouldPlayEvent` 冒頭で `e57On('evgate')` ゲート。
+- 測定: 同一seedペア＋符号検定・heur2単離（OPCG_H2=evgate）・luffygb vs mihawk N=120。**band1 +3.3pt(改善4/退行0 p=0.125)／band2 +2.5pt(改善4/退行1 p=0.375)＝2帯符号再現・合算 改善8/退行1(p≈0.039★)**。buggy vs enel は±0（発火機会が稀・無害確認）。
+- ✅採用: `E57_DEF={evgate:1}`。採用後の fx-fire-coverage 再実行で[A] 11件→6件＝無駄撃ち5件が全て消滅（残6件はcpuSkip設計/cond不成立の正常）。回帰: unit-example 例3f（restDonCost残ドン不足・cond不成立・donMinus総ドン0/付与ドン1の4assert）。
+- 残課題: 起動メイン側の revealCost 支払い不能起動（OP14-105 ゴルゴン三姉妹 act・E53 actgateはcond型のみ対応）／puct系 legalActions は未ゲート（探索が自然に回避する想定・別測定が必要）。
+- ★学び: **発見ツール（発火の質監査）→トリアージ→単離測定→採用の一気通貫が1セッションで回る**。監査の[A]は「正しさバグ」だけでなく「CPUの資源浪費」も機械発見する＝AI品質の仮説源としても機能（E55の観察由来と相補）。
+
 ## 台帳サマリ（2026-07-03 時点・opcg-pm）
 
 - 再構成した実験: **33件**（基盤2・運用1・事故1を含む）。採用✅ 10件／棄却❌ 16件前後／中立・その他。
