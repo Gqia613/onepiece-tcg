@@ -76,6 +76,7 @@ export interface PromptConfig {
   cls?: string;
   side?: Side;     // この選択の決定者の席（オンライン対戦: 相手席なら「選択待ち」表示・応答は中継で解決）
   local?: boolean; // ローカル専用の確認（誤タップ救済等）。対戦相手へ中継しない
+  reveal?: { no: string; name?: string }; // カードを大写しで提示（見る効果=相手デッキ上/ライフ確認。完了/選択を押すまで表示）
 }
 
 // G（描画に使う範囲のみ。残りは any で吸収）

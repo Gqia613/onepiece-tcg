@@ -52,6 +52,7 @@ export interface PromptConfig {
   cls?: string;
   side?: 'me' | 'cpu'; // この選択の決定者の席（エンジンの showPrompt 呼び出し元が付与）
   local?: boolean;     // ローカル専用の確認（オンライン対戦で中継しない）
+  reveal?: { no: string; name?: string }; // カード大写しの提示（見る効果。完了/選択まで表示）
 }
 
 // ヘッドレス（vitest / CPU自動対戦）用の自動応答アダプタ。

@@ -65,6 +65,19 @@ function setupG(leaderNo){G.active='me';G.turnSeq=5;G.winner=null;const mkP=(ln,
       await doOp({op:'donMinus',n:1,optional:true,then:[{op:'leaderBuff',amount:1000,duration:'battle'}]},ctx);
       ok(ctx._committed && donTotal('me')===before-1, '例3d: CPUは確認なしで自動発動'); }
 
+    // 例3e: 「相手のデッキの上を見る」(peekOppDeck)は完了ボタンを押すまでカードを大写し（reveal付きshowPrompt）。人間のみ。OP11-062/070。
+    setupG('OP11-062'); { const P=G.players.me; G.players.cpu.deck=[mkc('OP15-067')];
+      let seen=null; const _sp=showPrompt; showPrompt=function(cfg){ seen=cfg; return Promise.resolve((cfg.opts&&cfg.opts[0]||{}).v); };
+      await doOp({op:'peekOppDeck'},{side:'me',self:P.leader});
+      showPrompt=_sp;
+      ok(seen && seen.reveal && seen.reveal.no==='OP15-067', '例3e: peekOppDeckは相手デッキ上をreveal付きで提示(完了まで表示)'); }
+    // CPUはreveal確認を出さない（自動進行）
+    setupG('OP11-062'); { const P=G.players.me; P.isCPU=true; G.players.cpu.deck=[mkc('OP15-067')];
+      let shown=false; const _sp=showPrompt; showPrompt=function(cfg){ shown=true; return Promise.resolve('ok'); };
+      await doOp({op:'peekOppDeck'},{side:'me',self:P.leader});
+      showPrompt=_sp;
+      ok(!shown, '例3e: CPUはpeekOppDeckのreveal確認を出さない'); }
+
     // 例3b: OP15-060エネルの自己付与【ブロッカー】は効果無効中は失う（外部付与は残る）。
     //       10コスト黒ティーチOP09-093でnegateしても次ターンもブロックできたバグの回帰（自己付与がkwGrantで外部付与と誤認されていた）。
     setupG('OP15-058'); { const P2=G.players.me; const enel=mkc('OP15-060'); P2.chars=[enel]; P2.don.active=0; P2.don.rested=0;

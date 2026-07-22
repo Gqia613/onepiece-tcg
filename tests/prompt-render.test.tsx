@@ -65,4 +65,22 @@ describe('Prompt の描画不変条件', () => {
     setPrompt(mkPrompt(1, 'me'));
     expect(document.querySelector('#promptHost .prompt.show')).toBeFalsy();
   });
+
+  it('reveal付きプロンプトはカードを大写しで描画する（見る効果=完了/選択まで表示）', () => {
+    at('/battle/play')(<Prompt />);
+    const p = { ...mkPrompt(1, 'me', ''), reveal: { no: 'OP15-067', name: 'テスト猫' }, opts: [{ t: '完了', v: 'ok', primary: true }] } as any;
+    setPrompt(p);
+    const img = document.querySelector('#promptHost .prompt-reveal img') as HTMLImageElement | null;
+    expect(img).toBeTruthy();
+    expect(img!.getAttribute('src') || '').toContain('OP15-067');
+    expect(document.querySelector('#promptHost .prompt-reveal .pr-name')?.textContent).toContain('テスト猫');
+  });
+
+  it('相手席のプロンプトの reveal は描画しない（相手デッキ上/ライフの情報漏洩を防ぐ）', () => {
+    at('/battle/play')(<Prompt />);
+    const p = { ...mkPrompt(1, 'cpu'), reveal: { no: 'OP15-067', name: 'ひみつ' } } as any;
+    setPrompt(p);
+    expect(document.querySelector('#promptHost .prompt-reveal')).toBeFalsy();
+    expect(document.querySelector('#promptHost .prompt.waiting')).toBeTruthy();
+  });
 });

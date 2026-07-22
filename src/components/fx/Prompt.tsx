@@ -296,6 +296,25 @@ function PromptCard({
       <h3 {...html(prompt.title || '')} />
       {prompt.text ? <p {...html(prompt.text)} /> : null}
 
+      {/* 「見る」効果のカード大写し（相手デッキ上/ライフ確認）。完了/選択を押すまで表示。タップで拡大。 */}
+      {prompt.reveal && (
+        <button
+          type="button"
+          className="prompt-reveal"
+          onClick={() => zoomTo(prompt.reveal!.no, prompt.reveal!.name || '')}
+          aria-label={(prompt.reveal.name || '') + 'を拡大'}
+        >
+          <img
+            src={IMG(prompt.reveal.no)}
+            referrerPolicy="no-referrer"
+            decoding="async"
+            alt={prompt.reveal.name || ''}
+            onError={(e) => { e.currentTarget.style.visibility = 'hidden'; }}
+          />
+          {prompt.reveal.name ? <span className="pr-name" {...html(prompt.reveal.name)} /> : null}
+        </button>
+      )}
+
       {/* マリガン: スタートの手札5枚をフリップ公開 */}
       {isMulligan && <MulliganHand />}
 

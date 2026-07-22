@@ -2633,6 +2633,36 @@ button.hb-chip:not(.zero):not([disabled]):hover {
   background: #0c1a25;
 }
 
+/* 「見る」効果のカード大写し（相手デッキ上/ライフ確認）。完了/選択まで表示・タップで拡大。 */
+.prompt-reveal {
+  display: block;
+  margin: 2px auto 12px;
+  padding: 0;
+  background: none;
+  border: 0;
+  cursor: zoom-in;
+  -webkit-tap-highlight-color: transparent;
+}
+.prompt-reveal img {
+  display: block;
+  width: 148px;
+  aspect-ratio: 5 / 7;
+  object-fit: cover;
+  margin: 0 auto;
+  border-radius: 10px;
+  border: 1px solid #ffffff40;
+  box-shadow: 0 10px 28px #000b;
+  background: #0c1a25;
+}
+.prompt-reveal .pr-name {
+  display: block;
+  margin-top: 7px;
+  font-size: 12.5px;
+  font-weight: 800;
+  color: var(--ink);
+  letter-spacing: .01em;
+}
+
 /* ターン終了確認などの警告行 */
 .prompt .pp-warn {
   display: block;

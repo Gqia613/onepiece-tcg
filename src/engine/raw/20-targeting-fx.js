@@ -227,7 +227,7 @@
         case 'grantBattleKoSubstitute': { P._battleKoSubSeq = G.turnSeq; flog(side, 'このターン中、自分のキャラはバトルKOの代わりに手札1枚を捨てられる'); break; } // EB02-030
         case 'condTargetChar': { const tg = ctx.target; if (tg && tg.base.type === 'CHAR' && (!op.attr || (tg.base.attribute || '').includes(op.attr))) await runFx(op.then, ctx); else ctx._declined = true; break; } // アタック対象がキャラ（ST02-010/ST05-010。ブロッカー介入後の変化は見ない近似）
         case 'condAttacker': { if (ctx.attacker && (ctx.attacker.base.attribute || '').includes(op.attr)) await runFx(op.then, ctx); else ctx._declined = true; break; } // アタッカーが属性Xを持つ場合（OP11-088シュウ）。不一致=未発動
-        case 'peekOppDeck': { if (G.players[o].deck.length) flog(side, `相手のデッキの上を確認: 「${G.players[o].deck[0].base.name}」`); break; } // 相手デッキトップを見る（OP11-062/070カタクリ等）
+        case 'peekOppDeck': { const D = G.players[o].deck; if (!D.length) { flog(side, '相手のデッキが0枚で見られない'); break; } const c = D[0]; flog(side, `相手のデッキの上を確認: 「${c.base.name}」`); if (!P.isCPU) await showPrompt({ side, title: '相手のデッキの上', text: '相手のデッキの一番上のカードです。確認したら「完了」を押してください。', reveal: { no: c.no, name: c.base.name }, opts: [{ t: '完了', v: 'ok', primary: true }] }); render(); break; } // 相手デッキトップを見る（OP11-062/070カタクリ等）。人間は完了ボタンを押すまでカードを大写しで表示
         // デッキの上1枚を公開し、filter一致なら登場させてもよい（OP12-058）。grantKwで登場時にキーワード付与。
         case 'revealTopPlay': {
           if (!P.deck.length) break; const top = P.deck[0]; flog(side, `デッキの上を公開: ${top.base.name}`);
@@ -1030,7 +1030,7 @@
           const L = G.players[tgtSide].life; if (!L.length) break;
           const c = L[0];
           let toBottom = false;
-          if (!P.isCPU) toBottom = (await showPrompt({ side, title: 'ライフ確認', text: `${tgtSide === side ? '自分' : '相手'}のライフの上は「${c.base.name}」。上か下どちらに置きますか？`, opts: [{ t: '上に戻す', v: 'top', primary: true }, { t: '下に置く', v: 'bottom' }] })) === 'bottom';
+          if (!P.isCPU) toBottom = (await showPrompt({ side, title: 'ライフ確認', text: `${tgtSide === side ? '自分' : '相手'}のライフの一番上のカードです。上に戻すか下に置くか選んでください。`, reveal: { no: c.no, name: c.base.name }, opts: [{ t: '上に戻す', v: 'top', primary: true }, { t: '下に置く', v: 'bottom' }] })) === 'bottom';
           if (toBottom) { L.shift(); L.push(c); }
           flog(side, `${tgtSide === side ? '自分' : '相手'}のライフ上1枚を見て${toBottom ? '下' : '上'}に置いた`);
           render(); break;

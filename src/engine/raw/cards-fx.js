@@ -1103,7 +1103,7 @@ window.CARD_FX = {
   // OP11-072 シャーロット・モンドール: 【起動メイン】ドン-1+レスト：相手はトラッシュ2枚をデッキ下→ライフ上1枚を手札に
   "OP11-072": {"act":{"label":"ドン-1+レスト:相手トラッシュ2枚デッキ下→ライフ手札","cost":{"restSelf":true},"fx":[{"op":"donMinus","n":1,"then":[{"op":"oppTrashToBottom","n":2},{"op":"lifeToHand","n":1}]}]}},
   // OP11-073 シャーロット・リンリン: ビッグ・マムリーダーで【速攻】 ／【相手のアタック時】ドン-5+コスト宣言：一致ならリーダー+2000
-  "OP11-073": {"static":[{"op":"staticKeyword","kw":"rush","cond":{"leaderTraitIncludes":"ビッグ・マム海賊団"}}],"onOppAttack":[{"op":"donMinus","n":5,"once":"turn","then":[{"op":"costGuess","cpuGuess":1,"then":[{"op":"leaderBuff","amount":2000,"duration":"turn"}]}]}]},
+  "OP11-073": {"static":[{"op":"staticKeyword","kw":"rush","cond":{"leaderTraitIncludes":"ビッグ・マム海賊団"}}],"onOppAttack":[{"op":"donMinus","n":5,"once":"turn","optional":true,"then":[{"op":"costGuess","cpuGuess":1,"then":[{"op":"leaderBuff","amount":2000,"duration":"turn"}]}]}]},
   // OP11-074 シュトロイゼン: 【起動メイン】ドン-1+レスト+コスト宣言：一致なら相手コスト4以下1枚レスト
   "OP11-074": {"act":{"label":"ドン-1+レスト+コスト宣言:一致で相手4以下レスト","cost":{"restSelf":true},"fx":[{"op":"donMinus","n":1,"then":[{"op":"costGuess","cpuGuess":1,"then":[{"op":"restChar","side":"opp","filter":{"maxCost":4},"count":1,"optional":true}]}]}]}},
   // OP11-075 ハグワール・D・サウロ: 【登場時】リーダー「ニコ・ロビン」＋場のドン7以上で2ドロー
