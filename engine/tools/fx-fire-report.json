@@ -1,5 +1,5 @@
 {
- "date": "2026-07-18T16:57:01.713Z",
+ "date": "2026-07-22T14:51:06.078Z",
  "games": 30,
  "seed0": 910000,
  "noWinner": 0,
@@ -60,214 +60,376 @@
    "cards": 15
   }
  ],
- "zeroFire": [
+ "tierA": [
   {
-   "no": "OP16-038",
-   "name": "行くぞ～～～!!!海軍本部～～～!!!",
-   "type": "EVENT",
-   "decks": [
-    "青緑ルフィ"
-   ],
-   "hooks": [
-    "main",
-    "counter"
-   ],
-   "runnable": [
-    "main",
-    "counter"
-   ],
-   "fired": {},
-   "totalFired": 0,
-   "appearedGames": 6
-  },
-  {
-   "no": "OP15-076",
-   "name": "雷獣",
-   "type": "EVENT",
-   "decks": [
-    "紫エネル"
-   ],
-   "hooks": [
-    "main",
-    "counter"
-   ],
-   "runnable": [
-    "main",
-    "counter"
-   ],
-   "fired": {},
-   "totalFired": 0,
-   "appearedGames": 5
-  },
-  {
-   "no": "OP04-056",
-   "name": "ゴムゴムの業火拳銃",
-   "type": "EVENT",
-   "decks": [
-    "赤青ルーシー"
-   ],
-   "hooks": [
-    "main",
-    "trigger"
-   ],
-   "runnable": [
-    "main",
-    "trigger"
-   ],
-   "fired": {},
-   "totalFired": 0,
-   "appearedGames": 4
-  },
-  {
-   "no": "ST22-015",
-   "name": "おれァ“白ひげ”だァア!!!!",
-   "type": "EVENT",
+   "no": "ST22-002",
+   "name": "イゾウ",
    "decks": [
     "赤青エース"
    ],
-   "hooks": [
-    "main"
+   "hook": "onOppAttack",
+   "s": {
+    "att": 49,
+    "com": 0,
+    "dec": 0,
+    "noop": 49,
+    "unk": 0
+   },
+   "ops": "trashSelfCost(draw+bottomOwn)[cpuSkip]",
+   "appeared": 5,
+   "reason": "全てno-op(空対象/cpuSkip/シグナル無し)"
+  },
+  {
+   "no": "OP13-002",
+   "name": "ポートガス・D・エース",
+   "decks": [
+    "赤青エース"
    ],
-   "runnable": [
-    "main"
+   "hook": "onOppAttack",
+   "s": {
+    "att": 30,
+    "com": 0,
+    "dec": 0,
+    "noop": 30,
+    "unk": 0
+   },
+   "ops": "discardCost(powerMod)[cpuSkip]",
+   "appeared": 5,
+   "reason": "全てno-op(空対象/cpuSkip/シグナル無し)"
+  },
+  {
+   "no": "OP14-105",
+   "name": "ゴルゴン三姉妹",
+   "decks": [
+    "青黄ハンコック"
    ],
-   "fired": {},
-   "totalFired": 0,
-   "appearedGames": 4
+   "hook": "act",
+   "s": {
+    "att": 5,
+    "com": 0,
+    "dec": 5,
+    "noop": 0,
+    "unk": 0
+   },
+   "ops": "revealCost(donAttachAll)",
+   "appeared": 5,
+   "reason": "全て辞退シグナル(コスト不能/cond不成立/辞退)"
+  },
+  {
+   "no": "OP14-104",
+   "name": "ゲッコー・モリア",
+   "decks": [
+    "青黄ハンコック"
+   ],
+   "hook": "onPlay",
+   "s": {
+    "att": 3,
+    "com": 0,
+    "dec": 0,
+    "noop": 3,
+    "unk": 0
+   },
+   "ops": "chooseOption",
+   "appeared": 4,
+   "reason": "全てno-op(空対象/cpuSkip/シグナル無し)"
+  },
+  {
+   "no": "OP16-038",
+   "name": "行くぞ～～～!!!海軍本部～～～!!!",
+   "decks": [
+    "青緑ルフィ"
+   ],
+   "hook": "main",
+   "s": {
+    "att": 3,
+    "com": 0,
+    "dec": 3,
+    "noop": 0,
+    "unk": 0
+   },
+   "ops": "restDonCost(cond)",
+   "appeared": 5,
+   "reason": "全て辞退シグナル(コスト不能/cond不成立/辞退)"
+  },
+  {
+   "no": "OP14-096",
+   "name": "浸食輪廻",
+   "decks": [
+    "黒ヤマト"
+   ],
+   "hook": "main",
+   "s": {
+    "att": 2,
+    "com": 0,
+    "dec": 2,
+    "noop": 0,
+    "unk": 0
+   },
+   "ops": "restDonCost(negateChoose)",
+   "appeared": 5,
+   "reason": "全て辞退シグナル(コスト不能/cond不成立/辞退)"
+  },
+  {
+   "no": "OP13-040",
+   "name": "強ェとわかってんだから… 始めから全開だ!!!",
+   "decks": [
+    "青緑ルフィ",
+    "緑ミホーク"
+   ],
+   "hook": "main",
+   "s": {
+    "att": 2,
+    "com": 0,
+    "dec": 2,
+    "noop": 0,
+    "unk": 0
+   },
+   "ops": "restDonCost(lock)",
+   "appeared": 5,
+   "reason": "全て辞退シグナル(コスト不能/cond不成立/辞退)"
+  },
+  {
+   "no": "OP12-118",
+   "name": "ジュエリー・ボニー",
+   "decks": [
+    "緑ミホーク"
+   ],
+   "hook": "onPlay",
+   "s": {
+    "att": 2,
+    "com": 0,
+    "dec": 2,
+    "noop": 0,
+    "unk": 0
+   },
+   "ops": "cond(draw+discardOwn+donActivate)",
+   "appeared": 5,
+   "reason": "全て辞退シグナル(コスト不能/cond不成立/辞退)"
+  },
+  {
+   "no": "OP15-074",
+   "name": "放電",
+   "decks": [
+    "紫エネル"
+   ],
+   "hook": "main",
+   "s": {
+    "att": 1,
+    "com": 0,
+    "dec": 1,
+    "noop": 0,
+    "unk": 0
+   },
+   "ops": "donMinus,cond(draw+addCostBuff)",
+   "appeared": 3,
+   "reason": "全て辞退シグナル(コスト不能/cond不成立/辞退)"
+  },
+  {
+   "no": "OP06-104",
+   "name": "菊之丞",
+   "decks": [
+    "青黄ナミ"
+   ],
+   "hook": "trigger",
+   "s": {
+    "att": 1,
+    "com": 0,
+    "dec": 1,
+    "noop": 0,
+    "unk": 0
+   },
+   "ops": "cond(playSelf)",
+   "appeared": 5,
+   "reason": "全て辞退シグナル(コスト不能/cond不成立/辞退)"
   },
   {
    "no": "OP16-059",
    "name": "ド派手大作戦に変更じゃァ～～～!!!",
-   "type": "EVENT",
    "decks": [
     "青バギー"
    ],
-   "hooks": [
-    "main",
-    "counter"
-   ],
-   "runnable": [
-    "main",
-    "counter"
-   ],
-   "fired": {},
-   "totalFired": 0,
-   "appearedGames": 4
-  },
+   "hook": "main",
+   "s": {
+    "att": 1,
+    "com": 0,
+    "dec": 1,
+    "noop": 0,
+    "unk": 0
+   },
+   "ops": "restDonCost(playCharFromDeck)",
+   "appeared": 5,
+   "reason": "全て辞退シグナル(コスト不能/cond不成立/辞退)"
+  }
+ ],
+ "tierB": [
   {
-   "no": "OP12-057",
-   "name": "アイス塊暴雉嘴",
-   "type": "EVENT",
+   "no": "EB04-022",
+   "name": "イッショウ",
    "decks": [
     "青クザン"
    ],
-   "hooks": [
-    "counter",
-    "trigger"
-   ],
-   "runnable": [
-    "counter",
-    "trigger"
-   ],
-   "fired": {},
-   "totalFired": 0,
-   "appearedGames": 4
+   "hook": "onAttack",
+   "s": {
+    "att": 7,
+    "com": 1,
+    "dec": 6,
+    "noop": 0,
+    "unk": 0
+   },
+   "ops": "cond(discardCost)",
+   "appeared": 4,
+   "rate": "14%"
   },
   {
-   "no": "EB04-028",
-   "name": "アイスタイム",
-   "type": "EVENT",
+   "no": "EB04-058",
+   "name": "ボルサリーノ",
    "decks": [
-    "青クザン"
+    "青黄ナミ",
+    "青黄ハンコック",
+    "黒黄ティーチ"
    ],
-   "hooks": [
-    "main",
-    "trigger"
-   ],
-   "runnable": [
-    "main",
-    "trigger"
-   ],
-   "fired": {},
-   "totalFired": 0,
-   "appearedGames": 4
-  },
+   "hook": "onPlay",
+   "s": {
+    "att": 20,
+    "com": 3,
+    "dec": 15,
+    "noop": 0,
+    "unk": 2
+   },
+   "ops": "cond(lifeAddFromDeck)",
+   "appeared": 15,
+   "rate": "15%"
+  }
+ ],
+ "zeroCard": [
   {
-   "no": "OP15-020",
-   "name": "火拳",
-   "type": "EVENT",
+   "no": "OP04-056",
+   "name": "ゴムゴムの業火拳銃",
    "decks": [
     "赤青ルーシー"
    ],
-   "hooks": [
-    "main"
-   ],
-   "runnable": [
-    "main"
-   ],
-   "fired": {},
-   "totalFired": 0,
-   "appearedGames": 3
+   "hook": "main",
+   "s": {
+    "att": 0,
+    "com": 0,
+    "dec": 0,
+    "noop": 0,
+    "unk": 0
+   },
+   "ops": "deckBottom",
+   "appeared": 4,
+   "cardAnyAtt": false
   },
   {
    "no": "OP15-057",
    "name": "ドレスローザ王国",
-   "type": "STAGE",
    "decks": [
     "赤青ルーシー"
    ],
-   "hooks": [
-    "onPlay",
-    "onOppAttack"
-   ],
-   "runnable": [
-    "onPlay",
-    "onOppAttack"
-   ],
-   "fired": {},
-   "totalFired": 0,
-   "appearedGames": 3
+   "hook": "onPlay",
+   "s": {
+    "att": 0,
+    "com": 0,
+    "dec": 0,
+    "noop": 0,
+    "unk": 0
+   },
+   "ops": "cond(draw)",
+   "appeared": 3,
+   "cardAnyAtt": false
   },
   {
-   "no": "ST32-003",
-   "name": "ジュラキュール・ミホーク",
-   "type": "CHAR",
+   "no": "ST22-015",
+   "name": "おれァ“白ひげ”だァア!!!!",
    "decks": [
-    "緑ミホーク"
+    "赤青エース"
    ],
-   "hooks": [
-    "onSelfRested",
-    "onPlay"
-   ],
-   "runnable": [
-    "onSelfRested",
-    "onPlay"
-   ],
-   "fired": {},
-   "totalFired": 0,
-   "appearedGames": 2
+   "hook": "main",
+   "s": {
+    "att": 0,
+    "com": 0,
+    "dec": 0,
+    "noop": 0,
+    "unk": 0
+   },
+   "ops": "cond(playSpecificFromHand+lifeCost)",
+   "appeared": 4,
+   "cardAnyAtt": false
   },
   {
-   "no": "OP14-033",
-   "name": "ペローナ",
-   "type": "CHAR",
+   "no": "OP12-057",
+   "name": "アイス塊暴雉嘴",
    "decks": [
-    "緑ミホーク"
+    "青クザン"
    ],
-   "hooks": [
-    "onPlay",
-    "onKO"
+   "hook": "counter",
+   "s": {
+    "att": 0,
+    "com": 0,
+    "dec": 0,
+    "noop": 0,
+    "unk": 0
+   },
+   "ops": "powerMod,discardOwn",
+   "appeared": 4,
+   "cardAnyAtt": false
+  },
+  {
+   "no": "EB04-028",
+   "name": "アイスタイム",
+   "decks": [
+    "青クザン"
    ],
-   "runnable": [
-    "onPlay",
-    "onKO"
-   ],
-   "fired": {},
-   "totalFired": 0,
-   "appearedGames": 1
+   "hook": "main",
+   "s": {
+    "att": 0,
+    "com": 0,
+    "dec": 0,
+    "noop": 0,
+    "unk": 0
+   },
+   "ops": "discardCost(cond)",
+   "appeared": 4,
+   "cardAnyAtt": false
   }
  ],
- "hookZero": [
+ "zeroHook": [
+  {
+   "no": "OP15-075",
+   "name": "神の裁き",
+   "decks": [
+    "紫エネル"
+   ],
+   "hook": "counter",
+   "s": {
+    "att": 0,
+    "com": 0,
+    "dec": 0,
+    "noop": 0,
+    "unk": 0
+   },
+   "ops": "counterBuff",
+   "appeared": 4,
+   "cardAnyAtt": true
+  },
+  {
+   "no": "OP15-078",
+   "name": "万雷",
+   "decks": [
+    "紫エネル"
+   ],
+   "hook": "counter",
+   "s": {
+    "att": 0,
+    "com": 0,
+    "dec": 0,
+    "noop": 0,
+    "unk": 0
+   },
+   "ops": "counterBuff,cond(draw)",
+   "appeared": 5,
+   "cardAnyAtt": true
+  },
   {
    "no": "OP15-021",
    "name": "見てろよ!エース!!!",
@@ -275,9 +437,16 @@
     "赤青ルーシー"
    ],
    "hook": "counter",
-   "firedOther": {
-    "main": 1
-   }
+   "s": {
+    "att": 0,
+    "com": 0,
+    "dec": 0,
+    "noop": 0,
+    "unk": 0
+   },
+   "ops": "powerMod",
+   "appeared": 2,
+   "cardAnyAtt": true
   },
   {
    "no": "OP13-057",
@@ -286,9 +455,16 @@
     "赤青エース"
    ],
    "hook": "main",
-   "firedOther": {
-    "counter": 2
-   }
+   "s": {
+    "att": 0,
+    "com": 0,
+    "dec": 0,
+    "noop": 0,
+    "unk": 0
+   },
+   "ops": "restDonCost(cond)",
+   "appeared": 4,
+   "cardAnyAtt": true
   },
   {
    "no": "OP15-119",
@@ -297,9 +473,35 @@
     "青黄ナミ"
    ],
    "hook": "onOppEvent",
-   "firedOther": {
-    "onOppBlocker": 4
-   }
+   "s": {
+    "att": 0,
+    "com": 0,
+    "dec": 0,
+    "noop": 0,
+    "unk": 0
+   },
+   "ops": "revealLifeCostBuff",
+   "appeared": 5,
+   "cardAnyAtt": true
+  },
+  {
+   "no": "OP14-108",
+   "name": "シルバーズ・レイリー",
+   "decks": [
+    "青黄ナミ",
+    "青黄ハンコック"
+   ],
+   "hook": "trigger",
+   "s": {
+    "att": 0,
+    "com": 0,
+    "dec": 0,
+    "noop": 0,
+    "unk": 0
+   },
+   "ops": "cond(cond)",
+   "appeared": 8,
+   "cardAnyAtt": true
   },
   {
    "no": "OP07-057",
@@ -308,31 +510,16 @@
     "青黄ハンコック"
    ],
    "hook": "trigger",
-   "firedOther": {
-    "main": 4
-   }
-  },
-  {
-   "no": "OP16-103",
-   "name": "ヴァン・オーガー",
-   "decks": [
-    "黒黄ティーチ"
-   ],
-   "hook": "trigger",
-   "firedOther": {
-    "onKO": 2
-   }
-  },
-  {
-   "no": "OP16-108",
-   "name": "シリュウ",
-   "decks": [
-    "黒黄ティーチ"
-   ],
-   "hook": "onPlay",
-   "firedOther": {
-    "trigger": 1
-   }
+   "s": {
+    "att": 0,
+    "com": 0,
+    "dec": 0,
+    "noop": 0,
+    "unk": 0
+   },
+   "ops": "draw",
+   "appeared": 5,
+   "cardAnyAtt": true
   },
   {
    "no": "OP16-104",
@@ -341,9 +528,16 @@
     "黒黄ティーチ"
    ],
    "hook": "trigger",
-   "firedOther": {
-    "onAttack": 3
-   }
+   "s": {
+    "att": 0,
+    "com": 0,
+    "dec": 0,
+    "noop": 0,
+    "unk": 0
+   },
+   "ops": "draw,reviveFromTrash",
+   "appeared": 6,
+   "cardAnyAtt": true
   },
   {
    "no": "OP16-116",
@@ -352,9 +546,16 @@
     "黒黄ティーチ"
    ],
    "hook": "main",
-   "firedOther": {
-    "trigger": 3
-   }
+   "s": {
+    "att": 0,
+    "com": 0,
+    "dec": 0,
+    "noop": 0,
+    "unk": 0
+   },
+   "ops": "cond(playSpecificFromHand+oppLifeToHand)",
+   "appeared": 5,
+   "cardAnyAtt": true
   },
   {
    "no": "OP16-099",
@@ -363,9 +564,53 @@
     "黒ヤマト"
    ],
    "hook": "counter",
-   "firedOther": {
-    "main": 5
-   }
+   "s": {
+    "att": 0,
+    "com": 0,
+    "dec": 0,
+    "noop": 0,
+    "unk": 0
+   },
+   "ops": "powerMod",
+   "appeared": 4,
+   "cardAnyAtt": true
+  },
+  {
+   "no": "OP16-055",
+   "name": "Mr.2・ボン・クレー(ベンサム)",
+   "decks": [
+    "青緑ルフィ",
+    "青バギー"
+   ],
+   "hook": "onAttack",
+   "s": {
+    "att": 0,
+    "com": 0,
+    "dec": 0,
+    "noop": 0,
+    "unk": 0
+   },
+   "ops": "setPower",
+   "appeared": 9,
+   "cardAnyAtt": true
+  },
+  {
+   "no": "OP16-038",
+   "name": "行くぞ～～～!!!海軍本部～～～!!!",
+   "decks": [
+    "青緑ルフィ"
+   ],
+   "hook": "counter",
+   "s": {
+    "att": 0,
+    "com": 0,
+    "dec": 0,
+    "noop": 0,
+    "unk": 0
+   },
+   "ops": "powerMod",
+   "appeared": 5,
+   "cardAnyAtt": true
   },
   {
    "no": "OP13-040",
@@ -375,9 +620,16 @@
     "緑ミホーク"
    ],
    "hook": "counter",
-   "firedOther": {
-    "main": 1
-   }
+   "s": {
+    "att": 0,
+    "com": 0,
+    "dec": 0,
+    "noop": 0,
+    "unk": 0
+   },
+   "ops": "leaderBuff",
+   "appeared": 5,
+   "cardAnyAtt": true
   },
   {
    "no": "OP12-037",
@@ -387,9 +639,52 @@
     "緑ミホーク"
    ],
    "hook": "counter",
-   "firedOther": {
-    "main": 3
-   }
+   "s": {
+    "att": 0,
+    "com": 0,
+    "dec": 0,
+    "noop": 0,
+    "unk": 0
+   },
+   "ops": "leaderBuff",
+   "appeared": 6,
+   "cardAnyAtt": true
+  },
+  {
+   "no": "OP14-033",
+   "name": "ペローナ",
+   "decks": [
+    "緑ミホーク"
+   ],
+   "hook": "onKO",
+   "s": {
+    "att": 0,
+    "com": 0,
+    "dec": 0,
+    "noop": 0,
+    "unk": 0
+   },
+   "ops": "restOwnAsCost(playCharFromHand)",
+   "appeared": 2,
+   "cardAnyAtt": true
+  },
+  {
+   "no": "OP16-059",
+   "name": "ド派手大作戦に変更じゃァ～～～!!!",
+   "decks": [
+    "青バギー"
+   ],
+   "hook": "counter",
+   "s": {
+    "att": 0,
+    "com": 0,
+    "dec": 0,
+    "noop": 0,
+    "unk": 0
+   },
+   "ops": "powerMod",
+   "appeared": 5,
+   "cardAnyAtt": true
   },
   {
    "no": "OP07-056",
@@ -398,30 +693,131 @@
     "青バギー"
    ],
    "hook": "counter",
-   "firedOther": {
-    "trigger": 2
-   }
+   "s": {
+    "att": 0,
+    "com": 0,
+    "dec": 0,
+    "noop": 0,
+    "unk": 0
+   },
+   "ops": "bounceOwnCharCost(powerMod)",
+   "appeared": 3,
+   "cardAnyAtt": true
+  }
+ ],
+ "infoRows": [
+  {
+   "no": "OP15-066",
+   "name": "サトリ",
+   "decks": [
+    "紫エネル"
+   ],
+   "hook": "onAttack",
+   "s": {
+    "att": 3,
+    "com": 0,
+    "dec": 0,
+    "noop": 3,
+    "unk": 0
+   },
+   "ops": "scry",
+   "appeared": 5
+  }
+ ],
+ "unkOnly": [
+  {
+   "no": "OP15-056",
+   "name": "“メラメラの実”はおれが食っていいか？",
+   "decks": [
+    "赤青ルーシー"
+   ],
+   "hook": "main",
+   "s": {
+    "att": 3,
+    "com": 0,
+    "dec": 0,
+    "noop": 0,
+    "unk": 3
+   },
+   "ops": "draw,leaderDoubleAttack",
+   "appeared": 2
+  },
+  {
+   "no": "OP14-041",
+   "name": "ボア・ハンコック",
+   "decks": [
+    "青黄ハンコック"
+   ],
+   "hook": "onAllyEnter",
+   "s": {
+    "att": 18,
+    "com": 0,
+    "dec": 0,
+    "noop": 0,
+    "unk": 18
+   },
+   "ops": "draw",
+   "appeared": 6
+  },
+  {
+   "no": "OP16-085",
+   "name": "光月モモの助",
+   "decks": [
+    "黒ヤマト"
+   ],
+   "hook": "onPlay",
+   "s": {
+    "att": 1,
+    "com": 0,
+    "dec": 0,
+    "noop": 0,
+    "unk": 1
+   },
+   "ops": "reviveFromTrash",
+   "appeared": 5
+  },
+  {
+   "no": "ST32-002",
+   "name": "光月おでん",
+   "decks": [
+    "緑ミホーク"
+   ],
+   "hook": "onPlay",
+   "s": {
+    "att": 1,
+    "com": 0,
+    "dec": 0,
+    "noop": 0,
+    "unk": 1
+   },
+   "ops": "draw,restImmune",
+   "appeared": 5
+  },
+  {
+   "no": "OP12-040",
+   "name": "クザン",
+   "decks": [
+    "青クザン"
+   ],
+   "hook": "onSelfHandDiscarded",
+   "s": {
+    "att": 49,
+    "com": 0,
+    "dec": 0,
+    "noop": 0,
+    "unk": 49
+   },
+   "ops": "drawDiscarded",
+   "appeared": 5
   }
  ],
  "neverAppeared": [
   {
    "no": "OP14-039",
    "name": "棺船",
-   "type": "STAGE",
    "decks": [
     "緑ミホーク"
-   ],
-   "hooks": [
-    "onPlay",
-    "onTurnEnd"
-   ],
-   "runnable": [
-    "onPlay",
-    "onTurnEnd"
-   ],
-   "fired": {},
-   "totalFired": 0,
-   "appearedGames": 0
+   ]
   }
  ],
  "cards": [
@@ -438,10 +834,20 @@
    "runnable": [
     "onPlay"
    ],
-   "fired": {
-    "onPlay": 7
+   "ops": {
+    "onPlay": [
+     "restChar"
+    ]
    },
-   "totalFired": 7,
+   "stats": {
+    "onPlay": {
+     "att": 6,
+     "com": 2,
+     "dec": 0,
+     "noop": 3,
+     "unk": 1
+    }
+   },
    "appearedGames": 5
   },
   {
@@ -457,10 +863,20 @@
    "runnable": [
     "act"
    ],
-   "fired": {
-    "act": 2
+   "ops": {
+    "act": [
+     "cond(donAttach+giveKeyword)"
+    ]
    },
-   "totalFired": 2,
+   "stats": {
+    "act": {
+     "att": 2,
+     "com": 2,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
+    }
+   },
    "appearedGames": 4
   },
   {
@@ -478,11 +894,32 @@
     "onPlay",
     "onKO"
    ],
-   "fired": {
-    "onPlay": 3,
-    "onKO": 1
+   "ops": {
+    "onPlay": [
+     "donAttach",
+     "cond(oppLifeToHand)"
+    ],
+    "onKO": [
+     "flipLifeUp",
+     "playCharFromHand"
+    ]
    },
-   "totalFired": 4,
+   "stats": {
+    "onPlay": {
+     "att": 4,
+     "com": 4,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
+    },
+    "onKO": {
+     "att": 3,
+     "com": 3,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
+    }
+   },
    "appearedGames": 6
   },
   {
@@ -500,11 +937,30 @@
     "onPlay",
     "onKO"
    ],
-   "fired": {
-    "onPlay": 12,
-    "onKO": 3
+   "ops": {
+    "onPlay": [
+     "lifeCost(cond)"
+    ],
+    "onKO": [
+     "cond(oppDamage)"
+    ]
    },
-   "totalFired": 15,
+   "stats": {
+    "onPlay": {
+     "att": 9,
+     "com": 8,
+     "dec": 1,
+     "noop": 0,
+     "unk": 0
+    },
+    "onKO": {
+     "att": 2,
+     "com": 2,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
+    }
+   },
    "appearedGames": 6
   },
   {
@@ -522,11 +978,30 @@
     "onPlay",
     "onAttack"
    ],
-   "fired": {
-    "onPlay": 3,
-    "onAttack": 7
+   "ops": {
+    "onPlay": [
+     "discardCost(cond)"
+    ],
+    "onAttack": [
+     "cond(discardCost)"
+    ]
    },
-   "totalFired": 10,
+   "stats": {
+    "onPlay": {
+     "att": 4,
+     "com": 4,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
+    },
+    "onAttack": {
+     "att": 7,
+     "com": 1,
+     "dec": 6,
+     "noop": 0,
+     "unk": 0
+    }
+   },
    "appearedGames": 4
   },
   {
@@ -544,8 +1019,30 @@
     "main",
     "trigger"
    ],
-   "fired": {},
-   "totalFired": 0,
+   "ops": {
+    "main": [
+     "discardCost(cond)"
+    ],
+    "trigger": [
+     "bounce"
+    ]
+   },
+   "stats": {
+    "main": {
+     "att": 0,
+     "com": 0,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
+    },
+    "trigger": {
+     "att": 0,
+     "com": 0,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
+    }
+   },
    "appearedGames": 4
   },
   {
@@ -563,11 +1060,21 @@
    "runnable": [
     "onPlay"
    ],
-   "fired": {
-    "onPlay": 20
+   "ops": {
+    "onPlay": [
+     "cond(lifeAddFromDeck)"
+    ]
    },
-   "totalFired": 20,
-   "appearedGames": 14
+   "stats": {
+    "onPlay": {
+     "att": 20,
+     "com": 3,
+     "dec": 15,
+     "noop": 0,
+     "unk": 2
+    }
+   },
+   "appearedGames": 15
   },
   {
    "no": "OP04-056",
@@ -584,8 +1091,30 @@
     "main",
     "trigger"
    ],
-   "fired": {},
-   "totalFired": 0,
+   "ops": {
+    "main": [
+     "deckBottom"
+    ],
+    "trigger": [
+     "deckBottom"
+    ]
+   },
+   "stats": {
+    "main": {
+     "att": 0,
+     "com": 0,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
+    },
+    "trigger": {
+     "att": 0,
+     "com": 0,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
+    }
+   },
    "appearedGames": 4
   },
   {
@@ -601,11 +1130,21 @@
    "runnable": [
     "act"
    ],
-   "fired": {
-    "act": 16
+   "ops": {
+    "act": [
+     "discardCost(deckBottom+powerMod)"
+    ]
    },
-   "totalFired": 16,
-   "appearedGames": 3
+   "stats": {
+    "act": {
+     "att": 16,
+     "com": 16,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
+    }
+   },
+   "appearedGames": 4
   },
   {
    "no": "OP06-050",
@@ -620,10 +1159,20 @@
    "runnable": [
     "onPlay"
    ],
-   "fired": {
-    "onPlay": 3
+   "ops": {
+    "onPlay": [
+     "search"
+    ]
    },
-   "totalFired": 3,
+   "stats": {
+    "onPlay": {
+     "att": 3,
+     "com": 2,
+     "dec": 0,
+     "noop": 0,
+     "unk": 1
+    }
+   },
    "appearedGames": 3
   },
   {
@@ -641,11 +1190,30 @@
     "onKO",
     "trigger"
    ],
-   "fired": {
-    "onKO": 3,
-    "trigger": 1
+   "ops": {
+    "onKO": [
+     "cond(lifeAddFromDeck)"
+    ],
+    "trigger": [
+     "cond(playSelf)"
+    ]
    },
-   "totalFired": 4,
+   "stats": {
+    "onKO": {
+     "att": 2,
+     "com": 1,
+     "dec": 0,
+     "noop": 0,
+     "unk": 1
+    },
+    "trigger": {
+     "att": 1,
+     "com": 0,
+     "dec": 1,
+     "noop": 0,
+     "unk": 0
+    }
+   },
    "appearedGames": 5
   },
   {
@@ -661,10 +1229,20 @@
    "runnable": [
     "onPlay"
    ],
-   "fired": {
-    "onPlay": 1
+   "ops": {
+    "onPlay": [
+     "lifeCost(handToLife)"
+    ]
    },
-   "totalFired": 1,
+   "stats": {
+    "onPlay": {
+     "att": 1,
+     "com": 1,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
+    }
+   },
    "appearedGames": 5
   },
   {
@@ -682,10 +1260,31 @@
     "counter",
     "trigger"
    ],
-   "fired": {
-    "trigger": 2
+   "ops": {
+    "counter": [
+     "bounceOwnCharCost(powerMod)"
+    ],
+    "trigger": [
+     "draw",
+     "bottomOwn"
+    ]
    },
-   "totalFired": 2,
+   "stats": {
+    "counter": {
+     "att": 0,
+     "com": 0,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
+    },
+    "trigger": {
+     "att": 2,
+     "com": 2,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
+    }
+   },
    "appearedGames": 3
   },
   {
@@ -703,10 +1302,31 @@
     "main",
     "trigger"
    ],
-   "fired": {
-    "main": 4
+   "ops": {
+    "main": [
+     "powerMod",
+     "giveKeyword"
+    ],
+    "trigger": [
+     "draw"
+    ]
    },
-   "totalFired": 4,
+   "stats": {
+    "main": {
+     "att": 3,
+     "com": 3,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
+    },
+    "trigger": {
+     "att": 0,
+     "com": 0,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
+    }
+   },
    "appearedGames": 5
   },
   {
@@ -725,12 +1345,31 @@
     "counter",
     "trigger"
    ],
-   "fired": {
-    "trigger": 6,
-    "counter": 4
+   "ops": {
+    "counter": [
+     "cond(counterBuff)"
+    ],
+    "trigger": [
+     "reviveFromTrash"
+    ]
    },
-   "totalFired": 10,
-   "appearedGames": 8
+   "stats": {
+    "counter": {
+     "att": 3,
+     "com": 3,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
+    },
+    "trigger": {
+     "att": 6,
+     "com": 4,
+     "dec": 0,
+     "noop": 2,
+     "unk": 0
+    }
+   },
+   "appearedGames": 7
   },
   {
    "no": "OP08-043",
@@ -745,10 +1384,20 @@
    "runnable": [
     "onPlay"
    ],
-   "fired": {
-    "onPlay": 1
+   "ops": {
+    "onPlay": [
+     "cond(attackTax)"
+    ]
    },
-   "totalFired": 1,
+   "stats": {
+    "onPlay": {
+     "att": 2,
+     "com": 1,
+     "dec": 1,
+     "noop": 0,
+     "unk": 0
+    }
+   },
    "appearedGames": 5
   },
   {
@@ -765,11 +1414,21 @@
    "runnable": [
     "onPlay"
    ],
-   "fired": {
-    "onPlay": 12
+   "ops": {
+    "onPlay": [
+     "bounceOwnCharCost(bounce)"
+    ]
    },
-   "totalFired": 12,
-   "appearedGames": 9
+   "stats": {
+    "onPlay": {
+     "att": 16,
+     "com": 15,
+     "dec": 0,
+     "noop": 1,
+     "unk": 0
+    }
+   },
+   "appearedGames": 10
   },
   {
    "no": "OP08-050",
@@ -784,10 +1443,21 @@
    "runnable": [
     "onPlay"
    ],
-   "fired": {
-    "onPlay": 5
+   "ops": {
+    "onPlay": [
+     "draw",
+     "handToBottom"
+    ]
    },
-   "totalFired": 5,
+   "stats": {
+    "onPlay": {
+     "att": 6,
+     "com": 6,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
+    }
+   },
    "appearedGames": 5
   },
   {
@@ -801,8 +1471,7 @@
     "static"
    ],
    "runnable": [],
-   "fired": {},
-   "totalFired": 0,
+   "stats": {},
    "appearedGames": 6
   },
   {
@@ -818,10 +1487,20 @@
    "runnable": [
     "act"
    ],
-   "fired": {
-    "act": 13
+   "ops": {
+    "act": [
+     "cond(negateEffect)"
+    ]
    },
-   "totalFired": 13,
+   "stats": {
+    "act": {
+     "att": 11,
+     "com": 11,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
+    }
+   },
    "appearedGames": 6
   },
   {
@@ -837,10 +1516,20 @@
    "runnable": [
     "act"
    ],
-   "fired": {
-    "act": 6
+   "ops": {
+    "act": [
+     "search"
+    ]
    },
-   "totalFired": 6,
+   "stats": {
+    "act": {
+     "att": 6,
+     "com": 6,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
+    }
+   },
    "appearedGames": 5
   },
   {
@@ -858,12 +1547,31 @@
     "main",
     "trigger"
    ],
-   "fired": {
-    "main": 4,
-    "trigger": 3
+   "ops": {
+    "main": [
+     "search"
+    ],
+    "trigger": [
+     "search"
+    ]
    },
-   "totalFired": 7,
-   "appearedGames": 5
+   "stats": {
+    "main": {
+     "att": 6,
+     "com": 6,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
+    },
+    "trigger": {
+     "att": 3,
+     "com": 3,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
+    }
+   },
+   "appearedGames": 4
   },
   {
    "no": "OP09-099",
@@ -878,10 +1586,21 @@
    "runnable": [
     "act"
    ],
-   "fired": {
-    "act": 32
+   "ops": {
+    "act": [
+     "discardOwn",
+     "search"
+    ]
    },
-   "totalFired": 32,
+   "stats": {
+    "act": {
+     "att": 30,
+     "com": 30,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
+    }
+   },
    "appearedGames": 6
   },
   {
@@ -895,9 +1614,8 @@
     "static"
    ],
    "runnable": [],
-   "fired": {},
-   "totalFired": 0,
-   "appearedGames": 5
+   "stats": {},
+   "appearedGames": 4
   },
   {
    "no": "OP10-045",
@@ -913,10 +1631,21 @@
    "runnable": [
     "onAttack"
    ],
-   "fired": {
-    "onAttack": 3
+   "ops": {
+    "onAttack": [
+     "draw",
+     "discardOwn"
+    ]
    },
-   "totalFired": 3,
+   "stats": {
+    "onAttack": {
+     "att": 4,
+     "com": 4,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
+    }
+   },
    "appearedGames": 8
   },
   {
@@ -934,11 +1663,30 @@
     "onLifeLeave",
     "onOppAttack"
    ],
-   "fired": {
-    "onLifeLeave": 26,
-    "onOppAttack": 12
+   "ops": {
+    "onLifeLeave": [
+     "draw"
+    ],
+    "onOppAttack": [
+     "cond(discardCost)"
+    ]
    },
-   "totalFired": 38,
+   "stats": {
+    "onLifeLeave": {
+     "att": 24,
+     "com": 24,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
+    },
+    "onOppAttack": {
+     "att": 13,
+     "com": 13,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
+    }
+   },
    "appearedGames": 6
   },
   {
@@ -954,10 +1702,20 @@
    "runnable": [
     "onPlay"
    ],
-   "fired": {
-    "onPlay": 8
+   "ops": {
+    "onPlay": [
+     "lifeCost(ko)"
+    ]
    },
-   "totalFired": 8,
+   "stats": {
+    "onPlay": {
+     "att": 6,
+     "com": 6,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
+    }
+   },
    "appearedGames": 6
   },
   {
@@ -973,11 +1731,22 @@
    "runnable": [
     "onPlay"
    ],
-   "fired": {
-    "onPlay": 2
+   "ops": {
+    "onPlay": [
+     "restChar",
+     "cond(donAttach)"
+    ]
    },
-   "totalFired": 2,
-   "appearedGames": 2
+   "stats": {
+    "onPlay": {
+     "att": 2,
+     "com": 2,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
+    }
+   },
+   "appearedGames": 3
   },
   {
    "no": "OP12-034",
@@ -992,10 +1761,20 @@
    "runnable": [
     "onPlay"
    ],
-   "fired": {
-    "onPlay": 6
+   "ops": {
+    "onPlay": [
+     "cond(search)"
+    ]
    },
-   "totalFired": 6,
+   "stats": {
+    "onPlay": {
+     "att": 8,
+     "com": 5,
+     "dec": 0,
+     "noop": 0,
+     "unk": 3
+    }
+   },
    "appearedGames": 4
   },
   {
@@ -1014,10 +1793,30 @@
     "main",
     "counter"
    ],
-   "fired": {
-    "main": 3
+   "ops": {
+    "main": [
+     "restDonCost(restChar)"
+    ],
+    "counter": [
+     "leaderBuff"
+    ]
    },
-   "totalFired": 3,
+   "stats": {
+    "main": {
+     "att": 5,
+     "com": 2,
+     "dec": 3,
+     "noop": 0,
+     "unk": 0
+    },
+    "counter": {
+     "att": 0,
+     "com": 0,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
+    }
+   },
    "appearedGames": 6
   },
   {
@@ -1033,10 +1832,20 @@
    "runnable": [
     "onSelfHandDiscarded"
    ],
-   "fired": {
-    "onSelfHandDiscarded": 45
+   "ops": {
+    "onSelfHandDiscarded": [
+     "drawDiscarded"
+    ]
    },
-   "totalFired": 45,
+   "stats": {
+    "onSelfHandDiscarded": {
+     "att": 49,
+     "com": 0,
+     "dec": 0,
+     "noop": 0,
+     "unk": 49
+    }
+   },
    "appearedGames": 5
   },
   {
@@ -1053,10 +1862,20 @@
    "runnable": [
     "onPlay"
    ],
-   "fired": {
-    "onPlay": 12
+   "ops": {
+    "onPlay": [
+     "discardCost(setAttackBan)"
+    ]
    },
-   "totalFired": 12,
+   "stats": {
+    "onPlay": {
+     "att": 13,
+     "com": 13,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
+    }
+   },
    "appearedGames": 5
   },
   {
@@ -1072,10 +1891,20 @@
    "runnable": [
     "onPlay"
    ],
-   "fired": {
-    "onPlay": 5
+   "ops": {
+    "onPlay": [
+     "discardCost(search)"
+    ]
    },
-   "totalFired": 5,
+   "stats": {
+    "onPlay": {
+     "att": 5,
+     "com": 5,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
+    }
+   },
    "appearedGames": 5
   },
   {
@@ -1091,10 +1920,20 @@
    "runnable": [
     "act"
    ],
-   "fired": {
-    "act": 1
+   "ops": {
+    "act": [
+     "discardCost(denyBlocker)"
+    ]
    },
-   "totalFired": 1,
+   "stats": {
+    "act": {
+     "att": 2,
+     "com": 2,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
+    }
+   },
    "appearedGames": 5
   },
   {
@@ -1110,10 +1949,20 @@
    "runnable": [
     "onPlay"
    ],
-   "fired": {
-    "onPlay": 3
+   "ops": {
+    "onPlay": [
+     "discardCost(playCharFromHand)"
+    ]
    },
-   "totalFired": 3,
+   "stats": {
+    "onPlay": {
+     "att": 3,
+     "com": 3,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
+    }
+   },
    "appearedGames": 4
   },
   {
@@ -1131,8 +1980,31 @@
     "counter",
     "trigger"
    ],
-   "fired": {},
-   "totalFired": 0,
+   "ops": {
+    "counter": [
+     "powerMod",
+     "discardOwn"
+    ],
+    "trigger": [
+     "discardCost(draw)"
+    ]
+   },
+   "stats": {
+    "counter": {
+     "att": 0,
+     "com": 0,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
+    },
+    "trigger": {
+     "att": 0,
+     "com": 0,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
+    }
+   },
    "appearedGames": 4
   },
   {
@@ -1148,10 +2020,20 @@
    "runnable": [
     "onPlay"
    ],
-   "fired": {
-    "onPlay": 4
+   "ops": {
+    "onPlay": [
+     "search"
+    ]
    },
-   "totalFired": 4,
+   "stats": {
+    "onPlay": {
+     "att": 5,
+     "com": 5,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
+    }
+   },
    "appearedGames": 5
   },
   {
@@ -1168,11 +2050,21 @@
    "runnable": [
     "trigger"
    ],
-   "fired": {
-    "trigger": 2
+   "ops": {
+    "trigger": [
+     "cond(draw)"
+    ]
    },
-   "totalFired": 2,
-   "appearedGames": 7
+   "stats": {
+    "trigger": {
+     "att": 1,
+     "com": 1,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
+    }
+   },
+   "appearedGames": 8
   },
   {
    "no": "OP12-118",
@@ -1187,11 +2079,21 @@
    "runnable": [
     "onPlay"
    ],
-   "fired": {
-    "onPlay": 4
+   "ops": {
+    "onPlay": [
+     "cond(draw+discardOwn+donActivate)"
+    ]
    },
-   "totalFired": 4,
-   "appearedGames": 4
+   "stats": {
+    "onPlay": {
+     "att": 2,
+     "com": 0,
+     "dec": 2,
+     "noop": 0,
+     "unk": 0
+    }
+   },
+   "appearedGames": 5
   },
   {
    "no": "OP12-119",
@@ -1209,12 +2111,31 @@
     "onPlay",
     "onKO"
    ],
-   "fired": {
-    "onPlay": 5,
-    "onKO": 4
+   "ops": {
+    "onPlay": [
+     "discardCost(lifeAddFromDeck+addCostBuff)"
+    ],
+    "onKO": [
+     "cond(lifeAddFromDeck)"
+    ]
    },
-   "totalFired": 9,
-   "appearedGames": 7
+   "stats": {
+    "onPlay": {
+     "att": 5,
+     "com": 5,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
+    },
+    "onKO": {
+     "att": 4,
+     "com": 4,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
+    }
+   },
+   "appearedGames": 8
   },
   {
    "no": "OP13-002",
@@ -1229,10 +2150,20 @@
    "runnable": [
     "onOppAttack"
    ],
-   "fired": {
-    "onOppAttack": 29
+   "ops": {
+    "onOppAttack": [
+     "discardCost(powerMod)[cpuSkip]"
+    ]
    },
-   "totalFired": 29,
+   "stats": {
+    "onOppAttack": {
+     "att": 30,
+     "com": 0,
+     "dec": 0,
+     "noop": 30,
+     "unk": 0
+    }
+   },
    "appearedGames": 5
   },
   {
@@ -1248,10 +2179,20 @@
    "runnable": [
     "onPlay"
    ],
-   "fired": {
-    "onPlay": 9
+   "ops": {
+    "onPlay": [
+     "cond(search)"
+    ]
    },
-   "totalFired": 9,
+   "stats": {
+    "onPlay": {
+     "att": 9,
+     "com": 9,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
+    }
+   },
    "appearedGames": 5
   },
   {
@@ -1268,10 +2209,20 @@
    "runnable": [
     "onPlay"
    ],
-   "fired": {
-    "onPlay": 8
+   "ops": {
+    "onPlay": [
+     "bounceOwnCharCost(playCharFromHand)"
+    ]
    },
-   "totalFired": 8,
+   "stats": {
+    "onPlay": {
+     "att": 9,
+     "com": 9,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
+    }
+   },
    "appearedGames": 5
   },
   {
@@ -1290,10 +2241,30 @@
     "main",
     "counter"
    ],
-   "fired": {
-    "main": 1
+   "ops": {
+    "main": [
+     "restDonCost(lock)"
+    ],
+    "counter": [
+     "leaderBuff"
+    ]
    },
-   "totalFired": 1,
+   "stats": {
+    "main": {
+     "att": 2,
+     "com": 0,
+     "dec": 2,
+     "noop": 0,
+     "unk": 0
+    },
+    "counter": {
+     "att": 0,
+     "com": 0,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
+    }
+   },
    "appearedGames": 5
   },
   {
@@ -1310,10 +2281,22 @@
    "runnable": [
     "onPlay"
    ],
-   "fired": {
-    "onPlay": 20
+   "ops": {
+    "onPlay": [
+     "draw",
+     "discardOwn",
+     "donAttach"
+    ]
    },
-   "totalFired": 20,
+   "stats": {
+    "onPlay": {
+     "att": 20,
+     "com": 20,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
+    }
+   },
    "appearedGames": 8
   },
   {
@@ -1329,10 +2312,20 @@
    "runnable": [
     "onPlay"
    ],
-   "fired": {
-    "onPlay": 8
+   "ops": {
+    "onPlay": [
+     "cond(draw+discardOwn)"
+    ]
    },
-   "totalFired": 8,
+   "stats": {
+    "onPlay": {
+     "att": 8,
+     "com": 8,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
+    }
+   },
    "appearedGames": 4
   },
   {
@@ -1348,10 +2341,20 @@
    "runnable": [
     "onPlay"
    ],
-   "fired": {
-    "onPlay": 2
+   "ops": {
+    "onPlay": [
+     "cond(draw+donAttach)"
+    ]
    },
-   "totalFired": 2,
+   "stats": {
+    "onPlay": {
+     "att": 2,
+     "com": 2,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
+    }
+   },
    "appearedGames": 5
   },
   {
@@ -1369,10 +2372,30 @@
     "main",
     "counter"
    ],
-   "fired": {
-    "counter": 2
+   "ops": {
+    "main": [
+     "restDonCost(cond)"
+    ],
+    "counter": [
+     "counterBuff"
+    ]
    },
-   "totalFired": 2,
+   "stats": {
+    "main": {
+     "att": 0,
+     "com": 0,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
+    },
+    "counter": {
+     "att": 4,
+     "com": 4,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
+    }
+   },
    "appearedGames": 4
   },
   {
@@ -1389,10 +2412,20 @@
    "runnable": [
     "act"
    ],
-   "fired": {
-    "act": 22
+   "ops": {
+    "act": [
+     "restOwnAsCost(cond)"
+    ]
    },
-   "totalFired": 22,
+   "stats": {
+    "act": {
+     "att": 29,
+     "com": 29,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
+    }
+   },
    "appearedGames": 5
   },
   {
@@ -1410,9 +2443,31 @@
     "onPlay",
     "onKO"
    ],
-   "fired": {},
-   "totalFired": 0,
-   "appearedGames": 1
+   "ops": {
+    "onPlay": [
+     "restImmune"
+    ],
+    "onKO": [
+     "restOwnAsCost(playCharFromHand)"
+    ]
+   },
+   "stats": {
+    "onPlay": {
+     "att": 1,
+     "com": 1,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
+    },
+    "onKO": {
+     "att": 0,
+     "com": 0,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
+    }
+   },
+   "appearedGames": 2
   },
   {
    "no": "OP14-039",
@@ -1429,8 +2484,30 @@
     "onPlay",
     "onTurnEnd"
    ],
-   "fired": {},
-   "totalFired": 0,
+   "ops": {
+    "onPlay": [
+     "cond(draw)"
+    ],
+    "onTurnEnd": [
+     "cond(donActivate)"
+    ]
+   },
+   "stats": {
+    "onPlay": {
+     "att": 0,
+     "com": 0,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
+    },
+    "onTurnEnd": {
+     "att": 0,
+     "com": 0,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
+    }
+   },
    "appearedGames": 0
   },
   {
@@ -1448,11 +2525,30 @@
     "onAllyEnter",
     "onAllyLeave"
    ],
-   "fired": {
-    "onAllyEnter": 17,
-    "onAllyLeave": 1
+   "ops": {
+    "onAllyEnter": [
+     "draw"
+    ],
+    "onAllyLeave": [
+     "oppLifeToHand"
+    ]
    },
-   "totalFired": 18,
+   "stats": {
+    "onAllyEnter": {
+     "att": 18,
+     "com": 0,
+     "dec": 0,
+     "noop": 0,
+     "unk": 18
+    },
+    "onAllyLeave": {
+     "att": 5,
+     "com": 2,
+     "dec": 0,
+     "noop": 3,
+     "unk": 0
+    }
+   },
    "appearedGames": 6
   },
   {
@@ -1470,11 +2566,30 @@
     "main",
     "counter"
    ],
-   "fired": {
-    "main": 6,
-    "counter": 2
+   "ops": {
+    "main": [
+     "restDonCost(negateChoose)"
+    ],
+    "counter": [
+     "cond(counterBuff)"
+    ]
    },
-   "totalFired": 8,
+   "stats": {
+    "main": {
+     "att": 2,
+     "com": 0,
+     "dec": 2,
+     "noop": 0,
+     "unk": 0
+    },
+    "counter": {
+     "att": 6,
+     "com": 6,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
+    }
+   },
    "appearedGames": 5
   },
   {
@@ -1492,11 +2607,30 @@
     "onPlay",
     "trigger"
    ],
-   "fired": {
-    "trigger": 3,
-    "onPlay": 6
+   "ops": {
+    "onPlay": [
+     "lifeSwap"
+    ],
+    "trigger": [
+     "playSelf"
+    ]
    },
-   "totalFired": 9,
+   "stats": {
+    "onPlay": {
+     "att": 7,
+     "com": 3,
+     "dec": 0,
+     "noop": 0,
+     "unk": 4
+    },
+    "trigger": {
+     "att": 4,
+     "com": 4,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
+    }
+   },
    "appearedGames": 5
   },
   {
@@ -1514,11 +2648,30 @@
     "onPlay",
     "trigger"
    ],
-   "fired": {
-    "trigger": 3,
-    "onPlay": 3
+   "ops": {
+    "onPlay": [
+     "chooseOption"
+    ],
+    "trigger": [
+     "reviveFromTrash"
+    ]
    },
-   "totalFired": 6,
+   "stats": {
+    "onPlay": {
+     "att": 3,
+     "com": 0,
+     "dec": 0,
+     "noop": 3,
+     "unk": 0
+    },
+    "trigger": {
+     "att": 2,
+     "com": 2,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
+    }
+   },
    "appearedGames": 4
   },
   {
@@ -1536,12 +2689,31 @@
     "act",
     "trigger"
    ],
-   "fired": {
-    "act": 4,
-    "trigger": 2
+   "ops": {
+    "act": [
+     "revealCost(donAttachAll)"
+    ],
+    "trigger": [
+     "cond(playSelf)"
+    ]
    },
-   "totalFired": 6,
-   "appearedGames": 4
+   "stats": {
+    "act": {
+     "att": 5,
+     "com": 0,
+     "dec": 5,
+     "noop": 0,
+     "unk": 0
+    },
+    "trigger": {
+     "att": 3,
+     "com": 3,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
+    }
+   },
+   "appearedGames": 5
   },
   {
    "no": "OP14-107",
@@ -1558,11 +2730,30 @@
     "onPlay",
     "trigger"
    ],
-   "fired": {
-    "trigger": 2,
-    "onPlay": 4
+   "ops": {
+    "onPlay": [
+     "cond(draw+discardOwn)"
+    ],
+    "trigger": [
+     "cond(playSelf)"
+    ]
    },
-   "totalFired": 6,
+   "stats": {
+    "onPlay": {
+     "att": 2,
+     "com": 1,
+     "dec": 0,
+     "noop": 0,
+     "unk": 1
+    },
+    "trigger": {
+     "att": 1,
+     "com": 1,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
+    }
+   },
    "appearedGames": 5
   },
   {
@@ -1581,11 +2772,30 @@
     "onPlay",
     "trigger"
    ],
-   "fired": {
-    "trigger": 1,
-    "onPlay": 5
+   "ops": {
+    "onPlay": [
+     "cond(cond)"
+    ],
+    "trigger": [
+     "cond(cond)"
+    ]
    },
-   "totalFired": 6,
+   "stats": {
+    "onPlay": {
+     "att": 5,
+     "com": 4,
+     "dec": 1,
+     "noop": 0,
+     "unk": 0
+    },
+    "trigger": {
+     "att": 0,
+     "com": 0,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
+    }
+   },
    "appearedGames": 8
   },
   {
@@ -1603,11 +2813,30 @@
     "onPlay",
     "trigger"
    ],
-   "fired": {
-    "onPlay": 6,
-    "trigger": 2
+   "ops": {
+    "onPlay": [
+     "cond(lifeAddFromDeck+oppLifeToHand)"
+    ],
+    "trigger": [
+     "playCharFromHand"
+    ]
    },
-   "totalFired": 8,
+   "stats": {
+    "onPlay": {
+     "att": 7,
+     "com": 7,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
+    },
+    "trigger": {
+     "att": 2,
+     "com": 1,
+     "dec": 0,
+     "noop": 1,
+     "unk": 0
+    }
+   },
    "appearedGames": 6
   },
   {
@@ -1625,11 +2854,31 @@
     "onPlay",
     "trigger"
    ],
-   "fired": {
-    "trigger": 3,
-    "onPlay": 5
+   "ops": {
+    "onPlay": [
+     "search",
+     "discardOwn"
+    ],
+    "trigger": [
+     "cond(playSelf)"
+    ]
    },
-   "totalFired": 8,
+   "stats": {
+    "onPlay": {
+     "att": 5,
+     "com": 2,
+     "dec": 0,
+     "noop": 0,
+     "unk": 3
+    },
+    "trigger": {
+     "att": 3,
+     "com": 3,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
+    }
+   },
    "appearedGames": 4
   },
   {
@@ -1647,11 +2896,30 @@
     "act",
     "trigger"
    ],
-   "fired": {
-    "trigger": 4,
-    "act": 4
+   "ops": {
+    "act": [
+     "donAttach"
+    ],
+    "trigger": [
+     "cond(playSelf)"
+    ]
    },
-   "totalFired": 8,
+   "stats": {
+    "act": {
+     "att": 12,
+     "com": 12,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
+    },
+    "trigger": {
+     "att": 4,
+     "com": 4,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
+    }
+   },
    "appearedGames": 6
   },
   {
@@ -1669,11 +2937,30 @@
     "onSelfRested",
     "onOppAttack"
    ],
-   "fired": {
-    "onSelfRested": 3,
-    "onOppAttack": 1
+   "ops": {
+    "onSelfRested": [
+     "restImmune"
+    ],
+    "onOppAttack": [
+     "discardCost(powerMod)"
+    ]
    },
-   "totalFired": 4,
+   "stats": {
+    "onSelfRested": {
+     "att": 12,
+     "com": 12,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
+    },
+    "onOppAttack": {
+     "att": 7,
+     "com": 7,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
+    }
+   },
    "appearedGames": 4
   },
   {
@@ -1685,8 +2972,7 @@
    ],
    "hooks": [],
    "runnable": [],
-   "fired": {},
-   "totalFired": 0,
+   "stats": {},
    "appearedGames": 5
   },
   {
@@ -1702,8 +2988,22 @@
    "runnable": [
     "main"
    ],
-   "fired": {},
-   "totalFired": 0,
+   "ops": {
+    "main": [
+     "powerMod",
+     "powerMod",
+     "discardCost(ko)"
+    ]
+   },
+   "stats": {
+    "main": {
+     "att": 1,
+     "com": 1,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
+    }
+   },
    "appearedGames": 3
   },
   {
@@ -1721,10 +3021,30 @@
     "main",
     "counter"
    ],
-   "fired": {
-    "main": 1
+   "ops": {
+    "main": [
+     "powerMod"
+    ],
+    "counter": [
+     "powerMod"
+    ]
    },
-   "totalFired": 1,
+   "stats": {
+    "main": {
+     "att": 1,
+     "com": 1,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
+    },
+    "counter": {
+     "att": 0,
+     "com": 0,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
+    }
+   },
    "appearedGames": 2
   },
   {
@@ -1742,12 +3062,31 @@
     "onPlay",
     "act"
    ],
-   "fired": {
-    "onPlay": 1,
-    "act": 1
+   "ops": {
+    "onPlay": [
+     "restChar"
+    ],
+    "act": [
+     "trashSelfCost(cond)"
+    ]
    },
-   "totalFired": 2,
-   "appearedGames": 2
+   "stats": {
+    "onPlay": {
+     "att": 2,
+     "com": 1,
+     "dec": 0,
+     "noop": 1,
+     "unk": 0
+    },
+    "act": {
+     "att": 2,
+     "com": 2,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
+    }
+   },
+   "appearedGames": 3
   },
   {
    "no": "OP15-040",
@@ -1762,10 +3101,20 @@
    "runnable": [
     "onPlay"
    ],
-   "fired": {
-    "onPlay": 5
+   "ops": {
+    "onPlay": [
+     "search"
+    ]
    },
-   "totalFired": 5,
+   "stats": {
+    "onPlay": {
+     "att": 6,
+     "com": 6,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
+    }
+   },
    "appearedGames": 4
   },
   {
@@ -1783,11 +3132,30 @@
     "onPlay",
     "onKO"
    ],
-   "fired": {
-    "onPlay": 10,
-    "onKO": 3
+   "ops": {
+    "onPlay": [
+     "discardCost(cond)"
+    ],
+    "onKO": [
+     "selfToHand"
+    ]
    },
-   "totalFired": 13,
+   "stats": {
+    "onPlay": {
+     "att": 9,
+     "com": 9,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
+    },
+    "onKO": {
+     "att": 2,
+     "com": 1,
+     "dec": 0,
+     "noop": 0,
+     "unk": 1
+    }
+   },
    "appearedGames": 5
   },
   {
@@ -1803,10 +3171,20 @@
    "runnable": [
     "onKO"
    ],
-   "fired": {
-    "onKO": 5
+   "ops": {
+    "onKO": [
+     "search"
+    ]
    },
-   "totalFired": 5,
+   "stats": {
+    "onKO": {
+     "att": 4,
+     "com": 4,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
+    }
+   },
    "appearedGames": 4
   },
   {
@@ -1822,10 +3200,20 @@
    "runnable": [
     "onPlay"
    ],
-   "fired": {
-    "onPlay": 12
+   "ops": {
+    "onPlay": [
+     "playEventFromHand"
+    ]
    },
-   "totalFired": 12,
+   "stats": {
+    "onPlay": {
+     "att": 10,
+     "com": 7,
+     "dec": 0,
+     "noop": 3,
+     "unk": 0
+    }
+   },
    "appearedGames": 5
   },
   {
@@ -1841,10 +3229,20 @@
    "runnable": [
     "onPlay"
    ],
-   "fired": {
-    "onPlay": 3
+   "ops": {
+    "onPlay": [
+     "giveKeyword"
+    ]
    },
-   "totalFired": 3,
+   "stats": {
+    "onPlay": {
+     "att": 3,
+     "com": 3,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
+    }
+   },
    "appearedGames": 4
   },
   {
@@ -1859,8 +3257,7 @@
     "static"
    ],
    "runnable": [],
-   "fired": {},
-   "totalFired": 0,
+   "stats": {},
    "appearedGames": 7
   },
   {
@@ -1876,10 +3273,20 @@
    "runnable": [
     "onPlay"
    ],
-   "fired": {
-    "onPlay": 7
+   "ops": {
+    "onPlay": [
+     "search"
+    ]
    },
-   "totalFired": 7,
+   "stats": {
+    "onPlay": {
+     "att": 7,
+     "com": 6,
+     "dec": 0,
+     "noop": 0,
+     "unk": 1
+    }
+   },
    "appearedGames": 4
   },
   {
@@ -1895,10 +3302,20 @@
    "runnable": [
     "main"
    ],
-   "fired": {
-    "main": 3
+   "ops": {
+    "main": [
+     "cond(chooseOption)"
+    ]
    },
-   "totalFired": 3,
+   "stats": {
+    "main": {
+     "att": 3,
+     "com": 1,
+     "dec": 0,
+     "noop": 0,
+     "unk": 2
+    }
+   },
    "appearedGames": 4
   },
   {
@@ -1916,11 +3333,31 @@
     "main",
     "trigger"
    ],
-   "fired": {
-    "main": 3,
-    "trigger": 1
+   "ops": {
+    "main": [
+     "draw",
+     "leaderDoubleAttack"
+    ],
+    "trigger": [
+     "draw"
+    ]
    },
-   "totalFired": 4,
+   "stats": {
+    "main": {
+     "att": 3,
+     "com": 0,
+     "dec": 0,
+     "noop": 0,
+     "unk": 3
+    },
+    "trigger": {
+     "att": 1,
+     "com": 1,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
+    }
+   },
    "appearedGames": 2
   },
   {
@@ -1938,8 +3375,30 @@
     "onPlay",
     "onOppAttack"
    ],
-   "fired": {},
-   "totalFired": 0,
+   "ops": {
+    "onPlay": [
+     "cond(draw)"
+    ],
+    "onOppAttack": [
+     "restSelfCost(discardCost)"
+    ]
+   },
+   "stats": {
+    "onPlay": {
+     "att": 0,
+     "com": 0,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
+    },
+    "onOppAttack": {
+     "att": 0,
+     "com": 0,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
+    }
+   },
    "appearedGames": 3
   },
   {
@@ -1951,8 +3410,7 @@
    ],
    "hooks": [],
    "runnable": [],
-   "fired": {},
-   "totalFired": 0,
+   "stats": {},
    "appearedGames": 5
   },
   {
@@ -1969,10 +3427,22 @@
    "runnable": [
     "act"
    ],
-   "fired": {
-    "act": 14
+   "ops": {
+    "act": [
+     "donMinus",
+     "giveKeyword",
+     "discardOwn"
+    ]
    },
-   "totalFired": 14,
+   "stats": {
+    "act": {
+     "att": 19,
+     "com": 19,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
+    }
+   },
    "appearedGames": 5
   },
   {
@@ -1990,11 +3460,31 @@
     "onPlay",
     "onAttack"
    ],
-   "fired": {
-    "onPlay": 2,
-    "onAttack": 2
+   "ops": {
+    "onPlay": [
+     "donMinus",
+     "draw"
+    ],
+    "onAttack": [
+     "powerMod"
+    ]
    },
-   "totalFired": 4,
+   "stats": {
+    "onPlay": {
+     "att": 3,
+     "com": 3,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
+    },
+    "onAttack": {
+     "att": 1,
+     "com": 1,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
+    }
+   },
    "appearedGames": 5
   },
   {
@@ -2012,12 +3502,32 @@
     "onPlay",
     "onKO"
    ],
-   "fired": {
-    "onPlay": 3,
-    "onKO": 1
+   "ops": {
+    "onPlay": [
+     "donMinus",
+     "draw"
+    ],
+    "onKO": [
+     "ko"
+    ]
    },
-   "totalFired": 4,
-   "appearedGames": 3
+   "stats": {
+    "onPlay": {
+     "att": 2,
+     "com": 2,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
+    },
+    "onKO": {
+     "att": 1,
+     "com": 1,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
+    }
+   },
+   "appearedGames": 1
   },
   {
    "no": "OP15-066",
@@ -2034,11 +3544,31 @@
     "onPlay",
     "onAttack"
    ],
-   "fired": {
-    "onPlay": 4,
-    "onAttack": 4
+   "ops": {
+    "onPlay": [
+     "donMinus",
+     "draw"
+    ],
+    "onAttack": [
+     "scry"
+    ]
    },
-   "totalFired": 8,
+   "stats": {
+    "onPlay": {
+     "att": 4,
+     "com": 4,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
+    },
+    "onAttack": {
+     "att": 3,
+     "com": 0,
+     "dec": 0,
+     "noop": 3,
+     "unk": 0
+    }
+   },
    "appearedGames": 5
   },
   {
@@ -2054,10 +3584,21 @@
    "runnable": [
     "onPlay"
    ],
-   "fired": {
-    "onPlay": 1
+   "ops": {
+    "onPlay": [
+     "donMinus",
+     "draw"
+    ]
    },
-   "totalFired": 1,
+   "stats": {
+    "onPlay": {
+     "att": 2,
+     "com": 2,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
+    }
+   },
    "appearedGames": 4
   },
   {
@@ -2071,9 +3612,8 @@
     "static"
    ],
    "runnable": [],
-   "fired": {},
-   "totalFired": 0,
-   "appearedGames": 3
+   "stats": {},
+   "appearedGames": 4
   },
   {
    "no": "OP15-070",
@@ -2086,8 +3626,7 @@
     "static"
    ],
    "runnable": [],
-   "fired": {},
-   "totalFired": 0,
+   "stats": {},
    "appearedGames": 2
   },
   {
@@ -2105,11 +3644,31 @@
     "main",
     "counter"
    ],
-   "fired": {
-    "main": 1,
-    "counter": 1
+   "ops": {
+    "main": [
+     "donMinus",
+     "cond(draw+addCostBuff)"
+    ],
+    "counter": [
+     "counterBuff"
+    ]
    },
-   "totalFired": 2,
+   "stats": {
+    "main": {
+     "att": 1,
+     "com": 0,
+     "dec": 1,
+     "noop": 0,
+     "unk": 0
+    },
+    "counter": {
+     "att": 1,
+     "com": 1,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
+    }
+   },
    "appearedGames": 3
   },
   {
@@ -2127,11 +3686,31 @@
     "main",
     "counter"
    ],
-   "fired": {
-    "counter": 5,
-    "main": 1
+   "ops": {
+    "main": [
+     "donMinus",
+     "cond(powerMod+ko)"
+    ],
+    "counter": [
+     "counterBuff"
+    ]
    },
-   "totalFired": 6,
+   "stats": {
+    "main": {
+     "att": 2,
+     "com": 2,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
+    },
+    "counter": {
+     "att": 0,
+     "com": 0,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
+    }
+   },
    "appearedGames": 4
   },
   {
@@ -2149,8 +3728,31 @@
     "main",
     "counter"
    ],
-   "fired": {},
-   "totalFired": 0,
+   "ops": {
+    "main": [
+     "donMinus",
+     "cond(draw+powerMod)"
+    ],
+    "counter": [
+     "counterBuff"
+    ]
+   },
+   "stats": {
+    "main": {
+     "att": 2,
+     "com": 2,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
+    },
+    "counter": {
+     "att": 2,
+     "com": 2,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
+    }
+   },
    "appearedGames": 5
   },
   {
@@ -2166,10 +3768,22 @@
    "runnable": [
     "main"
    ],
-   "fired": {
-    "main": 7
+   "ops": {
+    "main": [
+     "donMinus",
+     "draw",
+     "lock"
+    ]
    },
-   "totalFired": 7,
+   "stats": {
+    "main": {
+     "att": 7,
+     "com": 7,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
+    }
+   },
    "appearedGames": 3
   },
   {
@@ -2187,11 +3801,33 @@
     "main",
     "counter"
    ],
-   "fired": {
-    "main": 6,
-    "counter": 1
+   "ops": {
+    "main": [
+     "donMinus",
+     "draw",
+     "restChar"
+    ],
+    "counter": [
+     "counterBuff",
+     "cond(draw)"
+    ]
    },
-   "totalFired": 7,
+   "stats": {
+    "main": {
+     "att": 11,
+     "com": 10,
+     "dec": 1,
+     "noop": 0,
+     "unk": 0
+    },
+    "counter": {
+     "att": 0,
+     "com": 0,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
+    }
+   },
    "appearedGames": 5
   },
   {
@@ -2207,10 +3843,20 @@
    "runnable": [
     "onPlay"
    ],
-   "fired": {
-    "onPlay": 3
+   "ops": {
+    "onPlay": [
+     "discardCost(lifeAddFromDeck)"
+    ]
    },
-   "totalFired": 3,
+   "stats": {
+    "onPlay": {
+     "att": 3,
+     "com": 3,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
+    }
+   },
    "appearedGames": 3
   },
   {
@@ -2227,10 +3873,22 @@
    "runnable": [
     "onPlay"
    ],
-   "fired": {
-    "onPlay": 12
+   "ops": {
+    "onPlay": [
+     "donMinus",
+     "search",
+     "discardOwn"
+    ]
    },
-   "totalFired": 12,
+   "stats": {
+    "onPlay": {
+     "att": 10,
+     "com": 10,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
+    }
+   },
    "appearedGames": 5
   },
   {
@@ -2249,11 +3907,31 @@
     "onOppEvent",
     "onOppBlocker"
    ],
-   "fired": {
-    "onOppBlocker": 4
+   "ops": {
+    "onOppEvent": [
+     "revealLifeCostBuff"
+    ],
+    "onOppBlocker": [
+     "revealLifeCostBuff"
+    ]
    },
-   "totalFired": 4,
-   "appearedGames": 4
+   "stats": {
+    "onOppEvent": {
+     "att": 0,
+     "com": 0,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
+    },
+    "onOppBlocker": {
+     "att": 6,
+     "com": 5,
+     "dec": 0,
+     "noop": 1,
+     "unk": 0
+    }
+   },
+   "appearedGames": 5
   },
   {
    "no": "OP16-022",
@@ -2268,10 +3946,20 @@
    "runnable": [
     "act"
    ],
-   "fired": {
-    "act": 36
+   "ops": {
+    "act": [
+     "cond(donActivate)"
+    ]
    },
-   "totalFired": 36,
+   "stats": {
+    "act": {
+     "att": 39,
+     "com": 38,
+     "dec": 0,
+     "noop": 1,
+     "unk": 0
+    }
+   },
    "appearedGames": 6
   },
   {
@@ -2287,11 +3975,22 @@
    "runnable": [
     "onPlay"
    ],
-   "fired": {
-    "onPlay": 1
+   "ops": {
+    "onPlay": [
+     "search",
+     "playCharFromHand"
+    ]
    },
-   "totalFired": 1,
-   "appearedGames": 3
+   "stats": {
+    "onPlay": {
+     "att": 2,
+     "com": 2,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
+    }
+   },
+   "appearedGames": 4
   },
   {
    "no": "OP16-027",
@@ -2304,8 +4003,7 @@
     "static"
    ],
    "runnable": [],
-   "fired": {},
-   "totalFired": 0,
+   "stats": {},
    "appearedGames": 0
   },
   {
@@ -2322,10 +4020,20 @@
    "runnable": [
     "onPlay"
    ],
-   "fired": {
-    "onPlay": 8
+   "ops": {
+    "onPlay": [
+     "restImmune"
+    ]
    },
-   "totalFired": 8,
+   "stats": {
+    "onPlay": {
+     "att": 8,
+     "com": 8,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
+    }
+   },
    "appearedGames": 4
   },
   {
@@ -2342,10 +4050,20 @@
    "runnable": [
     "onPlay"
    ],
-   "fired": {
-    "onPlay": 6
+   "ops": {
+    "onPlay": [
+     "search"
+    ]
    },
-   "totalFired": 6,
+   "stats": {
+    "onPlay": {
+     "att": 5,
+     "com": 5,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
+    }
+   },
    "appearedGames": 5
   },
   {
@@ -2361,10 +4079,20 @@
    "runnable": [
     "onPlay"
    ],
-   "fired": {
-    "onPlay": 1
+   "ops": {
+    "onPlay": [
+     "cond(restChar)"
+    ]
    },
-   "totalFired": 1,
+   "stats": {
+    "onPlay": {
+     "att": 1,
+     "com": 1,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
+    }
+   },
    "appearedGames": 1
   },
   {
@@ -2382,9 +4110,31 @@
     "main",
     "counter"
    ],
-   "fired": {},
-   "totalFired": 0,
-   "appearedGames": 6
+   "ops": {
+    "main": [
+     "restDonCost(cond)"
+    ],
+    "counter": [
+     "powerMod"
+    ]
+   },
+   "stats": {
+    "main": {
+     "att": 3,
+     "com": 0,
+     "dec": 3,
+     "noop": 0,
+     "unk": 0
+    },
+    "counter": {
+     "att": 0,
+     "com": 0,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
+    }
+   },
+   "appearedGames": 5
   },
   {
    "no": "OP16-041",
@@ -2399,10 +4149,20 @@
    "runnable": [
     "onAllyLeave"
    ],
-   "fired": {
-    "onAllyLeave": 3
+   "ops": {
+    "onAllyLeave": [
+     "playSpecificFromHand"
+    ]
    },
-   "totalFired": 3,
+   "stats": {
+    "onAllyLeave": {
+     "att": 1,
+     "com": 1,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
+    }
+   },
    "appearedGames": 5
   },
   {
@@ -2415,8 +4175,7 @@
    ],
    "hooks": [],
    "runnable": [],
-   "fired": {},
-   "totalFired": 0,
+   "stats": {},
    "appearedGames": 10
   },
   {
@@ -2434,11 +4193,21 @@
    "runnable": [
     "onPlay"
    ],
-   "fired": {
-    "onPlay": 18
+   "ops": {
+    "onPlay": [
+     "bounceOwnCharCost(playCharFromHand)"
+    ]
    },
-   "totalFired": 18,
-   "appearedGames": 8
+   "stats": {
+    "onPlay": {
+     "att": 25,
+     "com": 25,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
+    }
+   },
+   "appearedGames": 9
   },
   {
    "no": "OP16-048",
@@ -2456,11 +4225,30 @@
     "onPlay",
     "onOppAttack"
    ],
-   "fired": {
-    "onPlay": 7,
-    "onOppAttack": 15
+   "ops": {
+    "onPlay": [
+     "cond(draw+playSpecificFromHand)"
+    ],
+    "onOppAttack": [
+     "cond(giveKeyword)"
+    ]
    },
-   "totalFired": 22,
+   "stats": {
+    "onPlay": {
+     "att": 16,
+     "com": 16,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
+    },
+    "onOppAttack": {
+     "att": 25,
+     "com": 25,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
+    }
+   },
    "appearedGames": 9
   },
   {
@@ -2477,11 +4265,21 @@
    "runnable": [
     "onPlay"
    ],
-   "fired": {
-    "onPlay": 6
+   "ops": {
+    "onPlay": [
+     "bounceOwnCharCost(draw+discardOwn)"
+    ]
    },
-   "totalFired": 6,
-   "appearedGames": 3
+   "stats": {
+    "onPlay": {
+     "att": 8,
+     "com": 8,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
+    }
+   },
+   "appearedGames": 4
   },
   {
    "no": "OP16-054",
@@ -2498,11 +4296,21 @@
    "runnable": [
     "onPlay"
    ],
-   "fired": {
-    "onPlay": 25
+   "ops": {
+    "onPlay": [
+     "draw"
+    ]
    },
-   "totalFired": 25,
-   "appearedGames": 10
+   "stats": {
+    "onPlay": {
+     "att": 31,
+     "com": 25,
+     "dec": 0,
+     "noop": 0,
+     "unk": 6
+    }
+   },
+   "appearedGames": 9
   },
   {
    "no": "OP16-055",
@@ -2520,11 +4328,30 @@
     "onPlay",
     "onAttack"
    ],
-   "fired": {
-    "onPlay": 20,
-    "onAttack": 1
+   "ops": {
+    "onPlay": [
+     "draw"
+    ],
+    "onAttack": [
+     "setPower"
+    ]
    },
-   "totalFired": 21,
+   "stats": {
+    "onPlay": {
+     "att": 22,
+     "com": 10,
+     "dec": 0,
+     "noop": 0,
+     "unk": 12
+    },
+    "onAttack": {
+     "att": 0,
+     "com": 0,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
+    }
+   },
    "appearedGames": 9
   },
   {
@@ -2541,10 +4368,20 @@
    "runnable": [
     "act"
    ],
-   "fired": {
-    "act": 4
+   "ops": {
+    "act": [
+     "trashSelfCost(draw+setAttackBan)"
+    ]
    },
-   "totalFired": 4,
+   "stats": {
+    "act": {
+     "att": 4,
+     "com": 4,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
+    }
+   },
    "appearedGames": 9
   },
   {
@@ -2562,9 +4399,31 @@
     "main",
     "counter"
    ],
-   "fired": {},
-   "totalFired": 0,
-   "appearedGames": 4
+   "ops": {
+    "main": [
+     "restDonCost(playCharFromDeck)"
+    ],
+    "counter": [
+     "powerMod"
+    ]
+   },
+   "stats": {
+    "main": {
+     "att": 1,
+     "com": 0,
+     "dec": 1,
+     "noop": 0,
+     "unk": 0
+    },
+    "counter": {
+     "att": 0,
+     "com": 0,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
+    }
+   },
+   "appearedGames": 5
   },
   {
    "no": "OP16-079",
@@ -2577,8 +4436,7 @@
     "onReviveFromTrash"
    ],
    "runnable": [],
-   "fired": {},
-   "totalFired": 0,
+   "stats": {},
    "appearedGames": 6
   },
   {
@@ -2590,8 +4448,7 @@
    ],
    "hooks": [],
    "runnable": [],
-   "fired": {},
-   "totalFired": 0,
+   "stats": {},
    "appearedGames": 6
   },
   {
@@ -2607,10 +4464,20 @@
    "runnable": [
     "act"
    ],
-   "fired": {
-    "act": 2
+   "ops": {
+    "act": [
+     "cond(powerMod)"
+    ]
    },
-   "totalFired": 2,
+   "stats": {
+    "act": {
+     "att": 3,
+     "com": 3,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
+    }
+   },
    "appearedGames": 4
   },
   {
@@ -2627,10 +4494,20 @@
    "runnable": [
     "onPlay"
    ],
-   "fired": {
-    "onPlay": 17
+   "ops": {
+    "onPlay": [
+     "cond(search)"
+    ]
    },
-   "totalFired": 17,
+   "stats": {
+    "onPlay": {
+     "att": 16,
+     "com": 15,
+     "dec": 0,
+     "noop": 0,
+     "unk": 1
+    }
+   },
    "appearedGames": 6
   },
   {
@@ -2646,10 +4523,20 @@
    "runnable": [
     "act"
    ],
-   "fired": {
-    "act": 1
+   "ops": {
+    "act": [
+     "cond(trashSelfCost)"
+    ]
    },
-   "totalFired": 1,
+   "stats": {
+    "act": {
+     "att": 1,
+     "com": 1,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
+    }
+   },
    "appearedGames": 6
   },
   {
@@ -2665,10 +4552,20 @@
    "runnable": [
     "onPlay"
    ],
-   "fired": {
-    "onPlay": 1
+   "ops": {
+    "onPlay": [
+     "reviveFromTrash"
+    ]
    },
-   "totalFired": 1,
+   "stats": {
+    "onPlay": {
+     "att": 1,
+     "com": 0,
+     "dec": 0,
+     "noop": 0,
+     "unk": 1
+    }
+   },
    "appearedGames": 5
   },
   {
@@ -2684,10 +4581,20 @@
    "runnable": [
     "onPlay"
    ],
-   "fired": {
-    "onPlay": 9
+   "ops": {
+    "onPlay": [
+     "trashSelfCost(cond)"
+    ]
    },
-   "totalFired": 9,
+   "stats": {
+    "onPlay": {
+     "att": 8,
+     "com": 5,
+     "dec": 0,
+     "noop": 0,
+     "unk": 3
+    }
+   },
    "appearedGames": 5
   },
   {
@@ -2703,10 +4610,20 @@
    "runnable": [
     "onPlay"
    ],
-   "fired": {
-    "onPlay": 9
+   "ops": {
+    "onPlay": [
+     "cond(search)"
+    ]
    },
-   "totalFired": 9,
+   "stats": {
+    "onPlay": {
+     "att": 9,
+     "com": 8,
+     "dec": 0,
+     "noop": 0,
+     "unk": 1
+    }
+   },
    "appearedGames": 6
   },
   {
@@ -2722,11 +4639,21 @@
    "runnable": [
     "onPlay"
    ],
-   "fired": {
-    "onPlay": 10
+   "ops": {
+    "onPlay": [
+     "discardCost(draw)"
+    ]
    },
-   "totalFired": 10,
-   "appearedGames": 5
+   "stats": {
+    "onPlay": {
+     "att": 7,
+     "com": 7,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
+    }
+   },
+   "appearedGames": 3
   },
   {
    "no": "OP16-095",
@@ -2742,10 +4669,20 @@
    "runnable": [
     "onPlay"
    ],
-   "fired": {
-    "onPlay": 6
+   "ops": {
+    "onPlay": [
+     "giveKeyword"
+    ]
    },
-   "totalFired": 6,
+   "stats": {
+    "onPlay": {
+     "att": 6,
+     "com": 5,
+     "dec": 0,
+     "noop": 0,
+     "unk": 1
+    }
+   },
    "appearedGames": 4
   },
   {
@@ -2762,10 +4699,20 @@
    "runnable": [
     "onKO"
    ],
-   "fired": {
-    "onKO": 2
+   "ops": {
+    "onKO": [
+     "reviveFromTrash"
+    ]
    },
-   "totalFired": 2,
+   "stats": {
+    "onKO": {
+     "att": 1,
+     "com": 1,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
+    }
+   },
    "appearedGames": 6
   },
   {
@@ -2781,10 +4728,21 @@
    "runnable": [
     "onPlay"
    ],
-   "fired": {
-    "onPlay": 9
+   "ops": {
+    "onPlay": [
+     "trashToHand",
+     "playCharFromHand"
+    ]
    },
-   "totalFired": 9,
+   "stats": {
+    "onPlay": {
+     "att": 10,
+     "com": 4,
+     "dec": 0,
+     "noop": 0,
+     "unk": 6
+    }
+   },
    "appearedGames": 6
   },
   {
@@ -2802,11 +4760,31 @@
     "onPlay",
     "act"
    ],
-   "fired": {
-    "onPlay": 14,
-    "act": 12
+   "ops": {
+    "onPlay": [
+     "draw",
+     "discardOwn"
+    ],
+    "act": [
+     "cond(trashSelfCost)"
+    ]
    },
-   "totalFired": 26,
+   "stats": {
+    "onPlay": {
+     "att": 10,
+     "com": 7,
+     "dec": 0,
+     "noop": 0,
+     "unk": 3
+    },
+    "act": {
+     "att": 10,
+     "com": 10,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
+    }
+   },
    "appearedGames": 6
   },
   {
@@ -2824,10 +4802,30 @@
     "main",
     "counter"
    ],
-   "fired": {
-    "main": 5
+   "ops": {
+    "main": [
+     "restDonCost(deckToTrash+reviveFromTrash)"
+    ],
+    "counter": [
+     "powerMod"
+    ]
    },
-   "totalFired": 5,
+   "stats": {
+    "main": {
+     "att": 4,
+     "com": 2,
+     "dec": 2,
+     "noop": 0,
+     "unk": 0
+    },
+    "counter": {
+     "att": 0,
+     "com": 0,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
+    }
+   },
    "appearedGames": 4
   },
   {
@@ -2845,11 +4843,31 @@
     "onKO",
     "trigger"
    ],
-   "fired": {
-    "onKO": 2
+   "ops": {
+    "onKO": [
+     "cond(draw+powerMod)"
+    ],
+    "trigger": [
+     "cond(draw+powerMod)"
+    ]
    },
-   "totalFired": 2,
-   "appearedGames": 5
+   "stats": {
+    "onKO": {
+     "att": 2,
+     "com": 2,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
+    },
+    "trigger": {
+     "att": 1,
+     "com": 1,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
+    }
+   },
+   "appearedGames": 4
   },
   {
    "no": "OP16-104",
@@ -2866,10 +4884,31 @@
     "onAttack",
     "trigger"
    ],
-   "fired": {
-    "onAttack": 3
+   "ops": {
+    "onAttack": [
+     "powerCopy"
+    ],
+    "trigger": [
+     "draw",
+     "reviveFromTrash"
+    ]
    },
-   "totalFired": 3,
+   "stats": {
+    "onAttack": {
+     "att": 4,
+     "com": 4,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
+    },
+    "trigger": {
+     "att": 0,
+     "com": 0,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
+    }
+   },
    "appearedGames": 6
   },
   {
@@ -2887,11 +4926,31 @@
     "onPlay",
     "trigger"
    ],
-   "fired": {
-    "trigger": 1
+   "ops": {
+    "onPlay": [
+     "discardCost(trashToLife)"
+    ],
+    "trigger": [
+     "draw"
+    ]
    },
-   "totalFired": 1,
-   "appearedGames": 4
+   "stats": {
+    "onPlay": {
+     "att": 2,
+     "com": 2,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
+    },
+    "trigger": {
+     "att": 2,
+     "com": 2,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
+    }
+   },
+   "appearedGames": 5
   },
   {
    "no": "OP16-109",
@@ -2908,12 +4967,31 @@
     "onKO",
     "trigger"
    ],
-   "fired": {
-    "trigger": 4,
-    "onKO": 4
+   "ops": {
+    "onKO": [
+     "cond(draw+ko)"
+    ],
+    "trigger": [
+     "cond(draw+ko)"
+    ]
    },
-   "totalFired": 8,
-   "appearedGames": 4
+   "stats": {
+    "onKO": {
+     "att": 3,
+     "com": 3,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
+    },
+    "trigger": {
+     "att": 3,
+     "com": 3,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
+    }
+   },
+   "appearedGames": 2
   },
   {
    "no": "OP16-110",
@@ -2930,12 +5008,33 @@
     "onKO",
     "trigger"
    ],
-   "fired": {
-    "onKO": 6,
-    "trigger": 4
+   "ops": {
+    "onKO": [
+     "draw",
+     "restChar"
+    ],
+    "trigger": [
+     "draw",
+     "restChar"
+    ]
    },
-   "totalFired": 10,
-   "appearedGames": 6
+   "stats": {
+    "onKO": {
+     "att": 7,
+     "com": 7,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
+    },
+    "trigger": {
+     "att": 2,
+     "com": 2,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
+    }
+   },
+   "appearedGames": 5
   },
   {
    "no": "OP16-116",
@@ -2952,10 +5051,31 @@
     "main",
     "trigger"
    ],
-   "fired": {
-    "trigger": 3
+   "ops": {
+    "main": [
+     "cond(playSpecificFromHand+oppLifeToHand)"
+    ],
+    "trigger": [
+     "draw",
+     "discardOwn"
+    ]
    },
-   "totalFired": 3,
+   "stats": {
+    "main": {
+     "att": 0,
+     "com": 0,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
+    },
+    "trigger": {
+     "att": 3,
+     "com": 3,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
+    }
+   },
    "appearedGames": 5
   },
   {
@@ -2973,11 +5093,31 @@
     "onPlay",
     "trigger"
    ],
-   "fired": {
-    "onPlay": 7,
-    "trigger": 4
+   "ops": {
+    "onPlay": [
+     "lifeAddChoose"
+    ],
+    "trigger": [
+     "negateChoose",
+     "ko"
+    ]
    },
-   "totalFired": 11,
+   "stats": {
+    "onPlay": {
+     "att": 6,
+     "com": 6,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
+    },
+    "trigger": {
+     "att": 4,
+     "com": 3,
+     "dec": 0,
+     "noop": 0,
+     "unk": 1
+    }
+   },
    "appearedGames": 6
   },
   {
@@ -2995,11 +5135,31 @@
     "onPlay",
     "act"
    ],
-   "fired": {
-    "onPlay": 3,
-    "act": 5
+   "ops": {
+    "onPlay": [
+     "draw",
+     "discardOwn"
+    ],
+    "act": [
+     "donAttach"
+    ]
    },
-   "totalFired": 8,
+   "stats": {
+    "onPlay": {
+     "att": 2,
+     "com": 2,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
+    },
+    "act": {
+     "att": 3,
+     "com": 3,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
+    }
+   },
    "appearedGames": 6
   },
   {
@@ -3016,11 +5176,21 @@
    "runnable": [
     "onKO"
    ],
-   "fired": {
-    "onKO": 9
+   "ops": {
+    "onKO": [
+     "draw"
+    ]
    },
-   "totalFired": 9,
-   "appearedGames": 10
+   "stats": {
+    "onKO": {
+     "att": 10,
+     "com": 7,
+     "dec": 0,
+     "noop": 0,
+     "unk": 3
+    }
+   },
+   "appearedGames": 9
   },
   {
    "no": "ST17-004",
@@ -3035,11 +5205,22 @@
    "runnable": [
     "onPlay"
    ],
-   "fired": {
-    "onPlay": 8
+   "ops": {
+    "onPlay": [
+     "scry",
+     "donAttach"
+    ]
    },
-   "totalFired": 8,
-   "appearedGames": 5
+   "stats": {
+    "onPlay": {
+     "att": 9,
+     "com": 7,
+     "dec": 0,
+     "noop": 0,
+     "unk": 2
+    }
+   },
+   "appearedGames": 4
   },
   {
    "no": "ST22-002",
@@ -3056,12 +5237,31 @@
     "onPlay",
     "onOppAttack"
    ],
-   "fired": {
-    "onPlay": 6,
-    "onOppAttack": 53
+   "ops": {
+    "onPlay": [
+     "search"
+    ],
+    "onOppAttack": [
+     "trashSelfCost(draw+bottomOwn)[cpuSkip]"
+    ]
    },
-   "totalFired": 59,
-   "appearedGames": 4
+   "stats": {
+    "onPlay": {
+     "att": 6,
+     "com": 6,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
+    },
+    "onOppAttack": {
+     "att": 49,
+     "com": 0,
+     "dec": 0,
+     "noop": 49,
+     "unk": 0
+    }
+   },
+   "appearedGames": 5
   },
   {
    "no": "ST22-015",
@@ -3076,8 +5276,20 @@
    "runnable": [
     "main"
    ],
-   "fired": {},
-   "totalFired": 0,
+   "ops": {
+    "main": [
+     "cond(playSpecificFromHand+lifeCost)"
+    ]
+   },
+   "stats": {
+    "main": {
+     "att": 0,
+     "com": 0,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
+    }
+   },
    "appearedGames": 4
   },
   {
@@ -3089,8 +5301,7 @@
    ],
    "hooks": [],
    "runnable": [],
-   "fired": {},
-   "totalFired": 0,
+   "stats": {},
    "appearedGames": 5
   },
   {
@@ -3108,11 +5319,30 @@
     "onPlay",
     "onOppAttack"
    ],
-   "fired": {
-    "onPlay": 6,
-    "onOppAttack": 6
+   "ops": {
+    "onPlay": [
+     "search"
+    ],
+    "onOppAttack": [
+     "trashSelfCost(donActivate)"
+    ]
    },
-   "totalFired": 12,
+   "stats": {
+    "onPlay": {
+     "att": 6,
+     "com": 6,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
+    },
+    "onOppAttack": {
+     "att": 6,
+     "com": 6,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
+    }
+   },
    "appearedGames": 4
   },
   {
@@ -3128,11 +5358,22 @@
    "runnable": [
     "onPlay"
    ],
-   "fired": {
-    "onPlay": 7
+   "ops": {
+    "onPlay": [
+     "lock",
+     "cond(leaderBuff)"
+    ]
    },
-   "totalFired": 7,
-   "appearedGames": 5
+   "stats": {
+    "onPlay": {
+     "att": 7,
+     "com": 7,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
+    }
+   },
+   "appearedGames": 4
   },
   {
    "no": "ST30-014",
@@ -3147,10 +5388,21 @@
    "runnable": [
     "act"
    ],
-   "fired": {
-    "act": 9
+   "ops": {
+    "act": [
+     "donAttach",
+     "donAttach"
+    ]
    },
-   "totalFired": 9,
+   "stats": {
+    "act": {
+     "att": 10,
+     "com": 8,
+     "dec": 0,
+     "noop": 2,
+     "unk": 0
+    }
+   },
    "appearedGames": 5
   },
   {
@@ -3166,11 +5418,21 @@
    "runnable": [
     "onPlay"
    ],
-   "fired": {
-    "onPlay": 6
+   "ops": {
+    "onPlay": [
+     "cond(chooseOption)"
+    ]
    },
-   "totalFired": 6,
-   "appearedGames": 4
+   "stats": {
+    "onPlay": {
+     "att": 6,
+     "com": 6,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
+    }
+   },
+   "appearedGames": 5
   },
   {
    "no": "ST32-002",
@@ -3185,10 +5447,21 @@
    "runnable": [
     "onPlay"
    ],
-   "fired": {
-    "onPlay": 1
+   "ops": {
+    "onPlay": [
+     "draw",
+     "restImmune"
+    ]
    },
-   "totalFired": 1,
+   "stats": {
+    "onPlay": {
+     "att": 1,
+     "com": 0,
+     "dec": 0,
+     "noop": 0,
+     "unk": 1
+    }
+   },
    "appearedGames": 5
   },
   {
@@ -3206,9 +5479,32 @@
     "onSelfRested",
     "onPlay"
    ],
-   "fired": {},
-   "totalFired": 0,
-   "appearedGames": 2
+   "ops": {
+    "onSelfRested": [
+     "draw",
+     "discardOwn"
+    ],
+    "onPlay": [
+     "cond(playCharFromHand)"
+    ]
+   },
+   "stats": {
+    "onSelfRested": {
+     "att": 2,
+     "com": 2,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
+    },
+    "onPlay": {
+     "att": 1,
+     "com": 1,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
+    }
+   },
+   "appearedGames": 4
   },
   {
    "no": "ST32-005",
@@ -3223,10 +5519,20 @@
    "runnable": [
     "onPlay"
    ],
-   "fired": {
-    "onPlay": 10
+   "ops": {
+    "onPlay": [
+     "cond(restChar)"
+    ]
    },
-   "totalFired": 10,
+   "stats": {
+    "onPlay": {
+     "att": 10,
+     "com": 4,
+     "dec": 0,
+     "noop": 4,
+     "unk": 2
+    }
+   },
    "appearedGames": 5
   },
   {
@@ -3242,10 +5548,20 @@
    "runnable": [
     "onPlay"
    ],
-   "fired": {
-    "onPlay": 2
+   "ops": {
+    "onPlay": [
+     "discardCost(draw)"
+    ]
    },
-   "totalFired": 2,
+   "stats": {
+    "onPlay": {
+     "att": 2,
+     "com": 2,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
+    }
+   },
    "appearedGames": 4
   },
   {
@@ -3263,11 +5579,30 @@
     "onAttack",
     "onKO"
    ],
-   "fired": {
-    "onAttack": 1,
-    "onKO": 2
+   "ops": {
+    "onAttack": [
+     "discardCost(cond)"
+    ],
+    "onKO": [
+     "playCharFromHand"
+    ]
    },
-   "totalFired": 3,
+   "stats": {
+    "onAttack": {
+     "att": 1,
+     "com": 1,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
+    },
+    "onKO": {
+     "att": 2,
+     "com": 2,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
+    }
+   },
    "appearedGames": 4
   },
   {
@@ -3283,10 +5618,20 @@
    "runnable": [
     "onPlay"
    ],
-   "fired": {
-    "onPlay": 2
+   "ops": {
+    "onPlay": [
+     "discardCost(deckBottom+deckBottom)"
+    ]
    },
-   "totalFired": 2,
+   "stats": {
+    "onPlay": {
+     "att": 2,
+     "com": 2,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
+    }
+   },
    "appearedGames": 3
   },
   {
@@ -3298,8 +5643,7 @@
    ],
    "hooks": [],
    "runnable": [],
-   "fired": {},
-   "totalFired": 0,
+   "stats": {},
    "appearedGames": 5
   },
   {
@@ -3315,10 +5659,20 @@
    "runnable": [
     "onPlay"
    ],
-   "fired": {
-    "onPlay": 1
+   "ops": {
+    "onPlay": [
+     "cond(playCharFromHand)"
+    ]
    },
-   "totalFired": 1,
+   "stats": {
+    "onPlay": {
+     "att": 1,
+     "com": 1,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
+    }
+   },
    "appearedGames": 5
   }
  ]
