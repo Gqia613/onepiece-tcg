@@ -885,11 +885,12 @@
       }
       render();
     }
-    // ★トリガーの空撃ち抑止（§11-13: 条件不成立は「発動」させない）: fxが「全て cond 包み・どの check も不成立」なら
-    //   発動しても何も起こらず、カードはトラッシュへ行くだけ＝純損（P-088ロー「超新星＋ライフ合計5以下なら登場」/
-    //   OP06-104菊之丞 の実対戦報告）。人間には発動UIを出さず・CPUも発動せず、手札に加える。
+    // ★トリガーの空撃ち検知: fxが「全て cond 包み・どの check も不成立」なら発動しても何も起こらず、
+    //   カードはトラッシュへ行くだけ（P-088ロー「超新星＋ライフ合計5以下なら登場」/OP06-104菊之丞 の実対戦報告）。
+    //   CPU: 発動せず手札へ（手札+1が厳密優位）。人間: 選択UIは出す（トラッシュを意図的に増やす発動＝
+    //   トラッシュ枚数参照デッキの正当なプレイがあり得る）が、警告文＋既定「手札に加える」で誤操作の純損を防ぐ。
     //   例外: 自分の場に onTrigger リスナー（OP05-109/OP13-106=「自分の【トリガー】が発動した時」）がいる場合は
-    //   発動宣言自体に意味が生まれるため従来どおり選択させる。
+    //   発動宣言に実効果があるため dead 扱いにしない（警告も出さない）。
     function triggerDead(side, card) {
       const ops = (card.base.fx && card.base.fx.trigger) || [];
       if (!ops.length || !ops.every(o => o.op === 'cond' && o.check && !o.else)) return false; // cond包み以外が混ざる＝何か起こりうる
@@ -898,22 +899,26 @@
       return ![P.leader, ...P.chars, P.stage].some(c => c && !isNegated(c) && c.base.fx && c.base.fx.onTrigger);
     }
     async function askTrigger(side, card) {
-      if (triggerDead(side, card)) {
-        flog(side, `【トリガー】条件を満たさない→「${card.base.name}」を手札に`);
-        if (!G.players[side].isCPU) toast('【トリガー】条件を満たさないため手札に加えました');
-        return false;
-      }
+      const dead = triggerDead(side, card); // 空撃ち＝発動しても何も起こらずトラッシュへ行くだけ
       if (G.players[side].isCPU) {
+        if (dead) { flog(side, `【トリガー】条件を満たさない→「${card.base.name}」を手札に`); return false; } // CPUは空撃ちしない（手札+1が厳密優位）
         // ★E42b(heur2): 対象不在の除去系トリガーは空砲＝発動せず手札へ。既定CPUは従来どおり常に発動。
         if (typeof isHeur2 === 'function' && isHeur2(side) && h2On('trigger') && typeof triggerWorthUsing === 'function' && !triggerWorthUsing(side, card)) { flog(side, `【トリガー】対象なし→「${card.base.name}」を手札に`); return false; }
         return true; // CPUは基本発動
       }
+      // 人間: 空撃ちでも選択UIは出す（トラッシュを意図的に増やす発動＝トラッシュ枚数参照デッキの正当なプレイがあり得る。ユーザー指摘）。
+      //       ただし警告文＋既定ボタンを「手札に加える」に反転して、誤操作での純損は防ぐ。
       const advice = await defenseAdvice(side, 'トリガー発動', '「' + card.base.name + '」を発動 or 手札に加える');
       return await new Promise(res => showPrompt({
         side, cls: 'defense',
         title: '⚡ トリガー',
-        text: `ライフから「${card.base.name}」が公開。【トリガー】を発動しますか？（発動したカードは場に出ない限りトラッシュへ。発動しなければ手札に加わります）` + advice,
-        opts: [{ t: '発動する', v: true, primary: true }, { t: '手札に加える', v: false, ghost: true }], onPick: res
+        text: `ライフから「${card.base.name}」が公開。【トリガー】を発動しますか？（発動したカードは場に出ない限りトラッシュへ。発動しなければ手札に加わります）`
+          + (dead ? '<span class="pp-warn">⚠ 条件を満たしていないため、発動しても効果はありません（カードはトラッシュに置かれるだけです）</span>' : '')
+          + advice,
+        opts: dead
+          ? [{ t: '手札に加える', v: false, primary: true }, { t: '発動する（効果なし）', v: true, ghost: true }]
+          : [{ t: '発動する', v: true, primary: true }, { t: '手札に加える', v: false, ghost: true }],
+        onPick: res
       }));
     }
 

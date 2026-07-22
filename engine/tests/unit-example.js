@@ -119,11 +119,19 @@ function setupG(leaderNo){G.active='me';G.turnSeq=5;G.winner=null;const mkP=(ln,
       // 例外: onTriggerリスナー(OP05-109)が場に居れば発動宣言自体に意味がある＝従来どおり発動
       const lis=mkc('OP05-109'); lis.owner='cpu'; cpu.chars=[lis];
       ok((await askTrigger('cpu',law))===true, '例3g: onTriggerリスナーが場に居れば従来どおり発動（例外）'); }
-    // 人間にも発動UIを出さない（§11-13: 条件不成立は確認UIを出さない）
+    // 人間: 空撃ちでも選択UIは表示（トラッシュを意図的に増やす発動＝トラッシュ枚数参照デッキの正当なプレイ）。
+    //       警告文＋既定(primary)を「手札に加える」に反転して誤操作の純損を防ぐ。
     setupG('OP13-002'); { const lawMe=mkc('P-088');
-      let asked=false; const _sp=showPrompt; showPrompt=function(cfg){asked=true; return Promise.resolve(false);};
-      const r=await askTrigger('me',lawMe); showPrompt=_sp;
-      ok(r===false && !asked, '例3g: 人間にも発動UIを出さず手札側（プロンプト非表示）'); }
+      const _sp=showPrompt; let seen=null;
+      // ★askTriggerのshowPromptは onPick コールバック解決型＝スタブは必ず cfg.onPick(v) を呼ぶ（呼ばないと永久未解決でハング）
+      showPrompt=function(cfg){seen=cfg; const o=(cfg.opts||[]).find(x=>x.primary); const v=o&&o.v; if(cfg.onPick)cfg.onPick(v); return Promise.resolve(v);}; // 既定ボタンを押す
+      const r=await askTrigger('me',lawMe);
+      ok(seen!==null && r===false, '例3g: 人間には選択UIを表示・既定(primary)は手札に加える');
+      ok(seen && /条件を満た/.test(seen.text||''), '例3g: 空撃ちには警告文を表示');
+      showPrompt=function(cfg){const o=(cfg.opts||[]).find(x=>x.v===true); const v=o&&o.v; if(cfg.onPick)cfg.onPick(v); return Promise.resolve(v);};   // あえて発動を選ぶ
+      const r2=await askTrigger('me',lawMe);
+      showPrompt=_sp;
+      ok(r2===true, '例3g: 空撃ちでも「発動する」を選べる（トラッシュ肥やしの意図的プレイを許可）'); }
 
     // 例3e: 「相手のデッキの上を見る」(peekOppDeck)は完了ボタンを押すまでカードを大写し（reveal付きshowPrompt）。人間のみ。OP11-062/070。
     setupG('OP11-062'); { const P=G.players.me; G.players.cpu.deck=[mkc('OP15-067')];
