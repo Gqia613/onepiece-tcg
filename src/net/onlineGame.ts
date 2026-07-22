@@ -84,15 +84,42 @@ export function requestRematch(): void {
   sendMatch({ t: 'rematch' });
 }
 // 終局後に部屋（ロビー）へ戻る＝デッキと対戦設定を選び直して再戦する。片方が押せば両者が戻る（DO側で冪等）。
-export function requestLobby(): void {
-  /* ★終局申告を先に再送する（冪等）: 申告はゲームごとに1回しか送らないため、終局の瞬間にWSが
+/* ★無応答対策（実バグ2件の教訓）:
+   ① sendMatch は WS が OPEN でないと「黙って false」を返す＝切断/再接続中のクリックは送信すらされない。
+   ② サーバが応答しない（旧Workerに to-lobby ハンドラが無かった事故・メッセージ喪失）と、
+      lobby も error も来ない＝ボタンが「部屋に戻っています…」のまま永久に固まる。
+   対策: 意図(lobbyIntent)を持ち、(a) 再接続時の joined で自動再送 (b) 6秒応答が無ければ
+   lobbyNak でボタンを押し直せる状態に戻す。to-lobby は DO 側で冪等なので多重送信は安全。 */
+let lobbyIntent = false;
+let lobbyIntentTimer: ReturnType<typeof setTimeout> | null = null;
+
+function sendLobbyRequest(): void {
+  /* 終局申告を先に再送する（冪等）: 申告はゲームごとに1回しか送らないため、終局の瞬間にWSが
      切断/再接続中だと申告がDOに届かないまま失われる。DOは「両者の申告」が無いと to-lobby を
-     bad_state で拒否する設計（生きた対局からの逃亡防止）なので、申告が欠けたままだと
-     「部屋に戻っています…」から永遠に進まなくなる。 */
+     bad_state で拒否する設計（生きた対局からの逃亡防止）。 */
   if (lastResultMsg && useNetStore.getState().phase === 'ended') {
     try { sendMatch({ t: 'result', result: lastResultMsg }); } catch { /* ignore */ }
   }
   sendMatch({ t: 'to-lobby' });
+}
+
+function clearLobbyIntent(): void {
+  lobbyIntent = false;
+  if (lobbyIntentTimer) { clearTimeout(lobbyIntentTimer); lobbyIntentTimer = null; }
+}
+
+export function requestLobby(): void {
+  lobbyIntent = true;
+  sendLobbyRequest();
+  if (lobbyIntentTimer) clearTimeout(lobbyIntentTimer);
+  lobbyIntentTimer = setTimeout(() => {
+    lobbyIntentTimer = null;
+    if (!lobbyIntent) return;
+    lobbyIntent = false;
+    if (useNetStore.getState().phase === 'lobby') return; // 実は成立済み（applyLobbyReset 経由の取りこぼし保険）
+    useNetStore.getState().bumpLobbyNak(); // ボタンを押し直せる状態に戻す
+    toast('部屋に戻れませんでした — 通信状態を確認してもう一度お試しください');
+  }, 6000);
 }
 // 相手切断の裁定を要求（DOが猶予・接続状態を検証し、切断側の投了を代理発行）
 export function claimDisconnectWin(): void {
@@ -115,6 +142,7 @@ export function applyLobbyReset(config: RoomConfig, players: PlayerInfo[], last:
   const net = useNetStore.getState();
   if (net.replayActive) return; // リプレイ再生中に盤面を壊さない
 
+  clearLobbyIntent(); // 部屋に戻れた＝意図成立（ウォッチドッグの誤NAKを止める）
   net.setPhase('lobby');
   net.setConfig(config);
   net.setPlayers(players);
@@ -140,6 +168,7 @@ export function applyLobbyReset(config: RoomConfig, players: PlayerInfo[], last:
 
 // 退室してオフライン既定へ戻す（ロビー/終了後/エラー時）
 export function leaveOnline(): void {
+  clearLobbyIntent();
   leaveMatch();
   setMatchHandler(null);
   setOnApplied(null);
@@ -176,6 +205,8 @@ function handleMsg(m: S2C): void {
       if (m.status === 'playing' && net.phase === 'ended' && lastResultMsg) {
         try { sendMatch({ t: 'result', result: lastResultMsg }); } catch { /* ignore */ }
       }
+      // ★「部屋に戻る」を押した後に再接続した（＝クリック時の送信が落ちていた可能性）→ 意図を自動再送
+      if (lobbyIntent && net.phase === 'ended') sendLobbyRequest();
       return;
     }
     case 'peer': {
@@ -254,7 +285,7 @@ function handleMsg(m: S2C): void {
     }
     case 'error': {
       if (m.code === 'claim_rejected') { toast('まだ勝利宣言できません（相手の切断から90秒必要です）'); return; }
-      if (m.code === 'bad_state') { net.bumpLobbyNak(); toast('まだ対戦が終わっていません — もう一度お試しください'); return; } // lobbyNak++ = EndScreenの「部屋に戻る」を押し直せる状態に戻す
+      if (m.code === 'bad_state') { clearLobbyIntent(); net.bumpLobbyNak(); toast('まだ対戦が終わっていません — もう一度お試しください'); return; } // lobbyNak++ = EndScreenの「部屋に戻る」を押し直せる状態に戻す
       const msg = m.code === 'not_found' ? '部屋が見つかりません'
         : m.code === 'room_full' ? '部屋が満室です'
         : m.code === 'rate' ? '操作が速すぎます'
