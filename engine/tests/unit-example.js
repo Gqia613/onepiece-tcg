@@ -87,6 +87,44 @@ function setupG(leaderNo){G.active='me';G.turnSeq=5;G.winner=null;const mkP=(ln,
       ok(!eventMainUsable('me',ev), '例3f: donMinus1が総ドン0なら不使用');
       P.leader.attachedDon=1; ok(eventMainUsable('me',ev), '例3f: 付与ドン1あればdonMinus1は使用可'); }
 
+    // 例3g: トリガーの空撃ち抑止 — 「全てcond包み・全check不成立」のトリガー（P-088ロー「超新星＋ライフ合計5以下なら登場」）は
+    //       発動しても何も起こらずカードがトラッシュへ行くだけの純損（実対戦報告）。人間には発動UIを出さず・CPUも発動せず手札へ。
+    // フルフロー: cond不成立（防御側リーダー非超新星）→ P-088はトラッシュでなく手札へ
+    setupG('OP13-002'); { const cpu=G.players.cpu, me=G.players.me;
+      G.active='me'; G.winner=null; G.busy=false; G.myActable=true; G.firstPlayer='me';
+      const law=mkc('P-088'); law.owner='cpu'; const fill=mkc('ST01-006'); fill.owner='cpu';
+      cpu.life=[law,fill]; cpu.hand=[]; cpu.trash=[]; me.life=[mkc('ST01-006')];
+      const atk=mkc('OP15-067'); atk.summonedTurn=1; atk.rested=false; atk.attachedDon=10; me.chars=[atk];
+      await declareAttack(atk, cpu.leader);
+      ok(cpu.hand.some(c=>c.no==='P-088') && !cpu.trash.some(c=>c.no==='P-088') && !cpu.chars.some(c=>c.no==='P-088'),
+        '例3g: cond不成立トリガーは発動せず手札へ（トラッシュに行かない）'); }
+    // フルフロー: cond成立（超新星リーダー＋ライフ合計5以下）→ 従来どおり発動しplaySelfで登場
+    setupG('OP13-002'); { const cpu=G.players.cpu, me=G.players.me;
+      G.active='me'; G.winner=null; G.busy=false; G.myActable=true; G.firstPlayer='me';
+      cpu.leader=mkc('OP01-001'); cpu.leader.owner='cpu'; // ゾロL（超新星）
+      const law=mkc('P-088'); law.owner='cpu'; const fill=mkc('ST01-006'); fill.owner='cpu';
+      cpu.life=[law,fill]; cpu.hand=[]; cpu.trash=[]; me.life=[mkc('ST01-006')]; // shift後 合計2≤5
+      const atk=mkc('OP15-067'); atk.summonedTurn=1; atk.rested=false; atk.attachedDon=10; me.chars=[atk];
+      await declareAttack(atk, cpu.leader);
+      ok(cpu.chars.some(c=>c.no==='P-088'), '例3g: cond成立なら従来どおり発動→playSelfで登場'); }
+    // Q&A841境界: 「ライフ合計5枚以下」は自身を含めない（フローでshift後に判定）＝残り合計5で発動・6で空撃ち抑止
+    setupG('OP13-002'); { const cpu=G.players.cpu;
+      cpu.leader=mkc('OP01-001'); cpu.leader.owner='cpu';
+      const law=mkc('P-088'); law.owner='cpu';
+      cpu.life=[1,2,3].map(()=>{const x=mkc('ST01-006');x.owner='cpu';return x;});
+      G.players.me.life=[1,2].map(()=>mkc('ST01-006')); // 合計5
+      ok((await askTrigger('cpu',law))===true, '例3g: ライフ合計5(自身除く)なら発動できる(Q&A841)');
+      G.players.me.life.push(mkc('ST01-006'));          // 合計6
+      ok((await askTrigger('cpu',law))===false, '例3g: 合計6なら空撃ち抑止で手札側');
+      // 例外: onTriggerリスナー(OP05-109)が場に居れば発動宣言自体に意味がある＝従来どおり発動
+      const lis=mkc('OP05-109'); lis.owner='cpu'; cpu.chars=[lis];
+      ok((await askTrigger('cpu',law))===true, '例3g: onTriggerリスナーが場に居れば従来どおり発動（例外）'); }
+    // 人間にも発動UIを出さない（§11-13: 条件不成立は確認UIを出さない）
+    setupG('OP13-002'); { const lawMe=mkc('P-088');
+      let asked=false; const _sp=showPrompt; showPrompt=function(cfg){asked=true; return Promise.resolve(false);};
+      const r=await askTrigger('me',lawMe); showPrompt=_sp;
+      ok(r===false && !asked, '例3g: 人間にも発動UIを出さず手札側（プロンプト非表示）'); }
+
     // 例3e: 「相手のデッキの上を見る」(peekOppDeck)は完了ボタンを押すまでカードを大写し（reveal付きshowPrompt）。人間のみ。OP11-062/070。
     setupG('OP11-062'); { const P=G.players.me; G.players.cpu.deck=[mkc('OP15-067')];
       let seen=null; const _sp=showPrompt; showPrompt=function(cfg){ seen=cfg; return Promise.resolve((cfg.opts&&cfg.opts[0]||{}).v); };
