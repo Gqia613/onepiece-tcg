@@ -540,7 +540,7 @@
           if (!c) break;
           P.hand.splice(P.hand.indexOf(c), 1); P.life.unshift(faceDown(c)); flog(side, '手札1枚をライフの上に置いた'); render(); break; }
         // 自分のライフ上1枚を公開し、そのコスト1につき self を+per(既定1000)パワー（このターン中）。OP15-119ルフィ
-        case 'revealLifeCostBuff': { if (!P.life.length) break; const cost = P.life[0].base.cost || 0; const amt = cost * (op.per || 1000); if (self && amt) { addBuff(self, amt, durTag(op.duration, 'turnEnd')); floatOn(self.uid, `+${amt}`, 'buff'); } flog(side, `ライフ上を公開(コスト${cost})→パワー+${amt}`); render(); break; }
+        case 'revealLifeCostBuff': { if (!P.life.length) break; if (!P.isCPU && !(await confirmUse(side, 'ライフ公開', 'ライフの上から1枚を公開して、そのコスト×1000パワーを上げますか？（相手にもカードが公開されます）', '公開する', 'しない'))) break; const cost = P.life[0].base.cost || 0; const amt = cost * (op.per || 1000); if (self && amt) { addBuff(self, amt, durTag(op.duration, 'turnEnd')); floatOn(self.uid, `+${amt}`, 'buff'); } flog(side, `ライフ上を公開(コスト${cost})→パワー+${amt}`); render(); break; } // ★「1枚までを公開する」＝任意。人間は確認（公開＝情報開示の実コストがある）。CPUは常に公開。Q&A1293: 表向きのライフでも公開宣言可＝表裏ゲートは設けない
         // 手札からfilter一致のキャラ1枚を選び、自分のライフの上に加える（faceUp=表向き）。OP10-103/107/119
         case 'handCharToLife': {
           const hclPool = op.fromTrash ? [...P.hand, ...P.trash] : P.hand; // fromTrash=「手札かトラッシュの」（ST13-003）
@@ -617,7 +617,27 @@
         // 相手のアクティブのドンをN枚レストにする（OP08-030ペドロ）
         case 'restOppDon': { const O4 = G.players[o]; const n = Math.min(op.n || 1, O4.don.active); O4.don.active -= n; O4.don.rested += n; if (n) flog(side, `相手のドン${n}枚をレストにした`); render(); break; }
         case 'oppDonToDeck': { const O7 = G.players[o]; let n = op.n || 1; while (n > 0) { if (O7.don.active > 0) O7.don.active--; else if (O7.don.rested > 0) O7.don.rested--; else break; n--; } flog(side, `相手のドンをドンデッキに戻した`); render(); break; } // 相手のドンをドンデッキへ（OP02-085マゼラン）
-        case 'peekOppHand': { const O8 = G.players[o]; const n = Math.min(op.n || 1, O8.hand.length); if (n) flog(side, `相手の手札を確認: ${O8.hand.slice(0, n).map(c => c.base.name).join('、')}`); if (op.then && n) await runFx(op.then, ctx); break; } // 相手の手札を見る（OP01-063アーロン/105バオファン）
+        case 'peekOppHand': {
+          const O8 = G.players[o];
+          if (op.choose) { // 「相手の手札1枚を選び、公開する」（OP01-063アーロン）。Q&A155: 裏向きのまま選ぶ＝ブラインド選択。Q&A157: 手札0なら起動できるが何も起きない
+            if (!O8.hand.length) { flog(side, '相手の手札がないため公開できない'); break; }
+            let idx;
+            if (P.isCPU) idx = Math.floor(rng() * O8.hand.length); // ★ゲーム結果に効く乱数はrng（ロックステップ不変条件）
+            else { const v = await showPrompt({ side, title: '相手の手札を選ぶ', text: `裏向きのまま1枚を選んで公開します（相手の手札 ${O8.hand.length}枚）`, opts: O8.hand.map((_, i) => ({ t: (i + 1) + '枚目', v: 'pick:' + i })) }); idx = (typeof v === 'string' && v.indexOf('pick:') === 0) ? +v.slice(5) : 0; }
+            const c = O8.hand[Math.min(idx, O8.hand.length - 1)];
+            flog(side, `相手の手札を公開: 「${c.base.name}」`); cardReveal(o, c.no, c.base.name, '手札公開', 'hand');
+            if (!P.isCPU) await showPrompt({ side, title: '公開されたカード', text: '相手の手札から公開されたカードです。確認したら「完了」を押してください。', reveal: { no: c.no, name: c.base.name }, opts: [{ t: '完了', v: 'ok', primary: true }] });
+            if (op.then && (!op.thenIfType || c.base.type === op.thenIfType)) await runFx(op.then, ctx); // thenIfType: 公開カードの種別一致時のみ後続（イベントならライフ削り等）
+            render(); break;
+          }
+          const n = Math.min(op.n || 1, O8.hand.length); if (n) flog(side, `相手の手札を確認: ${O8.hand.slice(0, n).map(c => c.base.name).join('、')}`); if (op.then && n) await runFx(op.then, ctx); break;
+        } // 相手の手札を見る（OP01-063アーロン/105バオファン）
+        // 相手のライフの上から1枚を持ち主のデッキの下に置く（OP01-063アーロン後半。「1枚まで」=optionalで人間は見送り可）
+        case 'oppLifeToDeckBottom': {
+          const OL = G.players[o]; if (!OL.life.length) break;
+          if (op.optional && !P.isCPU && !(await confirmUse(side, '相手のライフをデッキ下へ', '相手のライフの上から1枚を持ち主のデッキの下に置きますか？', '置く', '置かない'))) break;
+          const c = OL.life.shift(); OL.deck.push(reset(c)); flog(side, '相手のライフ上1枚を持ち主のデッキの下に置いた'); await fireLifeLeft(o); render(); break;
+        }
         case 'searchDeck': { const cands = P.deck.filter(c => matchFilter(c, op.filter || {})); const t = P.isCPU ? (cands.length && typeof planPickSearch === 'function' ? planPickSearch(side, cands, () => cands[0]) : cands[0]) : await chooseCard(side, cands, 'デッキから手札に加えるカード', 'ownBig', op.optional !== false); if (P.isCPU && G._searchDiag) try { G._searchDiag(side, cands, t, op); } catch (e) { } if (t) { if (!G._sim) t._pubHand = G.turnSeq; P.deck.splice(P.deck.indexOf(t), 1); P.hand.push(t); flog(side, `デッキから「${t.base.name}」を手札に`); } shuffle(P.deck); render(); break; } // デッキ全体から1枚サーチ＋シャッフル（OP01-098オロチ）。E38: _searchDiag=診断フック／E39: usePlan時のみプラン優先（非活性はcands[0]＝バイト等価）／E43: _pubHand=公開フラグ
         // 自分の場のドンを「相手の場のドン枚数」と同じになるまでドンデッキへ戻す（OP08-074ブラックマリア・ターン終了時）
         case 'donReturnToMatchOpp': { const want = donTotal(o); let excess = Math.max(0, donTotal(side) - want); while (excess > 0) { if (P.don.rested > 0) P.don.rested--; else if (P.don.active > 0) P.don.active--; else break; excess--; } if (donTotal(side) <= want) flog(side, '自分のドンを相手と同じ枚数に戻した'); render(); break; }
@@ -1058,9 +1078,11 @@
         }
         // 相手のトラッシュから filter一致のカードを n枚 デッキの下へ
         case 'oppTrashToBottom': { // 公式「相手は自身のトラッシュから〜枚をデッキ下に置く」＝相手が選ぶ（OP11-072モンドール/091ベリーグッド・filterで種別限定）
+          // chooser:'self'＝「(自分が)相手のトラッシュのカードN枚までを、持ち主のデッキの下に置く」型（OP15-091マルガリータ）。選択者は効果の使用者・optionalで見送り可
           const O = G.players[o]; let moved = 0;
-          for (let i = 0; i < (op.n || 1); i++) { const cands = O.trash.filter(c => matchFilter(c, op.filter || {})); if (!cands.length) break; const t = O.isCPU ? cands[0] : await chooseCard(o, cands, 'デッキ下に置くトラッシュを選択', 'ownSmall', false); if (!t) break; O.trash.splice(O.trash.indexOf(t), 1); O.deck.push(reset(t)); moved++; }
-          if (moved) flog(side, `相手はトラッシュ${moved}枚をデッキの下へ`); render(); break;
+          const chSide = op.chooser === 'self' ? side : o, CH = G.players[chSide];
+          for (let i = 0; i < (op.n || 1); i++) { const cands = O.trash.filter(c => matchFilter(c, op.filter || {})); if (!cands.length) break; const t = CH.isCPU ? cands[0] : await chooseCard(chSide, cands, op.chooser === 'self' ? 'デッキ下に置く相手のトラッシュを選択' : 'デッキ下に置くトラッシュを選択', op.chooser === 'self' ? 'oppSmall' : 'ownSmall', !!op.optional); if (!t) break; O.trash.splice(O.trash.indexOf(t), 1); O.deck.push(reset(t)); moved++; }
+          if (moved) flog(side, op.chooser === 'self' ? `相手のトラッシュ${moved}枚を持ち主のデッキの下へ` : `相手はトラッシュ${moved}枚をデッキの下へ`); render(); break;
         }
         // ドン!!デッキから n枚まで コストエリアに追加（mode:'rest'|'active'、donMax上限まで）
         case 'donFromDeck': {

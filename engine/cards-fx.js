@@ -494,7 +494,7 @@ window.CARD_FX = {
   "OP15-087": {"condBlocker":{"trashAtLeast":10},"onPlay":[{"op":"draw","n":2},{"op":"discardOwn","n":2}]},
   "OP15-088": {"static":[{"op":"staticCost","amount":6}],"onPlay":[{"op":"deckTrashCost","n":3,"then":[{"op":"reviveFromTrash","maxCost":2,"filter":{"trait":"麦わらの一味"}}]}]},
   "OP15-090": {"static":[{"op":"leaveProtect","pay":"discardFromHand"}]},
-  "OP15-091": {"onPlay":[{"op":"oppTrashToBottom","n":1}]},
+  "OP15-091": {"onPlay":[{"op":"oppTrashToBottom","n":1,"chooser":"self","optional":true}]},
   "OP15-092": {"static":[{"op":"staticCost","amount":10,"cond":{"trashAtLeast":10}},{"op":"staticSetBase","value":9000,"cond":{"trashAtLeast":10}},{"op":"setPowerOppTurn","leaderTarget":true,"power":7000,"cond":{"trashAtLeast":20}},{"op":"condBuff","cond":{"trashAtLeast":30},"power":1000}]},
   "OP15-093": {"act":{"label":"トラッシュ15+でルフィに速攻:キャラ","cost":{},"fx":[{"op":"trashSelfCost","then":[{"op":"cond","check":{"trashAtLeast":15},"then":[{"op":"giveKeyword","target":"chooseOwn","kw":"rushChar","duration":"turn","filter":{"name":"モンキー・Ｄ・ルフィ"}}]}]}]}},
   "OP15-094": {"static":[{"op":"leaveProtect","pay":"koSelf","targetFilter":{"trait":"麦わらの一味"}},{"op":"staticKeyword","kw":"blocker"}]},
@@ -936,7 +936,7 @@ window.CARD_FX = {
   "OP12-080": {"act":{"label":"ステージをデッキ下:サンジならイベントサーチ","cost":{},"fx":[{"op":"stageToBottomCost","then":[{"op":"cond","check":{"leaderNameIncludes":"サンジ"},"then":[{"op":"search","look":3,"count":1,"filter":{"type":"EVENT"},"optional":true}]}]}]}},
   /* ===== OP12 バッチ5（黒・革命軍。onLeaderAttack。staticCost(革命軍)多用） ===== */
   // OP12-081 コアラ LEADER: 相手リーダーにアタック時、コスト8以上が2枚以上なら1ドロー（※「相手の登場時に相手ライフ手札」は後続/省略）
-  "OP12-081": {"onLeaderAttack":{"vsLeader":true,"cond":{"selfCharCount":{"filter":{"minBaseCost":8},"min":2}},"fx":[{"op":"draw","n":1}]}},
+  "OP12-081": {"onLeaderAttack":{"vsLeader":true,"cond":{"selfCharCount":{"filter":{"minBaseCost":8},"min":2}},"fx":[{"op":"draw","n":1}]},"onOppCharEnter":{"once":"turn","minBaseCost":8,"byFieldCharFx":true,"fx":[{"op":"oppLifeToHand","n":1}]}},
   // OP12-084 エンポリオ・イワンコフ(c3): 【ブロッカー】 ／【登場時】リーダー革命軍ならデッキ上3枚をトラッシュ
   "OP12-084": {"onPlay":[{"op":"cond","check":{"leaderTraitIncludes":"革命軍"},"then":[{"op":"deckToTrash","n":3}]}]},
   // OP12-085 カラス: リーダー革命軍でコスト+3 ／【アタック時】リーダー革命軍＋相手手札5枚以上なら相手は手札1枚を捨てる
@@ -1195,7 +1195,7 @@ window.CARD_FX = {
   // OP10-001 スモーカー LEADER: 【相手のターン中】海軍/パンクハザードキャラ全+1000 ／【起動メイン】パワー7000以上がいればドン2アクティブ
   "OP10-001": {"static":[{"op":"allyPower","cond":{"oppTurn":true},"power":1000,"filter":{"or":[{"traitIncludes":"海軍"},{"traitIncludes":"パンクハザード"}]}}],"act":{"label":"パワー7000以上がいればドン2アクティブ","cost":{},"fx":[{"op":"cond","check":{"selfCharCount":{"filter":{"minEffPower":7000},"min":1}},"then":[{"op":"donActivate","n":2}]}]}},
   // OP10-003 シュガー LEADER: 【自分のターン終了時】パワー6000以上のドンキ海賊団がいればドン1アクティブ
-  "OP10-003": {"onTurnEnd":[{"op":"cond","check":{"selfCharCount":{"filter":{"minEffPower":6000,"traitIncludes":"ドンキホーテ海賊団"},"min":1}},"then":[{"op":"donActivate","n":1}]}]},
+  "OP10-003": {"onTurnEnd":[{"op":"cond","check":{"selfCharCount":{"filter":{"minEffPower":6000,"traitIncludes":"ドンキホーテ海賊団"},"min":1}},"then":[{"op":"donActivate","n":1}]}],"onSelfEventUsed":{"when":"oppTurn","once":"turn","fx":[{"op":"donFromDeck","n":1,"mode":"active"}]}},
   // OP10-004 ヴェルゴ: 【登場時】デッキ上5枚から「ヴェルゴ」以外のパンクハザード1枚を手札に(残りデッキ下)
   "OP10-004": {"onPlay":[{"op":"search","look":5,"count":1,"filter":{"traitIncludes":"パンクハザード"},"exclude":"ヴェルゴ","optional":true}]},
   // OP10-005 サンジ: 【自分のターン中】+3000 ／【KO時】1ドロー
@@ -3092,7 +3092,7 @@ window.CARD_FX = {
   // OP01-062 クロコダイル LEADER: 【ドン×1】自分がイベント発動時、手札4枚以下かつこのターンこのリーダー効果で引いてなければ1ドロー(近似:ターン1回)
   "OP01-062": {"onSelfEvent":{"once":"turn","cond":{"and":[{"donX1":true},{"selfHandAtMost":4}]},"fx":[{"op":"draw","n":1}]}},
   // OP01-063 アーロン: 【ドン×1】【起動メイン】レスト：相手手札1枚を公開、イベントなら相手ライフ1枚をデッキ下
-  "OP01-063": {"act":{"label":"レスト:相手手札公開(イベントならライフ削り)","cost":{"restSelf":true},"fx":[{"op":"peekOppHand"}]}},
+  "OP01-063": {"act":{"label":"レスト:相手手札1枚を公開(イベントならライフをデッキ下)","cost":{"restSelf":true},"fx":[{"op":"peekOppHand","choose":true,"thenIfType":"EVENT","then":[{"op":"oppLifeToDeckBottom","optional":true}]}]}},
   // OP01-064 アルビダ(c2): 【ドン×1】【アタック時】手札1捨て：相手コスト3以下1枚を手札に戻す
   "OP01-064": {"onAttack":[{"op":"cond","check":{"donX1":true},"then":[{"op":"discardCost","count":1,"optional":true,"then":[{"op":"bounce","side":"opp","maxCost":3,"count":1,"optional":true}]}]}]},
   // OP01-067 クロコダイル(c7): 【バニッシュ】 ／【ドン×1】自分の手札の青イベントをコスト-1
@@ -3764,14 +3764,14 @@ window.CARD_FX = {
   "ST13-004": {"onPlay":[{"op":"lifeAddFromDeck","n":1},{"op":"reorderLife","oneToDeckTop":true}]},
   "ST13-005": {"onPlay":[{"op":"lifeCost","action":"trash","pos":"choose","then":[{"op":"handCharToLife","filter":{"cost":5}}]}]},
   "ST13-006": {"onPlay":[{"op":"playSpecificFromHand","name":"サボ","filter":{"cost":2},"optional":true},{"op":"playSpecificFromHand","name":"ポートガス・D・エース","filter":{"cost":2},"optional":true},{"op":"playSpecificFromHand","name":"モンキー・D・ルフィ","filter":{"cost":2},"optional":true}]},
-  "ST13-007": {"act":{"label":"自身トラッシュ:ライフ公開しコスト5「サボ」を登場","cost":{},"fx":[{"op":"trashSelfCost","then":[{"op":"revealLifePlay","filter":{"nameIncludes":"サボ","cost":5}},{"op":"leaderBuff","amount":2000,"duration":"untilNextEnd"}]}]}},
+  "ST13-007": {"act":{"label":"自身トラッシュ:ライフ公開しコスト5「サボ」を登場","cost":{},"fx":[{"op":"trashSelfCost","then":[{"op":"revealLifePlay","filter":{"nameIncludes":"サボ","cost":5},"then":[{"op":"leaderBuff","amount":2000,"duration":"untilNextEnd"}]}]}]}},
   "ST13-008": {"onPlay":[{"op":"lifeCost","pos":"choose","action":"trash","then":[{"op":"ko","side":"opp","filter":{"maxCost":5},"count":1,"optional":true}]}]},
   "ST13-009": {"onPlay":[{"op":"lifeFlipDownCost","then":[{"op":"cond","check":{"oppHandAtLeast":7},"then":[{"op":"lifeTrash","side":"opp"}]}]}]},
-  "ST13-010": {"act":{"label":"自身トラッシュ:ライフ公開しコスト5「エース」を登場","cost":{},"fx":[{"op":"trashSelfCost","then":[{"op":"revealLifePlay","filter":{"nameIncludes":"ポートガス・D・エース","cost":5}},{"op":"leaderBuff","amount":2000,"duration":"untilNextEnd"}]}]}},
+  "ST13-010": {"act":{"label":"自身トラッシュ:ライフ公開しコスト5「エース」を登場","cost":{},"fx":[{"op":"trashSelfCost","then":[{"op":"revealLifePlay","filter":{"nameIncludes":"ポートガス・D・エース","cost":5},"then":[{"op":"leaderBuff","amount":2000,"duration":"untilNextEnd"}]}]}]}},
   "ST13-011": {"onPlay":[{"op":"cond","check":{"lifeAtMost":2},"then":[{"op":"giveKeyword","target":"self","kw":"rush","duration":"turn"}]}]},
   "ST13-012": {"onPlay":[{"op":"lifeCost","pos":"choose","then":[{"op":"reorderLife"}]}]},
   "ST13-013": {"onPlay":[{"op":"search","look":5,"count":1,"filter":{"maxCost":5,"or":[{"nameIncludes":"サボ"},{"nameIncludes":"ポートガス・D・エース"},{"nameIncludes":"モンキー・D・ルフィ"}]},"optional":true}]},
-  "ST13-014": {"act":{"label":"自身トラッシュ:ライフ公開しコスト5「ルフィ」を登場","cost":{},"fx":[{"op":"trashSelfCost","then":[{"op":"revealLifePlay","filter":{"nameIncludes":"モンキー・Ｄ・ルフィ","cost":5}},{"op":"leaderBuff","amount":2000,"duration":"untilNextEnd"}]}]}},
+  "ST13-014": {"act":{"label":"自身トラッシュ:ライフ公開しコスト5「ルフィ」を登場","cost":{},"fx":[{"op":"trashSelfCost","then":[{"op":"revealLifePlay","filter":{"nameIncludes":"モンキー・Ｄ・ルフィ","cost":5},"then":[{"op":"leaderBuff","amount":2000,"duration":"untilNextEnd"}]}]}]}},
   "ST13-015": {"act":{"label":"このキャラ+2000→1ドロー＋ライフ1枚トラッシュ","cost":{},"fx":[{"op":"powerMod","side":"self","target":"self","amount":2000,"duration":"untilNextStart"},{"op":"cond","check":{"lifeAtLeast":1},"then":[{"op":"draw","n":1},{"op":"lifeTrash"}]}]}},
   "ST13-016": {"onPlay":[{"op":"reorderLife","oneToDeckTop":true}]},
   "ST13-017": {"counter":{"cost":0,"fx":[{"op":"powerMod","side":"self","leader":true,"amount":4000,"battle":true,"count":1,"optional":true},{"op":"reorderLife"}]}},

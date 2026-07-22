@@ -38,6 +38,23 @@
       await checkAllyEnter(side, card);
       // 相手のキャラの【相手がキャラを登場させた時】誘発（OP04-024シュガー）
       { const O = G.players[opp(side)]; for (const c of O.chars.slice()) { const cfg = c.base.fx && c.base.fx.onOppEnter; if (!cfg || isNegated(c) || !O.chars.includes(c)) continue; if (cfg.when === 'oppTurn' && opp(side) === G.active) continue; if (cfg.when === 'selfTurn' && opp(side) !== G.active) continue; if (cfg.cond && !checkCond(cfg.cond, opp(side), c)) continue; if (cfg.once === 'turn') { if (c._oppEnterTurn === G.turnSeq) continue; c._oppEnterTurn = G.turnSeq; } await runFx(cfg.fx, { self: c, side: opp(side), entered: card }); } }
+      // 相手リーダーの【相手がキャラを登場させた時】誘発（OP12-081コアラL: 元々コスト8以上 or 場のキャラの効果による登場・【ターン1回】・発動できる=任意）。
+      // ★Q&A996: トリガー効果による登場は「場にあるキャラの効果」に該当しない（byFieldCharFx判定は_fxSrcが場のキャラの時のみ）。
+      // ★Q&A997: 両条件を同時に満たしても1枚。Q&A998: 登場ごとに発動可否を選べる＝辞退時は【ターン1回】未消費（jobを予約し解決時に判定）。
+      { const eSide = opp(side), eL = G.players[eSide].leader; const ecfg = eL && eL.base.fx && eL.base.fx.onOppCharEnter;
+        if (ecfg && !isNegated(eL) && !(ecfg.once === 'turn' && eL._oppEnterTurn === G.turnSeq)) {
+          const src = _fxSrc(); const byFieldCharFx = !!(ecfg.byFieldCharFx && src && src !== card && src.base && src.base.type === 'CHAR' && G.players[src.owner].chars.includes(src));
+          if ((card.base.cost || 0) >= (ecfg.minBaseCost || 99) || byFieldCharFx) {
+            const job = async () => {
+              if (ecfg.once === 'turn' && eL._oppEnterTurn === G.turnSeq) return; // 同ターンの先行発動と競合したら見送り
+              const go = G.players[eSide].isCPU ? true : await confirmUse(eSide, 'リーダー効果', `「${card.base.name}」の登場に対して発動しますか？（相手は自身のライフの上から1枚を手札に加える）`, '発動する', '発動しない', { noSrc: true });
+              if (!go) return; // 辞退＝【ターン1回】未消費（Q&A998: 後続の登場で改めて発動できる）
+              if (ecfg.once === 'turn') eL._oppEnterTurn = G.turnSeq;
+              await fxNote(eSide, 'リーダー効果', eL.base.name); await runFx(ecfg.fx, { self: eL, side: eSide });
+            };
+            if (G._fxDepth > 0) { (G._pendingReacts = G._pendingReacts || []).push(job); } else await job(); // 誘発キュー規則＝登場キャラの【登場時】解決後に発動（Q&A998の順序）
+          }
+        } }
       render();
     }
     // 「効果で自分の手札が捨てられた時」誘発（OP14-045クロオビ/049ジンベエ→速攻, 056ワダツミ→自身無効, OP12-040クザンL→捨てた枚数分ドロー）。
@@ -114,6 +131,19 @@
       if (!arr && cfg.once === 'turn') { if (card._selfRestTurn === G.turnSeq) return; card._selfRestTurn = G.turnSeq; }
       await fxNote(side, 'レスト時', card.base.name);
       await runFx(arr ? cfg : cfg.fx, { self: card, side });
+    }
+    // 「自分がイベントを発動した時」のリーダー誘発（OP10-003シュガーL: 【相手のターン中】【ターン1回】ドン1アクティブ追加）。
+    // 発火点＝イベントのmain使用（人間/CPU/puct）・カウンターイベント使用・イベントの【トリガー】発動。
+    // ★Q&A794: イベント内の任意コストを辞退しても「発動した」扱い＝解決結果に関わらず必ず発火。Q&A795: イベントのトリガー効果も対象。
+    async function fireOwnEventUsed(side) {
+      const L = G.players[side].leader; const cfg = L && L.base.fx && L.base.fx.onSelfEventUsed;
+      if (!cfg || isNegated(L)) return;
+      if (cfg.when === 'oppTurn' && G.active === side) return;
+      if (cfg.when === 'selfTurn' && G.active !== side) return;
+      if (cfg.once === 'turn' && L._evUsedTurn === G.turnSeq) return;
+      L._evUsedTurn = G.turnSeq;
+      const job = async () => { await fxNote(side, 'リーダー効果', L.base.name); await runFx(cfg.fx, { self: L, side }); };
+      if (G._fxDepth > 0) { (G._pendingReacts = G._pendingReacts || []).push(job); } else await job(); // 誘発キュー規則（§3.5）に従う
     }
     async function fireOppEvent(eventSide) {
       const oppSide = opp(eventSide), P = G.players[oppSide];
@@ -603,7 +633,7 @@
           await triggerReveal(dSide, card);              // ★ライフ公開の派手な演出（カード大写し）
           const use = await askTrigger(dSide, card);      // 人間: 演出のカード大写しを背後に残したまま選択
           clearTriggerReveal();                           // 選択直後に閉じる（trigger効果の対象選択で盤面を隠さない）
-          if (use) { sfx('trigger'); await fxNote(dSide, 'トリガー発動', card.base.name, card.base.no); flog(dSide, `【トリガー】「${card.base.name}」発動`); await runFx(card.base.fx.trigger, { self: card, side: dSide }); if (!D.chars.includes(card) && !D.hand.includes(card) && !D.life.includes(card)) D.trash.push(reset(card)); await fireOnTrigger(dSide); }
+          if (use) { sfx('trigger'); await fxNote(dSide, 'トリガー発動', card.base.name, card.base.no); flog(dSide, `【トリガー】「${card.base.name}」発動`); await runFx(card.base.fx.trigger, { self: card, side: dSide }); if (!D.chars.includes(card) && !D.hand.includes(card) && !D.life.includes(card)) D.trash.push(reset(card)); if (card.base.type === 'EVENT') await fireOwnEventUsed(dSide); await fireOnTrigger(dSide); } // Q&A795: イベントの【トリガー】発動もOP10-003シュガーLの対象
           else { D.hand.push(card); flog(dSide, 'ライフ1枚を手札に'); }
         } else { D.hand.push(card); flog(dSide, 'ライフ1枚を手札に'); }
         await fireLifeLeft(dSide); // ライフが手札等へ離れた時（OP12-099カルガラ）
@@ -714,7 +744,7 @@
             sfx('counter'); cardReveal(dSide, c.base.no, c.base.name, 'カウンター発動', 'event'); // 何を使ったか見せる
             await runFx(c.base.fx.counter.fx, { self: c, side: dSide, target });
             D.trash.push(reset(c)); flog(dSide, `カウンター「${c.base.name}」`);
-            if (c.base.type === 'EVENT') await luffyReveal(dSide);
+            if (c.base.type === 'EVENT') { await luffyReveal(dSide); await fireOwnEventUsed(dSide); } // OP10-003シュガーL（Q&A794: コスト辞退でも発動扱い）
           } else {
             const cv = counterVal(c, dSide);
             D.hand.splice(D.hand.indexOf(c), 1);
@@ -875,7 +905,7 @@
           D.hand.splice(D.hand.indexOf(x.c), 1);
           await runFx(x.c.base.fx.counter.fx, { self: x.c, side: dSide, target });
           D.trash.push(reset(x.c)); flog(dSide, `CPUカウンター「${x.c.base.name}」`);
-          if (x.c.base.type === 'EVENT') await luffyReveal(dSide);
+          if (x.c.base.type === 'EVENT') { await luffyReveal(dSide); await fireOwnEventUsed(dSide); } // OP10-003シュガーL
           await sleep(140);
         }
       }

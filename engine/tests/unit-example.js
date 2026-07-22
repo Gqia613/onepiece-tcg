@@ -87,6 +87,62 @@ function setupG(leaderNo){G.active='me';G.turnSeq=5;G.winner=null;const mkP=(ln,
       ok(!eventMainUsable('me',ev), '例3f: donMinus1が総ドン0なら不使用');
       P.leader.attachedDon=1; ok(eventMainUsable('me',ev), '例3f: 付与ドン1あればdonMinus1は使用可'); }
 
+    // 例3h: WARN36トリアージ由来の6修正（2026-07-23）
+    // (1) ST13-014: 「登場させた場合」のリーダーバフはrevealLifePlayのthen＝登場した時だけ
+    setupG('OP13-002'); { const me=G.players.me; const sabo=mkc('ST13-014'); me.chars=[sabo];
+      const luffy5=mkc('ST13-015'); me.life=[luffy5]; const L0=power(me.leader);
+      await runFx(C['ST13-014'].fx.act.fx,{self:sabo,side:'me'});
+      ok(me.chars.some(c=>c.no==='ST13-015') && power(me.leader)===L0+2000, '例3h-1: 公開が一致→登場+リーダー+2000（全半角Ｄ/D正規化込み）'); }
+    setupG('OP13-002'); { const me=G.players.me; const sabo=mkc('ST13-014'); me.chars=[sabo];
+      me.life=[mkc('ST01-006')]; const L0=power(me.leader);
+      await runFx(C['ST13-014'].fx.act.fx,{self:sabo,side:'me'});
+      ok(power(me.leader)===L0, '例3h-1: 公開が不一致→登場せずリーダーバフも無し（実バグ回帰）'); }
+    // (2) OP15-091: 相手トラッシュ→デッキ下は「自分が選ぶ」+任意（見送り可）
+    setupG('OP13-002'); { const cpu=G.players.cpu; cpu.trash=[mkc('ST01-006')]; cpu.deck=[];
+      await runFx(C['OP15-091'].fx.onPlay,{self:mkc('OP15-091'),side:'me'});
+      ok(cpu.trash.length===0 && cpu.deck.length===1, '例3h-2: 自分が選んで相手トラッシュ→持ち主デッキ下'); }
+    setupG('OP13-002'); { const cpu=G.players.cpu; cpu.trash=[mkc('ST01-006')]; cpu.deck=[];
+      const _hp=humanPick; humanPick=function(){return Promise.resolve(null);}; // 見送り
+      await runFx(C['OP15-091'].fx.onPlay,{self:mkc('OP15-091'),side:'me'});
+      humanPick=_hp;
+      ok(cpu.trash.length===1 && cpu.deck.length===0, '例3h-2: 「1枚まで」＝見送り可'); }
+    // (3) OP15-119: ライフ公開は人間に確認（辞退→公開もバフも無し）
+    setupG('OP13-002'); { const me=G.players.me; const lf=mkc('OP15-119'); me.chars=[lf]; me.life=[mkc('OP15-067')];
+      const _sp=showPrompt; showPrompt=function(cfg){return Promise.resolve('n');};
+      const p0=power(lf); await runFx([{op:'revealLifeCostBuff'}],{self:lf,side:'me'}); showPrompt=_sp;
+      ok(power(lf)===p0, '例3h-3: 公開確認を辞退→バフ無し'); }
+    // (4) OP10-003シュガーL第2能力: 相手ターン中のイベント発動→ドン1アクティブ追加（ターン1回）
+    setupG('OP10-003'); { const me=G.players.me; G.active='cpu'; G.turnSeq=6; me.don={active:0,rested:0}; me.donMax=10;
+      await fireOwnEventUsed('me');
+      ok(me.don.active===1, '例3h-4: 相手ターン中のイベント発動でドン1アクティブ追加');
+      await fireOwnEventUsed('me');
+      ok(me.don.active===1, '例3h-4: 【ターン1回】＝同ターン2回目は不発');
+      G.active='me'; G.turnSeq=7;
+      await fireOwnEventUsed('me');
+      ok(me.don.active===1, '例3h-4: 自分のターン中は発動しない'); }
+    // (5) OP12-081コアラL第2能力: 相手が元々コスト8以上を登場→相手はライフ上1枚を手札に（コスト7は対象外）
+    setupG('OP13-002'); { const cpu=G.players.cpu; cpu.leader=mkc('OP12-081'); cpu.leader.owner='cpu'; cpu.isCPU=true;
+      const me=G.players.me; me.life=[mkc('ST01-006'),mkc('ST01-006')]; me.hand=[]; G.active='me'; G.turnSeq=8;
+      const big=Object.values(C).find(c=>c.type==='CHAR'&&c.cost===8&&!c.fx); const bc=mkc(big.no); // コスト8バニラ
+      await summon('me',bc,false);
+      ok(me.life.length===1 && me.hand.length===1, '例3h-5: 元々コスト8以上の登場→登場側のライフ上1枚が手札へ');
+      const small=Object.values(C).find(c=>c.type==='CHAR'&&c.cost===7&&!c.fx); const sc=mkc(small.no);
+      G.turnSeq=9; me.life=[mkc('ST01-006')]; me.hand=[];
+      await summon('me',sc,false);
+      ok(me.life.length===1 && me.hand.length===0, '例3h-5: コスト7の通常登場は対象外'); }
+    // (6) OP01-063アーロン: 相手手札1枚をブラインド公開→イベントならライフ上1枚をデッキ下（任意）
+    setupG('OP13-002'); { const cpu=G.players.cpu; const ev=mkc('OP05-077'); ev.owner='cpu'; cpu.hand=[ev];
+      cpu.life=[mkc('ST01-006'),mkc('ST01-006')]; cpu.deck=[]; const ar=mkc('OP01-063'); G.players.me.chars=[ar];
+      await runFx(C['OP01-063'].fx.act.fx,{self:ar,side:'me'});
+      ok(cpu.life.length===1 && cpu.deck.length===1, '例3h-6: 公開がイベント→相手ライフ上1枚をデッキ下'); }
+    setupG('OP13-002'); { const cpu=G.players.cpu; const ch=mkc('ST01-006'); ch.owner='cpu'; cpu.hand=[ch];
+      cpu.life=[mkc('ST01-006')]; cpu.deck=[]; const ar=mkc('OP01-063'); G.players.me.chars=[ar];
+      await runFx(C['OP01-063'].fx.act.fx,{self:ar,side:'me'});
+      ok(cpu.life.length===1 && cpu.deck.length===0, '例3h-6: 公開がイベント以外→何も起きない');
+      cpu.hand=[];
+      await runFx(C['OP01-063'].fx.act.fx,{self:ar,side:'me'});
+      ok(cpu.life.length===1, '例3h-6: 手札0→何も起きない(Q&A157)'); }
+
     // 例3g: トリガーの空撃ち抑止 — 「全てcond包み・全check不成立」のトリガー（P-088ロー「超新星＋ライフ合計5以下なら登場」）は
     //       発動しても何も起こらずカードがトラッシュへ行くだけの純損（実対戦報告）。人間には発動UIを出さず・CPUも発動せず手札へ。
     // フルフロー: cond不成立（防御側リーダー非超新星）→ P-088はトラッシュでなく手札へ
