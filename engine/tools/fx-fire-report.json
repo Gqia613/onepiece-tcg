@@ -1,5 +1,5 @@
 {
- "date": "2026-07-22T14:51:06.078Z",
+ "date": "2026-07-22T23:35:08.393Z",
  "games": 30,
  "seed0": 910000,
  "noWinner": 0,
@@ -58,6 +58,31 @@
    "id": "kuzan",
    "name": "青クザン",
    "cards": 15
+  },
+  {
+   "id": "user1",
+   "name": "マイデッキ:紫エネル",
+   "cards": 16
+  },
+  {
+   "id": "user2",
+   "name": "マイデッキ:青緑ルフィ",
+   "cards": 16
+  },
+  {
+   "id": "user3",
+   "name": "マイデッキ:ミホーク",
+   "cards": 18
+  },
+  {
+   "id": "user4",
+   "name": "マイデッキ:キッド黄",
+   "cards": 14
+  },
+  {
+   "id": "user5",
+   "name": "マイデッキ:マイデッキ",
+   "cards": 18
   }
  ],
  "tierA": [
@@ -69,10 +94,10 @@
    ],
    "hook": "onOppAttack",
    "s": {
-    "att": 49,
+    "att": 36,
     "com": 0,
     "dec": 0,
-    "noop": 49,
+    "noop": 36,
     "unk": 0
    },
    "ops": "trashSelfCost(draw+bottomOwn)[cpuSkip]",
@@ -87,10 +112,10 @@
    ],
    "hook": "onOppAttack",
    "s": {
-    "att": 30,
+    "att": 28,
     "com": 0,
     "dec": 0,
-    "noop": 30,
+    "noop": 28,
     "unk": 0
    },
    "ops": "discardCost(powerMod)[cpuSkip]",
@@ -98,22 +123,78 @@
    "reason": "全てno-op(空対象/cpuSkip/シグナル無し)"
   },
   {
-   "no": "OP14-105",
-   "name": "ゴルゴン三姉妹",
+   "no": "OP12-118",
+   "name": "ジュエリー・ボニー",
    "decks": [
-    "青黄ハンコック"
+    "緑ミホーク",
+    "マイデッキ:ミホーク"
    ],
-   "hook": "act",
+   "hook": "onPlay",
    "s": {
-    "att": 5,
+    "att": 6,
     "com": 0,
-    "dec": 5,
+    "dec": 6,
     "noop": 0,
     "unk": 0
    },
-   "ops": "revealCost(donAttachAll)",
+   "ops": "cond(draw+discardOwn+donActivate)",
    "appeared": 5,
    "reason": "全て辞退シグナル(コスト不能/cond不成立/辞退)"
+  },
+  {
+   "no": "OP15-063",
+   "name": "ゲダツ",
+   "decks": [
+    "紫エネル"
+   ],
+   "hook": "onKO",
+   "s": {
+    "att": 3,
+    "com": 0,
+    "dec": 0,
+    "noop": 3,
+    "unk": 0
+   },
+   "ops": "ko",
+   "appeared": 4,
+   "reason": "全てno-op(空対象/cpuSkip/シグナル無し)"
+  },
+  {
+   "no": "OP08-043",
+   "name": "エドワード・ニューゲート",
+   "decks": [
+    "赤青エース"
+   ],
+   "hook": "onPlay",
+   "s": {
+    "att": 2,
+    "com": 0,
+    "dec": 2,
+    "noop": 0,
+    "unk": 0
+   },
+   "ops": "cond(attackTax)",
+   "appeared": 5,
+   "reason": "全て辞退シグナル(コスト不能/cond不成立/辞退)"
+  },
+  {
+   "no": "OP07-115",
+   "name": "助けてクエーサ～!!!",
+   "decks": [
+    "青黄ナミ",
+    "青黄ハンコック"
+   ],
+   "hook": "trigger",
+   "s": {
+    "att": 1,
+    "com": 0,
+    "dec": 0,
+    "noop": 1,
+    "unk": 0
+   },
+   "ops": "reviveFromTrash",
+   "appeared": 10,
+   "reason": "全てno-op(空対象/cpuSkip/シグナル無し)"
   },
   {
    "no": "OP14-104",
@@ -123,188 +204,44 @@
    ],
    "hook": "onPlay",
    "s": {
-    "att": 3,
+    "att": 1,
     "com": 0,
     "dec": 0,
-    "noop": 3,
+    "noop": 1,
     "unk": 0
    },
    "ops": "chooseOption",
-   "appeared": 4,
+   "appeared": 1,
    "reason": "全てno-op(空対象/cpuSkip/シグナル無し)"
-  },
-  {
-   "no": "OP16-038",
-   "name": "行くぞ～～～!!!海軍本部～～～!!!",
-   "decks": [
-    "青緑ルフィ"
-   ],
-   "hook": "main",
-   "s": {
-    "att": 3,
-    "com": 0,
-    "dec": 3,
-    "noop": 0,
-    "unk": 0
-   },
-   "ops": "restDonCost(cond)",
-   "appeared": 5,
-   "reason": "全て辞退シグナル(コスト不能/cond不成立/辞退)"
-  },
-  {
-   "no": "OP14-096",
-   "name": "浸食輪廻",
-   "decks": [
-    "黒ヤマト"
-   ],
-   "hook": "main",
-   "s": {
-    "att": 2,
-    "com": 0,
-    "dec": 2,
-    "noop": 0,
-    "unk": 0
-   },
-   "ops": "restDonCost(negateChoose)",
-   "appeared": 5,
-   "reason": "全て辞退シグナル(コスト不能/cond不成立/辞退)"
-  },
-  {
-   "no": "OP13-040",
-   "name": "強ェとわかってんだから… 始めから全開だ!!!",
-   "decks": [
-    "青緑ルフィ",
-    "緑ミホーク"
-   ],
-   "hook": "main",
-   "s": {
-    "att": 2,
-    "com": 0,
-    "dec": 2,
-    "noop": 0,
-    "unk": 0
-   },
-   "ops": "restDonCost(lock)",
-   "appeared": 5,
-   "reason": "全て辞退シグナル(コスト不能/cond不成立/辞退)"
-  },
-  {
-   "no": "OP12-118",
-   "name": "ジュエリー・ボニー",
-   "decks": [
-    "緑ミホーク"
-   ],
-   "hook": "onPlay",
-   "s": {
-    "att": 2,
-    "com": 0,
-    "dec": 2,
-    "noop": 0,
-    "unk": 0
-   },
-   "ops": "cond(draw+discardOwn+donActivate)",
-   "appeared": 5,
-   "reason": "全て辞退シグナル(コスト不能/cond不成立/辞退)"
-  },
-  {
-   "no": "OP15-074",
-   "name": "放電",
-   "decks": [
-    "紫エネル"
-   ],
-   "hook": "main",
-   "s": {
-    "att": 1,
-    "com": 0,
-    "dec": 1,
-    "noop": 0,
-    "unk": 0
-   },
-   "ops": "donMinus,cond(draw+addCostBuff)",
-   "appeared": 3,
-   "reason": "全て辞退シグナル(コスト不能/cond不成立/辞退)"
-  },
-  {
-   "no": "OP06-104",
-   "name": "菊之丞",
-   "decks": [
-    "青黄ナミ"
-   ],
-   "hook": "trigger",
-   "s": {
-    "att": 1,
-    "com": 0,
-    "dec": 1,
-    "noop": 0,
-    "unk": 0
-   },
-   "ops": "cond(playSelf)",
-   "appeared": 5,
-   "reason": "全て辞退シグナル(コスト不能/cond不成立/辞退)"
-  },
-  {
-   "no": "OP16-059",
-   "name": "ド派手大作戦に変更じゃァ～～～!!!",
-   "decks": [
-    "青バギー"
-   ],
-   "hook": "main",
-   "s": {
-    "att": 1,
-    "com": 0,
-    "dec": 1,
-    "noop": 0,
-    "unk": 0
-   },
-   "ops": "restDonCost(playCharFromDeck)",
-   "appeared": 5,
-   "reason": "全て辞退シグナル(コスト不能/cond不成立/辞退)"
   }
  ],
  "tierB": [
-  {
-   "no": "EB04-022",
-   "name": "イッショウ",
-   "decks": [
-    "青クザン"
-   ],
-   "hook": "onAttack",
-   "s": {
-    "att": 7,
-    "com": 1,
-    "dec": 6,
-    "noop": 0,
-    "unk": 0
-   },
-   "ops": "cond(discardCost)",
-   "appeared": 4,
-   "rate": "14%"
-  },
   {
    "no": "EB04-058",
    "name": "ボルサリーノ",
    "decks": [
     "青黄ナミ",
     "青黄ハンコック",
-    "黒黄ティーチ"
+    "黒黄ティーチ",
+    "マイデッキ:キッド黄"
    ],
    "hook": "onPlay",
    "s": {
-    "att": 20,
-    "com": 3,
-    "dec": 15,
+    "att": 14,
+    "com": 1,
+    "dec": 13,
     "noop": 0,
-    "unk": 2
+    "unk": 0
    },
    "ops": "cond(lifeAddFromDeck)",
-   "appeared": 15,
-   "rate": "15%"
+   "appeared": 14,
+   "rate": "7%"
   }
  ],
  "zeroCard": [
   {
-   "no": "OP04-056",
-   "name": "ゴムゴムの業火拳銃",
+   "no": "OP15-020",
+   "name": "火拳",
    "decks": [
     "赤青ルーシー"
    ],
@@ -316,7 +253,7 @@
     "noop": 0,
     "unk": 0
    },
-   "ops": "deckBottom",
+   "ops": "powerMod,powerMod,discardCost(ko)",
    "appeared": 4,
    "cardAnyAtt": false
   },
@@ -335,7 +272,25 @@
     "unk": 0
    },
    "ops": "cond(draw)",
-   "appeared": 3,
+   "appeared": 4,
+   "cardAnyAtt": false
+  },
+  {
+   "no": "EB02-006",
+   "name": "ヤマト",
+   "decks": [
+    "赤青エース"
+   ],
+   "hook": "act",
+   "s": {
+    "att": 0,
+    "com": 0,
+    "dec": 0,
+    "noop": 0,
+    "unk": 0
+   },
+   "ops": "cond(donAttach+giveKeyword)",
+   "appeared": 2,
    "cardAnyAtt": false
   },
   {
@@ -353,16 +308,16 @@
     "unk": 0
    },
    "ops": "cond(playSpecificFromHand+lifeCost)",
-   "appeared": 4,
+   "appeared": 5,
    "cardAnyAtt": false
   },
   {
-   "no": "OP12-057",
-   "name": "アイス塊暴雉嘴",
+   "no": "OP06-104",
+   "name": "菊之丞",
    "decks": [
-    "青クザン"
+    "青黄ナミ"
    ],
-   "hook": "counter",
+   "hook": "onKO",
    "s": {
     "att": 0,
     "com": 0,
@@ -370,15 +325,89 @@
     "noop": 0,
     "unk": 0
    },
-   "ops": "powerMod,discardOwn",
+   "ops": "cond(lifeAddFromDeck)",
    "appeared": 4,
    "cardAnyAtt": false
   },
   {
-   "no": "EB04-028",
-   "name": "アイスタイム",
+   "no": "P-096",
+   "name": "少女",
    "decks": [
-    "青クザン"
+    "青黄ナミ"
+   ],
+   "hook": "onPlay",
+   "s": {
+    "att": 0,
+    "com": 0,
+    "dec": 0,
+    "noop": 0,
+    "unk": 0
+   },
+   "ops": "draw,discardOwn",
+   "appeared": 4,
+   "cardAnyAtt": false
+  },
+  {
+   "no": "OP15-119",
+   "name": "モンキー・D・ルフィ",
+   "decks": [
+    "青黄ナミ"
+   ],
+   "hook": "onOppEvent",
+   "s": {
+    "att": 0,
+    "com": 0,
+    "dec": 0,
+    "noop": 0,
+    "unk": 0
+   },
+   "ops": "revealLifeCostBuff",
+   "appeared": 4,
+   "cardAnyAtt": false
+  },
+  {
+   "no": "OP12-112",
+   "name": "ベビー５",
+   "decks": [
+    "青黄ナミ",
+    "黒黄ティーチ"
+   ],
+   "hook": "trigger",
+   "s": {
+    "att": 0,
+    "com": 0,
+    "dec": 0,
+    "noop": 0,
+    "unk": 0
+   },
+   "ops": "cond(draw)",
+   "appeared": 6,
+   "cardAnyAtt": false
+  },
+  {
+   "no": "OP16-104",
+   "name": "カタリーナ・デボン",
+   "decks": [
+    "黒黄ティーチ"
+   ],
+   "hook": "onAttack",
+   "s": {
+    "att": 0,
+    "com": 0,
+    "dec": 0,
+    "noop": 0,
+    "unk": 0
+   },
+   "ops": "powerCopy",
+   "appeared": 4,
+   "cardAnyAtt": false
+  },
+  {
+   "no": "OP16-038",
+   "name": "行くぞ～～～!!!海軍本部～～～!!!",
+   "decks": [
+    "青緑ルフィ",
+    "マイデッキ:青緑ルフィ"
    ],
    "hook": "main",
    "s": {
@@ -388,17 +417,110 @@
     "noop": 0,
     "unk": 0
    },
-   "ops": "discardCost(cond)",
-   "appeared": 4,
+   "ops": "restDonCost(cond)",
+   "appeared": 5,
    "cardAnyAtt": false
-  }
- ],
- "zeroHook": [
+  },
   {
-   "no": "OP15-075",
-   "name": "神の裁き",
+   "no": "OP12-037",
+   "name": "鬼気 九刀流 阿修羅 抜剣 亡者戯",
    "decks": [
-    "紫エネル"
+    "青緑ルフィ",
+    "緑ミホーク",
+    "マイデッキ:青緑ルフィ",
+    "マイデッキ:ミホーク"
+   ],
+   "hook": "main",
+   "s": {
+    "att": 0,
+    "com": 0,
+    "dec": 0,
+    "noop": 0,
+    "unk": 0
+   },
+   "ops": "restDonCost(restChar)",
+   "appeared": 1,
+   "cardAnyAtt": false
+  },
+  {
+   "no": "OP14-039",
+   "name": "棺船",
+   "decks": [
+    "緑ミホーク",
+    "マイデッキ:ミホーク"
+   ],
+   "hook": "onPlay",
+   "s": {
+    "att": 0,
+    "com": 0,
+    "dec": 0,
+    "noop": 0,
+    "unk": 0
+   },
+   "ops": "cond(draw)",
+   "appeared": 1,
+   "cardAnyAtt": false
+  },
+  {
+   "no": "ST10-010",
+   "name": "トラファルガー・ロー",
+   "decks": [
+    "マイデッキ:紫エネル"
+   ],
+   "hook": "onPlay",
+   "s": {
+    "att": 0,
+    "com": 0,
+    "dec": 0,
+    "noop": 0,
+    "unk": 0
+   },
+   "ops": "donMinus,cond(oppDiscard)",
+   "appeared": 3,
+   "cardAnyAtt": false
+  },
+  {
+   "no": "OP13-076",
+   "name": "神避",
+   "decks": [
+    "マイデッキ:紫エネル",
+    "マイデッキ:マイデッキ"
+   ],
+   "hook": "main",
+   "s": {
+    "att": 0,
+    "com": 0,
+    "dec": 0,
+    "noop": 0,
+    "unk": 0
+   },
+   "ops": "restDonCost(cond)",
+   "appeared": 8,
+   "cardAnyAtt": false
+  },
+  {
+   "no": "OP06-058",
+   "name": "重力刀 猛虎",
+   "decks": [
+    "マイデッキ:青緑ルフィ"
+   ],
+   "hook": "main",
+   "s": {
+    "att": 0,
+    "com": 0,
+    "dec": 0,
+    "noop": 0,
+    "unk": 0
+   },
+   "ops": "deckBottom",
+   "appeared": 3,
+   "cardAnyAtt": false
+  },
+  {
+   "no": "OP06-038",
+   "name": "一大・三千・大千・世界",
+   "decks": [
+    "マイデッキ:ミホーク"
    ],
    "hook": "counter",
    "s": {
@@ -408,15 +530,162 @@
     "noop": 0,
     "unk": 0
    },
-   "ops": "counterBuff",
-   "appeared": 4,
-   "cardAnyAtt": true
+   "ops": "powerMod,cond(powerMod)",
+   "appeared": 3,
+   "cardAnyAtt": false
   },
+  {
+   "no": "ST36-001",
+   "name": "キャベンディッシュ",
+   "decks": [
+    "マイデッキ:キッド黄"
+   ],
+   "hook": "onKO",
+   "s": {
+    "att": 0,
+    "com": 0,
+    "dec": 0,
+    "noop": 0,
+    "unk": 0
+   },
+   "ops": "discardCost(lifeAddFromDeck)",
+   "appeared": 5,
+   "cardAnyAtt": false
+  },
+  {
+   "no": "OP10-114",
+   "name": "X・ドレーク",
+   "decks": [
+    "マイデッキ:キッド黄"
+   ],
+   "hook": "act",
+   "s": {
+    "att": 0,
+    "com": 0,
+    "dec": 0,
+    "noop": 0,
+    "unk": 0
+   },
+   "ops": "cond(restChar)",
+   "appeared": 3,
+   "cardAnyAtt": false
+  },
+  {
+   "no": "ST34-002",
+   "name": "シャーロット・クラッカー",
+   "decks": [
+    "マイデッキ:マイデッキ"
+   ],
+   "hook": "onPlay",
+   "s": {
+    "att": 0,
+    "com": 0,
+    "dec": 0,
+    "noop": 0,
+    "unk": 0
+   },
+   "ops": "cond(donFromDeck+ko)",
+   "appeared": 4,
+   "cardAnyAtt": false
+  },
+  {
+   "no": "OP14-069",
+   "name": "ドンキホーテ・ドフラミンゴ",
+   "decks": [
+    "マイデッキ:マイデッキ"
+   ],
+   "hook": "onPlay",
+   "s": {
+    "att": 0,
+    "com": 0,
+    "dec": 0,
+    "noop": 0,
+    "unk": 0
+   },
+   "ops": "donMinus,chooseOption",
+   "appeared": 3,
+   "cardAnyAtt": false
+  },
+  {
+   "no": "OP11-073",
+   "name": "シャーロット・リンリン",
+   "decks": [
+    "マイデッキ:マイデッキ"
+   ],
+   "hook": "onOppAttack",
+   "s": {
+    "att": 0,
+    "com": 0,
+    "dec": 0,
+    "noop": 0,
+    "unk": 0
+   },
+   "ops": "donMinus(costGuess)",
+   "appeared": 5,
+   "cardAnyAtt": false
+  },
+  {
+   "no": "OP08-077",
+   "name": "覇海",
+   "decks": [
+    "マイデッキ:マイデッキ"
+   ],
+   "hook": "main",
+   "s": {
+    "att": 0,
+    "com": 0,
+    "dec": 0,
+    "noop": 0,
+    "unk": 0
+   },
+   "ops": "donMinus,cond(ko)",
+   "appeared": 2,
+   "cardAnyAtt": false
+  },
+  {
+   "no": "ST18-001",
+   "name": "ウソ八",
+   "decks": [
+    "マイデッキ:マイデッキ"
+   ],
+   "hook": "onPlay",
+   "s": {
+    "att": 0,
+    "com": 0,
+    "dec": 0,
+    "noop": 0,
+    "unk": 0
+   },
+   "ops": "cond(restChar)",
+   "appeared": 1,
+   "cardAnyAtt": false
+  },
+  {
+   "no": "PRB02-010",
+   "name": "シャーロット・プリン",
+   "decks": [
+    "マイデッキ:マイデッキ"
+   ],
+   "hook": "onPlay",
+   "s": {
+    "att": 0,
+    "com": 0,
+    "dec": 0,
+    "noop": 0,
+    "unk": 0
+   },
+   "ops": "donMinus,cond(draw+playCharFromHand)",
+   "appeared": 6,
+   "cardAnyAtt": false
+  }
+ ],
+ "zeroHook": [
   {
    "no": "OP15-078",
    "name": "万雷",
    "decks": [
-    "紫エネル"
+    "紫エネル",
+    "マイデッキ:紫エネル"
    ],
    "hook": "counter",
    "s": {
@@ -427,7 +696,7 @@
     "unk": 0
    },
    "ops": "counterBuff,cond(draw)",
-   "appeared": 5,
+   "appeared": 6,
    "cardAnyAtt": true
   },
   {
@@ -445,6 +714,42 @@
     "unk": 0
    },
    "ops": "powerMod",
+   "appeared": 3,
+   "cardAnyAtt": true
+  },
+  {
+   "no": "OP04-056",
+   "name": "ゴムゴムの業火拳銃",
+   "decks": [
+    "赤青ルーシー"
+   ],
+   "hook": "main",
+   "s": {
+    "att": 0,
+    "com": 0,
+    "dec": 0,
+    "noop": 0,
+    "unk": 0
+   },
+   "ops": "deckBottom",
+   "appeared": 4,
+   "cardAnyAtt": true
+  },
+  {
+   "no": "OP15-056",
+   "name": "“メラメラの実”はおれが食っていいか？",
+   "decks": [
+    "赤青ルーシー"
+   ],
+   "hook": "main",
+   "s": {
+    "att": 0,
+    "com": 0,
+    "dec": 0,
+    "noop": 0,
+    "unk": 0
+   },
+   "ops": "draw,leaderDoubleAttack",
    "appeared": 2,
    "cardAnyAtt": true
   },
@@ -463,16 +768,16 @@
     "unk": 0
    },
    "ops": "restDonCost(cond)",
-   "appeared": 4,
+   "appeared": 5,
    "cardAnyAtt": true
   },
   {
-   "no": "OP15-119",
-   "name": "モンキー・D・ルフィ",
+   "no": "EB03-053",
+   "name": "ナミ",
    "decks": [
     "青黄ナミ"
    ],
-   "hook": "onOppEvent",
+   "hook": "onKO",
    "s": {
     "att": 0,
     "com": 0,
@@ -480,8 +785,8 @@
     "noop": 0,
     "unk": 0
    },
-   "ops": "revealLifeCostBuff",
-   "appeared": 5,
+   "ops": "flipLifeUp,playCharFromHand",
+   "appeared": 4,
    "cardAnyAtt": true
   },
   {
@@ -489,6 +794,43 @@
    "name": "シルバーズ・レイリー",
    "decks": [
     "青黄ナミ",
+    "青黄ハンコック"
+   ],
+   "hook": "onPlay",
+   "s": {
+    "att": 0,
+    "com": 0,
+    "dec": 0,
+    "noop": 0,
+    "unk": 0
+   },
+   "ops": "cond(cond)",
+   "appeared": 6,
+   "cardAnyAtt": true
+  },
+  {
+   "no": "OP12-119",
+   "name": "バーソロミュー・くま",
+   "decks": [
+    "青黄ナミ",
+    "青黄ハンコック"
+   ],
+   "hook": "onKO",
+   "s": {
+    "att": 0,
+    "com": 0,
+    "dec": 0,
+    "noop": 0,
+    "unk": 0
+   },
+   "ops": "cond(lifeAddFromDeck)",
+   "appeared": 4,
+   "cardAnyAtt": true
+  },
+  {
+   "no": "OP14-112",
+   "name": "ボア・ハンコック",
+   "decks": [
     "青黄ハンコック"
    ],
    "hook": "trigger",
@@ -499,8 +841,44 @@
     "noop": 0,
     "unk": 0
    },
-   "ops": "cond(cond)",
-   "appeared": 8,
+   "ops": "playCharFromHand",
+   "appeared": 2,
+   "cardAnyAtt": true
+  },
+  {
+   "no": "OP14-114",
+   "name": "ラン",
+   "decks": [
+    "青黄ハンコック"
+   ],
+   "hook": "trigger",
+   "s": {
+    "att": 0,
+    "com": 0,
+    "dec": 0,
+    "noop": 0,
+    "unk": 0
+   },
+   "ops": "cond(playSelf)",
+   "appeared": 5,
+   "cardAnyAtt": true
+  },
+  {
+   "no": "OP14-113",
+   "name": "マーガレット",
+   "decks": [
+    "青黄ハンコック"
+   ],
+   "hook": "trigger",
+   "s": {
+    "att": 0,
+    "com": 0,
+    "dec": 0,
+    "noop": 0,
+    "unk": 0
+   },
+   "ops": "cond(playSelf)",
+   "appeared": 1,
    "cardAnyAtt": true
   },
   {
@@ -518,12 +896,12 @@
     "unk": 0
    },
    "ops": "draw",
-   "appeared": 5,
+   "appeared": 4,
    "cardAnyAtt": true
   },
   {
-   "no": "OP16-104",
-   "name": "カタリーナ・デボン",
+   "no": "OP16-110",
+   "name": "バスコ・ショット",
    "decks": [
     "黒黄ティーチ"
    ],
@@ -535,8 +913,8 @@
     "noop": 0,
     "unk": 0
    },
-   "ops": "draw,reviveFromTrash",
-   "appeared": 6,
+   "ops": "draw,restChar",
+   "appeared": 4,
    "cardAnyAtt": true
   },
   {
@@ -558,29 +936,12 @@
    "cardAnyAtt": true
   },
   {
-   "no": "OP16-099",
-   "name": "その“縁”を切りに来た!!!",
-   "decks": [
-    "黒ヤマト"
-   ],
-   "hook": "counter",
-   "s": {
-    "att": 0,
-    "com": 0,
-    "dec": 0,
-    "noop": 0,
-    "unk": 0
-   },
-   "ops": "powerMod",
-   "appeared": 4,
-   "cardAnyAtt": true
-  },
-  {
    "no": "OP16-055",
    "name": "Mr.2・ボン・クレー(ベンサム)",
    "decks": [
     "青緑ルフィ",
-    "青バギー"
+    "青バギー",
+    "マイデッキ:青緑ルフィ"
    ],
    "hook": "onAttack",
    "s": {
@@ -591,24 +952,6 @@
     "unk": 0
    },
    "ops": "setPower",
-   "appeared": 9,
-   "cardAnyAtt": true
-  },
-  {
-   "no": "OP16-038",
-   "name": "行くぞ～～～!!!海軍本部～～～!!!",
-   "decks": [
-    "青緑ルフィ"
-   ],
-   "hook": "counter",
-   "s": {
-    "att": 0,
-    "com": 0,
-    "dec": 0,
-    "noop": 0,
-    "unk": 0
-   },
-   "ops": "powerMod",
    "appeared": 5,
    "cardAnyAtt": true
   },
@@ -617,26 +960,8 @@
    "name": "強ェとわかってんだから… 始めから全開だ!!!",
    "decks": [
     "青緑ルフィ",
-    "緑ミホーク"
-   ],
-   "hook": "counter",
-   "s": {
-    "att": 0,
-    "com": 0,
-    "dec": 0,
-    "noop": 0,
-    "unk": 0
-   },
-   "ops": "leaderBuff",
-   "appeared": 5,
-   "cardAnyAtt": true
-  },
-  {
-   "no": "OP12-037",
-   "name": "鬼気 九刀流 阿修羅 抜剣 亡者戯",
-   "decks": [
-    "青緑ルフィ",
-    "緑ミホーク"
+    "緑ミホーク",
+    "マイデッキ:ミホーク"
    ],
    "hook": "counter",
    "s": {
@@ -654,7 +979,8 @@
    "no": "OP14-033",
    "name": "ペローナ",
    "decks": [
-    "緑ミホーク"
+    "緑ミホーク",
+    "マイデッキ:ミホーク"
    ],
    "hook": "onKO",
    "s": {
@@ -665,16 +991,16 @@
     "unk": 0
    },
    "ops": "restOwnAsCost(playCharFromHand)",
-   "appeared": 2,
+   "appeared": 4,
    "cardAnyAtt": true
   },
   {
-   "no": "OP16-059",
-   "name": "ド派手大作戦に変更じゃァ～～～!!!",
+   "no": "OP13-116",
+   "name": "この海で一番自由な奴が海賊王だ!!!",
    "decks": [
-    "青バギー"
+    "マイデッキ:キッド黄"
    ],
-   "hook": "counter",
+   "hook": "trigger",
    "s": {
     "att": 0,
     "com": 0,
@@ -682,17 +1008,53 @@
     "noop": 0,
     "unk": 0
    },
-   "ops": "powerMod",
+   "ops": "search",
+   "appeared": 6,
+   "cardAnyAtt": true
+  },
+  {
+   "no": "OP10-109",
+   "name": "バジル・ホーキンス",
+   "decks": [
+    "マイデッキ:キッド黄"
+   ],
+   "hook": "onKO",
+   "s": {
+    "att": 0,
+    "com": 0,
+    "dec": 0,
+    "noop": 0,
+    "unk": 0
+   },
+   "ops": "lifeTrash",
+   "appeared": 4,
+   "cardAnyAtt": true
+  },
+  {
+   "no": "ST34-001",
+   "name": "シャーロット・カタクリ",
+   "decks": [
+    "マイデッキ:マイデッキ"
+   ],
+   "hook": "onKO",
+   "s": {
+    "att": 0,
+    "com": 0,
+    "dec": 0,
+    "noop": 0,
+    "unk": 0
+   },
+   "ops": "playCharFromHand",
    "appeared": 5,
    "cardAnyAtt": true
   },
   {
-   "no": "OP07-056",
-   "name": "虜の矢",
+   "no": "OP07-077",
+   "name": "&quot;ひとつなぎの大秘宝&quot;を獲りに行くぞ!!!",
    "decks": [
-    "青バギー"
+    "マイデッキ:マイデッキ"
    ],
-   "hook": "counter",
+   "hook": "main",
    "s": {
     "att": 0,
     "com": 0,
@@ -700,8 +1062,8 @@
     "noop": 0,
     "unk": 0
    },
-   "ops": "bounceOwnCharCost(powerMod)",
-   "appeared": 3,
+   "ops": "cond(search)",
+   "appeared": 2,
    "cardAnyAtt": true
   }
  ],
@@ -714,34 +1076,17 @@
    ],
    "hook": "onAttack",
    "s": {
-    "att": 3,
+    "att": 4,
     "com": 0,
     "dec": 0,
-    "noop": 3,
+    "noop": 4,
     "unk": 0
    },
    "ops": "scry",
-   "appeared": 5
+   "appeared": 4
   }
  ],
  "unkOnly": [
-  {
-   "no": "OP15-056",
-   "name": "“メラメラの実”はおれが食っていいか？",
-   "decks": [
-    "赤青ルーシー"
-   ],
-   "hook": "main",
-   "s": {
-    "att": 3,
-    "com": 0,
-    "dec": 0,
-    "noop": 0,
-    "unk": 3
-   },
-   "ops": "draw,leaderDoubleAttack",
-   "appeared": 2
-  },
   {
    "no": "OP14-041",
    "name": "ボア・ハンコック",
@@ -750,73 +1095,239 @@
    ],
    "hook": "onAllyEnter",
    "s": {
-    "att": 18,
+    "att": 7,
     "com": 0,
     "dec": 0,
     "noop": 0,
-    "unk": 18
+    "unk": 7
    },
    "ops": "draw",
-   "appeared": 6
+   "appeared": 5
+  }
+ ],
+ "neverAppeared": [
+  {
+   "no": "OP16-092",
+   "name": "ニコ・ロビン",
+   "decks": [
+    "黒ヤマト"
+   ]
+  },
+  {
+   "no": "OP16-091",
+   "name": "ナミ",
+   "decks": [
+    "黒ヤマト"
+   ]
+  },
+  {
+   "no": "OP16-081",
+   "name": "お玉",
+   "decks": [
+    "黒ヤマト"
+   ]
+  },
+  {
+   "no": "OP16-095",
+   "name": "モンキー・Ｄ・ルフィ",
+   "decks": [
+    "黒ヤマト"
+   ]
+  },
+  {
+   "no": "OP16-087",
+   "name": "しのぶ",
+   "decks": [
+    "黒ヤマト"
+   ]
+  },
+  {
+   "no": "OP16-082",
+   "name": "錦えもん",
+   "decks": [
+    "黒ヤマト"
+   ]
+  },
+  {
+   "no": "OP16-084",
+   "name": "光月モモの助",
+   "decks": [
+    "黒ヤマト"
+   ]
+  },
+  {
+   "no": "OP16-098",
+   "name": "ヤマト",
+   "decks": [
+    "黒ヤマト"
+   ]
+  },
+  {
+   "no": "OP16-096",
+   "name": "ヤマト",
+   "decks": [
+    "黒ヤマト"
+   ]
+  },
+  {
+   "no": "OP16-097",
+   "name": "ヤマト",
+   "decks": [
+    "黒ヤマト"
+   ]
   },
   {
    "no": "OP16-085",
    "name": "光月モモの助",
    "decks": [
     "黒ヤマト"
-   ],
-   "hook": "onPlay",
-   "s": {
-    "att": 1,
-    "com": 0,
-    "dec": 0,
-    "noop": 0,
-    "unk": 1
-   },
-   "ops": "reviveFromTrash",
-   "appeared": 5
+   ]
   },
   {
-   "no": "ST32-002",
-   "name": "光月おでん",
+   "no": "OP14-096",
+   "name": "浸食輪廻",
    "decks": [
-    "緑ミホーク"
-   ],
-   "hook": "onPlay",
-   "s": {
-    "att": 1,
-    "com": 0,
-    "dec": 0,
-    "noop": 0,
-    "unk": 1
-   },
-   "ops": "draw,restImmune",
-   "appeared": 5
+    "黒ヤマト"
+   ]
+  },
+  {
+   "no": "OP16-099",
+   "name": "その“縁”を切りに来た!!!",
+   "decks": [
+    "黒ヤマト"
+   ]
+  },
+  {
+   "no": "OP16-037",
+   "name": "Mr.3(ギャルディーノ)",
+   "decks": [
+    "青緑ルフィ"
+   ]
+  },
+  {
+   "no": "OP16-041",
+   "name": "バギー",
+   "decks": [
+    "青バギー"
+   ]
+  },
+  {
+   "no": "OP16-050",
+   "name": "ミス・オリーブ",
+   "decks": [
+    "青バギー"
+   ]
+  },
+  {
+   "no": "OP16-059",
+   "name": "ド派手大作戦に変更じゃァ～～～!!!",
+   "decks": [
+    "青バギー"
+   ]
+  },
+  {
+   "no": "OP07-056",
+   "name": "虜の矢",
+   "decks": [
+    "青バギー"
+   ]
   },
   {
    "no": "OP12-040",
    "name": "クザン",
    "decks": [
     "青クザン"
-   ],
-   "hook": "onSelfHandDiscarded",
-   "s": {
-    "att": 49,
-    "com": 0,
-    "dec": 0,
-    "noop": 0,
-    "unk": 49
-   },
-   "ops": "drawDiscarded",
-   "appeared": 5
-  }
- ],
- "neverAppeared": [
+   ]
+  },
   {
-   "no": "OP14-039",
-   "name": "棺船",
+   "no": "OP06-050",
+   "name": "たしぎ",
    "decks": [
-    "緑ミホーク"
+    "青クザン"
+   ]
+  },
+  {
+   "no": "ST33-001",
+   "name": "コビー",
+   "decks": [
+    "青クザン"
+   ]
+  },
+  {
+   "no": "ST33-003",
+   "name": "スモーカー",
+   "decks": [
+    "青クザン"
+   ]
+  },
+  {
+   "no": "OP12-047",
+   "name": "センゴク",
+   "decks": [
+    "青クザン"
+   ]
+  },
+  {
+   "no": "OP12-051",
+   "name": "ヒナ",
+   "decks": [
+    "青クザン"
+   ]
+  },
+  {
+   "no": "ST33-002",
+   "name": "サカズキ",
+   "decks": [
+    "青クザン"
+   ]
+  },
+  {
+   "no": "EB04-022",
+   "name": "イッショウ",
+   "decks": [
+    "青クザン"
+   ]
+  },
+  {
+   "no": "OP12-043",
+   "name": "クザン",
+   "decks": [
+    "青クザン"
+   ]
+  },
+  {
+   "no": "ST33-005",
+   "name": "モンキー・Ｄ・ガープ",
+   "decks": [
+    "青クザン"
+   ]
+  },
+  {
+   "no": "OP06-043",
+   "name": "アラマキ",
+   "decks": [
+    "青クザン"
+   ]
+  },
+  {
+   "no": "OP12-056",
+   "name": "モンキー・Ｄ・ガープ",
+   "decks": [
+    "青クザン"
+   ]
+  },
+  {
+   "no": "OP12-057",
+   "name": "アイス塊暴雉嘴",
+   "decks": [
+    "青クザン"
+   ]
+  },
+  {
+   "no": "EB04-028",
+   "name": "アイスタイム",
+   "decks": [
+    "青クザン"
    ]
   }
  ],
@@ -826,7 +1337,8 @@
    "name": "スクラッチメン・アプー",
    "type": "CHAR",
    "decks": [
-    "緑ミホーク"
+    "緑ミホーク",
+    "マイデッキ:ミホーク"
    ],
    "hooks": [
     "onPlay"
@@ -841,11 +1353,11 @@
    },
    "stats": {
     "onPlay": {
-     "att": 6,
+     "att": 7,
      "com": 2,
      "dec": 0,
-     "noop": 3,
-     "unk": 1
+     "noop": 5,
+     "unk": 0
     }
    },
    "appearedGames": 5
@@ -870,14 +1382,14 @@
    },
    "stats": {
     "act": {
-     "att": 2,
-     "com": 2,
+     "att": 0,
+     "com": 0,
      "dec": 0,
      "noop": 0,
      "unk": 0
     }
    },
-   "appearedGames": 4
+   "appearedGames": 2
   },
   {
    "no": "EB03-053",
@@ -906,21 +1418,21 @@
    },
    "stats": {
     "onPlay": {
-     "att": 4,
-     "com": 4,
+     "att": 2,
+     "com": 2,
      "dec": 0,
      "noop": 0,
      "unk": 0
     },
     "onKO": {
-     "att": 3,
-     "com": 3,
+     "att": 0,
+     "com": 0,
      "dec": 0,
      "noop": 0,
      "unk": 0
     }
    },
-   "appearedGames": 6
+   "appearedGames": 4
   },
   {
    "no": "EB03-055",
@@ -947,21 +1459,21 @@
    },
    "stats": {
     "onPlay": {
-     "att": 9,
-     "com": 8,
-     "dec": 1,
+     "att": 7,
+     "com": 7,
+     "dec": 0,
      "noop": 0,
      "unk": 0
     },
     "onKO": {
-     "att": 2,
-     "com": 2,
+     "att": 1,
+     "com": 1,
      "dec": 0,
      "noop": 0,
      "unk": 0
     }
    },
-   "appearedGames": 6
+   "appearedGames": 5
   },
   {
    "no": "EB04-022",
@@ -988,21 +1500,21 @@
    },
    "stats": {
     "onPlay": {
-     "att": 4,
-     "com": 4,
+     "att": 0,
+     "com": 0,
      "dec": 0,
      "noop": 0,
      "unk": 0
     },
     "onAttack": {
-     "att": 7,
-     "com": 1,
-     "dec": 6,
+     "att": 0,
+     "com": 0,
+     "dec": 0,
      "noop": 0,
      "unk": 0
     }
    },
-   "appearedGames": 4
+   "appearedGames": 0
   },
   {
    "no": "EB04-028",
@@ -1043,7 +1555,7 @@
      "unk": 0
     }
    },
-   "appearedGames": 4
+   "appearedGames": 0
   },
   {
    "no": "EB04-058",
@@ -1052,7 +1564,8 @@
    "decks": [
     "青黄ナミ",
     "青黄ハンコック",
-    "黒黄ティーチ"
+    "黒黄ティーチ",
+    "マイデッキ:キッド黄"
    ],
    "hooks": [
     "onPlay"
@@ -1067,14 +1580,14 @@
    },
    "stats": {
     "onPlay": {
-     "att": 20,
-     "com": 3,
-     "dec": 15,
+     "att": 14,
+     "com": 1,
+     "dec": 13,
      "noop": 0,
-     "unk": 2
+     "unk": 0
     }
    },
-   "appearedGames": 15
+   "appearedGames": 14
   },
   {
    "no": "OP04-056",
@@ -1108,6 +1621,90 @@
      "unk": 0
     },
     "trigger": {
+     "att": 4,
+     "com": 4,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
+    }
+   },
+   "appearedGames": 4
+  },
+  {
+   "no": "OP05-077",
+   "name": "ガンマナイフ",
+   "type": "EVENT",
+   "decks": [
+    "マイデッキ:紫エネル"
+   ],
+   "hooks": [
+    "main",
+    "trigger"
+   ],
+   "runnable": [
+    "main",
+    "trigger"
+   ],
+   "ops": {
+    "main": [
+     "donMinus",
+     "powerMod"
+    ],
+    "trigger": [
+     "donFromDeck"
+    ]
+   },
+   "stats": {
+    "main": {
+     "att": 6,
+     "com": 6,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
+    },
+    "trigger": {
+     "att": 4,
+     "com": 1,
+     "dec": 0,
+     "noop": 3,
+     "unk": 0
+    }
+   },
+   "appearedGames": 5
+  },
+  {
+   "no": "OP06-038",
+   "name": "一大・三千・大千・世界",
+   "type": "EVENT",
+   "decks": [
+    "マイデッキ:ミホーク"
+   ],
+   "hooks": [
+    "counter",
+    "trigger"
+   ],
+   "runnable": [
+    "counter",
+    "trigger"
+   ],
+   "ops": {
+    "counter": [
+     "powerMod",
+     "cond(powerMod)"
+    ],
+    "trigger": [
+     "ko"
+    ]
+   },
+   "stats": {
+    "counter": {
+     "att": 0,
+     "com": 0,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
+    },
+    "trigger": {
      "att": 0,
      "com": 0,
      "dec": 0,
@@ -1115,7 +1712,7 @@
      "unk": 0
     }
    },
-   "appearedGames": 4
+   "appearedGames": 3
   },
   {
    "no": "OP06-043",
@@ -1137,14 +1734,14 @@
    },
    "stats": {
     "act": {
-     "att": 16,
-     "com": 16,
+     "att": 0,
+     "com": 0,
      "dec": 0,
      "noop": 0,
      "unk": 0
     }
    },
-   "appearedGames": 4
+   "appearedGames": 0
   },
   {
    "no": "OP06-050",
@@ -1166,11 +1763,52 @@
    },
    "stats": {
     "onPlay": {
-     "att": 3,
-     "com": 2,
+     "att": 0,
+     "com": 0,
      "dec": 0,
      "noop": 0,
-     "unk": 1
+     "unk": 0
+    }
+   },
+   "appearedGames": 0
+  },
+  {
+   "no": "OP06-058",
+   "name": "重力刀 猛虎",
+   "type": "EVENT",
+   "decks": [
+    "マイデッキ:青緑ルフィ"
+   ],
+   "hooks": [
+    "main",
+    "trigger"
+   ],
+   "runnable": [
+    "main",
+    "trigger"
+   ],
+   "ops": {
+    "main": [
+     "deckBottom"
+    ],
+    "trigger": [
+     "deckBottom"
+    ]
+   },
+   "stats": {
+    "main": {
+     "att": 0,
+     "com": 0,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
+    },
+    "trigger": {
+     "att": 0,
+     "com": 0,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
     }
    },
    "appearedGames": 3
@@ -1200,21 +1838,21 @@
    },
    "stats": {
     "onKO": {
-     "att": 2,
-     "com": 1,
+     "att": 0,
+     "com": 0,
      "dec": 0,
      "noop": 0,
-     "unk": 1
+     "unk": 0
     },
     "trigger": {
-     "att": 1,
+     "att": 0,
      "com": 0,
-     "dec": 1,
+     "dec": 0,
      "noop": 0,
      "unk": 0
     }
    },
-   "appearedGames": 5
+   "appearedGames": 4
   },
   {
    "no": "OP06-106",
@@ -1236,14 +1874,14 @@
    },
    "stats": {
     "onPlay": {
-     "att": 1,
-     "com": 1,
+     "att": 2,
+     "com": 2,
      "dec": 0,
      "noop": 0,
      "unk": 0
     }
    },
-   "appearedGames": 5
+   "appearedGames": 4
   },
   {
    "no": "OP07-056",
@@ -1278,14 +1916,14 @@
      "unk": 0
     },
     "trigger": {
-     "att": 2,
-     "com": 2,
+     "att": 0,
+     "com": 0,
      "dec": 0,
      "noop": 0,
      "unk": 0
     }
    },
-   "appearedGames": 3
+   "appearedGames": 0
   },
   {
    "no": "OP07-057",
@@ -1313,8 +1951,8 @@
    },
    "stats": {
     "main": {
-     "att": 3,
-     "com": 3,
+     "att": 5,
+     "com": 5,
      "dec": 0,
      "noop": 0,
      "unk": 0
@@ -1327,7 +1965,48 @@
      "unk": 0
     }
    },
-   "appearedGames": 5
+   "appearedGames": 4
+  },
+  {
+   "no": "OP07-077",
+   "name": "&quot;ひとつなぎの大秘宝&quot;を獲りに行くぞ!!!",
+   "type": "EVENT",
+   "decks": [
+    "マイデッキ:マイデッキ"
+   ],
+   "hooks": [
+    "main",
+    "trigger"
+   ],
+   "runnable": [
+    "main",
+    "trigger"
+   ],
+   "ops": {
+    "main": [
+     "cond(search)"
+    ],
+    "trigger": [
+     "cond(search)"
+    ]
+   },
+   "stats": {
+    "main": {
+     "att": 0,
+     "com": 0,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
+    },
+    "trigger": {
+     "att": 1,
+     "com": 1,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
+    }
+   },
+   "appearedGames": 2
   },
   {
    "no": "OP07-115",
@@ -1355,21 +2034,21 @@
    },
    "stats": {
     "counter": {
-     "att": 3,
-     "com": 3,
+     "att": 1,
+     "com": 1,
      "dec": 0,
      "noop": 0,
      "unk": 0
     },
     "trigger": {
-     "att": 6,
-     "com": 4,
+     "att": 1,
+     "com": 0,
      "dec": 0,
-     "noop": 2,
+     "noop": 1,
      "unk": 0
     }
    },
-   "appearedGames": 7
+   "appearedGames": 10
   },
   {
    "no": "OP08-043",
@@ -1392,8 +2071,8 @@
    "stats": {
     "onPlay": {
      "att": 2,
-     "com": 1,
-     "dec": 1,
+     "com": 0,
+     "dec": 2,
      "noop": 0,
      "unk": 0
     }
@@ -1421,14 +2100,14 @@
    },
    "stats": {
     "onPlay": {
-     "att": 16,
-     "com": 15,
+     "att": 4,
+     "com": 3,
      "dec": 0,
      "noop": 1,
      "unk": 0
     }
    },
-   "appearedGames": 10
+   "appearedGames": 4
   },
   {
    "no": "OP08-050",
@@ -1451,14 +2130,103 @@
    },
    "stats": {
     "onPlay": {
-     "att": 6,
-     "com": 6,
+     "att": 2,
+     "com": 2,
      "dec": 0,
      "noop": 0,
      "unk": 0
     }
    },
-   "appearedGames": 5
+   "appearedGames": 4
+  },
+  {
+   "no": "OP08-062",
+   "name": "シャーロット・カタクリ",
+   "type": "CHAR",
+   "decks": [
+    "マイデッキ:マイデッキ"
+   ],
+   "hooks": [
+    "act"
+   ],
+   "runnable": [
+    "act"
+   ],
+   "ops": {
+    "act": [
+     "trashSelfCost(cond)"
+    ]
+   },
+   "stats": {
+    "act": {
+     "att": 2,
+     "com": 2,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
+    }
+   },
+   "appearedGames": 2
+  },
+  {
+   "no": "OP08-077",
+   "name": "覇海",
+   "type": "EVENT",
+   "decks": [
+    "マイデッキ:マイデッキ"
+   ],
+   "hooks": [
+    "main"
+   ],
+   "runnable": [
+    "main"
+   ],
+   "ops": {
+    "main": [
+     "donMinus",
+     "cond(ko)"
+    ]
+   },
+   "stats": {
+    "main": {
+     "att": 0,
+     "com": 0,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
+    }
+   },
+   "appearedGames": 2
+  },
+  {
+   "no": "OP09-072",
+   "name": "フランキー",
+   "type": "CHAR",
+   "decks": [
+    "マイデッキ:紫エネル"
+   ],
+   "hooks": [
+    "onPlay"
+   ],
+   "runnable": [
+    "onPlay"
+   ],
+   "ops": {
+    "onPlay": [
+     "donMinus",
+     "discardCost(draw)"
+    ]
+   },
+   "stats": {
+    "onPlay": {
+     "att": 7,
+     "com": 7,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
+    }
+   },
+   "appearedGames": 6
   },
   {
    "no": "OP09-086",
@@ -1472,7 +2240,7 @@
    ],
    "runnable": [],
    "stats": {},
-   "appearedGames": 6
+   "appearedGames": 5
   },
   {
    "no": "OP09-093",
@@ -1494,14 +2262,14 @@
    },
    "stats": {
     "act": {
-     "att": 11,
-     "com": 11,
+     "att": 7,
+     "com": 7,
      "dec": 0,
      "noop": 0,
      "unk": 0
     }
    },
-   "appearedGames": 6
+   "appearedGames": 5
   },
   {
    "no": "OP09-095",
@@ -1523,8 +2291,8 @@
    },
    "stats": {
     "act": {
-     "att": 6,
-     "com": 6,
+     "att": 3,
+     "com": 3,
      "dec": 0,
      "noop": 0,
      "unk": 0
@@ -1557,21 +2325,21 @@
    },
    "stats": {
     "main": {
-     "att": 6,
-     "com": 6,
+     "att": 2,
+     "com": 2,
      "dec": 0,
      "noop": 0,
      "unk": 0
     },
     "trigger": {
-     "att": 3,
-     "com": 3,
+     "att": 2,
+     "com": 2,
      "dec": 0,
      "noop": 0,
      "unk": 0
     }
    },
-   "appearedGames": 4
+   "appearedGames": 2
   },
   {
    "no": "OP09-099",
@@ -1594,14 +2362,14 @@
    },
    "stats": {
     "act": {
-     "att": 30,
-     "com": 30,
+     "att": 23,
+     "com": 23,
      "dec": 0,
      "noop": 0,
      "unk": 0
     }
    },
-   "appearedGames": 6
+   "appearedGames": 5
   },
   {
    "no": "OP09-118",
@@ -1615,7 +2383,7 @@
    ],
    "runnable": [],
    "stats": {},
-   "appearedGames": 4
+   "appearedGames": 5
   },
   {
    "no": "OP10-045",
@@ -1639,6 +2407,37 @@
    },
    "stats": {
     "onAttack": {
+     "att": 16,
+     "com": 16,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
+    }
+   },
+   "appearedGames": 9
+  },
+  {
+   "no": "OP10-067",
+   "name": "セニョール・ピンク",
+   "type": "CHAR",
+   "decks": [
+    "マイデッキ:紫エネル"
+   ],
+   "hooks": [
+    "onPlay"
+   ],
+   "runnable": [
+    "onPlay"
+   ],
+   "ops": {
+    "onPlay": [
+     "donMinus",
+     "trashToHand",
+     "donActivate"
+    ]
+   },
+   "stats": {
+    "onPlay": {
      "att": 4,
      "com": 4,
      "dec": 0,
@@ -1646,7 +2445,207 @@
      "unk": 0
     }
    },
-   "appearedGames": 8
+   "appearedGames": 4
+  },
+  {
+   "no": "OP10-099",
+   "name": "ユースタス・キッド",
+   "type": "LEADER",
+   "decks": [
+    "マイデッキ:キッド黄"
+   ],
+   "hooks": [
+    "onTurnEnd"
+   ],
+   "runnable": [
+    "onTurnEnd"
+   ],
+   "ops": {
+    "onTurnEnd": [
+     "flipLifeCost(activateOwnChar)"
+    ]
+   },
+   "stats": {
+    "onTurnEnd": {
+     "att": 36,
+     "com": 16,
+     "dec": 0,
+     "noop": 20,
+     "unk": 0
+    }
+   },
+   "appearedGames": 6
+  },
+  {
+   "no": "OP10-109",
+   "name": "バジル・ホーキンス",
+   "type": "CHAR",
+   "decks": [
+    "マイデッキ:キッド黄"
+   ],
+   "hooks": [
+    "onKO",
+    "trigger"
+   ],
+   "runnable": [
+    "onKO",
+    "trigger"
+   ],
+   "ops": {
+    "onKO": [
+     "lifeTrash"
+    ],
+    "trigger": [
+     "draw",
+     "discardOwn"
+    ]
+   },
+   "stats": {
+    "onKO": {
+     "att": 0,
+     "com": 0,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
+    },
+    "trigger": {
+     "att": 2,
+     "com": 2,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
+    }
+   },
+   "appearedGames": 4
+  },
+  {
+   "no": "OP10-111",
+   "name": "モンキー・D・ルフィ",
+   "type": "CHAR",
+   "decks": [
+    "マイデッキ:キッド黄"
+   ],
+   "hooks": [
+    "onPlay"
+   ],
+   "runnable": [
+    "onPlay"
+   ],
+   "ops": {
+    "onPlay": [
+     "search"
+    ]
+   },
+   "stats": {
+    "onPlay": {
+     "att": 4,
+     "com": 4,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
+    }
+   },
+   "appearedGames": 4
+  },
+  {
+   "no": "OP10-112",
+   "name": "ユースタス・キッド",
+   "type": "CHAR",
+   "decks": [
+    "マイデッキ:キッド黄"
+   ],
+   "hooks": [
+    "onPlay",
+    "onTurnEnd"
+   ],
+   "runnable": [
+    "onPlay",
+    "onTurnEnd"
+   ],
+   "ops": {
+    "onPlay": [
+     "restSelfCost(lifeTrash)"
+    ],
+    "onTurnEnd": [
+     "cond(draw+discardOwn)"
+    ]
+   },
+   "stats": {
+    "onPlay": {
+     "att": 10,
+     "com": 10,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
+    },
+    "onTurnEnd": {
+     "att": 17,
+     "com": 15,
+     "dec": 2,
+     "noop": 0,
+     "unk": 0
+    }
+   },
+   "appearedGames": 5
+  },
+  {
+   "no": "OP10-114",
+   "name": "X・ドレーク",
+   "type": "CHAR",
+   "decks": [
+    "マイデッキ:キッド黄"
+   ],
+   "hooks": [
+    "act"
+   ],
+   "runnable": [
+    "act"
+   ],
+   "ops": {
+    "act": [
+     "cond(restChar)"
+    ]
+   },
+   "stats": {
+    "act": {
+     "att": 0,
+     "com": 0,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
+    }
+   },
+   "appearedGames": 3
+  },
+  {
+   "no": "OP10-119",
+   "name": "トラファルガー・ロー",
+   "type": "CHAR",
+   "decks": [
+    "マイデッキ:キッド黄"
+   ],
+   "hooks": [
+    "onPlay"
+   ],
+   "runnable": [
+    "onPlay"
+   ],
+   "ops": {
+    "onPlay": [
+     "handCharToLife",
+     "donAttach"
+    ]
+   },
+   "stats": {
+    "onPlay": {
+     "att": 3,
+     "com": 3,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
+    }
+   },
+   "appearedGames": 5
   },
   {
    "no": "OP11-041",
@@ -1680,14 +2679,209 @@
      "unk": 0
     },
     "onOppAttack": {
-     "att": 13,
-     "com": 13,
+     "att": 4,
+     "com": 4,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
+    }
+   },
+   "appearedGames": 5
+  },
+  {
+   "no": "OP11-061",
+   "name": "ゴムゴムのJET大蛇砲",
+   "type": "EVENT",
+   "decks": [
+    "マイデッキ:青緑ルフィ"
+   ],
+   "hooks": [
+    "main",
+    "trigger"
+   ],
+   "runnable": [
+    "main",
+    "trigger"
+   ],
+   "ops": {
+    "main": [
+     "deckBottom"
+    ],
+    "trigger": [
+     "deckBottom"
+    ]
+   },
+   "stats": {
+    "main": {
+     "att": 3,
+     "com": 3,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
+    },
+    "trigger": {
+     "att": 1,
+     "com": 1,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
+    }
+   },
+   "appearedGames": 3
+  },
+  {
+   "no": "OP11-062",
+   "name": "シャーロット・カタクリ",
+   "type": "LEADER",
+   "decks": [
+    "マイデッキ:マイデッキ"
+   ],
+   "hooks": [
+    "onAttack",
+    "onOppAttack"
+   ],
+   "runnable": [
+    "onAttack",
+    "onOppAttack"
+   ],
+   "ops": {
+    "onAttack": [
+     "donMinus(peekOppDeck+leaderBuff)"
+    ],
+    "onOppAttack": [
+     "donMinus(peekOppDeck+leaderBuff)"
+    ]
+   },
+   "stats": {
+    "onAttack": {
+     "att": 27,
+     "com": 27,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
+    },
+    "onOppAttack": {
+     "att": 38,
+     "com": 22,
+     "dec": 16,
+     "noop": 0,
+     "unk": 0
+    }
+   },
+   "appearedGames": 6
+  },
+  {
+   "no": "OP11-067",
+   "name": "シャーロット・カタクリ",
+   "type": "CHAR",
+   "decks": [
+    "マイデッキ:マイデッキ"
+   ],
+   "hooks": [
+    "onTurnEnd"
+   ],
+   "runnable": [
+    "onTurnEnd"
+   ],
+   "ops": {
+    "onTurnEnd": [
+     "activateOwnChar",
+     "donFromDeck"
+    ]
+   },
+   "stats": {
+    "onTurnEnd": {
+     "att": 1,
+     "com": 1,
      "dec": 0,
      "noop": 0,
      "unk": 0
     }
    },
    "appearedGames": 6
+  },
+  {
+   "no": "OP11-068",
+   "name": "シャーロット・ダイフク",
+   "type": "CHAR",
+   "decks": [
+    "マイデッキ:マイデッキ"
+   ],
+   "hooks": [],
+   "runnable": [],
+   "stats": {},
+   "appearedGames": 3
+  },
+  {
+   "no": "OP11-070",
+   "name": "シャーロット・プリン",
+   "type": "CHAR",
+   "decks": [
+    "マイデッキ:マイデッキ"
+   ],
+   "hooks": [
+    "onPlay",
+    "act"
+   ],
+   "runnable": [
+    "onPlay",
+    "act"
+   ],
+   "ops": {
+    "onPlay": [
+     "search"
+    ],
+    "act": [
+     "donMinus(peekOppDeck)"
+    ]
+   },
+   "stats": {
+    "onPlay": {
+     "att": 11,
+     "com": 11,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
+    },
+    "act": {
+     "att": 11,
+     "com": 11,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
+    }
+   },
+   "appearedGames": 6
+  },
+  {
+   "no": "OP11-073",
+   "name": "シャーロット・リンリン",
+   "type": "CHAR",
+   "decks": [
+    "マイデッキ:マイデッキ"
+   ],
+   "hooks": [
+    "static",
+    "onOppAttack"
+   ],
+   "runnable": [
+    "onOppAttack"
+   ],
+   "ops": {
+    "onOppAttack": [
+     "donMinus(costGuess)"
+    ]
+   },
+   "stats": {
+    "onOppAttack": {
+     "att": 0,
+     "com": 0,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
+    }
+   },
+   "appearedGames": 5
   },
   {
    "no": "OP11-106",
@@ -1709,21 +2903,22 @@
    },
    "stats": {
     "onPlay": {
-     "att": 6,
-     "com": 6,
+     "att": 9,
+     "com": 9,
      "dec": 0,
      "noop": 0,
      "unk": 0
     }
    },
-   "appearedGames": 6
+   "appearedGames": 5
   },
   {
    "no": "OP12-031",
    "name": "たしぎ",
    "type": "CHAR",
    "decks": [
-    "緑ミホーク"
+    "緑ミホーク",
+    "マイデッキ:ミホーク"
    ],
    "hooks": [
     "onPlay"
@@ -1740,8 +2935,8 @@
    "stats": {
     "onPlay": {
      "att": 2,
-     "com": 2,
-     "dec": 0,
+     "com": 1,
+     "dec": 1,
      "noop": 0,
      "unk": 0
     }
@@ -1753,7 +2948,8 @@
    "name": "ペローナ",
    "type": "CHAR",
    "decks": [
-    "緑ミホーク"
+    "緑ミホーク",
+    "マイデッキ:ミホーク"
    ],
    "hooks": [
     "onPlay"
@@ -1768,14 +2964,14 @@
    },
    "stats": {
     "onPlay": {
-     "att": 8,
+     "att": 7,
      "com": 5,
      "dec": 0,
      "noop": 0,
-     "unk": 3
+     "unk": 2
     }
    },
-   "appearedGames": 4
+   "appearedGames": 6
   },
   {
    "no": "OP12-037",
@@ -1783,7 +2979,9 @@
    "type": "EVENT",
    "decks": [
     "青緑ルフィ",
-    "緑ミホーク"
+    "緑ミホーク",
+    "マイデッキ:青緑ルフィ",
+    "マイデッキ:ミホーク"
    ],
    "hooks": [
     "main",
@@ -1803,9 +3001,9 @@
    },
    "stats": {
     "main": {
-     "att": 5,
-     "com": 2,
-     "dec": 3,
+     "att": 0,
+     "com": 0,
+     "dec": 0,
      "noop": 0,
      "unk": 0
     },
@@ -1817,7 +3015,7 @@
      "unk": 0
     }
    },
-   "appearedGames": 6
+   "appearedGames": 1
   },
   {
    "no": "OP12-040",
@@ -1839,14 +3037,14 @@
    },
    "stats": {
     "onSelfHandDiscarded": {
-     "att": 49,
+     "att": 0,
      "com": 0,
      "dec": 0,
      "noop": 0,
-     "unk": 49
+     "unk": 0
     }
    },
-   "appearedGames": 5
+   "appearedGames": 0
   },
   {
    "no": "OP12-043",
@@ -1869,14 +3067,14 @@
    },
    "stats": {
     "onPlay": {
-     "att": 13,
-     "com": 13,
+     "att": 0,
+     "com": 0,
      "dec": 0,
      "noop": 0,
      "unk": 0
     }
    },
-   "appearedGames": 5
+   "appearedGames": 0
   },
   {
    "no": "OP12-047",
@@ -1898,14 +3096,14 @@
    },
    "stats": {
     "onPlay": {
-     "att": 5,
-     "com": 5,
+     "att": 0,
+     "com": 0,
      "dec": 0,
      "noop": 0,
      "unk": 0
     }
    },
-   "appearedGames": 5
+   "appearedGames": 0
   },
   {
    "no": "OP12-051",
@@ -1927,14 +3125,14 @@
    },
    "stats": {
     "act": {
-     "att": 2,
-     "com": 2,
+     "att": 0,
+     "com": 0,
      "dec": 0,
      "noop": 0,
      "unk": 0
     }
    },
-   "appearedGames": 5
+   "appearedGames": 0
   },
   {
    "no": "OP12-056",
@@ -1956,14 +3154,14 @@
    },
    "stats": {
     "onPlay": {
-     "att": 3,
-     "com": 3,
+     "att": 0,
+     "com": 0,
      "dec": 0,
      "noop": 0,
      "unk": 0
     }
    },
-   "appearedGames": 4
+   "appearedGames": 0
   },
   {
    "no": "OP12-057",
@@ -2005,14 +3203,29 @@
      "unk": 0
     }
    },
-   "appearedGames": 4
+   "appearedGames": 0
+  },
+  {
+   "no": "OP12-063",
+   "name": "ヴィンスモーク・レイジュ",
+   "type": "CHAR",
+   "decks": [
+    "マイデッキ:紫エネル"
+   ],
+   "hooks": [
+    "static"
+   ],
+   "runnable": [],
+   "stats": {},
+   "appearedGames": 6
   },
   {
    "no": "OP12-071",
    "name": "シャーロット・プリン",
    "type": "CHAR",
    "decks": [
-    "紫エネル"
+    "紫エネル",
+    "マイデッキ:紫エネル"
    ],
    "hooks": [
     "onPlay"
@@ -2027,14 +3240,14 @@
    },
    "stats": {
     "onPlay": {
-     "att": 5,
-     "com": 5,
+     "att": 9,
+     "com": 9,
      "dec": 0,
      "noop": 0,
      "unk": 0
     }
    },
-   "appearedGames": 5
+   "appearedGames": 9
   },
   {
    "no": "OP12-112",
@@ -2057,21 +3270,22 @@
    },
    "stats": {
     "trigger": {
-     "att": 1,
-     "com": 1,
+     "att": 0,
+     "com": 0,
      "dec": 0,
      "noop": 0,
      "unk": 0
     }
    },
-   "appearedGames": 8
+   "appearedGames": 6
   },
   {
    "no": "OP12-118",
    "name": "ジュエリー・ボニー",
    "type": "CHAR",
    "decks": [
-    "緑ミホーク"
+    "緑ミホーク",
+    "マイデッキ:ミホーク"
    ],
    "hooks": [
     "onPlay"
@@ -2086,9 +3300,9 @@
    },
    "stats": {
     "onPlay": {
-     "att": 2,
+     "att": 6,
      "com": 0,
-     "dec": 2,
+     "dec": 6,
      "noop": 0,
      "unk": 0
     }
@@ -2121,21 +3335,21 @@
    },
    "stats": {
     "onPlay": {
-     "att": 5,
-     "com": 5,
-     "dec": 0,
-     "noop": 0,
-     "unk": 0
-    },
-    "onKO": {
      "att": 4,
      "com": 4,
      "dec": 0,
      "noop": 0,
      "unk": 0
+    },
+    "onKO": {
+     "att": 0,
+     "com": 0,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
     }
    },
-   "appearedGames": 8
+   "appearedGames": 4
   },
   {
    "no": "OP13-002",
@@ -2157,10 +3371,10 @@
    },
    "stats": {
     "onOppAttack": {
-     "att": 30,
+     "att": 28,
      "com": 0,
      "dec": 0,
-     "noop": 30,
+     "noop": 28,
      "unk": 0
     }
    },
@@ -2186,8 +3400,8 @@
    },
    "stats": {
     "onPlay": {
-     "att": 9,
-     "com": 9,
+     "att": 8,
+     "com": 8,
      "dec": 0,
      "noop": 0,
      "unk": 0
@@ -2200,7 +3414,8 @@
    "name": "トラファルガー・ロー",
    "type": "CHAR",
    "decks": [
-    "緑ミホーク"
+    "緑ミホーク",
+    "マイデッキ:ミホーク"
    ],
    "hooks": [
     "static",
@@ -2216,14 +3431,14 @@
    },
    "stats": {
     "onPlay": {
-     "att": 9,
-     "com": 9,
+     "att": 7,
+     "com": 7,
      "dec": 0,
      "noop": 0,
      "unk": 0
     }
    },
-   "appearedGames": 5
+   "appearedGames": 6
   },
   {
    "no": "OP13-040",
@@ -2231,7 +3446,8 @@
    "type": "EVENT",
    "decks": [
     "青緑ルフィ",
-    "緑ミホーク"
+    "緑ミホーク",
+    "マイデッキ:ミホーク"
    ],
    "hooks": [
     "main",
@@ -2251,9 +3467,9 @@
    },
    "stats": {
     "main": {
-     "att": 2,
-     "com": 0,
-     "dec": 2,
+     "att": 3,
+     "com": 3,
+     "dec": 0,
      "noop": 0,
      "unk": 0
     },
@@ -2265,7 +3481,7 @@
      "unk": 0
     }
    },
-   "appearedGames": 5
+   "appearedGames": 6
   },
   {
    "no": "OP13-042",
@@ -2290,14 +3506,14 @@
    },
    "stats": {
     "onPlay": {
-     "att": 20,
-     "com": 20,
+     "att": 15,
+     "com": 15,
      "dec": 0,
      "noop": 0,
      "unk": 0
     }
    },
-   "appearedGames": 8
+   "appearedGames": 10
   },
   {
    "no": "OP13-043",
@@ -2326,7 +3542,7 @@
      "unk": 0
     }
    },
-   "appearedGames": 4
+   "appearedGames": 5
   },
   {
    "no": "OP13-054",
@@ -2348,8 +3564,8 @@
    },
    "stats": {
     "onPlay": {
-     "att": 2,
-     "com": 2,
+     "att": 1,
+     "com": 1,
      "dec": 0,
      "noop": 0,
      "unk": 0
@@ -2389,21 +3605,105 @@
      "unk": 0
     },
     "counter": {
-     "att": 4,
-     "com": 4,
+     "att": 1,
+     "com": 1,
      "dec": 0,
      "noop": 0,
      "unk": 0
     }
    },
-   "appearedGames": 4
+   "appearedGames": 5
+  },
+  {
+   "no": "OP13-076",
+   "name": "神避",
+   "type": "EVENT",
+   "decks": [
+    "マイデッキ:紫エネル",
+    "マイデッキ:マイデッキ"
+   ],
+   "hooks": [
+    "main",
+    "counter"
+   ],
+   "runnable": [
+    "main",
+    "counter"
+   ],
+   "ops": {
+    "main": [
+     "restDonCost(cond)"
+    ],
+    "counter": [
+     "discardCost(powerMod)"
+    ]
+   },
+   "stats": {
+    "main": {
+     "att": 0,
+     "com": 0,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
+    },
+    "counter": {
+     "att": 0,
+     "com": 0,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
+    }
+   },
+   "appearedGames": 8
+  },
+  {
+   "no": "OP13-116",
+   "name": "この海で一番自由な奴が海賊王だ!!!",
+   "type": "EVENT",
+   "decks": [
+    "マイデッキ:キッド黄"
+   ],
+   "hooks": [
+    "main",
+    "trigger"
+   ],
+   "runnable": [
+    "main",
+    "trigger"
+   ],
+   "ops": {
+    "main": [
+     "search"
+    ],
+    "trigger": [
+     "search"
+    ]
+   },
+   "stats": {
+    "main": {
+     "att": 8,
+     "com": 8,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
+    },
+    "trigger": {
+     "att": 0,
+     "com": 0,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
+    }
+   },
+   "appearedGames": 6
   },
   {
    "no": "OP14-020",
    "name": "ジュラキュール・ミホーク",
    "type": "LEADER",
    "decks": [
-    "緑ミホーク"
+    "緑ミホーク",
+    "マイデッキ:ミホーク"
    ],
    "hooks": [
     "static",
@@ -2426,14 +3726,15 @@
      "unk": 0
     }
    },
-   "appearedGames": 5
+   "appearedGames": 6
   },
   {
    "no": "OP14-033",
    "name": "ペローナ",
    "type": "CHAR",
    "decks": [
-    "緑ミホーク"
+    "緑ミホーク",
+    "マイデッキ:ミホーク"
    ],
    "hooks": [
     "onPlay",
@@ -2467,14 +3768,15 @@
      "unk": 0
     }
    },
-   "appearedGames": 2
+   "appearedGames": 4
   },
   {
    "no": "OP14-039",
    "name": "棺船",
    "type": "STAGE",
    "decks": [
-    "緑ミホーク"
+    "緑ミホーク",
+    "マイデッキ:ミホーク"
    ],
    "hooks": [
     "onPlay",
@@ -2508,7 +3810,7 @@
      "unk": 0
     }
    },
-   "appearedGames": 0
+   "appearedGames": 1
   },
   {
    "no": "OP14-041",
@@ -2535,21 +3837,51 @@
    },
    "stats": {
     "onAllyEnter": {
-     "att": 18,
+     "att": 7,
      "com": 0,
      "dec": 0,
      "noop": 0,
-     "unk": 18
+     "unk": 7
     },
     "onAllyLeave": {
-     "att": 5,
-     "com": 2,
+     "att": 2,
+     "com": 1,
      "dec": 0,
-     "noop": 3,
+     "noop": 1,
      "unk": 0
     }
    },
-   "appearedGames": 6
+   "appearedGames": 5
+  },
+  {
+   "no": "OP14-069",
+   "name": "ドンキホーテ・ドフラミンゴ",
+   "type": "CHAR",
+   "decks": [
+    "マイデッキ:マイデッキ"
+   ],
+   "hooks": [
+    "onPlay"
+   ],
+   "runnable": [
+    "onPlay"
+   ],
+   "ops": {
+    "onPlay": [
+     "donMinus",
+     "chooseOption"
+    ]
+   },
+   "stats": {
+    "onPlay": {
+     "att": 0,
+     "com": 0,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
+    }
+   },
+   "appearedGames": 3
   },
   {
    "no": "OP14-096",
@@ -2576,21 +3908,21 @@
    },
    "stats": {
     "main": {
-     "att": 2,
+     "att": 0,
      "com": 0,
-     "dec": 2,
+     "dec": 0,
      "noop": 0,
      "unk": 0
     },
     "counter": {
-     "att": 6,
-     "com": 6,
+     "att": 0,
+     "com": 0,
      "dec": 0,
      "noop": 0,
      "unk": 0
     }
    },
-   "appearedGames": 5
+   "appearedGames": 0
   },
   {
    "no": "OP14-103",
@@ -2617,21 +3949,21 @@
    },
    "stats": {
     "onPlay": {
-     "att": 7,
-     "com": 3,
+     "att": 2,
+     "com": 1,
      "dec": 0,
      "noop": 0,
-     "unk": 4
+     "unk": 1
     },
     "trigger": {
-     "att": 4,
-     "com": 4,
+     "att": 1,
+     "com": 1,
      "dec": 0,
      "noop": 0,
      "unk": 0
     }
    },
-   "appearedGames": 5
+   "appearedGames": 2
   },
   {
    "no": "OP14-104",
@@ -2658,10 +3990,10 @@
    },
    "stats": {
     "onPlay": {
-     "att": 3,
+     "att": 1,
      "com": 0,
      "dec": 0,
-     "noop": 3,
+     "noop": 1,
      "unk": 0
     },
     "trigger": {
@@ -2672,7 +4004,7 @@
      "unk": 0
     }
    },
-   "appearedGames": 4
+   "appearedGames": 1
   },
   {
    "no": "OP14-105",
@@ -2699,9 +4031,9 @@
    },
    "stats": {
     "act": {
-     "att": 5,
-     "com": 0,
-     "dec": 5,
+     "att": 3,
+     "com": 1,
+     "dec": 2,
      "noop": 0,
      "unk": 0
     },
@@ -2740,9 +4072,9 @@
    },
    "stats": {
     "onPlay": {
-     "att": 2,
-     "com": 1,
-     "dec": 0,
+     "att": 8,
+     "com": 4,
+     "dec": 3,
      "noop": 0,
      "unk": 1
     },
@@ -2782,21 +4114,21 @@
    },
    "stats": {
     "onPlay": {
-     "att": 5,
-     "com": 4,
-     "dec": 1,
-     "noop": 0,
-     "unk": 0
-    },
-    "trigger": {
      "att": 0,
      "com": 0,
      "dec": 0,
      "noop": 0,
      "unk": 0
+    },
+    "trigger": {
+     "att": 2,
+     "com": 1,
+     "dec": 1,
+     "noop": 0,
+     "unk": 0
     }
    },
-   "appearedGames": 8
+   "appearedGames": 6
   },
   {
    "no": "OP14-112",
@@ -2823,21 +4155,21 @@
    },
    "stats": {
     "onPlay": {
-     "att": 7,
-     "com": 7,
+     "att": 3,
+     "com": 3,
      "dec": 0,
      "noop": 0,
      "unk": 0
     },
     "trigger": {
-     "att": 2,
-     "com": 1,
+     "att": 0,
+     "com": 0,
      "dec": 0,
-     "noop": 1,
+     "noop": 0,
      "unk": 0
     }
    },
-   "appearedGames": 6
+   "appearedGames": 2
   },
   {
    "no": "OP14-113",
@@ -2865,21 +4197,21 @@
    },
    "stats": {
     "onPlay": {
-     "att": 5,
-     "com": 2,
+     "att": 1,
+     "com": 1,
      "dec": 0,
      "noop": 0,
-     "unk": 3
+     "unk": 0
     },
     "trigger": {
-     "att": 3,
-     "com": 3,
+     "att": 0,
+     "com": 0,
      "dec": 0,
      "noop": 0,
      "unk": 0
     }
    },
-   "appearedGames": 4
+   "appearedGames": 1
   },
   {
    "no": "OP14-114",
@@ -2906,28 +4238,29 @@
    },
    "stats": {
     "act": {
-     "att": 12,
-     "com": 12,
+     "att": 6,
+     "com": 6,
      "dec": 0,
      "noop": 0,
      "unk": 0
     },
     "trigger": {
-     "att": 4,
-     "com": 4,
+     "att": 0,
+     "com": 0,
      "dec": 0,
      "noop": 0,
      "unk": 0
     }
    },
-   "appearedGames": 6
+   "appearedGames": 5
   },
   {
    "no": "OP14-119",
    "name": "ジュラキュール・ミホーク",
    "type": "CHAR",
    "decks": [
-    "緑ミホーク"
+    "緑ミホーク",
+    "マイデッキ:ミホーク"
    ],
    "hooks": [
     "onSelfRested",
@@ -2947,21 +4280,21 @@
    },
    "stats": {
     "onSelfRested": {
-     "att": 12,
-     "com": 12,
+     "att": 5,
+     "com": 5,
      "dec": 0,
      "noop": 0,
      "unk": 0
     },
     "onOppAttack": {
-     "att": 7,
-     "com": 7,
+     "att": 4,
+     "com": 4,
      "dec": 0,
      "noop": 0,
      "unk": 0
     }
    },
-   "appearedGames": 4
+   "appearedGames": 6
   },
   {
    "no": "OP15-002",
@@ -2997,14 +4330,14 @@
    },
    "stats": {
     "main": {
-     "att": 1,
-     "com": 1,
+     "att": 0,
+     "com": 0,
      "dec": 0,
      "noop": 0,
      "unk": 0
     }
    },
-   "appearedGames": 3
+   "appearedGames": 4
   },
   {
    "no": "OP15-021",
@@ -3031,8 +4364,8 @@
    },
    "stats": {
     "main": {
-     "att": 1,
-     "com": 1,
+     "att": 2,
+     "com": 2,
      "dec": 0,
      "noop": 0,
      "unk": 0
@@ -3045,14 +4378,15 @@
      "unk": 0
     }
    },
-   "appearedGames": 2
+   "appearedGames": 3
   },
   {
    "no": "OP15-032",
    "name": "ブルック",
    "type": "CHAR",
    "decks": [
-    "青緑ルフィ"
+    "青緑ルフィ",
+    "マイデッキ:青緑ルフィ"
    ],
    "hooks": [
     "onPlay",
@@ -3072,21 +4406,21 @@
    },
    "stats": {
     "onPlay": {
-     "att": 2,
+     "att": 1,
      "com": 1,
      "dec": 0,
-     "noop": 1,
+     "noop": 0,
      "unk": 0
     },
     "act": {
-     "att": 2,
-     "com": 2,
+     "att": 1,
+     "com": 1,
      "dec": 0,
      "noop": 0,
      "unk": 0
     }
    },
-   "appearedGames": 3
+   "appearedGames": 2
   },
   {
    "no": "OP15-040",
@@ -3108,14 +4442,14 @@
    },
    "stats": {
     "onPlay": {
-     "att": 6,
-     "com": 6,
+     "att": 4,
+     "com": 4,
      "dec": 0,
      "noop": 0,
      "unk": 0
     }
    },
-   "appearedGames": 4
+   "appearedGames": 5
   },
   {
    "no": "OP15-042",
@@ -3149,14 +4483,14 @@
      "unk": 0
     },
     "onKO": {
-     "att": 2,
+     "att": 1,
      "com": 1,
      "dec": 0,
      "noop": 0,
-     "unk": 1
+     "unk": 0
     }
    },
-   "appearedGames": 5
+   "appearedGames": 4
   },
   {
    "no": "OP15-044",
@@ -3207,14 +4541,14 @@
    },
    "stats": {
     "onPlay": {
-     "att": 10,
-     "com": 7,
+     "att": 6,
+     "com": 2,
      "dec": 0,
-     "noop": 3,
+     "noop": 4,
      "unk": 0
     }
    },
-   "appearedGames": 5
+   "appearedGames": 3
   },
   {
    "no": "OP15-047",
@@ -3236,8 +4570,8 @@
    },
    "stats": {
     "onPlay": {
-     "att": 3,
-     "com": 3,
+     "att": 7,
+     "com": 7,
      "dec": 0,
      "noop": 0,
      "unk": 0
@@ -3258,7 +4592,7 @@
    ],
    "runnable": [],
    "stats": {},
-   "appearedGames": 7
+   "appearedGames": 5
   },
   {
    "no": "OP15-053",
@@ -3280,14 +4614,14 @@
    },
    "stats": {
     "onPlay": {
-     "att": 7,
-     "com": 6,
+     "att": 4,
+     "com": 4,
      "dec": 0,
      "noop": 0,
-     "unk": 1
+     "unk": 0
     }
    },
-   "appearedGames": 4
+   "appearedGames": 3
   },
   {
    "no": "OP15-054",
@@ -3309,14 +4643,14 @@
    },
    "stats": {
     "main": {
-     "att": 3,
+     "att": 1,
      "com": 1,
      "dec": 0,
      "noop": 0,
-     "unk": 2
+     "unk": 0
     }
    },
-   "appearedGames": 4
+   "appearedGames": 3
   },
   {
    "no": "OP15-056",
@@ -3344,11 +4678,11 @@
    },
    "stats": {
     "main": {
-     "att": 3,
+     "att": 0,
      "com": 0,
      "dec": 0,
      "noop": 0,
-     "unk": 3
+     "unk": 0
     },
     "trigger": {
      "att": 1,
@@ -3399,19 +4733,20 @@
      "unk": 0
     }
    },
-   "appearedGames": 3
+   "appearedGames": 4
   },
   {
    "no": "OP15-058",
    "name": "エネル",
    "type": "LEADER",
    "decks": [
-    "紫エネル"
+    "紫エネル",
+    "マイデッキ:紫エネル"
    ],
    "hooks": [],
    "runnable": [],
    "stats": {},
-   "appearedGames": 5
+   "appearedGames": 10
   },
   {
    "no": "OP15-060",
@@ -3436,8 +4771,8 @@
    },
    "stats": {
     "act": {
-     "att": 19,
-     "com": 19,
+     "att": 15,
+     "com": 15,
      "dec": 0,
      "noop": 0,
      "unk": 0
@@ -3450,7 +4785,8 @@
    "name": "オーム",
    "type": "CHAR",
    "decks": [
-    "紫エネル"
+    "紫エネル",
+    "マイデッキ:紫エネル"
    ],
    "hooks": [
     "onPlay",
@@ -3471,21 +4807,21 @@
    },
    "stats": {
     "onPlay": {
-     "att": 3,
-     "com": 3,
+     "att": 15,
+     "com": 15,
      "dec": 0,
      "noop": 0,
      "unk": 0
     },
     "onAttack": {
-     "att": 1,
-     "com": 1,
-     "dec": 0,
+     "att": 4,
+     "com": 3,
+     "dec": 1,
      "noop": 0,
      "unk": 0
     }
    },
-   "appearedGames": 5
+   "appearedGames": 8
   },
   {
    "no": "OP15-063",
@@ -3513,21 +4849,21 @@
    },
    "stats": {
     "onPlay": {
-     "att": 2,
-     "com": 2,
+     "att": 4,
+     "com": 4,
      "dec": 0,
      "noop": 0,
      "unk": 0
     },
     "onKO": {
-     "att": 1,
-     "com": 1,
+     "att": 3,
+     "com": 0,
      "dec": 0,
-     "noop": 0,
+     "noop": 3,
      "unk": 0
     }
    },
-   "appearedGames": 1
+   "appearedGames": 4
   },
   {
    "no": "OP15-066",
@@ -3555,28 +4891,29 @@
    },
    "stats": {
     "onPlay": {
-     "att": 4,
-     "com": 4,
+     "att": 6,
+     "com": 6,
      "dec": 0,
      "noop": 0,
      "unk": 0
     },
     "onAttack": {
-     "att": 3,
+     "att": 4,
      "com": 0,
      "dec": 0,
-     "noop": 3,
+     "noop": 4,
      "unk": 0
     }
    },
-   "appearedGames": 5
+   "appearedGames": 4
   },
   {
    "no": "OP15-067",
    "name": "シュラ",
    "type": "CHAR",
    "decks": [
-    "紫エネル"
+    "紫エネル",
+    "マイデッキ:紫エネル"
    ],
    "hooks": [
     "onPlay"
@@ -3592,28 +4929,29 @@
    },
    "stats": {
     "onPlay": {
-     "att": 2,
-     "com": 2,
+     "att": 11,
+     "com": 11,
      "dec": 0,
      "noop": 0,
      "unk": 0
     }
    },
-   "appearedGames": 4
+   "appearedGames": 9
   },
   {
    "no": "OP15-069",
    "name": "ノラ",
    "type": "CHAR",
    "decks": [
-    "紫エネル"
+    "紫エネル",
+    "マイデッキ:マイデッキ"
    ],
    "hooks": [
     "static"
    ],
    "runnable": [],
    "stats": {},
-   "appearedGames": 4
+   "appearedGames": 6
   },
   {
    "no": "OP15-070",
@@ -3627,14 +4965,15 @@
    ],
    "runnable": [],
    "stats": {},
-   "appearedGames": 2
+   "appearedGames": 4
   },
   {
    "no": "OP15-074",
    "name": "放電",
    "type": "EVENT",
    "decks": [
-    "紫エネル"
+    "紫エネル",
+    "マイデッキ:紫エネル"
    ],
    "hooks": [
     "main",
@@ -3655,28 +4994,29 @@
    },
    "stats": {
     "main": {
-     "att": 1,
-     "com": 0,
-     "dec": 1,
+     "att": 3,
+     "com": 3,
+     "dec": 0,
      "noop": 0,
      "unk": 0
     },
     "counter": {
-     "att": 1,
-     "com": 1,
+     "att": 7,
+     "com": 7,
      "dec": 0,
      "noop": 0,
      "unk": 0
     }
    },
-   "appearedGames": 3
+   "appearedGames": 10
   },
   {
    "no": "OP15-075",
    "name": "神の裁き",
    "type": "EVENT",
    "decks": [
-    "紫エネル"
+    "紫エネル",
+    "マイデッキ:紫エネル"
    ],
    "hooks": [
     "main",
@@ -3697,28 +5037,29 @@
    },
    "stats": {
     "main": {
-     "att": 2,
-     "com": 2,
+     "att": 9,
+     "com": 9,
      "dec": 0,
      "noop": 0,
      "unk": 0
     },
     "counter": {
-     "att": 0,
-     "com": 0,
+     "att": 8,
+     "com": 8,
      "dec": 0,
      "noop": 0,
      "unk": 0
     }
    },
-   "appearedGames": 4
+   "appearedGames": 8
   },
   {
    "no": "OP15-076",
    "name": "雷獣",
    "type": "EVENT",
    "decks": [
-    "紫エネル"
+    "紫エネル",
+    "マイデッキ:紫エネル"
    ],
    "hooks": [
     "main",
@@ -3739,28 +5080,29 @@
    },
    "stats": {
     "main": {
-     "att": 2,
-     "com": 2,
+     "att": 5,
+     "com": 5,
      "dec": 0,
      "noop": 0,
      "unk": 0
     },
     "counter": {
-     "att": 2,
-     "com": 2,
+     "att": 7,
+     "com": 7,
      "dec": 0,
      "noop": 0,
      "unk": 0
     }
    },
-   "appearedGames": 5
+   "appearedGames": 9
   },
   {
    "no": "OP15-077",
    "name": "雷龍",
    "type": "EVENT",
    "decks": [
-    "紫エネル"
+    "紫エネル",
+    "マイデッキ:紫エネル"
    ],
    "hooks": [
     "main"
@@ -3777,21 +5119,22 @@
    },
    "stats": {
     "main": {
-     "att": 7,
-     "com": 7,
+     "att": 25,
+     "com": 25,
      "dec": 0,
      "noop": 0,
      "unk": 0
     }
    },
-   "appearedGames": 3
+   "appearedGames": 9
   },
   {
    "no": "OP15-078",
    "name": "万雷",
    "type": "EVENT",
    "decks": [
-    "紫エネル"
+    "紫エネル",
+    "マイデッキ:紫エネル"
    ],
    "hooks": [
     "main",
@@ -3814,9 +5157,9 @@
    },
    "stats": {
     "main": {
-     "att": 11,
+     "att": 10,
      "com": 10,
-     "dec": 1,
+     "dec": 0,
      "noop": 0,
      "unk": 0
     },
@@ -3828,7 +5171,7 @@
      "unk": 0
     }
    },
-   "appearedGames": 5
+   "appearedGames": 6
   },
   {
    "no": "OP15-113",
@@ -3850,9 +5193,9 @@
    },
    "stats": {
     "onPlay": {
-     "att": 3,
-     "com": 3,
-     "dec": 0,
+     "att": 6,
+     "com": 5,
+     "dec": 1,
      "noop": 0,
      "unk": 0
     }
@@ -3864,7 +5207,8 @@
    "name": "エネル",
    "type": "CHAR",
    "decks": [
-    "紫エネル"
+    "紫エネル",
+    "マイデッキ:紫エネル"
    ],
    "hooks": [
     "static",
@@ -3882,14 +5226,14 @@
    },
    "stats": {
     "onPlay": {
-     "att": 10,
-     "com": 10,
+     "att": 16,
+     "com": 16,
      "dec": 0,
      "noop": 0,
      "unk": 0
     }
    },
-   "appearedGames": 5
+   "appearedGames": 8
   },
   {
    "no": "OP15-119",
@@ -3924,21 +5268,22 @@
      "unk": 0
     },
     "onOppBlocker": {
-     "att": 6,
-     "com": 5,
+     "att": 0,
+     "com": 0,
      "dec": 0,
-     "noop": 1,
+     "noop": 0,
      "unk": 0
     }
    },
-   "appearedGames": 5
+   "appearedGames": 4
   },
   {
    "no": "OP16-022",
    "name": "モンキー・Ｄ・ルフィ",
    "type": "LEADER",
    "decks": [
-    "青緑ルフィ"
+    "青緑ルフィ",
+    "マイデッキ:青緑ルフィ"
    ],
    "hooks": [
     "act"
@@ -3953,10 +5298,10 @@
    },
    "stats": {
     "act": {
-     "att": 39,
-     "com": 38,
+     "att": 31,
+     "com": 31,
      "dec": 0,
-     "noop": 1,
+     "noop": 0,
      "unk": 0
     }
    },
@@ -3967,7 +5312,8 @@
    "name": "エンポリオ・イワンコフ",
    "type": "CHAR",
    "decks": [
-    "青緑ルフィ"
+    "青緑ルフィ",
+    "マイデッキ:青緑ルフィ"
    ],
    "hooks": [
     "onPlay"
@@ -3983,14 +5329,14 @@
    },
    "stats": {
     "onPlay": {
-     "att": 2,
-     "com": 2,
+     "att": 1,
+     "com": 1,
      "dec": 0,
      "noop": 0,
      "unk": 0
     }
    },
-   "appearedGames": 4
+   "appearedGames": 3
   },
   {
    "no": "OP16-027",
@@ -4011,7 +5357,8 @@
    "name": "ボア・ハンコック",
    "type": "CHAR",
    "decks": [
-    "青緑ルフィ"
+    "青緑ルフィ",
+    "マイデッキ:青緑ルフィ"
    ],
    "hooks": [
     "static",
@@ -4027,21 +5374,22 @@
    },
    "stats": {
     "onPlay": {
-     "att": 8,
-     "com": 8,
+     "att": 5,
+     "com": 5,
      "dec": 0,
      "noop": 0,
      "unk": 0
     }
    },
-   "appearedGames": 4
+   "appearedGames": 5
   },
   {
    "no": "OP16-034",
    "name": "モンキー・Ｄ・ルフィ",
    "type": "CHAR",
    "decks": [
-    "青緑ルフィ"
+    "青緑ルフィ",
+    "マイデッキ:青緑ルフィ"
    ],
    "hooks": [
     "static",
@@ -4057,8 +5405,8 @@
    },
    "stats": {
     "onPlay": {
-     "att": 5,
-     "com": 5,
+     "att": 6,
+     "com": 6,
      "dec": 0,
      "noop": 0,
      "unk": 0
@@ -4086,21 +5434,22 @@
    },
    "stats": {
     "onPlay": {
-     "att": 1,
-     "com": 1,
+     "att": 0,
+     "com": 0,
      "dec": 0,
      "noop": 0,
      "unk": 0
     }
    },
-   "appearedGames": 1
+   "appearedGames": 0
   },
   {
    "no": "OP16-038",
    "name": "行くぞ～～～!!!海軍本部～～～!!!",
    "type": "EVENT",
    "decks": [
-    "青緑ルフィ"
+    "青緑ルフィ",
+    "マイデッキ:青緑ルフィ"
    ],
    "hooks": [
     "main",
@@ -4120,9 +5469,9 @@
    },
    "stats": {
     "main": {
-     "att": 3,
+     "att": 0,
      "com": 0,
-     "dec": 3,
+     "dec": 0,
      "noop": 0,
      "unk": 0
     },
@@ -4156,14 +5505,14 @@
    },
    "stats": {
     "onAllyLeave": {
-     "att": 1,
-     "com": 1,
+     "att": 0,
+     "com": 0,
      "dec": 0,
      "noop": 0,
      "unk": 0
     }
    },
-   "appearedGames": 5
+   "appearedGames": 0
   },
   {
    "no": "OP16-042",
@@ -4171,12 +5520,13 @@
    "type": "CHAR",
    "decks": [
     "青緑ルフィ",
-    "青バギー"
+    "青バギー",
+    "マイデッキ:青緑ルフィ"
    ],
    "hooks": [],
    "runnable": [],
    "stats": {},
-   "appearedGames": 10
+   "appearedGames": 6
   },
   {
    "no": "OP16-045",
@@ -4184,7 +5534,8 @@
    "type": "CHAR",
    "decks": [
     "青緑ルフィ",
-    "青バギー"
+    "青バギー",
+    "マイデッキ:青緑ルフィ"
    ],
    "hooks": [
     "static",
@@ -4200,14 +5551,14 @@
    },
    "stats": {
     "onPlay": {
-     "att": 25,
-     "com": 25,
+     "att": 16,
+     "com": 16,
      "dec": 0,
      "noop": 0,
      "unk": 0
     }
    },
-   "appearedGames": 9
+   "appearedGames": 6
   },
   {
    "no": "OP16-048",
@@ -4215,7 +5566,8 @@
    "type": "CHAR",
    "decks": [
     "青緑ルフィ",
-    "青バギー"
+    "青バギー",
+    "マイデッキ:青緑ルフィ"
    ],
    "hooks": [
     "onPlay",
@@ -4235,21 +5587,21 @@
    },
    "stats": {
     "onPlay": {
-     "att": 16,
-     "com": 16,
+     "att": 3,
+     "com": 3,
      "dec": 0,
      "noop": 0,
      "unk": 0
     },
     "onOppAttack": {
-     "att": 25,
-     "com": 25,
+     "att": 7,
+     "com": 7,
      "dec": 0,
      "noop": 0,
      "unk": 0
     }
    },
-   "appearedGames": 9
+   "appearedGames": 6
   },
   {
    "no": "OP16-050",
@@ -4272,14 +5624,14 @@
    },
    "stats": {
     "onPlay": {
-     "att": 8,
-     "com": 8,
+     "att": 0,
+     "com": 0,
      "dec": 0,
      "noop": 0,
      "unk": 0
     }
    },
-   "appearedGames": 4
+   "appearedGames": 0
   },
   {
    "no": "OP16-054",
@@ -4287,7 +5639,8 @@
    "type": "CHAR",
    "decks": [
     "青緑ルフィ",
-    "青バギー"
+    "青バギー",
+    "マイデッキ:青緑ルフィ"
    ],
    "hooks": [
     "static",
@@ -4303,14 +5656,14 @@
    },
    "stats": {
     "onPlay": {
-     "att": 31,
-     "com": 25,
+     "att": 12,
+     "com": 7,
      "dec": 0,
      "noop": 0,
-     "unk": 6
+     "unk": 5
     }
    },
-   "appearedGames": 9
+   "appearedGames": 5
   },
   {
    "no": "OP16-055",
@@ -4318,7 +5671,8 @@
    "type": "CHAR",
    "decks": [
     "青緑ルフィ",
-    "青バギー"
+    "青バギー",
+    "マイデッキ:青緑ルフィ"
    ],
    "hooks": [
     "onPlay",
@@ -4338,11 +5692,11 @@
    },
    "stats": {
     "onPlay": {
-     "att": 22,
-     "com": 10,
+     "att": 9,
+     "com": 5,
      "dec": 0,
      "noop": 0,
-     "unk": 12
+     "unk": 4
     },
     "onAttack": {
      "att": 0,
@@ -4352,7 +5706,7 @@
      "unk": 0
     }
    },
-   "appearedGames": 9
+   "appearedGames": 5
   },
   {
    "no": "OP16-056",
@@ -4360,7 +5714,8 @@
    "type": "CHAR",
    "decks": [
     "青緑ルフィ",
-    "青バギー"
+    "青バギー",
+    "マイデッキ:青緑ルフィ"
    ],
    "hooks": [
     "act"
@@ -4375,14 +5730,14 @@
    },
    "stats": {
     "act": {
-     "att": 4,
-     "com": 4,
+     "att": 2,
+     "com": 2,
      "dec": 0,
      "noop": 0,
      "unk": 0
     }
    },
-   "appearedGames": 9
+   "appearedGames": 5
   },
   {
    "no": "OP16-059",
@@ -4409,9 +5764,9 @@
    },
    "stats": {
     "main": {
-     "att": 1,
+     "att": 0,
      "com": 0,
-     "dec": 1,
+     "dec": 0,
      "noop": 0,
      "unk": 0
     },
@@ -4423,7 +5778,7 @@
      "unk": 0
     }
    },
-   "appearedGames": 5
+   "appearedGames": 0
   },
   {
    "no": "OP16-079",
@@ -4437,7 +5792,7 @@
    ],
    "runnable": [],
    "stats": {},
-   "appearedGames": 6
+   "appearedGames": 0
   },
   {
    "no": "OP16-080",
@@ -4449,7 +5804,7 @@
    "hooks": [],
    "runnable": [],
    "stats": {},
-   "appearedGames": 6
+   "appearedGames": 5
   },
   {
    "no": "OP16-081",
@@ -4471,14 +5826,14 @@
    },
    "stats": {
     "act": {
-     "att": 3,
-     "com": 3,
+     "att": 0,
+     "com": 0,
      "dec": 0,
      "noop": 0,
      "unk": 0
     }
    },
-   "appearedGames": 4
+   "appearedGames": 0
   },
   {
    "no": "OP16-082",
@@ -4501,14 +5856,14 @@
    },
    "stats": {
     "onPlay": {
-     "att": 16,
-     "com": 15,
+     "att": 0,
+     "com": 0,
      "dec": 0,
      "noop": 0,
-     "unk": 1
+     "unk": 0
     }
    },
-   "appearedGames": 6
+   "appearedGames": 0
   },
   {
    "no": "OP16-084",
@@ -4530,14 +5885,14 @@
    },
    "stats": {
     "act": {
-     "att": 1,
-     "com": 1,
+     "att": 0,
+     "com": 0,
      "dec": 0,
      "noop": 0,
      "unk": 0
     }
    },
-   "appearedGames": 6
+   "appearedGames": 0
   },
   {
    "no": "OP16-085",
@@ -4559,14 +5914,14 @@
    },
    "stats": {
     "onPlay": {
-     "att": 1,
+     "att": 0,
      "com": 0,
      "dec": 0,
      "noop": 0,
-     "unk": 1
+     "unk": 0
     }
    },
-   "appearedGames": 5
+   "appearedGames": 0
   },
   {
    "no": "OP16-087",
@@ -4588,14 +5943,14 @@
    },
    "stats": {
     "onPlay": {
-     "att": 8,
-     "com": 5,
+     "att": 0,
+     "com": 0,
      "dec": 0,
      "noop": 0,
-     "unk": 3
+     "unk": 0
     }
    },
-   "appearedGames": 5
+   "appearedGames": 0
   },
   {
    "no": "OP16-091",
@@ -4617,14 +5972,14 @@
    },
    "stats": {
     "onPlay": {
-     "att": 9,
-     "com": 8,
+     "att": 0,
+     "com": 0,
      "dec": 0,
      "noop": 0,
-     "unk": 1
+     "unk": 0
     }
    },
-   "appearedGames": 6
+   "appearedGames": 0
   },
   {
    "no": "OP16-092",
@@ -4646,14 +6001,14 @@
    },
    "stats": {
     "onPlay": {
-     "att": 7,
-     "com": 7,
+     "att": 0,
+     "com": 0,
      "dec": 0,
      "noop": 0,
      "unk": 0
     }
    },
-   "appearedGames": 3
+   "appearedGames": 0
   },
   {
    "no": "OP16-095",
@@ -4676,14 +6031,14 @@
    },
    "stats": {
     "onPlay": {
-     "att": 6,
-     "com": 5,
+     "att": 0,
+     "com": 0,
      "dec": 0,
      "noop": 0,
-     "unk": 1
+     "unk": 0
     }
    },
-   "appearedGames": 4
+   "appearedGames": 0
   },
   {
    "no": "OP16-096",
@@ -4706,14 +6061,14 @@
    },
    "stats": {
     "onKO": {
-     "att": 1,
-     "com": 1,
+     "att": 0,
+     "com": 0,
      "dec": 0,
      "noop": 0,
      "unk": 0
     }
    },
-   "appearedGames": 6
+   "appearedGames": 0
   },
   {
    "no": "OP16-097",
@@ -4736,14 +6091,14 @@
    },
    "stats": {
     "onPlay": {
-     "att": 10,
-     "com": 4,
+     "att": 0,
+     "com": 0,
      "dec": 0,
      "noop": 0,
-     "unk": 6
+     "unk": 0
     }
    },
-   "appearedGames": 6
+   "appearedGames": 0
   },
   {
    "no": "OP16-098",
@@ -4771,21 +6126,21 @@
    },
    "stats": {
     "onPlay": {
-     "att": 10,
-     "com": 7,
+     "att": 0,
+     "com": 0,
      "dec": 0,
      "noop": 0,
-     "unk": 3
+     "unk": 0
     },
     "act": {
-     "att": 10,
-     "com": 10,
+     "att": 0,
+     "com": 0,
      "dec": 0,
      "noop": 0,
      "unk": 0
     }
    },
-   "appearedGames": 6
+   "appearedGames": 0
   },
   {
    "no": "OP16-099",
@@ -4812,9 +6167,9 @@
    },
    "stats": {
     "main": {
-     "att": 4,
-     "com": 2,
-     "dec": 2,
+     "att": 0,
+     "com": 0,
+     "dec": 0,
      "noop": 0,
      "unk": 0
     },
@@ -4826,7 +6181,7 @@
      "unk": 0
     }
    },
-   "appearedGames": 4
+   "appearedGames": 0
   },
   {
    "no": "OP16-103",
@@ -4867,7 +6222,7 @@
      "unk": 0
     }
    },
-   "appearedGames": 4
+   "appearedGames": 3
   },
   {
    "no": "OP16-104",
@@ -4895,8 +6250,8 @@
    },
    "stats": {
     "onAttack": {
-     "att": 4,
-     "com": 4,
+     "att": 0,
+     "com": 0,
      "dec": 0,
      "noop": 0,
      "unk": 0
@@ -4909,7 +6264,7 @@
      "unk": 0
     }
    },
-   "appearedGames": 6
+   "appearedGames": 4
   },
   {
    "no": "OP16-108",
@@ -4936,8 +6291,8 @@
    },
    "stats": {
     "onPlay": {
-     "att": 2,
-     "com": 2,
+     "att": 3,
+     "com": 3,
      "dec": 0,
      "noop": 0,
      "unk": 0
@@ -4977,15 +6332,15 @@
    },
    "stats": {
     "onKO": {
-     "att": 3,
-     "com": 3,
+     "att": 1,
+     "com": 1,
      "dec": 0,
      "noop": 0,
      "unk": 0
     },
     "trigger": {
-     "att": 3,
-     "com": 3,
+     "att": 2,
+     "com": 2,
      "dec": 0,
      "noop": 0,
      "unk": 0
@@ -5020,21 +6375,21 @@
    },
    "stats": {
     "onKO": {
-     "att": 7,
-     "com": 7,
+     "att": 4,
+     "com": 3,
      "dec": 0,
      "noop": 0,
-     "unk": 0
+     "unk": 1
     },
     "trigger": {
-     "att": 2,
-     "com": 2,
+     "att": 0,
+     "com": 0,
      "dec": 0,
      "noop": 0,
      "unk": 0
     }
    },
-   "appearedGames": 5
+   "appearedGames": 4
   },
   {
    "no": "OP16-116",
@@ -5104,21 +6459,50 @@
    },
    "stats": {
     "onPlay": {
-     "att": 6,
-     "com": 6,
+     "att": 3,
+     "com": 3,
      "dec": 0,
      "noop": 0,
      "unk": 0
     },
     "trigger": {
-     "att": 4,
+     "att": 3,
      "com": 3,
      "dec": 0,
      "noop": 0,
-     "unk": 1
+     "unk": 0
     }
    },
-   "appearedGames": 6
+   "appearedGames": 4
+  },
+  {
+   "no": "P-088",
+   "name": "トラファルガー・ロー",
+   "type": "CHAR",
+   "decks": [
+    "マイデッキ:キッド黄"
+   ],
+   "hooks": [
+    "trigger"
+   ],
+   "runnable": [
+    "trigger"
+   ],
+   "ops": {
+    "trigger": [
+     "cond(playSelf)"
+    ]
+   },
+   "stats": {
+    "trigger": {
+     "att": 1,
+     "com": 1,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
+    }
+   },
+   "appearedGames": 5
   },
   {
    "no": "P-096",
@@ -5146,21 +6530,21 @@
    },
    "stats": {
     "onPlay": {
-     "att": 2,
-     "com": 2,
+     "att": 0,
+     "com": 0,
      "dec": 0,
      "noop": 0,
      "unk": 0
     },
     "act": {
-     "att": 3,
-     "com": 3,
+     "att": 0,
+     "com": 0,
      "dec": 0,
      "noop": 0,
      "unk": 0
     }
    },
-   "appearedGames": 6
+   "appearedGames": 4
   },
   {
    "no": "PRB02-008",
@@ -5183,14 +6567,74 @@
    },
    "stats": {
     "onKO": {
-     "att": 10,
-     "com": 7,
+     "att": 4,
+     "com": 4,
      "dec": 0,
      "noop": 0,
-     "unk": 3
+     "unk": 0
     }
    },
-   "appearedGames": 9
+   "appearedGames": 10
+  },
+  {
+   "no": "PRB02-010",
+   "name": "シャーロット・プリン",
+   "type": "CHAR",
+   "decks": [
+    "マイデッキ:マイデッキ"
+   ],
+   "hooks": [
+    "onPlay"
+   ],
+   "runnable": [
+    "onPlay"
+   ],
+   "ops": {
+    "onPlay": [
+     "donMinus",
+     "cond(draw+playCharFromHand)"
+    ]
+   },
+   "stats": {
+    "onPlay": {
+     "att": 0,
+     "com": 0,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
+    }
+   },
+   "appearedGames": 6
+  },
+  {
+   "no": "ST10-010",
+   "name": "トラファルガー・ロー",
+   "type": "CHAR",
+   "decks": [
+    "マイデッキ:紫エネル"
+   ],
+   "hooks": [
+    "onPlay"
+   ],
+   "runnable": [
+    "onPlay"
+   ],
+   "ops": {
+    "onPlay": [
+     "donMinus",
+     "cond(oppDiscard)"
+    ]
+   },
+   "stats": {
+    "onPlay": {
+     "att": 0,
+     "com": 0,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
+    }
+   },
+   "appearedGames": 3
   },
   {
    "no": "ST17-004",
@@ -5213,14 +6657,43 @@
    },
    "stats": {
     "onPlay": {
-     "att": 9,
-     "com": 7,
+     "att": 6,
+     "com": 6,
      "dec": 0,
      "noop": 0,
-     "unk": 2
+     "unk": 0
     }
    },
-   "appearedGames": 4
+   "appearedGames": 5
+  },
+  {
+   "no": "ST18-001",
+   "name": "ウソ八",
+   "type": "CHAR",
+   "decks": [
+    "マイデッキ:マイデッキ"
+   ],
+   "hooks": [
+    "onPlay"
+   ],
+   "runnable": [
+    "onPlay"
+   ],
+   "ops": {
+    "onPlay": [
+     "cond(restChar)"
+    ]
+   },
+   "stats": {
+    "onPlay": {
+     "att": 0,
+     "com": 0,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
+    }
+   },
+   "appearedGames": 1
   },
   {
    "no": "ST22-002",
@@ -5247,17 +6720,17 @@
    },
    "stats": {
     "onPlay": {
-     "att": 6,
-     "com": 6,
+     "att": 8,
+     "com": 8,
      "dec": 0,
      "noop": 0,
      "unk": 0
     },
     "onOppAttack": {
-     "att": 49,
+     "att": 36,
      "com": 0,
      "dec": 0,
-     "noop": 49,
+     "noop": 36,
      "unk": 0
     }
    },
@@ -5290,7 +6763,7 @@
      "unk": 0
     }
    },
-   "appearedGames": 4
+   "appearedGames": 5
   },
   {
    "no": "ST23-001",
@@ -5302,14 +6775,15 @@
    "hooks": [],
    "runnable": [],
    "stats": {},
-   "appearedGames": 5
+   "appearedGames": 4
   },
   {
    "no": "ST24-002",
    "name": "キッド＆キラー",
    "type": "CHAR",
    "decks": [
-    "緑ミホーク"
+    "緑ミホーク",
+    "マイデッキ:ミホーク"
    ],
    "hooks": [
     "onPlay",
@@ -5329,28 +6803,29 @@
    },
    "stats": {
     "onPlay": {
-     "att": 6,
-     "com": 6,
+     "att": 4,
+     "com": 2,
      "dec": 0,
      "noop": 0,
-     "unk": 0
+     "unk": 2
     },
     "onOppAttack": {
-     "att": 6,
-     "com": 6,
+     "att": 4,
+     "com": 4,
      "dec": 0,
      "noop": 0,
      "unk": 0
     }
    },
-   "appearedGames": 4
+   "appearedGames": 5
   },
   {
    "no": "ST24-004",
    "name": "ロー＆ベポ",
    "type": "CHAR",
    "decks": [
-    "緑ミホーク"
+    "緑ミホーク",
+    "マイデッキ:ミホーク"
    ],
    "hooks": [
     "onPlay"
@@ -5373,14 +6848,15 @@
      "unk": 0
     }
    },
-   "appearedGames": 4
+   "appearedGames": 6
   },
   {
    "no": "ST30-014",
    "name": "Mr.3(ギャルディーノ)",
    "type": "CHAR",
    "decks": [
-    "青緑ルフィ"
+    "青緑ルフィ",
+    "マイデッキ:青緑ルフィ"
    ],
    "hooks": [
     "act"
@@ -5396,8 +6872,8 @@
    },
    "stats": {
     "act": {
-     "att": 10,
-     "com": 8,
+     "att": 4,
+     "com": 2,
      "dec": 0,
      "noop": 2,
      "unk": 0
@@ -5410,7 +6886,8 @@
    "name": "錦えもん",
    "type": "CHAR",
    "decks": [
-    "緑ミホーク"
+    "緑ミホーク",
+    "マイデッキ:ミホーク"
    ],
    "hooks": [
     "onPlay"
@@ -5425,9 +6902,9 @@
    },
    "stats": {
     "onPlay": {
-     "att": 6,
+     "att": 7,
      "com": 6,
-     "dec": 0,
+     "dec": 1,
      "noop": 0,
      "unk": 0
     }
@@ -5439,7 +6916,8 @@
    "name": "光月おでん",
    "type": "CHAR",
    "decks": [
-    "緑ミホーク"
+    "緑ミホーク",
+    "マイデッキ:ミホーク"
    ],
    "hooks": [
     "onPlay"
@@ -5455,21 +6933,22 @@
    },
    "stats": {
     "onPlay": {
-     "att": 1,
-     "com": 0,
+     "att": 2,
+     "com": 2,
      "dec": 0,
      "noop": 0,
-     "unk": 1
+     "unk": 0
     }
    },
-   "appearedGames": 5
+   "appearedGames": 6
   },
   {
    "no": "ST32-003",
    "name": "ジュラキュール・ミホーク",
    "type": "CHAR",
    "decks": [
-    "緑ミホーク"
+    "緑ミホーク",
+    "マイデッキ:ミホーク"
    ],
    "hooks": [
     "onSelfRested",
@@ -5490,28 +6969,29 @@
    },
    "stats": {
     "onSelfRested": {
-     "att": 2,
-     "com": 2,
+     "att": 5,
+     "com": 5,
      "dec": 0,
      "noop": 0,
      "unk": 0
     },
     "onPlay": {
-     "att": 1,
+     "att": 2,
      "com": 1,
      "dec": 0,
-     "noop": 0,
+     "noop": 1,
      "unk": 0
     }
    },
-   "appearedGames": 4
+   "appearedGames": 3
   },
   {
    "no": "ST32-005",
    "name": "ロロノア・ゾロ",
    "type": "CHAR",
    "decks": [
-    "緑ミホーク"
+    "緑ミホーク",
+    "マイデッキ:ミホーク"
    ],
    "hooks": [
     "onPlay"
@@ -5526,14 +7006,14 @@
    },
    "stats": {
     "onPlay": {
-     "att": 10,
-     "com": 4,
+     "att": 6,
+     "com": 3,
      "dec": 0,
-     "noop": 4,
-     "unk": 2
+     "noop": 3,
+     "unk": 0
     }
    },
-   "appearedGames": 5
+   "appearedGames": 3
   },
   {
    "no": "ST33-001",
@@ -5555,14 +7035,14 @@
    },
    "stats": {
     "onPlay": {
-     "att": 2,
-     "com": 2,
+     "att": 0,
+     "com": 0,
      "dec": 0,
      "noop": 0,
      "unk": 0
     }
    },
-   "appearedGames": 4
+   "appearedGames": 0
   },
   {
    "no": "ST33-002",
@@ -5589,21 +7069,21 @@
    },
    "stats": {
     "onAttack": {
-     "att": 1,
-     "com": 1,
+     "att": 0,
+     "com": 0,
      "dec": 0,
      "noop": 0,
      "unk": 0
     },
     "onKO": {
-     "att": 2,
-     "com": 2,
+     "att": 0,
+     "com": 0,
      "dec": 0,
      "noop": 0,
      "unk": 0
     }
    },
-   "appearedGames": 4
+   "appearedGames": 0
   },
   {
    "no": "ST33-003",
@@ -5625,14 +7105,14 @@
    },
    "stats": {
     "onPlay": {
-     "att": 2,
-     "com": 2,
+     "att": 0,
+     "com": 0,
      "dec": 0,
      "noop": 0,
      "unk": 0
     }
    },
-   "appearedGames": 3
+   "appearedGames": 0
   },
   {
    "no": "ST33-004",
@@ -5644,7 +7124,7 @@
    "hooks": [],
    "runnable": [],
    "stats": {},
-   "appearedGames": 5
+   "appearedGames": 0
   },
   {
    "no": "ST33-005",
@@ -5666,6 +7146,234 @@
    },
    "stats": {
     "onPlay": {
+     "att": 0,
+     "com": 0,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
+    }
+   },
+   "appearedGames": 0
+  },
+  {
+   "no": "ST34-001",
+   "name": "シャーロット・カタクリ",
+   "type": "CHAR",
+   "decks": [
+    "マイデッキ:マイデッキ"
+   ],
+   "hooks": [
+    "onDonReturned",
+    "onKO"
+   ],
+   "runnable": [
+    "onDonReturned",
+    "onKO"
+   ],
+   "ops": {
+    "onDonReturned": [
+     "cond(donFromDeck)"
+    ],
+    "onKO": [
+     "playCharFromHand"
+    ]
+   },
+   "stats": {
+    "onDonReturned": {
+     "att": 14,
+     "com": 7,
+     "dec": 7,
+     "noop": 0,
+     "unk": 0
+    },
+    "onKO": {
+     "att": 0,
+     "com": 0,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
+    }
+   },
+   "appearedGames": 5
+  },
+  {
+   "no": "ST34-002",
+   "name": "シャーロット・クラッカー",
+   "type": "CHAR",
+   "decks": [
+    "マイデッキ:マイデッキ"
+   ],
+   "hooks": [
+    "onPlay"
+   ],
+   "runnable": [
+    "onPlay"
+   ],
+   "ops": {
+    "onPlay": [
+     "cond(donFromDeck+ko)"
+    ]
+   },
+   "stats": {
+    "onPlay": {
+     "att": 0,
+     "com": 0,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
+    }
+   },
+   "appearedGames": 4
+  },
+  {
+   "no": "ST34-003",
+   "name": "シャーロット・ブリュレ",
+   "type": "CHAR",
+   "decks": [
+    "マイデッキ:マイデッキ"
+   ],
+   "hooks": [
+    "onPlay"
+   ],
+   "runnable": [
+    "onPlay"
+   ],
+   "ops": {
+    "onPlay": [
+     "search"
+    ]
+   },
+   "stats": {
+    "onPlay": {
+     "att": 9,
+     "com": 9,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
+    }
+   },
+   "appearedGames": 6
+  },
+  {
+   "no": "ST34-004",
+   "name": "シャーロット・リンリン",
+   "type": "CHAR",
+   "decks": [
+    "マイデッキ:マイデッキ"
+   ],
+   "hooks": [
+    "onPlay"
+   ],
+   "runnable": [
+    "onPlay"
+   ],
+   "ops": {
+    "onPlay": [
+     "donMinus",
+     "discardCost(lifeAddFromDeck+setPower)"
+    ]
+   },
+   "stats": {
+    "onPlay": {
+     "att": 2,
+     "com": 2,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
+    }
+   },
+   "appearedGames": 5
+  },
+  {
+   "no": "ST34-005",
+   "name": "タマゴ男爵＆ペコムズ",
+   "type": "CHAR",
+   "decks": [
+    "マイデッキ:マイデッキ"
+   ],
+   "hooks": [
+    "onAttack"
+   ],
+   "runnable": [
+    "onAttack"
+   ],
+   "ops": {
+    "onAttack": [
+     "donMinus(ko)"
+    ]
+   },
+   "stats": {
+    "onAttack": {
+     "att": 3,
+     "com": 3,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
+    }
+   },
+   "appearedGames": 3
+  },
+  {
+   "no": "ST36-001",
+   "name": "キャベンディッシュ",
+   "type": "CHAR",
+   "decks": [
+    "マイデッキ:キッド黄"
+   ],
+   "hooks": [
+    "onKO"
+   ],
+   "runnable": [
+    "onKO"
+   ],
+   "ops": {
+    "onKO": [
+     "discardCost(lifeAddFromDeck)"
+    ]
+   },
+   "stats": {
+    "onKO": {
+     "att": 0,
+     "com": 0,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
+    }
+   },
+   "appearedGames": 5
+  },
+  {
+   "no": "ST36-002",
+   "name": "キラー",
+   "type": "CHAR",
+   "decks": [
+    "マイデッキ:キッド黄"
+   ],
+   "hooks": [
+    "onPlay",
+    "trigger"
+   ],
+   "runnable": [
+    "onPlay",
+    "trigger"
+   ],
+   "ops": {
+    "onPlay": [
+     "cond(lifeAddFromDeck)"
+    ],
+    "trigger": [
+     "cond(playSelf)"
+    ]
+   },
+   "stats": {
+    "onPlay": {
+     "att": 5,
+     "com": 4,
+     "dec": 1,
+     "noop": 0,
+     "unk": 0
+    },
+    "trigger": {
      "att": 1,
      "com": 1,
      "dec": 0,
@@ -5674,6 +7382,106 @@
     }
    },
    "appearedGames": 5
+  },
+  {
+   "no": "ST36-003",
+   "name": "スクラッチメン・アプー",
+   "type": "CHAR",
+   "decks": [
+    "マイデッキ:キッド黄"
+   ],
+   "hooks": [
+    "trigger"
+   ],
+   "runnable": [
+    "trigger"
+   ],
+   "ops": {
+    "trigger": [
+     "draw",
+     "cond(setPower)"
+    ]
+   },
+   "stats": {
+    "trigger": {
+     "att": 1,
+     "com": 1,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
+    }
+   },
+   "appearedGames": 5
+  },
+  {
+   "no": "ST36-004",
+   "name": "バルトロメオ",
+   "type": "CHAR",
+   "decks": [
+    "マイデッキ:キッド黄"
+   ],
+   "hooks": [
+    "onPlay"
+   ],
+   "runnable": [
+    "onPlay"
+   ],
+   "ops": {
+    "onPlay": [
+     "discardCost(draw)"
+    ]
+   },
+   "stats": {
+    "onPlay": {
+     "att": 2,
+     "com": 2,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
+    }
+   },
+   "appearedGames": 5
+  },
+  {
+   "no": "ST36-005",
+   "name": "ユースタス・キッド",
+   "type": "CHAR",
+   "decks": [
+    "マイデッキ:キッド黄"
+   ],
+   "hooks": [
+    "onOppAttack",
+    "act"
+   ],
+   "runnable": [
+    "onOppAttack",
+    "act"
+   ],
+   "ops": {
+    "onOppAttack": [
+     "cond(lifeCost)"
+    ],
+    "act": [
+     "lifeCost(donAttach)"
+    ]
+   },
+   "stats": {
+    "onOppAttack": {
+     "att": 8,
+     "com": 8,
+     "dec": 0,
+     "noop": 0,
+     "unk": 0
+    },
+    "act": {
+     "att": 12,
+     "com": 11,
+     "dec": 1,
+     "noop": 0,
+     "unk": 0
+    }
+   },
+   "appearedGames": 4
   }
  ]
 }

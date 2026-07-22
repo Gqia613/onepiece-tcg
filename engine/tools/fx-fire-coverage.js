@@ -35,6 +35,15 @@ const CHUNK = Math.max(1, Math.min(val('--chunk', 15), N));
 const JSON_OUT = flag('--json');
 const LOWRATE = val('--lowrate', 0.25);   // [B] 低成立率の閾値（com/att がこれ未満）
 const MINATT = val('--minatt', 5);        // [B] の最低試行回数（低サンプルのノイズ抑制）
+// ★ユーザーのマイデッキ監査（②）: tools/user-decks.json（D1のマイデッキのスナップショット）があれば自動で読み込み、
+//   ヒーロー側をマイデッキの固定回転・相手側をプリセット回転にする＝「実際に使うカード」に発火サンプルを集中させる。
+//   紫カタクリLの実バグは非プリセットデッキで起きた＝プリセットのみの監査では原理的に届かなかった穴を塞ぐ。
+//   スナップショット更新: npx wrangler d1 execute opcg --remote --json --command
+//     "SELECT d.name,d.leader,d.list FROM decks d JOIN users u ON u.id=d.user_id WHERE u.username='michiru';"
+//   → [{id:'userN', name:'マイデッキ:…', leader, list}] 形式で tools/user-decks.json へ（--deckfile で別ファイル指定・--nouser で無効化）。
+const fsMod = require('fs'), pathMod = require('path');
+const DECKFILE = (() => { const i = args.indexOf('--deckfile'); if (i >= 0 && args[i + 1]) return args[i + 1]; const d = pathMod.join(__dirname, 'user-decks.json'); return (!flag('--nouser') && fsMod.existsSync(d)) ? d : null; })();
+const CUSTOM_DECKS = DECKFILE ? JSON.parse(fsMod.readFileSync(DECKFILE, 'utf8')) : [];
 
 // 「情報を見るだけで状態が変わらないのが正常」なop（no-op が正当）。[A]から情報系として分離する。
 const INFO_OPS = new Set(['peekOppDeck', 'peekLifeTopPlace', 'scry', 'revealTop']);
@@ -50,7 +59,10 @@ showPrompt = function (cfg) { const t = cfg.title || ''; let v;
   if (cfg.onPick) cfg.onPick(v); return Promise.resolve(v); };
 humanPick = function (c) { return Promise.resolve(c[0] || null); };
 const START = ` + start + `, NG = ` + n + `, SEED0 = ` + SEED0 + `, EMIT_META = ` + !!emitMeta + `;
-const IDS = DECKS.map(d => d.id);
+const CUSTOM = ` + JSON.stringify(CUSTOM_DECKS) + `;
+for (const d of CUSTOM) if (!DECKS.some(x => x.id === d.id)) DECKS.push(d); // マイデッキをDECKSに合流（meta/計測が同じ経路を通る）
+const UIDS = CUSTOM.map(d => d.id);
+const IDS = DECKS.filter(d => !UIDS.includes(d.id)).map(d => d.id);
 // ── fx発火の質: runFx をラップ。ops が self.base.fx のフック本体（配列 or cfg.fx）と参照一致した時のみ計測 ──
 const FIRE = {};    // no -> hook -> {att,com,dec,noop,unk}
 const APPEAR = {};  // no -> { 試合番号: 1 }（手札/盤面に登場した試合）
@@ -100,12 +112,15 @@ function scanAppear() {
 }
 const _beginTurn = beginTurn;
 beginTurn = async function (side) { scanAppear(); return _beginTurn(side); };
-// ── 1試合: 通し番号 g からデッキペアをローテーションで決める（全デッキが hero として周回する）──
+// ── 1試合: 通し番号 g からデッキペアを決める。マイデッキがあればヒーロー=マイデッキ固定回転×相手=プリセット回転
+//   （実使用カードにサンプル集中）。無ければ従来のプリセット全周回。──
 async function pg(g) {
-  const D = IDS.length; const i = g % D; let j = (g + 1 + ((g / D) | 0)) % D; if (j === i) j = (j + 1) % D;
+  let heroId, villId;
+  if (UIDS.length) { heroId = UIDS[g % UIDS.length]; villId = IDS[((g / UIDS.length) | 0) % IDS.length]; }
+  else { const D = IDS.length; const i = g % D; let j = (g + 1 + ((g / D) | 0)) % D; if (j === i) j = (j + 1) % D; heroId = IDS[i]; villId = IDS[j]; }
   G.players = {}; G.winner = null; G.inGame = false;
   seedRng(SEED0 + g); CUR = g;
-  startGame(IDS[i], IDS[j]);
+  startGame(heroId, villId);
   G.players.me.isCPU = true; G.players.me.agent = 'heuristic'; G.players.cpu.agent = 'heuristic';
   let it = 0; while (!(G.winner && !G._sim) && it < 5000000) { await new Promise(r => setImmediate(r)); it++; }
   scanAppear(); CUR = -1;
@@ -116,7 +131,7 @@ async function pg(g) {
   for (let g = START; g < START + NG; g++) await pg(g);
   const appearN = {}; for (const no in APPEAR) appearN[no] = Object.keys(APPEAR[no]).length;
   if (EMIT_META) {  // デッキ採用カードのメタ（フック一覧＋トリアージ用のop名）。static はrunFxを通らない常在＝計測対象外
-    const meta = { deckCount: IDS.length, decks: [], cards: {} };
+    const meta = { deckCount: DECKS.length, userDecks: UIDS.length, decks: [], cards: {} };
     for (const d of DECKS) {
       const nos = [d.leader, ...Object.keys(d.list)];
       meta.decks.push({ id: d.id, name: d.name, nos });
@@ -153,7 +168,7 @@ function isInfoOnly(opsList) {
 
 (async () => {
   const t0 = Date.now();
-  console.log('▶ fx発火の質 監査（att/com/dec/noop分類・プリセット全デッキ・ローテーション対戦・CPU対CPU heuristic, N=' + N + ' seed0=' + SEED0 + '）');
+  console.log('▶ fx発火の質 監査（att/com/dec/noop分類・CPU対CPU heuristic, N=' + N + ' seed0=' + SEED0 + (CUSTOM_DECKS.length ? ' ★マイデッキ' + CUSTOM_DECKS.length + '個をヒーロー固定回転×プリセット相手' : ' プリセット全デッキ・ローテーション') + '）');
   const fire = {}, appear = {}; let meta = null, noWinner = 0, done = 0;
   while (done < N) {
     const n = Math.min(CHUNK, N - done);
@@ -203,7 +218,7 @@ function isInfoOnly(opsList) {
   const staticOnly = cardRows.filter(r => r.hooks.length && !r.runnable.length);
   const noFx = cardRows.filter(r => !r.hooks.length);
 
-  console.log('  デッキ数=' + meta.deckCount + ' 採用カード種=' + cardRows.length + '（fxあり=' + cardRows.filter(r => r.runnable.length).length
+  console.log('  デッキ数=' + meta.deckCount + (meta.userDecks ? '(うちマイデッキ' + meta.userDecks + ')' : '') + ' 採用カード種=' + cardRows.length + '（fxあり=' + cardRows.filter(r => r.runnable.length).length
     + ' / static常在のみ=' + staticOnly.length + ' / 効果なし=' + noFx.length + '） noWinner=' + noWinner);
   console.log('');
   console.log('── [A] 呼ばれるのに一度も成立しない（att>0, com=0。最優先トリアージ ' + tierA.length + '件）──');
