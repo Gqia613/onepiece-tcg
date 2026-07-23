@@ -335,6 +335,15 @@ function setupG(leaderNo){G.active='me';G.turnSeq=5;G.winner=null;const mkP=(ln,
       ok(cpu.don.rested===1, '例3q: ST02-008は相手のドン1枚をレストにする');
       ok(!cpu._donRefreshLock, '例3q: リフレッシュ据え置き(donRefreshLock)は付かない（text非記載の過剰強化を撤去）'); }
 
+    // 例3r: actgate拡張 — 先頭コストop支払い不能の起動はCPUが使わない（OP14-105=手札の九蛇/アマゾン・リリー3枚公開。
+    //       不発でも _actTurn 消費済＝【ターン1回】の空費だった）
+    setupG('OP13-002'); { const me=G.players.me; const gg=mkc('OP14-105'); me.chars=[gg];
+      const kuja=Object.values(C).find(c=>c.type==='CHAR'&&(c.traits||[]).includes('九蛇海賊団')&&c.no!=='OP14-105');
+      me.hand=[mkc(kuja.no),mkc(kuja.no)]; // 2枚<必要3枚
+      ok(actWorthUsing('me',gg)===false, '例3r: revealCost3枚に対し手札2枚→起動しない');
+      me.hand.push(mkc(kuja.no));          // 3枚=支払い可能
+      ok(actWorthUsing('me',gg)===true, '例3r: 3枚あれば起動する'); }
+
     // 例3e: 「相手のデッキの上を見る」(peekOppDeck)は完了ボタンを押すまでカードを大写し（reveal付きshowPrompt）。人間のみ。OP11-062/070。
     setupG('OP11-062'); { const P=G.players.me; G.players.cpu.deck=[mkc('OP15-067')];
       let seen=null; const _sp=showPrompt; showPrompt=function(cfg){ seen=cfg; return Promise.resolve((cfg.opts&&cfg.opts[0]||{}).v); };

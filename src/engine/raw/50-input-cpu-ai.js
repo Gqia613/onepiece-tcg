@@ -210,6 +210,18 @@
       if (e53On(side, 'actgate') && first.op !== 'cond' && Array.isArray(first.then)
         && first.then.length === 1 && first.then[0].op === 'cond'
         && first.then[0].check && !checkCond(first.then[0].check, side, c)) return false;
+      // ⑤ ★actgate拡張: 先頭のコストopが支払い不能なら起動しない（払えず不発でも _actTurn は消費済＝【ターン1回】の空費。
+      //   OP14-105ゴルゴン三姉妹=手札の九蛇/アマゾン・リリー3枚公開など）。判定はE57 evgateと同じ実測済みの型のみ・不明opは通す。
+      if (e53On(side, 'actgate')) {
+        const Pg = G.players[side];
+        if (first.op === 'revealCost' && Pg.hand.filter(x => matchFilter(x, first.filter || {})).length < (first.count || 1)) return false;
+        if (first.op === 'discardCost' && Pg.hand.filter(x => !first.filter || matchFilter(x, first.filter)).length < (first.count || 1)) return false;
+        if (first.op === 'restDonCost' && Pg.don.active < (first.n || 1)) return false;
+        if (first.op === 'donMinus') {
+          const att = [Pg.leader, Pg.stage, ...Pg.chars].reduce((s, x) => s + ((x && x.attachedDon) || 0), 0);
+          if (Pg.don.active + Pg.don.rested + att < (first.n || 1)) return false;
+        }
+      }
       const ops = (first.op === 'cond' && Array.isArray(first.then)) ? first.then : fx;
       const P = G.players[side], D = G.players[opp(side)];
       const needOpp = ops.some(o => (o.op === 'powerMod' && o.side === 'opp') || ['ko', 'koZero', 'restChar', 'bounce', 'deckBottom', 'handToBottom'].includes(o.op));
@@ -388,7 +400,9 @@
     // E42部品の個別on/off（G._h2Parts 未設定なら全部on。OPCG_H2=lethal等で部品を単離測定）
     function h2On(part) { const t = G._h2Parts; return !t || !!t[part]; }
     // ★E46採用テーブル: ステージ設置を既定で行うリーダー（測定で正方向のリーダーのみ掲載。詳細は heuristicTurn 2b のコメント）
-    var STAGE_PLAY = { teach: 1 };
+    //   ★E58: mihawk(_OP14-020)採用 — 棺船OP14-039(1ドン=1ドロー+毎ターン終了時ドン1アクティブ)が×1で死に札だった。
+    //   2帯符号再現(+3.3pt 4/0・+0.8pt 2/1 合算6/1 p≈0.0625)＋退行機構なしで既定化。再測定はheur2+OPCG_H2=stage。
+    var STAGE_PLAY = { teach: 1, '_OP14-020': 1 };
     // ★E53採用テーブル: 実対戦観察（2026-07-13 青緑ルフィvs緑ミホーク4戦）由来の部品の既定on/off。
     //   測定（measure-matchup 同一seedペア比較・2seed帯・対面=mihawk vs luffygb N=120）で全部品採用:
     //   restpick 単離+27.5pt(p=0.000★)／actgate 単離+10.0pt(p=0.023★)／合成 band1+26.7・band2+19.2(共にp=0.000★)
