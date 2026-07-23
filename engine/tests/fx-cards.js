@@ -1138,9 +1138,12 @@ humanPick=function(c){return Promise.resolve((c||[])[0]||null);};
     { const me=LP('OP13-002'); const v=I('OP15-067','cpu'); G.players.cpu.chars=[v];
       const c=I('OP14-111','me'); await runFx(c.base.fx.onPlay,{self:c,side:'me'});
       ok(v.noAtkSeq!=null, 'OP14-111 onPlay: 相手コスト6以下をアタック不可'); }
-    { const me=LP('OP13-002'); const tgt=me.leader; const p0=power(tgt);
+    { const me=LP('OP14-080'); const tgt=me.leader; const p0=power(tgt); // モリアL=スリラーバーク海賊団
       const ev=I('OP14-117','me'); await runFx(ev.base.fx.counter.fx,{self:ev,side:'me',target:tgt});
-      ok(power(tgt)===p0+3000, 'OP14-117 counter: 対象+3000'); }
+      ok(power(tgt)===p0+3000, 'OP14-117 counter: スリラーバーク対象に+3000'); }
+    { const me=LP('OP13-002'); const tgt=me.leader; const p0=power(tgt); // エースL=特徴不一致→バフしない（filter対応の回帰）
+      const ev=I('OP14-117','me'); await runFx(ev.base.fx.counter.fx,{self:ev,side:'me',target:tgt});
+      ok(power(tgt)===p0, 'OP14-117 counter: 特徴不一致の対象にはバフしない'); }
 
     // === OP14 バッチ6（新基盤） ===
     ok(['OP14-084','OP14-087','OP14-098','OP14-063','OP14-110','OP14-092','OP14-048','OP14-054','OP14-039','OP14-037','OP14-038','OP14-119','OP14-120','OP14-029'].every(no=>C[no]&&C[no].fx), 'OP14バッチ6: 14枚にfx統合');
