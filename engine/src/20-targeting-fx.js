@@ -266,8 +266,12 @@
             picked.push(pick); P.hand.push(pick); flog(side, `「${pick.base.name}」を手札に`);
             cardReveal(side, pick.base.no, pick.base.name, '手札に加えた', 'hand'); // 公開して手札に加える＝何を取ったか見せる
           }
-          // 取らなかったカードはデッキ下（rest:'trash'ならトラッシュ）へ
-          for (const c of look) if (!picked.includes(c)) { if (op.rest === 'trash') P.trash.push(reset(c)); else P.deck.push(c); }
+          // 取らなかったカードはデッキ下（rest:'trash'ならトラッシュ / restPos:'choose'なら上か下を選択=OP11-040）
+          let srTop = false;
+          const srLeft = look.filter(c => !picked.includes(c));
+          if (op.restPos === 'choose' && srLeft.length && op.rest !== 'trash') srTop = P.isCPU ? false : (await showPrompt({ side, title: '残りのカード', text: `残り${srLeft.length}枚をデッキの上と下、どちらに置きますか？`, opts: [{ t: 'デッキの下', v: 'b', primary: true }, { t: 'デッキの上', v: 't' }] })) === 't';
+          if (srTop) { for (let i = srLeft.length - 1; i >= 0; i--) P.deck.unshift(srLeft[i]); }
+          else for (const c of srLeft) { if (op.rest === 'trash') P.trash.push(reset(c)); else P.deck.push(c); }
           if (op.rest === 'trash') flog(side, '残りをトラッシュに置いた');
           break;
         }
@@ -567,7 +571,7 @@
         case 'selfHandToDeckDraw': { const hn = P.hand.length; P.deck.push(...P.hand.splice(0)); shuffle(P.deck); draw(side, hn); flog(side, `手札${hn}枚を山に戻しシャッフル→${hn}ドロー`); render(); break; } // OP04-048ササキ
         case 'bounceAttackerToBottom': { const a = ctx.attacker; if (a && a.base.type === 'CHAR' && (a.base.cost || 0) <= (op.maxCost != null ? op.maxCost : 5)) { const ow = G.players[a.owner]; ow.don.rested += a.attachedDon || 0; removeChar(a); ow.deck.push(reset(a)); flog(side, `バトルした「${a.base.name}」を持ち主のデッキ下へ`); render(); } break; } // OP04-047氷鬼（ブロック時に近似。付与ドンはレストで戻る）
         // 場のキャラ1枚を持ち主のライフ上に裏向きで加える（OP12-117破壊弦。side:'any'=自分/相手両方が対象）
-        case 'charToLife': { const cands = op.side === 'self' ? P.chars.filter(c => matchFilter(c, opFilter(op))) : op.side === 'any' ? [...oppChars(side, opFilter(op)), ...P.chars.filter(c => matchFilter(c, opFilter(op)))] : oppChars(side, opFilter(op)); const t = await chooseCard(side, cands, 'ライフに加えるキャラを選択', op.side === 'self' ? 'ownBig' : 'oppBig', op.optional); if (t) { const ow2 = G.players[t.owner]; removeChar(t); const card2 = reset(t); if (op.faceUp) card2._faceUp = true; let bottom = op.pos === 'bottom'; if (op.pos === 'choose' && !P.isCPU) bottom = (await showPrompt({ side, title: 'ライフに加える', text: 'ライフの上か下、どちらに加えますか？', opts: [{ t: 'ライフ上', v: 'top', primary: true }, { t: 'ライフ下', v: 'bottom' }] })) === 'bottom'; if (bottom) ow2.life.push(card2); else ow2.life.unshift(card2); flog(side, `「${t.base.name}」を${t.owner === side ? '自分' : '相手'}のライフ${bottom ? '下' : '上'}に${op.faceUp ? '表向きで' : ''}加えた`); render(); } break; } // faceUp=表向き / pos:'bottom'（OP11-116人魚柔術）
+        case 'charToLife': { const cands = op.side === 'self' ? P.chars.filter(c => matchFilter(c, opFilter(op))) : op.side === 'any' ? [...oppChars(side, opFilter(op)), ...P.chars.filter(c => matchFilter(c, opFilter(op)))] : oppChars(side, opFilter(op)); const t = await chooseCard(side, cands, 'ライフに加えるキャラを選択', op.side === 'self' ? 'ownBig' : 'oppBig', op.optional); if (t) { const ow2 = G.players[t.owner]; removeChar(t); const card2 = reset(t); if (op.faceUp) card2._faceUp = true; let bottom = op.pos === 'bottom'; if (op.pos === 'choose' && !P.isCPU) bottom = (await showPrompt({ side, title: 'ライフに加える', text: 'ライフの上か下、どちらに加えますか？', opts: [{ t: 'ライフ上', v: 'top', primary: true }, { t: 'ライフ下', v: 'bottom' }] })) === 'bottom'; if (bottom) ow2.life.push(card2); else ow2.life.unshift(card2); flog(side, `「${t.base.name}」を${t.owner === side ? '自分' : '相手'}のライフ${bottom ? '下' : '上'}に${op.faceUp ? '表向きで' : ''}加えた`); render(); if (op.then) await runFx(op.then, ctx); } else { ctx._declined = true; } break; } // faceUp=表向き / pos:'bottom'（OP11-116人魚柔術）
         case 'handToLife': { // 自分の手札1枚をライフの上に（人間=選択・optional=見送り可。旧実装は最小カウンター自動＝選択権が無かった）
           if (!P.hand.length) break;
           let c;
