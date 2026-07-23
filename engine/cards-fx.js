@@ -2007,7 +2007,7 @@ window.CARD_FX = {
   // OP06-004 オマツリ男爵: 【登場時】手札から「リリーカーネーション」1枚を登場
   "OP06-004": {"onPlay":[{"op":"playSpecificFromHand","name":"リリーカーネーション","optional":true}]},
   // OP06-006 サガ: 【ドン×1】【アタック時】次の自分ターン開始まで+1000→ターン終了時、自分のFILM1枚をトラッシュ
-  "OP06-006": {"onAttack":[{"op":"cond","check":{"donX1":true},"then":[{"op":"powerMod","side":"self","target":"self","amount":1000,"duration":"untilNextStart"},{"op":"scheduleTurnEnd","fx":[{"op":"trashOwnCharCost","filter":{"traitIncludes":"FILM"}}]}]}]},
+  "OP06-006": {"onAttack":[{"op":"cond","check":{"donX1":true},"then":[{"op":"powerMod","side":"self","target":"self","amount":1000,"duration":"untilNextStart"},{"op":"scheduleTurnEnd","fx":[{"op":"trashOwnCharCost","forced":true,"filter":{"traitIncludes":"FILM"}}]}]}]},
   // OP06-007 シャンクス(c10): 【登場時】相手のパワー10000以下1枚KO
   "OP06-007": {"onPlay":[{"op":"ko","side":"opp","filter":{"maxEffPower":10000},"count":1,"optional":true}]},
   // OP06-010 ダグラス・バレット: FILMリーダーで【ブロッカー】を得る
@@ -2015,7 +2015,7 @@ window.CARD_FX = {
   // OP06-011 トットムジカ: 【起動メイン】【ターン1回】自分の「ウタ」1枚をレスト：このキャラ+5000
   "OP06-011": {"act":{"label":"ウタをレスト:このキャラ+5000","cost":{},"fx":[{"op":"restOwnAsCost","filter":{"nameIncludes":"ウタ"},"then":[{"op":"powerMod","side":"self","target":"self","amount":5000,"duration":"turn"}]}]}},
   // OP06-012 ベアキング: 相手に元々パワー6000以上のリーダーかキャラがいるとバトルでKOされない
-  "OP06-012": {"static":[{"op":"condBuff","battleImmune":true,"cond":{"oppChar":{"minPower":6000}}}]},
+  "OP06-012": {"static":[{"op":"condBuff","battleImmune":true,"cond":{"or":[{"oppChar":{"minPower":6000}},{"oppLeaderBasePowerAtLeast":6000}]}}]},
   // OP06-013 モンキー・D・ルフィ(c2): 【登場時】デッキ上3枚からFILM1枚を手札に
   "OP06-013": {"onPlay":[{"op":"search","look":3,"count":1,"filter":{"traitIncludes":"FILM"},"optional":true}]},
   // OP06-014 ラチェット: 【相手のアタック時】FILMを捨て、1枚ごとリーダーかキャラ+1000(近似:最大1枚)
@@ -2051,11 +2051,11 @@ window.CARD_FX = {
   // OP06-030 ドスン: 【アタック時】新魚人リーダーなら次の自分ターン開始までバトルKO耐性＋2000→ライフ上1枚を手札に
   "OP06-030": {"onAttack":[{"op":"cond","check":{"leaderTraitIncludes":"新魚人海賊団"},"then":[{"op":"grantBattleImmune","target":"self","amount":2000,"duration":"untilNextStart"},{"op":"lifeToHand","n":1}]}]},
   // OP06-033 バンダー・デッケン九世: 【登場時】魚人族1枚を捨てる：相手のレストのキャラ1枚KO
-  "OP06-033": {"onPlay":[{"op":"discardCost","count":1,"optional":true,"filter":{"traitIncludes":"魚人族"},"then":[{"op":"ko","side":"opp","filter":{"restedOnly":true},"count":1,"optional":true}]}]},
+  "OP06-033": {"onPlay":[{"op":"chooseOption","options":[{"label":"手札の魚人族1枚を捨てる","fx":[{"op":"discardCost","count":1,"optional":true,"filter":{"traitIncludes":"魚人族"},"then":[{"op":"ko","side":"opp","filter":{"restedOnly":true},"count":1,"optional":true}]}]},{"label":"手札の「方舟ノア」1枚を捨てる","fx":[{"op":"discardCost","count":1,"optional":true,"filter":{"nameIncludes":"方舟ノア"},"then":[{"op":"ko","side":"opp","filter":{"restedOnly":true},"count":1,"optional":true}]}]},{"label":"場の「方舟ノア」をトラッシュ","fx":[{"op":"trashStageCost","nameIncludes":"方舟ノア","then":[{"op":"ko","side":"opp","filter":{"restedOnly":true},"count":1,"optional":true}]}]}]}]},
   // OP06-034 ヒョウゾウ: 【起動メイン】【ターン1回】相手コスト4以下1枚をレスト＋このキャラ+1000→ライフ上1枚を手札に
   "OP06-034": {"act":{"label":"相手4以下レスト＋自身+1000→ライフ手札","cost":{},"fx":[{"op":"restChar","side":"opp","filter":{"maxCost":4},"count":1,"optional":true},{"op":"powerMod","side":"self","target":"self","amount":1000,"duration":"turn"},{"op":"lifeToHand","n":1}]}},
   // OP06-035 ホーディ・ジョーンズ(c7): 【速攻】 ／【登場時】相手のキャラかドン合計2枚をレスト→ライフ上1枚を手札に
-  "OP06-035": {"onPlay":[{"op":"restChar","side":"opp","count":2,"optional":true},{"op":"lifeToHand","n":1}]},
+  "OP06-035": {"onPlay":[{"op":"restChar","side":"opp","count":2,"orDon":true,"optional":true},{"op":"lifeToHand","n":1}]},
   // OP06-036 リューマ(c4): 【登場時】/【KO時】相手のレストのコスト4以下1枚KO
   "OP06-036": {"onPlay":[{"op":"ko","side":"opp","filter":{"restedOnly":true,"maxCost":4},"count":1,"optional":true}],"onKO":[{"op":"ko","side":"opp","filter":{"restedOnly":true,"maxCost":4},"count":1,"optional":true}]},
   // OP06-038 一大・三千・大千・世界: 【カウンター】リーダーかキャラ+2000→レストのカード8枚以上ならさらに+2000
@@ -2080,11 +2080,11 @@ window.CARD_FX = {
   // OP06-047 シャーロット・プリン(c4): 【登場時】相手は手札を山に戻しシャッフル→5枚引く
   "OP06-047": {"onPlay":[{"op":"oppHandToDeckDraw","n":5}]},
   // OP06-048 ゼフ: 【自分のターン中】相手が【ブロッカー】かイベント発動時、東の海リーダーならデッキ上4枚トラッシュ
-  "OP06-048": {"onOppEvent":{"when":"selfTurn","cond":{"leaderTraitIncludes":"東の海"},"fx":[{"op":"deckToTrash","n":4,"optional":true}]}},
+  "OP06-048": {"onOppEvent":{"when":"selfTurn","cond":{"leaderTraitIncludes":"東の海"},"fx":[{"op":"deckToTrash","n":4,"optional":true}]},"onOppBlocker":{"fx":[{"op":"cond","check":{"and":[{"selfTurn":true},{"leaderTraitIncludes":"東の海"}]},"then":[{"op":"deckToTrash","n":4,"optional":true}]}]}},
   // OP06-050 たしぎ(c1): 【登場時】デッキ上5枚から「たしぎ」以外の海軍1枚を手札に
   "OP06-050": {"onPlay":[{"op":"search","look":5,"count":1,"filter":{"traitIncludes":"海軍"},"exclude":"たしぎ","optional":true}]},
   // OP06-051 つる: 【登場時】手札2枚を捨てる：相手は自身のキャラ1枚を手札に戻す
-  "OP06-051": {"onPlay":[{"op":"discardCost","count":2,"optional":true,"then":[{"op":"bounce","side":"opp","count":1,"optional":true}]}]},
+  "OP06-051": {"onPlay":[{"op":"discardCost","count":2,"optional":true,"then":[{"op":"bounce","side":"opp","count":1,"oppChooses":true}]}]},
   // OP06-052 トキカケ: 【ドン×1】手札4枚以下でバトルでKOされない
   "OP06-052": {"static":[{"op":"condBuff","battleImmune":true,"cond":{"and":[{"donX1":true},{"selfHandAtMost":4}]}}]},
   // OP06-053 ハグワール・D・サウロ(c2): 【KO時】コスト2以下1枚を持ち主のデッキ下
@@ -2100,7 +2100,7 @@ window.CARD_FX = {
   // OP06-058 重力刀 猛虎: 【メイン】コスト6以下2枚を持ち主のデッキ下
   "OP06-058": {"main":{"fx":[{"op":"deckBottom","side":"any","filter":{"maxCost":6},"count":2,"optional":true}]}},
   // OP06-059 ホワイトスネーク: 【カウンター】リーダーかキャラ+1000し1ドロー
-  "OP06-059": {"counter":{"cost":0,"fx":[{"op":"powerMod","side":"self","leader":true,"amount":1000,"battle":true,"count":1,"optional":true},{"op":"draw","n":1}]}},
+  "OP06-059": {"counter":{"cost":0,"fx":[{"op":"powerMod","side":"self","leader":true,"amount":1000,"duration":"turn","count":1,"optional":true},{"op":"draw","n":1}]}},
   // OP06-060 ヴィンスモーク・イチジ(c4): 【起動メイン】ドン-1＋自身トラッシュ：ジェルマ66リーダーなら手札/トラッシュのコスト7「イチジ」を登場
   "OP06-060": {"act":{"label":"ドン-1+自身トラッシュ:コスト7イチジ登場","cost":{},"fx":[{"op":"donMinus","n":1},{"op":"trashSelfCost","then":[{"op":"cond","check":{"leaderTraitIncludes":"ジェルマ66"},"then":[{"op":"playFromHandOrTrash","filter":{"nameIncludes":"ヴィンスモーク・イチジ","cost":7}}]}]}]}},
   // OP06-061 ヴィンスモーク・イチジ(c7): 【登場時】ドンが相手以下なら相手キャラ1枚-2000＋このキャラ【速攻】
@@ -2275,12 +2275,12 @@ window.CARD_FX = {
   // OP05-040 鳥カゴ(STAGE): 【自分のターン終了時】ドン10ならレストのコスト5以下すべてKO→自身トラッシュ（リフレッシュロック静的は近似で省略）
   // OP05-040 鳥カゴ: 常在＝リーダーが「ドンキホーテ・ドフラミンゴ」の場合、コスト5以下のキャラすべて（両者）が
   //   お互いのリフレッシュフェイズでアクティブにならない（noRefreshAll。以前は常在が丸ごと未実装だった）
-  "OP05-040": {"static":[{"op":"noRefreshAll","cond":{"leaderName":"ドンキホーテ・ドフラミンゴ"},"filter":{"type":"CHAR","maxCost":5}}],"onTurnEnd":[{"op":"cond","check":{"donAtLeast":10},"then":[{"op":"ko","side":"opp","filter":{"restedOnly":true,"maxCost":5},"all":true},{"op":"negateSelf"}]}]},
+  "OP05-040": {"static":[{"op":"noRefreshAll","cond":{"leaderName":"ドンキホーテ・ドフラミンゴ"},"filter":{"type":"CHAR","maxCost":5}}],"onTurnEnd":[{"op":"cond","check":{"donAtLeast":10},"then":[{"op":"ko","side":"any","filter":{"restedOnly":true,"maxCost":5},"all":true},{"op":"trashSelfCost","forced":true}]}]},
   /* ===== OP05 バッチ2（青海軍・紫麦わら/キッド/ハート・黒ドレスローザ/天竜人・黄空島） ===== */
   // OP05-042 イッショウ: 【登場時】相手コスト7以下1枚は次の自分ターン開始までアタック不可
   "OP05-042": {"onPlay":[{"op":"setAttackBan","filter":{"maxCost":7},"count":1,"duration":"untilNextStart","optional":true}]},
   // OP05-043 うるティ: 【登場時】多色リーダーならデッキ上3枚から1枚を手札に
-  "OP05-043": {"onPlay":[{"op":"cond","check":{"leaderMulticolor":true},"then":[{"op":"search","look":3,"count":1,"optional":true}]}]},
+  "OP05-043": {"onPlay":[{"op":"cond","check":{"leaderMulticolor":true},"then":[{"op":"search","look":3,"count":1,"restPos":"choose","optional":true}]}]},
   // OP05-045 ステンレス: 【起動メイン】手札1捨て＋レスト：コスト2以下1枚を持ち主のデッキ下
   "OP05-045": {"act":{"label":"手札1捨て+レスト:コスト2以下デッキ下","cost":{"restSelf":true},"fx":[{"op":"discardCost","count":1,"then":[{"op":"deckBottom","side":"any","filter":{"maxCost":2},"count":1,"optional":true}]}]}},
   // OP05-046 ダルメシアン: 【KO時】1ドロー＋手札1枚をデッキ下
@@ -2356,7 +2356,7 @@ window.CARD_FX = {
   // OP05-086 ネフェルタリ・ビビ: トラッシュ10枚以上で【ブロッカー】を得る
   "OP05-086": {"static":[{"op":"staticKeyword","kw":"blocker","cond":{"trashAtLeast":10}}]},
   // OP05-087 ハクバ: 【ドン×1】【アタック時】このキャラ以外の自キャラ1枚をKO：相手キャラ1枚をコスト-5
-  "OP05-087": {"onAttack":[{"op":"cond","check":{"donX1":true},"then":[{"op":"trashOwnCharCost","excludeSelf":true,"then":[{"op":"addCostBuff","side":"opp","count":1,"amount":-5,"duration":"turn","optional":true}]}]}]},
+  "OP05-087": {"onAttack":[{"op":"cond","check":{"donX1":true},"then":[{"op":"koOwnCharCost","excludeSelf":true,"then":[{"op":"addCostBuff","side":"opp","count":1,"amount":-5,"duration":"turn","optional":true}]}]}]},
   // OP05-088 マンシェリー: 【起動メイン】ドン1レスト＋レスト＋トラッシュ2枚デッキ下：トラッシュのコスト3-5黒キャラ1枚を手札に
   "OP05-088": {"act":{"label":"ドン1+レスト+トラッシュ2:黒キャラ回収","cost":{"restSelf":true},"fx":[{"op":"restDonCost","n":1,"then":[{"op":"trashToBottomCost","n":2,"then":[{"op":"trashToHand","count":1,"optional":true,"filter":{"color":"黒","minCost":3,"maxCost":5}}]}]}]}},
   // OP05-089 ミョスガルド聖: 【起動メイン】ドン1レスト＋このキャラと自キャラ1枚レスト：トラッシュのコスト1黒キャラ1枚を手札に
@@ -2623,7 +2623,7 @@ window.CARD_FX = {
   // OP03-004 クリエル: 登場ターンはリーダーにアタック不可 ／【ドン×1】【速攻】
   "OP03-004": {"static":[{"op":"staticKeyword","kw":"rushChar","cond":{"donX1":true}}]},
   // OP03-005 サッチ: 【起動メイン】【ターン1回】このキャラ+2000→ターン終了時このキャラをトラッシュ
-  "OP03-005": {"act":{"label":"+2000(ターン終了時トラッシュ)","cost":{},"fx":[{"op":"powerMod","side":"self","target":"self","amount":2000,"duration":"turn"},{"op":"scheduleTurnEnd","fx":[{"op":"trashSelfCost"}]}]}},
+  "OP03-005": {"act":{"label":"+2000(ターン終了時トラッシュ)","cost":{},"fx":[{"op":"powerMod","side":"self","target":"self","amount":2000,"duration":"turn"},{"op":"scheduleTurnEnd","fx":[{"op":"trashSelfCost","forced":true}]}]}},
   // OP03-008 バギー(c1): 斬とのバトルでKOされない ／【登場時】デッキ上5枚から赤イベント1枚を手札に
   "OP03-008": {"static":[{"op":"battleImmuneVsAttr","attr":"斬","has":true}],"onPlay":[{"op":"search","look":5,"count":1,"filter":{"color":"赤","type":"EVENT"},"optional":true}]},
   // OP03-009 ハルタ: 【起動メイン】【ターン1回】リーダーかキャラ1枚にレストのドン1付与
@@ -2681,7 +2681,7 @@ window.CARD_FX = {
   // OP03-042 ウソップ海賊団: 【登場時】トラッシュの青の「ウソップ」1枚を手札に
   "OP03-042": {"onPlay":[{"op":"trashToHand","count":1,"optional":true,"filter":{"color":"青","nameIncludes":"ウソップ"}}]},
   // OP03-043 ガイモン: ライフダメージ時、デッキ上3枚トラッシュしこのキャラをトラッシュ(近似:アタック時)
-  "OP03-043": {"onHitLife":{"fx":[{"op":"deckToTrash","n":3,"optional":true,"then":[{"op":"trashSelfCost"}]}]}},
+  "OP03-043": {"onHitLife":{"fx":[{"op":"deckToTrash","n":3,"optional":true,"then":[{"op":"trashSelfCost","forced":true}]}]}},
   // OP03-044 カヤ: 【登場時】2ドロー＋手札2枚捨て
   "OP03-044": {"onPlay":[{"op":"draw","n":2},{"op":"discardOwn","n":2}]},
   // OP03-045 カルネ: 【ブロッカー】 ／【相手のターン中】デッキ20枚以下で+3000
@@ -4470,7 +4470,7 @@ window.CARD_FX = {
   "OP06-031": [{"op":"playCharFromHand","filter":{"maxCost":3,"or":[{"trait":"魚人族"},{"trait":"人魚族"}]},"count":1,"optional":true}],
   "OP06-057": [{"op":"playCharFromHand","filter":{"minCost":2,"maxCost":2},"count":1,"optional":true}],
   "OP06-058": [{"op":"deckBottom","side":"any","filter":{"maxCost":5},"optional":true}],
-  "OP06-059": [{"op":"scry","n":5}],
+  "OP06-059": [{"op":"scry","look":5}],
   "OP06-077": [{"op":"deckBottom","filter":{"maxCost":4},"optional":true}],
   "OP06-108": [{"op":"powerMod","side":"self","leader":true,"filter":{"trait":"ワノ国"},"amount":2000,"duration":"turn","count":1,"optional":true}],
   "OP06-115": [{"op":"cond","check":{"lifeAtMost":0},"then":[{"op":"lifeAddFromDeck","n":1},{"op":"discardOwn","n":1}]}],

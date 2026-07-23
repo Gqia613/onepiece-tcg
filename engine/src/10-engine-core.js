@@ -220,6 +220,7 @@
       if (c.oppLeaderAttr != null && !((O.leader.base.attribute || '').includes(c.oppLeaderAttr))) return false; // 相手のリーダーが属性Xを持つ（OP14-020ミホークの属性(斬)）
       if (c.selfChar != null) { const min = c.selfChar.min || 1; const pool = c.selfChar.incLeader ? [P.leader, ...P.chars] : P.chars; if (pool.filter(ch => matchFilter(ch, c.selfChar)).length < min) return false; } // incLeader=「キャラ」限定でない存在条件はリーダーも数える（ST36-005）
       if (c.oppChar != null) { const min = c.oppChar.min || 1; if (O.chars.filter(ch => matchFilter(ch, c.oppChar)).length < min) return false; } // 相手の場のキャラ条件
+      if (c.oppLeaderBasePowerAtLeast != null && ((O.leader && O.leader.base.power) || 0) < c.oppLeaderBasePowerAtLeast) return false; // 相手リーダーの元々のパワーN以上（OP06-012ベアキング「リーダーかキャラ」の前半）
       if (c.noSelfChar != null) { if (P.chars.some(ch => matchFilter(ch, c.noSelfChar))) return false; }
       if (c.selfCharCount != null) { const f = c.selfCharCount; let arr = f.filter ? P.chars.filter(ch => matchFilter(ch, f.filter)) : P.chars; const n = f.distinctBy === 'name' ? new Set(arr.map(ch => normName(ch.base.name))).size : arr.length; if (f.min != null && n < f.min) return false; if (f.max != null && n > f.max) return false; } // 自キャラの数(distinctBy:'name'で異名数)のしきい値
       if (c.allSelfChar != null) { if (!P.chars.length || !P.chars.every(ch => matchFilter(ch, c.allSelfChar))) return false; } // 自分のキャラが全て一致（「〜のみ」）

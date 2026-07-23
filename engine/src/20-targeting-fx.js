@@ -794,12 +794,21 @@
           break;
         }
         // 自分のキャラをトラッシュに置くコスト: filter一致の自キャラ1枚を犠牲にできる場合のみ then を実行（任意）
+        case 'koOwnCharCost': { // 「自分のキャラ1枚をKOできる：」（OP05-087ハクバ。トラッシュコストと違いKO扱い＝【KO時】誘発が起こる）
+          const kcands = P.chars.filter(c => c !== (op.excludeSelf ? self : null) && (!op.excludeSelf || c !== self) && matchFilter(c, op.filter || {}));
+          if (!kcands.length) { ctx._declined = true; break; }
+          const kt = P.isCPU ? kcands.slice().sort((a, b) => scoreChar(a) - scoreChar(b))[0] : await chooseCard(side, kcands, '⚠ KOする自分のキャラを選択（効果のコスト）', 'ownSmall', true, 'danger');
+          if (!kt) { ctx._declined = true; break; }
+          ctx._committed = true; await koCard(kt, 'effect'); render();
+          await runFx(op.then, ctx);
+          break;
+        }
         case 'trashOwnCharCost': {
-          const cands = P.chars.filter(c => matchFilter(c, op.filter || {}));
+          const cands = P.chars.filter(c => (!op.excludeSelf || c !== self) && matchFilter(c, op.filter || {}));
           if (!cands.length) break;
           let sac;
           if (P.isCPU) sac = cands.slice().sort((a, b) => scoreChar(a) - scoreChar(b))[0];
-          else sac = await chooseCard(side, cands, '⚠ トラッシュに置くキャラを選択（効果のコスト）', 'ownSmall', true, 'danger');
+          else sac = await chooseCard(side, cands, '⚠ トラッシュに置くキャラを選択（効果のコスト）', 'ownSmall', !op.forced, 'danger'); // forced=強制トラッシュ（OP06-006サガのターン終了時等＝辞退不可）
           if (!sac) break;
           removeCharTo(sac, P.trash); flog(side, `「${sac.base.name}」をトラッシュに置いた`); await checkAllyLeave(side, sac, 'ownEffect');
           await runFx(op.then, ctx);
@@ -927,11 +936,12 @@
           render(); break;
         }
         // self自身（ステージ/キャラ）をトラッシュに置くコスト。任意。払えた時 then を実行
+        case 'trashStageCost': { const st = P.stage; if (!st || (op.nameIncludes && !normName(st.base.name).includes(normName(op.nameIncludes)))) { ctx._declined = true; break; } P.don.rested += st.attachedDon || 0; P.stage = null; P.trash.push(reset(st)); flog(side, `「${st.base.name}」をトラッシュに置いた`); ctx._committed = true; await runFx(op.then, ctx); break; } // 場のステージをコストでトラッシュ（OP06-033デッケン=場の方舟ノア）
         case 'trashSelfCost': {
           const inChars = P.chars.includes(self), isStage = P.stage === self;
           if (!inChars && !isStage) break;
           if (op.cpuSkip && P.isCPU) break; // CPUは反射的に自壊しない任意コスト（confirmUse常true対策。ST22-002イゾウの相手アタック時等）
-          if (!(await confirmUse(side, '自身をトラッシュ', `「${self.base.name}」をトラッシュに置いて効果を使いますか？`, '置いて使う', undefined, { cls: 'danger' }))) break;
+          if (!op.forced && !(await confirmUse(side, '自身をトラッシュ', `「${self.base.name}」をトラッシュに置いて効果を使いますか？`, '置いて使う', undefined, { cls: 'danger' }))) break; // forced=強制の自トラッシュ（鳥カゴ「その後、このステージをトラッシュ」等＝辞退不可）
           P.don.rested += self.attachedDon || 0;
           if (inChars) removeChar(self); if (isStage) P.stage = null;
           P.trash.push(reset(self)); flog(side, `「${self.base.name}」をトラッシュに置いた`);
@@ -1451,7 +1461,7 @@
           removeCharTo(dt, ow.deck); flog(target.owner, `【${p.base.name}】「${dt.base.name}」をデッキ下に置いて「${target.base.name}」を場に残した`); await checkAllyLeave(target.owner, dt, 'ownEffect'); render(); return true;
         } else if (prot.pay === 'selfLifeTrash') {
           // 場を離れる代わりに自分のライフ上1枚をトラッシュ（OP05-100エネル）。ライフが無ければ守れない。除外条件(prot.unless)が満たされると無効。
-          if (prot.unless && G.players[target.owner].chars.some(ch => matchFilter(ch, prot.unless))) continue;
+          if (prot.unless && ['me', 'cpu'].some(sd => G.players[sd].chars.some(ch => matchFilter(ch, prot.unless)))) continue; // 無指定「キャラの〜がいる場合」＝両者の場（OP05-100エネル）
           if (!ow.life.length) continue;
           if (!(await confirmUse(target.owner, `【${p.base.name}】身代わり`, `自分のライフ上1枚をトラッシュして「${target.base.name}」を場に残しますか？`, '残す（ライフ→トラッシュ）', '残さない', { cls: 'danger', noSrc: true }))) continue;
           ow.trash.push(ow.life.shift()); flog(target.owner, `【${p.base.name}】ライフ1枚をトラッシュして「${target.base.name}」を場に残した`); await fireLifeLeft(target.owner); render(); return true;
