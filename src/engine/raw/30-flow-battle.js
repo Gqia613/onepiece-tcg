@@ -298,13 +298,24 @@
     }
     // リーダーの onLeaderHitLife: このリーダー自身のアタックで相手ライフにダメージを与えた時に誘発
     async function checkLeaderHitLife(attacker) {
-      if (!attacker || attacker.base.type !== 'LEADER') return;
-      const side = attacker.owner, L = G.players[side].leader;
-      if (L !== attacker || isNegated(L)) return;
-      const cfg = L.base.fx && L.base.fx.onLeaderHitLife;
-      if (!cfg) return;
-      if (cfg.cond && !checkCond(cfg.cond, side, L)) return;
-      await runFx(cfg.fx, { self: L, side });
+      if (!attacker) return;
+      const side = attacker.owner;
+      if (attacker.base.type === 'LEADER') {
+        const L = G.players[side].leader;
+        if (L !== attacker || isNegated(L)) return;
+        const cfg = L.base.fx && L.base.fx.onLeaderHitLife;
+        if (!cfg) return;
+        if (cfg.cond && !checkCond(cfg.cond, side, L)) return;
+        await runFx(cfg.fx, { self: L, side });
+        return;
+      }
+      // キャラの onHitLife: 「このキャラのアタックによって相手のライフにダメージを与えた時」（OP03-041/043/047/051等。
+      //   旧実装はonAttack＝宣言時発火でブロック/キャラ対象でもミルできる過剰だった）
+      if (!G.players[side].chars.includes(attacker) || isNegated(attacker)) return;
+      const ccfg = attacker.base.fx && attacker.base.fx.onHitLife;
+      if (!ccfg) return;
+      if (ccfg.cond && !checkCond(ccfg.cond, side, attacker)) return;
+      await runFx(ccfg.fx, { self: attacker, side });
     }
     // デッキが0枚になった時、敗北の代わりに勝利するリーダー（ナミ等）
     function hasDeckOutWin(side) { const L = G.players[side].leader; return !!(L && !isNegated(L) && L.base.fx && L.base.fx.static && L.base.fx.static.some(o => o.op === 'deckOutWin')); }
@@ -322,7 +333,7 @@
       { const oL = ow.leader; if (card.base.type === 'CHAR' && (card.base.power || 0) >= 6000 && oL.base.leader === 'ace' && !isNegated(oL) && oL.attachedDon >= 1 && ow._aceDrawTurn !== G.turnSeq) { ow._aceDrawTurn = G.turnSeq; if (draw(card.owner, 1)) { floatOn(oL.uid, 'DRAW', 'heal'); flog(card.owner, '【エース】元々パワー6000以上のKOで1ドロー'); } } }
       await checkAllyLeave(card.owner, card, source === 'battle' ? 'battle' : 'oppEffect', true); // 自分のキャラが場を離れた時のリーダー誘発（KOはバトル/相手効果。第4引数isKo=true）
       // 「相手のキャラがKOされた時」誘発（OP01-061カイドウL）。KOされた側の相手＝koSide のキャラ/リーダーが反応。
-      { for (const koSide of ['me', 'cpu']) { const K = G.players[koSide]; if (!K) continue; for (const c of [K.leader, ...K.chars]) { const cfg = c && c.base.fx && c.base.fx.onOppKO; if (!cfg || isNegated(c)) continue; if (koSide === card.owner && !cfg.anySide) continue; if (koSide !== card.owner && cfg.anySide === 'ownOnly') continue; if (cfg.when === 'selfTurn' && koSide !== G.active) continue; if (cfg.cond && !checkCond(cfg.cond, koSide, c)) continue; if (cfg.once === 'turn') { if (c._oppKOTurn === G.turnSeq) continue; c._oppKOTurn = G.turnSeq; } await runFx(cfg.fx, { self: c, side: koSide }); } } } // anySide=自陣営のKOにも反応（ST08-001ルフィL「キャラがKOされた時」）
+      { for (const koSide of ['me', 'cpu']) { const K = G.players[koSide]; if (!K) continue; for (const c of [K.leader, ...K.chars]) { const cfg = c && c.base.fx && c.base.fx.onOppKO; if (!cfg || isNegated(c)) continue; if (koSide === card.owner && !cfg.anySide) continue; if (koSide !== card.owner && cfg.anySide === 'ownOnly') continue; if (cfg.when === 'selfTurn' && koSide !== G.active) continue; if (cfg.cond && !checkCond(cfg.cond, koSide, c)) continue; if (cfg.once === 'turn') { if (c._oppKOTurn === G.turnSeq) continue; c._oppKOTurn = G.turnSeq; } const kctx = { self: c, side: koSide }; await runFx(cfg.fx, kctx); if (cfg.once === 'turn' && kctx._declined && !kctx._committed) c._oppKOTurn = null; } } } // anySide=自陣営のKOにも反応（ST08-001ルフィL）。辞退は【ターン1回】未消費（OP03-076ルッチL Q372=同ターンの次のKOで再発動可）
       render();
     }
     function bounceCard(card) { removeCharTo(card, G.players[card.owner].hand); }
@@ -457,8 +468,9 @@
       const D = G.players[opp(side)]; const arr = (attacker && !canTargetLeader(attacker)) ? [] : [D.leader];
       const canActive = attacker && hasKw(attacker, 'attackActive'); // 「アクティブのキャラにもアタックできる」(OP11海軍/SWORD)
       for (const c of D.chars) if (c.rested || canActive) arr.push(c);
-      // タウント: レストのタウント持ちキャラがいる場合、キャラ対象はそのキャラのみ（リーダーは通常通り。P-067キッド「このキャラがレストの場合、相手はキッド以外にアタックできない」）
-      const taunts = D.chars.filter(c => c.rested && !isNegated(c) && c.base.fx && c.base.fx.static && c.base.fx.static.some(o => o.op === 'taunt'));
+      // タウント: レストのタウント持ちキャラがいる場合、キャラ対象はそのキャラのみ（リーダーは通常通り。P-067キッド「このキャラがレストの場合、相手はキッド以外にアタックできない」。
+      //   cond付き=OP01-051キッド【ドン‼×1】は付与ドン1以上の時のみ）
+      const taunts = D.chars.filter(c => c.rested && !isNegated(c) && c.base.fx && c.base.fx.static && c.base.fx.static.some(o => o.op === 'taunt' && (!o.cond || checkCond(o.cond, c.owner, c))));
       if (taunts.length) return arr.filter(t => t === D.leader || taunts.includes(t));
       return arr;
     }
@@ -542,6 +554,7 @@
       // 防御側の効果でアタッカーが場を離れた/攻撃不能になった場合はアタックを中断
       if ((attacker.base.type === 'CHAR' && !G.players[aSide].chars.includes(attacker)) || cantAttackNeg(attacker)) {
         clearBattleBuffs(); G.players[dSide]._teachSacUid = null; G._counterRedirect = null; clearAtkAnnounce(); checkWinByLife(); // 対象変更予約も破棄（onOppAttackで立てた場合に次のアタックへ漏れる。ST36-005キッド）
+        if (G._pendingBattleEnd && G._pendingBattleEnd.length) { const pbe = G._pendingBattleEnd; G._pendingBattleEnd = []; for (const q of pbe) { if (!G.winner) await runFx(q.fx, { self: q.self, side: q.side }); } } // 中断でもバトルは終了＝「バトル終了時」予約は実行
         if (G.players[aSide].isCPU) { G.busy = true; } else { G.busy = false; G.myActable = true; } // ★状態確定後に描画（中断時も操作権を返す＝処理中固まり防止）
         render();
         return;
@@ -611,6 +624,8 @@
           await runFx(beCfg, { self: attacker, side: aSide, target: blkTarget });
         }
       }
+      // 「このバトル終了時」予約（scheduleBattleEnd＝OP02-064ボン・クレー「バトル終了時、このキャラをデッキの下に」。旧scheduleTurnEndはターン終了までズレていた）
+      if (G._pendingBattleEnd && G._pendingBattleEnd.length) { const pbe = G._pendingBattleEnd; G._pendingBattleEnd = []; for (const q of pbe) { if (!G.winner) await runFx(q.fx, { self: q.self, side: q.side }); } }
       // ★状態を確定してから描画（render後にbusyを戻すと「処理中」表示のまま固まる＝アタック後ターン終了不能バグ）
       if (G.players[aSide].isCPU) { G.busy = true; } else { G.busy = false; G.myActable = true; }
       render();
@@ -649,7 +664,7 @@
     /* ---------- ブロッカー選択 ---------- */
     async function chooseBlocker(dSide, attacker, target) {
       const D = G.players[dSide];
-      const blockers = D.chars.filter(c => !c.rested && hasKw(c, 'blocker') && c.noBlockSeq !== G.turnSeq && !isRestImmune(c)); // 【ブロッカー】発動不可/レストにできない中は除外
+      const blockers = D.chars.filter(c => !c.rested && hasKw(c, 'blocker') && c.noBlockSeq !== G.turnSeq && !c.noBlockBattle && !isRestImmune(c)); // 【ブロッカー】発動不可（ターン束縛/このバトル中）・レストにできない中は除外
       if (blockers.length === 0) return null;
       if (D.isCPU) return cpuChooseBlocker(dSide, attacker, target, blockers);
       // 人間: ブロッカーをボタンとして提示（カードクリックでも選択可）

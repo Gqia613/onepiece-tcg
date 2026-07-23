@@ -220,6 +220,7 @@
       if (c.oppLeaderAttr != null && !((O.leader.base.attribute || '').includes(c.oppLeaderAttr))) return false; // 相手のリーダーが属性Xを持つ（OP14-020ミホークの属性(斬)）
       if (c.selfChar != null) { const min = c.selfChar.min || 1; const pool = c.selfChar.incLeader ? [P.leader, ...P.chars] : P.chars; if (pool.filter(ch => matchFilter(ch, c.selfChar)).length < min) return false; } // incLeader=「キャラ」限定でない存在条件はリーダーも数える（ST36-005）
       if (c.oppChar != null) { const min = c.oppChar.min || 1; if (O.chars.filter(ch => matchFilter(ch, c.oppChar)).length < min) return false; } // 相手の場のキャラ条件
+      if (c.oppLeaderBasePowerAtLeast != null && ((O.leader && O.leader.base.power) || 0) < c.oppLeaderBasePowerAtLeast) return false; // 相手リーダーの元々のパワーN以上（OP06-012ベアキング「リーダーかキャラ」の前半）
       if (c.noSelfChar != null) { if (P.chars.some(ch => matchFilter(ch, c.noSelfChar))) return false; }
       if (c.selfCharCount != null) { const f = c.selfCharCount; let arr = f.filter ? P.chars.filter(ch => matchFilter(ch, f.filter)) : P.chars; const n = f.distinctBy === 'name' ? new Set(arr.map(ch => normName(ch.base.name))).size : arr.length; if (f.min != null && n < f.min) return false; if (f.max != null && n > f.max) return false; } // 自キャラの数(distinctBy:'name'で異名数)のしきい値
       if (c.allSelfChar != null) { if (!P.chars.length || !P.chars.every(ch => matchFilter(ch, c.allSelfChar))) return false; } // 自分のキャラが全て一致（「〜のみ」）
@@ -413,12 +414,14 @@
           const ss = src.base.fx && src.base.fx.static; if (!ss) continue;
           for (const o of ss) { if (o.op === 'oppStaticPowerMod' && checkCond(o.cond, src.owner, src)) p += o.power || 0; }
         }
-        // 自分の他のキャラ/リーダーの static が「自分のフィルタ一致キャラにパワー±（allyPower）」を課す場合（OP14-034ルフィ：緑コスト4以上の麦わら全+1000）。
+        // 自分のキャラ/リーダーの static が「自分のフィルタ一致キャラにパワー±（allyPower）」を課す場合（OP14-034ルフィ：緑コスト4以上の麦わら全+1000）。
         // lightMatch を使い再帰（minEffPower等→power()）を避ける。
+        // ★「〜キャラすべて」はfilter一致なら発生源自身も含む（ラクヨウ/ST30-003白ひげ等8枚が自己バフ欠落だった）。
+        //   「このキャラ以外」明記のカード（OP04-012コブラ）のみ exSelf:true で自身を除外する。
         for (const src of [G.players[card.owner].leader, ...G.players[card.owner].chars, G.players[card.owner].stage]) {
-          if (!src || src === card || isNegated(src)) continue;
+          if (!src || isNegated(src)) continue;
           const ss = src.base.fx && src.base.fx.static; if (!ss) continue;
-          for (const o of ss) { if (o.op === 'allyPower' && (!o.cond || checkCond(o.cond, src.owner, src)) && lightMatch(card, o.filter)) p += o.power || 0; }
+          for (const o of ss) { if (o.op === 'allyPower' && !(src === card && o.exSelf) && (!o.cond || checkCond(o.cond, src.owner, src)) && lightMatch(card, o.filter)) p += o.power || 0; }
         }
       }
       // 相手ターン中に「元々のパワーをNにする」静的付与（フザ→シュラ/自身 等）
@@ -483,7 +486,7 @@
       // 自分のリーダー/キャラの static が「filter一致の自分のキャラにキーワード付与（allyKeyword）」する場合（OP11-001コビーL：SWORDに速攻：キャラ）。lightMatchで再帰回避。
       for (const src of [G.players[card.owner].leader, ...G.players[card.owner].chars]) {
         if (!src || isNegated(src)) continue; const ss = src.base.fx && src.base.fx.static; if (!ss) continue;
-        for (const o of ss) { if (o.op === 'allyKeyword' && o.kw === kw && (!o.cond || checkCond(o.cond, src.owner, src)) && lightMatch(card, o.filter)) return true; }
+        for (const o of ss) { if (o.op === 'allyKeyword' && o.kw === kw && !(src === card && o.exSelf) && (!o.cond || checkCond(o.cond, src.owner, src)) && lightMatch(card, o.filter)) return true; } // exSelf=「このキャラ以外」明記（OP04-118ビビ）
       }
       // 自分のキャラの static が「リーダーへキーワード付与（grantKeywordToLeader）」する場合
       if (b.type === 'LEADER') {
@@ -516,7 +519,7 @@
     }
     function clearBattleBuffs() {
       for (const s of ['me', 'cpu']) {
-        const P = G.players[s]; const f = c => { c.buffs = c.buffs.filter(b => b.until !== 'battle'); c.battleTmp = 0; };
+        const P = G.players[s]; const f = c => { c.buffs = c.buffs.filter(b => b.until !== 'battle'); c.battleTmp = 0; c.noBlockBattle = 0; };
         f(P.leader); P.chars.forEach(f); if (P.stage) f(P.stage);
       }
     }
@@ -544,13 +547,15 @@
       if (f.traitIncludes && !(b.traits || []).some(t => t.includes(f.traitIncludes))) return false;
       if (f.traits && !(b.traits || []).some(t => f.traits.includes(t))) return false;
       if (f.color && !(b.color || []).includes(f.color)) return false;
-      if (f.name && normName(b.name) !== normName(f.name)) return false;
+      if (f.name && normName(b.name) !== normName(f.name) && !(b.aliasName && normName(b.aliasName) === normName(f.name))) return false; // 別名（「カード名をXとしても扱う」OP02-042ヤマト=光月おでん等）も一致扱い
       if (f.nameExcludes && normName(b.name).includes(normName(f.nameExcludes))) return false;
       if (f.minBaseCost != null && (b.cost || 0) < f.minBaseCost) return false;
       if (f.maxBaseCost != null && (b.cost || 0) > f.maxBaseCost) return false;
       if (f.basePower != null && (b.power || 0) !== f.basePower) return false;
       if (f.maxPower != null && (b.power || 0) > f.maxPower) return false; // 元々のパワーN以下（allyPower/allyCostの基本パワー判定。ST21-011フランキー等）
       if (f.minPower != null && (b.power || 0) < f.minPower) return false;
+      if (f.cost != null && (b.cost || 0) !== f.cost) return false; // 元々のコストN（OP04-119ロシナンテ=コスト5の味方保護）
+      if (f.activeOnly && card.rested) return false; // アクティブのキャラのみ（OP04-119）
       return true;
     }
     function matchFilter(card, f) {
@@ -562,7 +567,7 @@
       if (f.attr && !((b.attribute || '').includes(f.attr))) return false; // 属性(斬/打/射/特/知)を持つ
       if (f.traitIncludes && !(b.traits || []).some(t => t.includes(f.traitIncludes))) return false; // 特徴の部分一致（例「白ひげ海賊団」を含む特徴）
       if (f.traits && !(b.traits || []).some(t => f.traits.includes(t))) return false;
-      if (f.name && normName(b.name) !== normName(f.name)) return false;
+      if (f.name && normName(b.name) !== normName(f.name) && !(b.aliasName && normName(b.aliasName) === normName(f.name))) return false; // 別名（「カード名をXとしても扱う」OP02-042ヤマト=光月おでん等）も一致扱い
       if (f.cost != null && b.cost !== f.cost) return false;
       // フィールドのキャラの実効コスト：ティーチ・リーダーは【相手のターン中】自分のキャラすべてコスト+1
       let _ec = b.cost || 0;

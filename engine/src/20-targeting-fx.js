@@ -794,6 +794,12 @@
           break;
         }
         // 自分のキャラをトラッシュに置くコスト: filter一致の自キャラ1枚を犠牲にできる場合のみ then を実行（任意）
+        case 'koOwnLoopBuff': { // 「自分の〜キャラを任意の枚数KOしてもよい。KOした1枚につきリーダー+N」（OP06-095影の集合地。KO扱い＝【KO時】誘発）
+          let kn = 0;
+          if (!P.isCPU) { while (true) { const cands = P.chars.filter(c => matchFilter(c, op.filter || {})); if (!cands.length) break; const c = await chooseCard(side, cands, `KOする自分のキャラ（1枚につきリーダー+${op.amount || 1000}・任意）`, 'ownSmall', true, 'danger'); if (!c) break; await koCard(c, 'effect'); kn++; addBuff(P.leader, op.amount || 1000, durTag(op.duration, 'turnEnd')); floatOn(P.leader.uid, `+${op.amount || 1000}`, 'buff'); render(); } }
+          if (kn) flog(side, `キャラ${kn}枚をKOしてリーダー+${(op.amount || 1000) * kn}`);
+          break;
+        }
         case 'koOwnCharCost': { // 「自分のキャラ1枚をKOできる：」（OP05-087ハクバ。トラッシュコストと違いKO扱い＝【KO時】誘発が起こる）
           const kcands = P.chars.filter(c => c !== (op.excludeSelf ? self : null) && (!op.excludeSelf || c !== self) && matchFilter(c, op.filter || {}));
           if (!kcands.length) { ctx._declined = true; break; }
@@ -1278,6 +1284,7 @@
             const c = await chooseFromHand(side, cands, cnt > 1 ? `登場させるキャラを選択（${k + 1}/${cnt}・任意）` : '登場させるキャラを選択（任意）', null, op.optional || cnt > 1);
             if (!c) break; usedNames.push(normName(c.base.name)); P.hand.splice(P.hand.indexOf(c), 1); await summon(side, c, false); if (op.rested && P.chars.includes(c)) c.rested = true; // レストで登場（OP13-023/031）
           }
+          if (usedNames.length && op.then) await runFx(op.then, ctx); else if (!usedNames.length && op.then) ctx._declined = true; // then=「登場させた場合」の後続（OP08-098カルガラL＝辞退時はライフ回収しない）
           break;
         }
         case 'playSpecificFromHand': {
