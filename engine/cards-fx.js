@@ -3255,7 +3255,7 @@ window.CARD_FX = {
   // EB01-046 ブルック(c3 麦わら): 【登場時】/【アタック時】相手キャラ1枚コスト-1→相手のコスト0キャラ1枚KO
   "EB01-046": {"onPlay":[{"op":"addCostBuff","side":"opp","count":1,"amount":-1,"duration":"turn","optional":true},{"op":"ko","side":"opp","filter":{"cost":0},"count":1,"optional":true}],"onAttack":[{"op":"addCostBuff","side":"opp","count":1,"amount":-1,"duration":"turn","optional":true},{"op":"ko","side":"opp","filter":{"cost":0},"count":1,"optional":true}]},
   // EB01-047 ラブーン(c2): 【ターン1回】キャラがKOされた時、1ドロー＋手札1枚捨て（近似:自分のキャラKO時=onKOは持てないので相手キャラKO時に）
-  "EB01-047": {"onOppKO":{"once":"turn","fx":[{"op":"draw","n":1},{"op":"discardOwn","n":1}]}},
+  "EB01-047": {"onOppKO":{"once":"turn","anySide":true,"fx":[{"op":"draw","n":1},{"op":"discardOwn","n":1}]}},
   // EB01-048 ラブーン(c4): 【起動メイン】レスト：相手キャラ1枚コスト-4
   "EB01-048": {"act":{"label":"レスト:相手コスト-4","cost":{"restSelf":true},"fx":[{"op":"addCostBuff","side":"opp","count":1,"amount":-4,"duration":"turn","optional":true}]}},
   // EB01-049 Tボーン(c5): 【登場時】相手コスト2以下1枚KO
@@ -3316,7 +3316,7 @@ window.CARD_FX = {
   // EB02-020 ウィーアー！: 【メイン】デッキ上4枚からコスト4以上1枚を手札に
   "EB02-020": {"main":{"fx":[{"op":"search","look":4,"count":1,"filter":{"minCost":4},"optional":true}]}},
   // EB02-021 ゴムゴムの巨人の銃: 【メイン】麦わら1枚+6000→次の自分リフレッシュでアクティブにしない(近似:省略)
-  "EB02-021": {"main":{"fx":[{"op":"powerMod","side":"self","amount":6000,"duration":"turn","count":1,"optional":true,"filter":{"traitIncludes":"麦わらの一味"}}]}},
+  "EB02-021": {"main":{"fx":[{"op":"powerMod","side":"self","amount":6000,"duration":"turn","count":1,"optional":true,"filter":{"traitIncludes":"麦わらの一味"}},{"op":"freezeSamePrev"}]}},
   // EB02-022 ウソップ(c4): 【登場時】パワー5000以上が2枚以下なら手札からパワー6000以下の元々効果のないキャラを登場
   "EB02-022": {"onPlay":[{"op":"cond","check":{"selfCharCount":{"filter":{"minEffPower":5000},"max":2}},"then":[{"op":"playCharFromHand","filter":{"maxPower":6000,"noEffect":true},"count":1,"optional":true}]}]},
   // EB02-023 クロコダイル(c4): 【自分のターン中】【ターン1回】相手キャラが自分の効果で手札に戻った時、デッキ上3枚を並び替え(反応型フックは近似で省略・登場時に並び替え)
@@ -3348,7 +3348,7 @@ window.CARD_FX = {
   // EB02-038 マゼラン(c3): 【登場時】手札からコスト2以下のインペルダウンを登場
   "EB02-038": {"onPlay":[{"op":"playCharFromHand","filter":{"traitIncludes":"インペルダウン","maxCost":2},"count":1,"optional":true}]},
   // EB02-039 GERMA 66: 【メイン】手札からパワー4000以下ジェルマ66を捨て：ドンが相手以下ならトラッシュのパワー5000-7000の同名を登場(近似:同コスト帯ジェルマ)
-  "EB02-039": {"main":{"fx":[{"op":"discardCost","count":1,"filter":{"traitIncludes":"ジェルマ66","maxPower":4000},"then":[{"op":"cond","check":{"donLEOpp":true},"then":[{"op":"reviveFromTrash","filter":{"traitIncludes":"ジェルマ66","minPower":5000,"maxPower":7000}}]}]}]}},
+  "EB02-039": {"main":{"fx":[{"op":"discardCost","count":1,"filter":{"traitIncludes":"ジェルマ66","maxPower":4000},"then":[{"op":"cond","check":{"donLEOpp":true},"then":[{"op":"reviveFromTrash","sameNameAsCost":true,"filter":{"traitIncludes":"ジェルマ66","minPower":5000,"maxPower":7000}}]}]}]}},
   // EB02-040 BRAND NEW WORLD: 【メイン】デッキ上4枚からコスト4以上1枚を手札に
   "EB02-040": {"main":{"fx":[{"op":"search","look":4,"count":1,"filter":{"minCost":4},"optional":true}]}},
   // EB02-041 ゴーイング・メリー号(STAGE): 【登場時】麦わらリーダーなら1ドロー ／【起動メイン】レスト：ドンが相手以下なら麦わら1枚を次相手ターン終了までコスト+2

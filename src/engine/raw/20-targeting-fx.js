@@ -432,6 +432,7 @@
           render();
           break;
         }
+        case 'freezeSamePrev': { for (const t of (ctx._pmPicked || [])) { t.frozen = true; flog(side, `「${t.base.name}」は次のリフレッシュでアクティブにならない`); floatOn(t.uid, '凍結', 'dmg'); } render(); break; } // 「選んだキャラは次の自分のリフレッシュでアクティブにならない」（EB02-021）
         case 'powerMod': {
           const dur = op.battle ? 'battle' : durTag(op.duration, 'turnEnd');
           if (op.samePrev) { // 「そのカードを、…パワー+N」＝直前のpowerModが選んだ同一対象へ再付与（OP06-038。再選択させると別カードを選べてしまう）
@@ -807,6 +808,7 @@
             if (toDiscard.length < cnt) { ctx._declined = true; break; }
           }
           ctx._committed = true; // 手札を捨てた＝効果を使用（onceゲート消費）
+          ctx._costCard = toDiscard[0]; // 後続opが「捨てたカード」を参照（EB02-039=同名の蘇生）
           for (const c of toDiscard) { P.hand.splice(P.hand.indexOf(c), 1); P.trash.push(reset(c)); }
           flog(side, `手札${cnt}枚を捨てた: ${toDiscard.map(c => c.base.name).join('、')}`);
           await fireHandDiscarded(side, cnt, ctx.self);
@@ -1267,6 +1269,7 @@
           let cands = P.trash.filter(c => c.base.type === 'CHAR' && (c.base.cost || 0) <= (op.maxCost != null ? op.maxCost : 99)); // maxCost未指定はコスト上限なし（filterで絞る）
           if (op.filter) cands = cands.filter(c => matchFilter(c, op.filter));
           if (op.needsTrigger) cands = cands.filter(c => c.base.triggerText || (c.base.fx && c.base.fx.trigger)); // 【トリガー】を持つキャラ限定（正本=triggerText。fx未実装の印刷トリガーも対象）
+          if (op.sameNameAsCost && ctx._costCard) cands = cands.filter(c => normName(c.base.name) === normName(ctx._costCard.base.name)); // 「捨てたカードと同じカード名」（EB02-039 GERMA66）
           const c = await chooseCard(side, cands, 'トラッシュから登場させるキャラ', 'ownBig', true);
           if (c) { P.trash.splice(P.trash.indexOf(c), 1); await summon(side, c, false, 'trash'); if (op.rested && P.chars.includes(c)) c.rested = true; if (op.grantKw && P.chars.includes(c)) c.kwGrant.push({ kw: op.grantKw, dur: durTag(op.grantDuration, 'turn') }); if (op.returnEndTurn && P.chars.includes(c)) (G._pendingTurnEnd = G._pendingTurnEnd || []).push({ side, self: c, fx: [{ op: '_returnCardBottom', uid: c.uid }] }); } // rested=レストで登場（OP10-090フランキー）／returnEndTurn=このターン終了時に持ち主のデッキ下（OP11-092ヘルメッポ）
           break;

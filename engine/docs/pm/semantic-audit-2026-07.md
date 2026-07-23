@@ -250,3 +250,13 @@ fxと公式text/Q&Aの意味レベル照合。観点=engine/CLAUDE.md §11の型
 
 エンジン新設: charToLife then/pos / search restPos:'choose' / fireOppEvent kind(incTrigger) / cantPlayByEffect / battleKoImmuneVsAttr / setNoEffectDraw（drawにban検査）
 残り: EB01〜04(221)・ST01〜36(約300)・P(104)・PRB02(16)＝台帳未収載分は/tmp/alltodo.txt順で継続可。
+
+## EB01〜02全数照合（2026-07-23）
+
+105種を照合。実バグ3件:
+- EB01-047 ラブーン: 「キャラがKOされた時」（無指定=両陣営）が相手側限定 → anySide:true
+- EB02-021 巨人の銃: 「選んだキャラは次の自リフレッシュでアクティブにならない」の自己ロック欠落 → freezeSamePrev新設
+- EB02-039 GERMA66: 「捨てたカードと同じカード名」の同名条件欠落（任意のジェルマを蘇生できた）→ discardCostのctx._costCard記録+reviveFromTrash sameNameAsCost新設
+
+**残り（次セッション継続分・docs/pm/semantic-audit-remaining.txt の106行目以降）**: EB03(56)・EB04(58)・PRB02(16)・P(104)・ST01〜35(約290)＝計524種。
+継続手順: remaining.txtの順に25〜35枚ずつdump（text vs fx）→§11チェックリスト照合→修正→本台帳へ追記。
