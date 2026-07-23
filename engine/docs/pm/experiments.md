@@ -413,7 +413,15 @@
 - 実装: ②は `actWorthUsing` ⑤としてE57 evgateと同一の保守的コスト判定（revealCost/discardCost/restDonCost/donMinus・不明opは通す）を `e53On('actgate')` ゲート下に追加。全CPU経路（heuristic 起動ステップ・攻撃ブースト・puct legalActions）が同関数経由。回帰: unit-example 例3r。
 - 測定（①のみ。②は無条件の純損排除＝E57で測定済みの型）: heur2+OPCG_H2=stage単離・mihawk vs luffygb・N=120×2帯。**band1(600000) +3.3pt(改善4/退行0 p=0.125)／band2(900000) +0.8pt(改善2/退行1 p=1.000)＝2帯符号再現・合算 改善6/退行1(p≈0.0625)**。
 - ✅採用: `STAGE_PLAY={teach:1, '_OP14-020':1}`（mihawkのleaderKey=データ由来の`_OP14-020`）。効果量が小さいのは棺船×1のため（引く試合が3-4割）。退行機構なし（コスト1ドンのみ・E46 lucyの「設置1ドンが微損」型はドン還元効果で相殺）。
-- 残: puct系legalActionsのevgate未ゲート（探索が自然回避する想定・効果検証は別測定）／推定フラグ3件（OP14-020 cond side・OP15-032 don-in-カード・OP16-055 コピー元）は7/23のQ&A再スクレイプ（1341件）でも新裁定なし＝保留継続。
+- 残: ~~puct系legalActionsのevgate未ゲート~~→E59で測定・採用／推定フラグ3件（OP14-020 cond side・OP15-032 don-in-カード・OP16-055 コピー元）は7/23のQ&A再スクレイプ（1341件）でも新裁定なし＝保留継続。
+
+## E59 / 2026-07-23: puct候補手のイベント無駄撃ちゲート（evgateのpuct版） → ✅採用（2帯符号再現・合算p≈0.032★）
+
+- 背景: E57の残課題。「探索は無駄イベントを自然回避する（ロールアウトが資源損を罰する）」と想定していたが未検証だった。
+- 実装: `candidateActions`のevent分岐で`eventMainUsable`不成立を候補除外。E41様式の変種`AGENTS.puctev`（`G._evVar`・当初は既定puctバイト不変）で単離。`_evVar`は`_HASH_SKIP`へ保険登録。
+- 測定（puct直接ペア比較 OPCG_BASE=puct・luffygb vs mihawk・N=60×2帯）: **band1(600000) +11.7pt(改善9/退行2 p=0.065)／band2(900000) +5.0pt(改善8/退行5 p=0.581)＝2帯符号再現・合算 改善17/退行7(p≈0.032★)**。
+- ✅採用: 既定puctのゲートを`e57On('evgate')`連動に変更（E57_DEF.evgate=1で常時on・単離再測定はE57_DEF=0＋AGENTS.puctev）。効果量がheuristic版E57(+3.3/+2.5pt)より大きい＝**探索は無駄イベントを自然回避しない**が実測の答え。機序の推定: ロールアウト浅読み（det3）ではイベント1枚＋コストの損が終局価値に転写されにくく、priorの枠をも無駄手が圧迫していた（候補除外は探索幅の実質拡大を兼ねる）。
+- ★学び: 「探索が自然に良手を選ぶから前処理は不要」系の想定は測るまで信用しない。heuristicで実測済みの純損ゲートはpuct候補手にも同種以上の効果を持ち得る。
 
 ## 台帳サマリ（2026-07-03 時点・opcg-pm）
 

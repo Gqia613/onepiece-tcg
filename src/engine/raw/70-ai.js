@@ -65,6 +65,7 @@
       '_pubHand',      // サーチ公開マーク（AI決定化専用。_sim中は付かない＝リプレイと差が出る）
       '_planOverride', '_hintsOn', // AI専用
       '_puctCap', '_lastPuctOpt',  // 端末ローカルの探索上限（モバイル発熱対策）と実効値記録＝ゲーム状態ではない
+      '_evVar',        // ★E59: puctev変種フラグ（測定専用。takeTurn内でset/resetされるが0残置がhashに乗らないよう保険で除外）
     ]);
     // G の正準直列化（キーソート・除外規則込み）。hashGameState の入力そのもの＝desyncデバッグの一次資料。
     function canonGameState(src) {
@@ -420,6 +421,11 @@
         } else if (a.k === 'act') {                                        // ★起動メインは「今使う価値がある」時だけ候補化（heuristicのactWorthUsingをpuctにも適用）
           const c = findCard(a.uid);                                       //   条件未達/対象不在/-Nが無意味な起動(お玉の-2000等)を探索が無駄撃ちしない
           if (c && (typeof actWorthUsing !== 'function' || actWorthUsing(side, c))) acts.push(a);
+        } else if (a.k === 'event') {                                      // ★E59採用: 払えないコスト/不成立condのイベントを探索候補から除外（E57 evgateのpuct版）。
+          const c = findCard(a.uid);                                       //   「探索が自然回避する」仮説は否定＝puct直接ペア比較で band1 +11.7pt(9/2)・band2 +5.0pt(8/5)
+          if ((G._evVar || (typeof e57On === 'function' && e57On(side, 'evgate')))  //   合算17/7 p≈0.032★。既定はE57_DEF.evgateに連動・G._evVar(puctev)は単離測定用に残置。
+            && c && typeof eventMainUsable === 'function' && !eventMainUsable(side, c)) continue;
+          acts.push(a);
         } else acts.push(a);                                               // 非アタック（プレイ/leader/stop）は全部
       }
       let cand = acts;
@@ -746,6 +752,7 @@
     AGENTS.puct = { takeTurn: puctTurn };   // P.agent='puct'（policy-guided 決定化ロールアウト探索）
     // ★E41: puct+「リーダー攻撃の+1ドン上乗せ」変種（G._atkDonVarで候補生成が拡張。既定puctはバイト不変）
     AGENTS.puctdon = { takeTurn: async (side) => { G._atkDonVar = 1; try { return await puctTurn(side); } finally { G._atkDonVar = 0; } } };
+    AGENTS.puctev = { takeTurn: async (side) => { G._evVar = 1; try { return await puctTurn(side); } finally { G._evVar = 0; } } }; // ★E59採用済: 既定puctがE57_DEF.evgate連動で同挙動。E57_DEF=0に戻した単離再測定用に残置
     // ★E43: puct+「公開済み手札の強制配置」決定化（G._beliefOnでdeterminizeが拡張。既定puctはバイト不変）
     AGENTS.bpuct = { takeTurn: async (side) => { G._beliefOn = 1; try { return await puctTurn(side); } finally { G._beliefOn = 0; } } };
 
