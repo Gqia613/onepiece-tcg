@@ -480,7 +480,7 @@
         case 'leaderBuff': { const L = (op.side === 'opp' ? G.players[o] : P).leader; addBuff(L, op.amount, durTag(op.duration, 'turnEnd')); floatOn(L.uid, `${op.amount > 0 ? '+' : ''}${op.amount}`, op.amount > 0 ? 'buff' : 'dmg'); break; } // side:'opp'=相手リーダーへ無条件に±（「相手のリーダーと…」型=OP07-075ノロノロビーム）
         case 'leaderBuffPerChar': { const n = P.chars.filter(c => matchFilter(c, op.filter || {})).length; const amt = (op.amount || 1000) * n; if (amt) { addBuff(P.leader, amt, durTag(op.duration, 'turnEnd')); floatOn(P.leader.uid, `+${amt}`, 'buff'); flog(side, `リーダーをキャラ${n}枚分パワー+${amt}`); } break; } // 自分のキャラ1枚につきリーダー+amount（P-024海賊王に）
         case 'leaderDoubleAttack': P.leader.kwGrant.push({ kw: 'doubleAttack', dur: 'turn' }); if (op.amount) addBuff(P.leader, op.amount, 'turnEnd'); flog(side, 'リーダーに【ダブルアタック】'); break;
-        case 'counterBuff': if (ctx.target) { addBuff(ctx.target, op.amount, op.duration || 'battle'); floatOn(ctx.target.uid, `+${op.amount}`, 'buff'); } break;
+        case 'counterBuff': if (ctx.target) { if (op.filter && !matchFilter(ctx.target, op.filter)) break; addBuff(ctx.target, op.amount, op.duration || 'battle'); floatOn(ctx.target.uid, `+${op.amount}`, 'buff'); } break; // filter=対象の特徴限定（OP14-117=スリラーバーク限定。対象が不一致ならバフしない）
         case 'donMinus': { if (op.optional && !(await confirmUse(side, 'ドン‼-' + op.n, 'ドン‼' + op.n + '枚をドンデッキに戻して効果を発動しますか？', '発動する', '発動しない'))) { ctx._declined = true; return false; } const ok = await returnDonChoose(side, op.n, op.fromActive); if (!ok) { ctx._declined = true; return false; } ctx._committed = true; await fireDonReturned(side, op.n); if (op.then) await runFx(op.then, ctx); break; } // ★optional:true＝「ドン‼-N：効果」の任意発動を人間へ確認(発動しない選択肢=公式の任意コスト。辞退時は_declinedで【ターン1回】未消費)。★op.thenは支払い成功時に必ず実行（runFxに汎用then実行は無い。「ドン‼-N:効果」型19枚が支払いのみで不発だった）
         case 'donAttach': {
           let targets = [];
@@ -488,12 +488,20 @@
           else if (op.target === 'self') targets = [self];
           else if (op.target === 'leaderAndChar') { targets = [P.leader]; const c = await chooseCard(side, P.chars, 'レストのドンを付与するキャラ', 'ownBig', true); if (c) targets.push(c); }
           else if (op.target === 'chooseOwn') { let daPool = [P.leader, ...P.chars].filter(c => matchFilter(c, opFilter(op))); if (op.excludePrev && ctx._donAttachPicked) daPool = daPool.filter(c => !ctx._donAttachPicked.includes(c)); const c = await chooseCard(side, daPool, 'レストのドンを付与する対象', 'ownBig', true); if (c) { (ctx._donAttachPicked = ctx._donAttachPicked || []).push(c); } if (c) targets = [c]; }
+          else if (op.target === 'chooseAnyL') { // 無指定「リーダーかキャラ1枚に持ち主のドン付与」＝両者から選べる（Q&A1210/1213/1220。相手に付与＝相手のコストエリアを削る妨害プレイ）
+            const O9 = G.players[o];
+            const daPool = [P.leader, ...P.chars, O9.leader, ...O9.chars].filter(c => c && matchFilter(c, opFilter(op)));
+            const c = await chooseCard(side, daPool, 'ドンを付与する対象（自分か相手のリーダー/キャラ）', 'ownBig', true);
+            if (c) targets = [c];
+          }
           // 公式: 効果による「レストのドン!!を付与」はレスト状態のドンを付ける。fromAny=「コストエリアのドン」＝アクティブ/レスト両方から付与
+          // ★付与元は「持ち主の」ドン＝対象カードのオーナーのコストエリア（chooseAnyLで相手を選んだら相手のドンから。Q&A1211/1221: どのドンを使うかも効果の使用者が処理）
           for (const t of targets) {
-            const avail = op.fromActive ? P.don.active : op.fromAny ? (P.don.rested + P.don.active) : P.don.rested;
+            const OWNP = G.players[t.owner] || P;
+            const avail = op.fromActive ? OWNP.don.active : op.fromAny ? (OWNP.don.rested + OWNP.don.active) : OWNP.don.rested;
             const k = Math.min(op.n, avail); t.attachedDon += k;
-            for (let r = k; r > 0;) { if (op.fromActive) { if (P.don.active > 0) { P.don.active--; r--; } else break; } else if (P.don.rested > 0) { P.don.rested--; r--; } else if (op.fromAny && P.don.active > 0) { P.don.active--; r--; } else break; }
-            if (k) { floatOn(t.uid, `ドン+${k}`, 'buff'); donFly(side, t.uid); }
+            for (let r = k; r > 0;) { if (op.fromActive) { if (OWNP.don.active > 0) { OWNP.don.active--; r--; } else break; } else if (OWNP.don.rested > 0) { OWNP.don.rested--; r--; } else if (op.fromAny && OWNP.don.active > 0) { OWNP.don.active--; r--; } else break; }
+            if (k) { floatOn(t.uid, `ドン+${k}`, 'buff'); donFly(t.owner, t.uid); }
           }
           if (targets.some(t => t)) await fireDonAttached(side); // ドン付与誘発（OP02-002ガープL）
           break;

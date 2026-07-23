@@ -267,6 +267,20 @@ function setupG(leaderNo){G.active='me';G.turnSeq=5;G.winner=null;const mkP=(ln,
     setupG('OP13-002'); { const me=G.players.me; const rg=mkc('OP13-064'); me.chars=[rg];
       ok(isNegated(me.leader)===true, '例3o: OP13-064で自分のリーダーは効果無効');
       ok(isNegated(rg)===false, '例3o: ロジャー海賊団特徴持ち自身は無効にならない'); }
+    // 例3p: OP14/OP15全数照合の修正
+    // donAttach chooseAnyL: 相手のリーダー/キャラにも「持ち主の」レストのドンを付与できる(Q&A1210/1213/1220)
+    setupG('OP13-002'); { const cpu=G.players.cpu; cpu.don={active:0,rested:2}; G.players.me.don={active:0,rested:1};
+      const v=mkc('OP15-067'); v.owner='cpu'; cpu.chars=[v];
+      const _hp=humanPick; humanPick=function(cands){return Promise.resolve(cands.find(x=>x===v)||cands[0]);};
+      await runFx([{op:'donAttach',target:'chooseAnyL',n:1}],{self:mkc('OP15-010'),side:'me'});
+      humanPick=_hp;
+      ok(v.attachedDon===1 && cpu.don.rested===1 && G.players.me.don.rested===1, '例3p: 相手キャラに相手のレストのドンを付与(chooseAnyL)'); }
+    // OP15-034: 【自分のターン中】ゲート＝相手ターンの登場では発動しない
+    setupG('OP13-002'); { const me=G.players.me; const br=mkc('OP15-034'); const target=mkc('OP15-034'); target.base=C['OP15-034'];
+      const bro=Object.values(C).find(c=>c.type==='CHAR'&&c.name==='ブルック'); const b2=mkc(bro.no); me.chars=[b2];
+      G.active='cpu'; const p0=power(b2);
+      await runFx(C['OP15-034'].fx.onPlay,{self:br,side:'me'});
+      ok(power(b2)===p0, '例3p: OP15-034は相手ターン中の登場では+2000しない'); }
     // 例3g: トリガーの空撃ち抑止 — 「全てcond包み・全check不成立」のトリガー（P-088ロー「超新星＋ライフ合計5以下なら登場」）は
     //       発動しても何も起こらずカードがトラッシュへ行くだけの純損（実対戦報告）。人間には発動UIを出さず・CPUも発動せず手札へ。
     // フルフロー: cond不成立（防御側リーダー非超新星）→ P-088はトラッシュでなく手札へ

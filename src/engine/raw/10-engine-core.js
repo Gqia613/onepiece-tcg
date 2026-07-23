@@ -318,13 +318,15 @@
     function isNegated(card) {
       if (!card) return false;
       if (card.negSeq != null) return true;
-      // 場全体negate（OP13-064ロジャー: 自分のリーダー以外＆「ロジャー海賊団」を含む特徴を持たない自キャラを効果無効）
-      if (card.base.type === 'CHAR') {
+      // 場全体negate（OP13-064ロジャー:「自分の、リーダーと『ロジャー海賊団』を含む特徴を持たないキャラすべては、効果が無効」
+      //   ＝自分のリーダーは無条件で無効（旧実装は「リーダー以外」と誤読＝ロジャーLの-2000デメリットが消えない実バグ）、
+      //   キャラは指定特徴を持たない場合のみ無効）
+      if (card.base.type === 'CHAR' || card.base.type === 'LEADER') {
         const own = G.players[card.owner];
         if (own) for (const s of [own.leader, ...own.chars]) {
           if (!s || s === card || s.negSeq != null) continue;
           const st = s.base.fx && s.base.fx.static; if (!st) continue;
-          for (const o of st) if (o.op === 'negateNonTrait' && !(card.base.traits || []).some(t => t.includes(o.trait))) return true;
+          for (const o of st) if (o.op === 'negateNonTrait' && (card.base.type === 'LEADER' || !(card.base.traits || []).some(t => t.includes(o.trait)))) return true;
         }
       }
       return false;
