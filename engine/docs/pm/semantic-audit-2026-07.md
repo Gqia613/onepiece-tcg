@@ -260,3 +260,17 @@ fxと公式text/Q&Aの意味レベル照合。観点=engine/CLAUDE.md §11の型
 
 **残り（次セッション継続分・docs/pm/semantic-audit-remaining.txt の106行目以降）**: EB03(56)・EB04(58)・PRB02(16)・P(104)・ST01〜35(約290)＝計524種。
 継続手順: remaining.txtの順に25〜35枚ずつdump（text vs fx）→§11チェックリスト照合→修正→本台帳へ追記。
+
+## EB03〜04・PRB02全数照合（2026-07-23）
+
+130種を照合。実バグ10件:
+- **EB03-031 レイジュ: fxが別物（トラッシュのイベント発動→ただの1ドロー）** → playEventFromTrash新設+selfTurnゲート
+- EB03-034 リンリン: 「手札1枚をデッキの上に」が下になっていた → pos:'top'
+- EB03-001 ビビL: 「【アタック時】効果を持たないキャラ」filter欠落 → matchFilterにnoOnAttack新設
+- EB03-032: 【自分のターン中】ゲート欠落
+- EB04-012 菊之丞: リーダー限定欠落（キャラも選べた）
+- EB04-013 キャロット: リーダーがキャラ2枚の枠を消費（キャラ2+リーダーが正）
+- PRB02-005: selfTurnゲート欠落／PRB02-018: 「手札かトラッシュから」のトラッシュ側欠落
+- (EB01-047 anySide/EB02-021 freezeSamePrev/EB02-039 sameNameAsCostは前コミット)
+
+**残り: P(104)・ST01〜35(約290)＝計394種**（remaining.txtの「P-」以降）。

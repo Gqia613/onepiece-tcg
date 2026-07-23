@@ -1224,6 +1224,12 @@
           if (c) { P.hand.splice(P.hand.indexOf(c), 1); cardReveal(side, c.base.no, c.base.name, 'イベント発動', 'event'); await runFx(c.base.fx.main.fx, { self: c, side }); P.trash.push(reset(c)); flog(side, `「${c.base.name}」を発動`); await luffyReveal(side); }
           break;
         }
+        case 'playEventFromTrash': { // トラッシュにあるイベントの【メイン】効果を発動する（カードはトラッシュに残る＝EB03-031レイジュ）
+          const petCands = P.trash.filter(c => c.base.type === 'EVENT' && matchFilter(c, opFilter(op)) && c.base.fx && c.base.fx.main);
+          const petC = P.isCPU ? petCands[0] : await chooseCard(side, petCands, '発動するトラッシュのイベントを選択', 'ownBig', op.optional !== false);
+          if (petC) { cardReveal(side, petC.base.no, petC.base.name, 'イベント発動', 'event'); flog(side, `トラッシュの「${petC.base.name}」の【メイン】効果を発動`); await runFx(petC.base.fx.main.fx, { self: petC, side }); await luffyReveal(side); await fireOwnEventUsed(side); }
+          break;
+        }
         case 'playCharFromHand': {
           const cnt = op.count || 1; const usedNames = [];
           const costCard = ctx._costCard; // diffColorFrom:'costCard'=コストで戻したキャラと異なる色のみ（EB01-020）

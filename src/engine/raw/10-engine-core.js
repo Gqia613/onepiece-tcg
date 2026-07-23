@@ -594,6 +594,7 @@
       if (f.nameExcludes && normName(b.name).includes(normName(f.nameExcludes))) return false; // 指定名を含むものを除外
       if (f.typeNot && b.type === f.typeNot) return false;
       if (f.restedOnly && !card.rested) return false; // レスト状態のキャラのみ
+      if (f.noOnAttack && card.base.fx && card.base.fx.onAttack) return false; // 【アタック時】効果を持たないキャラ限定（EB03-001ビビL）
       if (f.hasKw && !hasKw(card, f.hasKw)) return false; // 指定キーワード能力を持つ（例 hasKw:'blocker'＝ST01-016【ブロッカー】持ちKO）
       if (f.noOnPlay && b.fx && b.fx.onPlay) return false; // 【登場時】効果を持たないキャラ（PRB01-001サンジ）
       if (f.noCounter && (b.counter || 0) > 0) return false; // カウンターを持たないカード（EB01-001おでんL）
