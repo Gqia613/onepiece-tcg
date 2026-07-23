@@ -257,6 +257,16 @@ function setupG(leaderNo){G.active='me';G.turnSeq=5;G.winner=null;const mkP=(ln,
       await runFx([C['OP16-035'].fx.onPlay[0]],{self:mkc('OP16-035'),side:'me'});
       ok(cpu.leader.rested===true, '例3n: OP16-035は相手リーダーをレストにできる'); }
 
+    // 例3o: OP13全数照合の修正
+    // OP13-069 トム: fxが別カード(ドフラミンゴ二択)だった→正しい「ドン-1:トラッシュからコスト3以下ステージ回収」
+    setupG('OP13-002'); { const me=G.players.me; me.don={active:2,rested:0};
+      const stg=Object.values(C).find(c=>c.type==='STAGE'&&c.cost<=3); me.trash=[mkc(stg.no)];
+      await runFx(C['OP13-069'].fx.onPlay,{self:mkc('OP13-069'),side:'me'});
+      ok(me.hand.length===1 && donTotal('me')===1, '例3o: OP13-069トムはステージ回収(fx取り違え修正)'); }
+    // OP13-064 ロジャー: 自分のリーダーも効果無効（「リーダーと〜キャラすべて」＝旧実装はリーダー以外と誤読）
+    setupG('OP13-002'); { const me=G.players.me; const rg=mkc('OP13-064'); me.chars=[rg];
+      ok(isNegated(me.leader)===true, '例3o: OP13-064で自分のリーダーは効果無効');
+      ok(isNegated(rg)===false, '例3o: ロジャー海賊団特徴持ち自身は無効にならない'); }
     // 例3g: トリガーの空撃ち抑止 — 「全てcond包み・全check不成立」のトリガー（P-088ロー「超新星＋ライフ合計5以下なら登場」）は
     //       発動しても何も起こらずカードがトラッシュへ行くだけの純損（実対戦報告）。人間には発動UIを出さず・CPUも発動せず手札へ。
     // フルフロー: cond不成立（防御側リーダー非超新星）→ P-088はトラッシュでなく手札へ

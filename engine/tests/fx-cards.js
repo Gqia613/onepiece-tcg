@@ -1533,12 +1533,12 @@ humanPick=function(c){return Promise.resolve((c||[])[0]||null);};
       const v=mkSyn('__o5r__',C['__o5r__']); v.owner='cpu'; v.rested=false; G.players.cpu.chars=[v]; me.chars=[ally];
       const c=I('OP13-066','me'); await runFx(c.base.fx.onPlay,{self:c,side:'me'});
       ok(v.rested && G._pendingTurnEnd.length>0, 'OP13-066: 相手レスト＋ターン終了時ドン追加を予約'); delete C['__o5r__']; }
-    // OP13-069 ドフラミンゴ: ドン-3→ドンキでコスト8以下KO(chooseOption idx0)
-    { const me=LP('OP13-002'); me.isCPU=true; me.don={active:3,rested:0}; me.leader.base={...me.leader.base,traits:['ドンキホーテ海賊団']};
-      C['__c8__']={no:'__c8__',name:'C8',type:'CHAR',color:[],cost:8,power:9000,counter:1000,traits:[]};
-      const v=mkSyn('__c8__',C['__c8__']); v.owner='cpu'; G.players.cpu.chars=[v];
+    // OP13-069 トム: ドン-1→トラッシュからコスト3以下ステージ回収（旧: OP14-069ドフラミンゴの二択が誤って載っていたfx取り違えの回帰）
+    { const me=LP('OP13-002'); me.isCPU=true; me.don={active:2,rested:0};
+      C['__st3__']={no:'__st3__',name:'S3',type:'STAGE',color:[],cost:2,power:0,counter:0,traits:[]};
+      const v=mkSyn('__st3__',C['__st3__']); v.owner='me'; me.trash=[v]; me.hand=[];
       const c=I('OP13-069','me'); await runFx(c.base.fx.onPlay,{self:c,side:'me'});
-      ok(donTotal('me')===0 && !G.players.cpu.chars.includes(v), 'OP13-069: ドン‼-3→ドンキでコスト8以下KO'); delete C['__c8__']; }
+      ok(donTotal('me')===1 && me.hand.length===1, 'OP13-069トム: ドン‼-1→コスト3以下ステージを手札に（fx取り違え修正）'); delete C['__st3__']; }
     // OP13-071 ネコマムシ: 場のドン8以上で元々パワー3000以下KO
     { const me=LP('OP13-002'); me.don={active:8,rested:0}; me.donMax=10;
       C['__p3n__']={no:'__p3n__',name:'P3',type:'CHAR',color:[],cost:2,power:3000,counter:1000,traits:[]};
