@@ -145,11 +145,12 @@
       const job = async () => { await fxNote(side, 'リーダー効果', L.base.name); await runFx(cfg.fx, { self: L, side }); };
       if (G._fxDepth > 0) { (G._pendingReacts = G._pendingReacts || []).push(job); } else await job(); // 誘発キュー規則（§3.5）に従う
     }
-    async function fireOppEvent(eventSide) {
+    async function fireOppEvent(eventSide, kind) {
       const oppSide = opp(eventSide), P = G.players[oppSide];
       for (const c of P.chars.slice()) {
         const cfg = c.base.fx && c.base.fx.onOppEvent;
         if (!cfg || isNegated(c) || !P.chars.includes(c)) continue;
+        if (kind === 'trigger' && !cfg.incTrigger) continue; // 「イベントか【トリガー】を発動した時」型のみトリガーにも反応（OP11-102ケイミー）
         if (cfg.when === 'selfTurn' && oppSide !== G.active) continue;
         if (cfg.when === 'oppTurn' && oppSide === G.active) continue;
         if (cfg.cond && !checkCond(cfg.cond, oppSide, c)) continue;
@@ -633,7 +634,7 @@
           await triggerReveal(dSide, card);              // ★ライフ公開の派手な演出（カード大写し）
           const use = await askTrigger(dSide, card);      // 人間: 演出のカード大写しを背後に残したまま選択
           clearTriggerReveal();                           // 選択直後に閉じる（trigger効果の対象選択で盤面を隠さない）
-          if (use) { sfx('trigger'); await fxNote(dSide, 'トリガー発動', card.base.name, card.base.no); flog(dSide, `【トリガー】「${card.base.name}」発動`); await runFx(card.base.fx.trigger, { self: card, side: dSide }); if (!D.chars.includes(card) && !D.hand.includes(card) && !D.life.includes(card)) D.trash.push(reset(card)); if (card.base.type === 'EVENT') await fireOwnEventUsed(dSide); await fireOnTrigger(dSide); } // Q&A795: イベントの【トリガー】発動もOP10-003シュガーLの対象
+          if (use) { sfx('trigger'); await fxNote(dSide, 'トリガー発動', card.base.name, card.base.no); flog(dSide, `【トリガー】「${card.base.name}」発動`); await runFx(card.base.fx.trigger, { self: card, side: dSide }); if (!D.chars.includes(card) && !D.hand.includes(card) && !D.life.includes(card)) D.trash.push(reset(card)); if (card.base.type === 'EVENT') await fireOwnEventUsed(dSide); await fireOppEvent(dSide, 'trigger'); await fireOnTrigger(dSide); } // Q&A795: イベントの【トリガー】発動もOP10-003シュガーLの対象
           else { D.hand.push(card); flog(dSide, 'ライフ1枚を手札に'); }
         } else { D.hand.push(card); flog(dSide, 'ライフ1枚を手札に'); }
         await fireLifeLeft(dSide); // ライフが手札等へ離れた時（OP12-099カルガラ）

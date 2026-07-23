@@ -155,7 +155,8 @@
       const side = ctx.side, o = opp(side), P = G.players[side], self = ctx.self;
       if (op.cond && !checkCond(op.cond, side, self)) return; // 全opで op.cond を尊重（【ドン!!×N】等の条件付き効果）
       switch (op.op) {
-        case 'draw': draw(side, op.n); flog(side, `${op.n}ドロー`); break;
+        case 'draw': { if (P._noEffectDrawTurn === G.turnSeq) { flog(side, 'このターンは自分の効果でカードを引けない'); break; } draw(side, op.n); flog(side, `${op.n}ドロー`); break; }
+        case 'setNoEffectDraw': { P._noEffectDrawTurn = G.turnSeq; flog(side, 'このターン中、自分の効果でカードを引けない'); break; } // OP12-099カルガラ
         case 'oppDraw': { draw(o, op.n || 1); flog(side, `相手が${op.n || 1}ドロー`); break; } // 相手にN枚引かせる（OP07-090モルガンズ）
         case 'drawDiscardByCount': { const n = countFor(op, side, self); if (n > 0) { draw(side, n); flog(side, `${n}ドロー`); for (let i = 0; i < n && P.hand.length; i++) { const c = P.isCPU ? P.hand.slice().sort((a, b) => (a.base.counter || 0) - (b.base.counter || 0))[0] : await chooseFromHand(side, P.hand.slice(), `捨てる手札（${i + 1}/${n}）`); if (!c) break; P.hand.splice(P.hand.indexOf(c), 1); P.trash.push(reset(c)); } } render(); break; } // 数えた枚数だけ引いて同数捨てる（EB04-011ウロコ）
         case 'drawToSize': { const tgt = op.n || 3; let k = 0; while (P.hand.length < tgt) { if (!draw(side, 1)) break; k++; } if (k) flog(side, `手札が${tgt}枚になるよう${k}ドロー`); break; } // 手札N枚になるよう引く（OP02-051イワンコフ）
@@ -266,8 +267,12 @@
             picked.push(pick); P.hand.push(pick); flog(side, `「${pick.base.name}」を手札に`);
             cardReveal(side, pick.base.no, pick.base.name, '手札に加えた', 'hand'); // 公開して手札に加える＝何を取ったか見せる
           }
-          // 取らなかったカードはデッキ下（rest:'trash'ならトラッシュ）へ
-          for (const c of look) if (!picked.includes(c)) { if (op.rest === 'trash') P.trash.push(reset(c)); else P.deck.push(c); }
+          // 取らなかったカードはデッキ下（rest:'trash'ならトラッシュ / restPos:'choose'なら上か下を選択=OP11-040）
+          let srTop = false;
+          const srLeft = look.filter(c => !picked.includes(c));
+          if (op.restPos === 'choose' && srLeft.length && op.rest !== 'trash') srTop = P.isCPU ? false : (await showPrompt({ side, title: '残りのカード', text: `残り${srLeft.length}枚をデッキの上と下、どちらに置きますか？`, opts: [{ t: 'デッキの下', v: 'b', primary: true }, { t: 'デッキの上', v: 't' }] })) === 't';
+          if (srTop) { for (let i = srLeft.length - 1; i >= 0; i--) P.deck.unshift(srLeft[i]); }
+          else for (const c of srLeft) { if (op.rest === 'trash') P.trash.push(reset(c)); else P.deck.push(c); }
           if (op.rest === 'trash') flog(side, '残りをトラッシュに置いた');
           break;
         }
@@ -567,7 +572,7 @@
         case 'selfHandToDeckDraw': { const hn = P.hand.length; P.deck.push(...P.hand.splice(0)); shuffle(P.deck); draw(side, hn); flog(side, `手札${hn}枚を山に戻しシャッフル→${hn}ドロー`); render(); break; } // OP04-048ササキ
         case 'bounceAttackerToBottom': { const a = ctx.attacker; if (a && a.base.type === 'CHAR' && (a.base.cost || 0) <= (op.maxCost != null ? op.maxCost : 5)) { const ow = G.players[a.owner]; ow.don.rested += a.attachedDon || 0; removeChar(a); ow.deck.push(reset(a)); flog(side, `バトルした「${a.base.name}」を持ち主のデッキ下へ`); render(); } break; } // OP04-047氷鬼（ブロック時に近似。付与ドンはレストで戻る）
         // 場のキャラ1枚を持ち主のライフ上に裏向きで加える（OP12-117破壊弦。side:'any'=自分/相手両方が対象）
-        case 'charToLife': { const cands = op.side === 'self' ? P.chars.filter(c => matchFilter(c, opFilter(op))) : op.side === 'any' ? [...oppChars(side, opFilter(op)), ...P.chars.filter(c => matchFilter(c, opFilter(op)))] : oppChars(side, opFilter(op)); const t = await chooseCard(side, cands, 'ライフに加えるキャラを選択', op.side === 'self' ? 'ownBig' : 'oppBig', op.optional); if (t) { const ow2 = G.players[t.owner]; removeChar(t); const card2 = reset(t); if (op.faceUp) card2._faceUp = true; let bottom = op.pos === 'bottom'; if (op.pos === 'choose' && !P.isCPU) bottom = (await showPrompt({ side, title: 'ライフに加える', text: 'ライフの上か下、どちらに加えますか？', opts: [{ t: 'ライフ上', v: 'top', primary: true }, { t: 'ライフ下', v: 'bottom' }] })) === 'bottom'; if (bottom) ow2.life.push(card2); else ow2.life.unshift(card2); flog(side, `「${t.base.name}」を${t.owner === side ? '自分' : '相手'}のライフ${bottom ? '下' : '上'}に${op.faceUp ? '表向きで' : ''}加えた`); render(); } break; } // faceUp=表向き / pos:'bottom'（OP11-116人魚柔術）
+        case 'charToLife': { const cands = op.side === 'self' ? P.chars.filter(c => matchFilter(c, opFilter(op))) : op.side === 'any' ? [...oppChars(side, opFilter(op)), ...P.chars.filter(c => matchFilter(c, opFilter(op)))] : oppChars(side, opFilter(op)); const t = await chooseCard(side, cands, 'ライフに加えるキャラを選択', op.side === 'self' ? 'ownBig' : 'oppBig', op.optional); if (t) { const ow2 = G.players[t.owner]; removeChar(t); const card2 = reset(t); if (op.faceUp) card2._faceUp = true; let bottom = op.pos === 'bottom'; if (op.pos === 'choose' && !P.isCPU) bottom = (await showPrompt({ side, title: 'ライフに加える', text: 'ライフの上か下、どちらに加えますか？', opts: [{ t: 'ライフ上', v: 'top', primary: true }, { t: 'ライフ下', v: 'bottom' }] })) === 'bottom'; if (bottom) ow2.life.push(card2); else ow2.life.unshift(card2); flog(side, `「${t.base.name}」を${t.owner === side ? '自分' : '相手'}のライフ${bottom ? '下' : '上'}に${op.faceUp ? '表向きで' : ''}加えた`); render(); if (op.then) await runFx(op.then, ctx); } else { ctx._declined = true; } break; } // faceUp=表向き / pos:'bottom'（OP11-116人魚柔術）
         case 'handToLife': { // 自分の手札1枚をライフの上に（人間=選択・optional=見送り可。旧実装は最小カウンター自動＝選択権が無かった）
           if (!P.hand.length) break;
           let c;
@@ -1203,7 +1208,7 @@
         case 'deckToTrash': { if (op.optional && !(await confirmUse(side, 'デッキをトラッシュ', `デッキの上から${op.n || 1}枚をトラッシュに置きますか？`, '置く', '置かない'))) { ctx._declined = true; break; } const k = Math.min(op.n || 1, P.deck.length); for (let i = 0; i < k; i++) P.trash.push(reset(P.deck.shift())); if (k) flog(side, `デッキ上${k}枚をトラッシュ`); if (k >= (op.n || 1) && op.then) await runFx(op.then, ctx); render(); break; } // ★then=コスト完済時のみ実行（OP12-090。デッキ不足で全額払えなければ効果なし）
         // 自分の手札またはトラッシュから filter一致のキャラ1枚を登場
         case 'playFromHandOrTrash': {
-          const cands = [...P.hand, ...P.trash].filter(c => c.base.type === 'CHAR' && matchFilter(c, op.filter));
+          const cands = [...P.hand, ...P.trash].filter(c => c.base.type === 'CHAR' && matchFilter(c, op.filter) && !(c.base.fx && c.base.fx.static && c.base.fx.static.some(o2 => o2.op === 'cantPlayByEffect')));
           if (!cands.length) break;
           const t = P.isCPU ? cands[0] : await chooseCard(side, cands, '登場させるキャラ（手札/トラッシュ）', 'ownBig', op.optional !== false);
           if (!t) break;
@@ -1221,7 +1226,7 @@
           const cnt = op.count || 1; const usedNames = [];
           const costCard = ctx._costCard; // diffColorFrom:'costCard'=コストで戻したキャラと異なる色のみ（EB01-020）
           for (let k = 0; k < cnt; k++) {
-            let cands = P.hand.filter(c => c.base.type === 'CHAR' && matchFilter(c, opFilter(op))); // ★opFilter=filterとトップレベル条件の併記を両方適用（旧: filter存在時にmaxCost等が無視される系統バグ）
+            let cands = P.hand.filter(c => c.base.type === 'CHAR' && matchFilter(c, opFilter(op)) && !(c.base.fx && c.base.fx.static && c.base.fx.static.some(o2 => o2.op === 'cantPlayByEffect'))); // ★opFilter=filterとトップレベル条件の併記を両方適用（旧: filter存在時にmaxCost等が無視される系統バグ）
             if (op.diffColorFrom === 'costCard' && costCard) cands = cands.filter(c => !(c.base.color || []).some(col => (costCard.base.color || []).includes(col))); // 戻したキャラと異なる色
             if (op.needsTrigger) cands = cands.filter(c => c.base.triggerText || (c.base.fx && c.base.fx.trigger));
             if (op.distinctName) cands = cands.filter(c => !usedNames.includes(normName(c.base.name))); // 「カード名の異なる」
@@ -1322,6 +1327,11 @@
     /* ノラ/レオ系: 自分の元々パワー7000以下のキャラが相手効果で場を離れる時、代わりのコストで防ぐ（自動） */
     async function protectFromEffect(target, cause, source) {
       if (!target) return false;
+      // 「属性(X)を持つカードとのバトルでKOされない」常在（OP12-036ゾロ=斬とのバトル耐性）
+      if (cause === 'battle' && source && source.base && !isNegated(target)) {
+        const stA = target.base.fx && target.base.fx.static;
+        if (stA) for (const o of stA) if (o.op === 'battleKoImmuneVsAttr' && source.base.attr === o.attr && (!o.cond || checkCond(o.cond, target.owner, target))) { flog(target.owner, `「${target.base.name}」は属性(${o.attr})とのバトルでKOされない`); return true; }
+      }
       // 「相手の効果ではKOされない」自身の常在: 効果KOのみ無効化（選択・パワー減少等は通すのでバックストップ）
       if (cause === 'ko' && isKoImmune(target)) { flog(target.owner, `「${target.base.name}」は相手の効果ではKOされない`); return true; }
       // 一時的な「自分の元々パワーN以下のキャラは相手の効果でKOされない」（OP10-070トレーボル＝次相手ターン終了まで）

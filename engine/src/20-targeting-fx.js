@@ -155,7 +155,8 @@
       const side = ctx.side, o = opp(side), P = G.players[side], self = ctx.self;
       if (op.cond && !checkCond(op.cond, side, self)) return; // 全opで op.cond を尊重（【ドン!!×N】等の条件付き効果）
       switch (op.op) {
-        case 'draw': draw(side, op.n); flog(side, `${op.n}ドロー`); break;
+        case 'draw': { if (P._noEffectDrawTurn === G.turnSeq) { flog(side, 'このターンは自分の効果でカードを引けない'); break; } draw(side, op.n); flog(side, `${op.n}ドロー`); break; }
+        case 'setNoEffectDraw': { P._noEffectDrawTurn = G.turnSeq; flog(side, 'このターン中、自分の効果でカードを引けない'); break; } // OP12-099カルガラ
         case 'oppDraw': { draw(o, op.n || 1); flog(side, `相手が${op.n || 1}ドロー`); break; } // 相手にN枚引かせる（OP07-090モルガンズ）
         case 'drawDiscardByCount': { const n = countFor(op, side, self); if (n > 0) { draw(side, n); flog(side, `${n}ドロー`); for (let i = 0; i < n && P.hand.length; i++) { const c = P.isCPU ? P.hand.slice().sort((a, b) => (a.base.counter || 0) - (b.base.counter || 0))[0] : await chooseFromHand(side, P.hand.slice(), `捨てる手札（${i + 1}/${n}）`); if (!c) break; P.hand.splice(P.hand.indexOf(c), 1); P.trash.push(reset(c)); } } render(); break; } // 数えた枚数だけ引いて同数捨てる（EB04-011ウロコ）
         case 'drawToSize': { const tgt = op.n || 3; let k = 0; while (P.hand.length < tgt) { if (!draw(side, 1)) break; k++; } if (k) flog(side, `手札が${tgt}枚になるよう${k}ドロー`); break; } // 手札N枚になるよう引く（OP02-051イワンコフ）
@@ -1207,7 +1208,7 @@
         case 'deckToTrash': { if (op.optional && !(await confirmUse(side, 'デッキをトラッシュ', `デッキの上から${op.n || 1}枚をトラッシュに置きますか？`, '置く', '置かない'))) { ctx._declined = true; break; } const k = Math.min(op.n || 1, P.deck.length); for (let i = 0; i < k; i++) P.trash.push(reset(P.deck.shift())); if (k) flog(side, `デッキ上${k}枚をトラッシュ`); if (k >= (op.n || 1) && op.then) await runFx(op.then, ctx); render(); break; } // ★then=コスト完済時のみ実行（OP12-090。デッキ不足で全額払えなければ効果なし）
         // 自分の手札またはトラッシュから filter一致のキャラ1枚を登場
         case 'playFromHandOrTrash': {
-          const cands = [...P.hand, ...P.trash].filter(c => c.base.type === 'CHAR' && matchFilter(c, op.filter));
+          const cands = [...P.hand, ...P.trash].filter(c => c.base.type === 'CHAR' && matchFilter(c, op.filter) && !(c.base.fx && c.base.fx.static && c.base.fx.static.some(o2 => o2.op === 'cantPlayByEffect')));
           if (!cands.length) break;
           const t = P.isCPU ? cands[0] : await chooseCard(side, cands, '登場させるキャラ（手札/トラッシュ）', 'ownBig', op.optional !== false);
           if (!t) break;
@@ -1225,7 +1226,7 @@
           const cnt = op.count || 1; const usedNames = [];
           const costCard = ctx._costCard; // diffColorFrom:'costCard'=コストで戻したキャラと異なる色のみ（EB01-020）
           for (let k = 0; k < cnt; k++) {
-            let cands = P.hand.filter(c => c.base.type === 'CHAR' && matchFilter(c, opFilter(op))); // ★opFilter=filterとトップレベル条件の併記を両方適用（旧: filter存在時にmaxCost等が無視される系統バグ）
+            let cands = P.hand.filter(c => c.base.type === 'CHAR' && matchFilter(c, opFilter(op)) && !(c.base.fx && c.base.fx.static && c.base.fx.static.some(o2 => o2.op === 'cantPlayByEffect'))); // ★opFilter=filterとトップレベル条件の併記を両方適用（旧: filter存在時にmaxCost等が無視される系統バグ）
             if (op.diffColorFrom === 'costCard' && costCard) cands = cands.filter(c => !(c.base.color || []).some(col => (costCard.base.color || []).includes(col))); // 戻したキャラと異なる色
             if (op.needsTrigger) cands = cands.filter(c => c.base.triggerText || (c.base.fx && c.base.fx.trigger));
             if (op.distinctName) cands = cands.filter(c => !usedNames.includes(normName(c.base.name))); // 「カード名の異なる」
@@ -1326,6 +1327,11 @@
     /* ノラ/レオ系: 自分の元々パワー7000以下のキャラが相手効果で場を離れる時、代わりのコストで防ぐ（自動） */
     async function protectFromEffect(target, cause, source) {
       if (!target) return false;
+      // 「属性(X)を持つカードとのバトルでKOされない」常在（OP12-036ゾロ=斬とのバトル耐性）
+      if (cause === 'battle' && source && source.base && !isNegated(target)) {
+        const stA = target.base.fx && target.base.fx.static;
+        if (stA) for (const o of stA) if (o.op === 'battleKoImmuneVsAttr' && source.base.attr === o.attr && (!o.cond || checkCond(o.cond, target.owner, target))) { flog(target.owner, `「${target.base.name}」は属性(${o.attr})とのバトルでKOされない`); return true; }
+      }
       // 「相手の効果ではKOされない」自身の常在: 効果KOのみ無効化（選択・パワー減少等は通すのでバックストップ）
       if (cause === 'ko' && isKoImmune(target)) { flog(target.owner, `「${target.base.name}」は相手の効果ではKOされない`); return true; }
       // 一時的な「自分の元々パワーN以下のキャラは相手の効果でKOされない」（OP10-070トレーボル＝次相手ターン終了まで）
