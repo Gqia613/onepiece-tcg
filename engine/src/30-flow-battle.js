@@ -457,8 +457,9 @@
       const D = G.players[opp(side)]; const arr = (attacker && !canTargetLeader(attacker)) ? [] : [D.leader];
       const canActive = attacker && hasKw(attacker, 'attackActive'); // 「アクティブのキャラにもアタックできる」(OP11海軍/SWORD)
       for (const c of D.chars) if (c.rested || canActive) arr.push(c);
-      // タウント: レストのタウント持ちキャラがいる場合、キャラ対象はそのキャラのみ（リーダーは通常通り。P-067キッド「このキャラがレストの場合、相手はキッド以外にアタックできない」）
-      const taunts = D.chars.filter(c => c.rested && !isNegated(c) && c.base.fx && c.base.fx.static && c.base.fx.static.some(o => o.op === 'taunt'));
+      // タウント: レストのタウント持ちキャラがいる場合、キャラ対象はそのキャラのみ（リーダーは通常通り。P-067キッド「このキャラがレストの場合、相手はキッド以外にアタックできない」。
+      //   cond付き=OP01-051キッド【ドン‼×1】は付与ドン1以上の時のみ）
+      const taunts = D.chars.filter(c => c.rested && !isNegated(c) && c.base.fx && c.base.fx.static && c.base.fx.static.some(o => o.op === 'taunt' && (!o.cond || checkCond(o.cond, c.owner, c))));
       if (taunts.length) return arr.filter(t => t === D.leader || taunts.includes(t));
       return arr;
     }
@@ -542,6 +543,7 @@
       // 防御側の効果でアタッカーが場を離れた/攻撃不能になった場合はアタックを中断
       if ((attacker.base.type === 'CHAR' && !G.players[aSide].chars.includes(attacker)) || cantAttackNeg(attacker)) {
         clearBattleBuffs(); G.players[dSide]._teachSacUid = null; G._counterRedirect = null; clearAtkAnnounce(); checkWinByLife(); // 対象変更予約も破棄（onOppAttackで立てた場合に次のアタックへ漏れる。ST36-005キッド）
+        if (G._pendingBattleEnd && G._pendingBattleEnd.length) { const pbe = G._pendingBattleEnd; G._pendingBattleEnd = []; for (const q of pbe) { if (!G.winner) await runFx(q.fx, { self: q.self, side: q.side }); } } // 中断でもバトルは終了＝「バトル終了時」予約は実行
         if (G.players[aSide].isCPU) { G.busy = true; } else { G.busy = false; G.myActable = true; } // ★状態確定後に描画（中断時も操作権を返す＝処理中固まり防止）
         render();
         return;
@@ -611,6 +613,8 @@
           await runFx(beCfg, { self: attacker, side: aSide, target: blkTarget });
         }
       }
+      // 「このバトル終了時」予約（scheduleBattleEnd＝OP02-064ボン・クレー「バトル終了時、このキャラをデッキの下に」。旧scheduleTurnEndはターン終了までズレていた）
+      if (G._pendingBattleEnd && G._pendingBattleEnd.length) { const pbe = G._pendingBattleEnd; G._pendingBattleEnd = []; for (const q of pbe) { if (!G.winner) await runFx(q.fx, { self: q.self, side: q.side }); } }
       // ★状態を確定してから描画（render後にbusyを戻すと「処理中」表示のまま固まる＝アタック後ターン終了不能バグ）
       if (G.players[aSide].isCPU) { G.busy = true; } else { G.busy = false; G.myActable = true; }
       render();
@@ -649,7 +653,7 @@
     /* ---------- ブロッカー選択 ---------- */
     async function chooseBlocker(dSide, attacker, target) {
       const D = G.players[dSide];
-      const blockers = D.chars.filter(c => !c.rested && hasKw(c, 'blocker') && c.noBlockSeq !== G.turnSeq && !isRestImmune(c)); // 【ブロッカー】発動不可/レストにできない中は除外
+      const blockers = D.chars.filter(c => !c.rested && hasKw(c, 'blocker') && c.noBlockSeq !== G.turnSeq && !c.noBlockBattle && !isRestImmune(c)); // 【ブロッカー】発動不可（ターン束縛/このバトル中）・レストにできない中は除外
       if (blockers.length === 0) return null;
       if (D.isCPU) return cpuChooseBlocker(dSide, attacker, target, blockers);
       // 人間: ブロッカーをボタンとして提示（カードクリックでも選択可）

@@ -335,6 +335,101 @@ function setupG(leaderNo){G.active='me';G.turnSeq=5;G.winner=null;const mkP=(ln,
       ok(cpu.don.rested===1, '例3q: ST02-008は相手のドン1枚をレストにする');
       ok(!cpu._donRefreshLock, '例3q: リフレッシュ据え置き(donRefreshLock)は付かない（text非記載の過剰強化を撤去）'); }
 
+    // 例3t: OP01全数照合の修正
+    // OP01-024 ルフィ: 「属性(打)を持つキャラとのバトルでKOされない」— 旧実装は全バトル免疫(過剰)。打のみ・キャラのみに限定
+    setupG('OP13-002'); { const me=G.players.me; const lf=mkc('OP01-024'); lf.attachedDon=2; me.chars=[lf];
+      const daBase=Object.values(C).find(c=>c.type==='CHAR'&&c.attribute==='打'); const slBase=Object.values(C).find(c=>c.type==='CHAR'&&c.attribute==='斬');
+      ok((await protectFromEffect(lf,'battle',mkc(daBase.no)))===true, '例3t: OP01-024は打属性キャラとのバトルでKO免除');
+      ok((await protectFromEffect(lf,'battle',mkc(slBase.no)))===false, '例3t: 斬属性キャラとのバトルでは免除されない'); }
+    // OP01-032 アシュラ童子: 「相手のレストのキャラが2枚以上」— 旧oppRestedCardsAtLeastはドン/リーダー込みで過発火
+    setupG('OP13-002'); { const me=G.players.me, cpu=G.players.cpu; const ad=mkc('OP01-032'); ad.attachedDon=1; me.chars=[ad];
+      cpu.don={active:0,rested:3}; cpu.chars=[]; const p0=power(ad);
+      ok(power(ad)===p0, '例3t: 相手のレストドン3枚だけでは+2000しない');
+      const r1=mkc('OP15-067'); r1.owner='cpu'; r1.rested=true; const r2=mkc('OP15-067'); r2.owner='cpu'; r2.rested=true; cpu.chars=[r1,r2];
+      ok(power(ad)===p0+2000, '例3t: 相手のレストキャラ2枚で+2000'); }
+    // OP01-038 カン十郎KO時: 「相手が(裏向きで)選び捨てる」(Q129)＝rng無情報ピックで1枚トラッシュ
+    setupG('OP13-002'); { const me=G.players.me; me.hand=[mkc('OP15-067'),mkc('OP15-067'),mkc('OP15-067')];
+      await doOp({op:'discardOwn',n:1,oppPick:true},{side:'me',self:me.leader});
+      ok(me.hand.length===2 && me.trash.length===1, '例3t: oppPickは選択UI無しで1枚捨てる'); }
+    // OP01-047 ロー: textに「このキャラ以外」が無い＝自身も戻せる（excludeSelf撤去）
+    setupG('OP13-002'); { const me=G.players.me; const law=mkc('OP01-047'); me.chars=[law];
+      const c3=Object.values(C).find(c=>c.type==='CHAR'&&c.cost===3&&!c.dataOnly); me.hand=[mkc(c3.no)];
+      await runFx(C['OP01-047'].fx.onPlay,{self:law,side:'me'});
+      ok(!me.chars.includes(law) && me.hand.some(c=>c.no==='OP01-047'), '例3t: 唯一の候補=自身を戻して手札へ'); }
+
+    // 例3u: OP01照合 batch2 の修正
+    // OP01-051 キッド: 【ドン‼×1】タウント（static欠落だった）。cond付きtauntの評価＋P-067(cond無し)の従来動作
+    setupG('OP13-002'); { const me=G.players.me, cpu=G.players.cpu;
+      const kid=mkc('OP01-051'); kid.owner='cpu'; kid.rested=true; const zako=mkc('OP15-067'); zako.owner='cpu'; zako.rested=true;
+      cpu.chars=[kid,zako];
+      let tg=legalTargets('me',me.leader).filter(t=>t!==cpu.leader);
+      ok(tg.includes(zako), '例3u: 付与ドン0ならタウント不発（他キャラも対象）');
+      kid.attachedDon=1;
+      tg=legalTargets('me',me.leader).filter(t=>t!==cpu.leader);
+      ok(tg.length===1 && tg[0]===kid, '例3u: ドン1以上でキャラ対象はキッドのみ（リーダーは対象可のまま）'); }
+    // OP01-099 せみ丸: 黒炭家は「バトルで」KOされない（旧実装は効果KO保護＝二重の誤り）
+    setupG('OP13-002'); { const me=G.players.me;
+      const semi=mkc('OP01-099'); const oro=mkc('OP01-098'); me.chars=[semi,oro]; // オロチ=黒炭家
+      ok((await protectFromEffect(oro,'battle',G.players.cpu.leader))===true, '例3u: 黒炭家はバトルKO免除');
+      ok((await protectFromEffect(oro,'ko',G.players.cpu.leader))===false, '例3u: 効果KOは通す（旧実装の誤りを修正）');
+      ok((await protectFromEffect(semi,'battle',G.players.cpu.leader))===false, '例3u: せみ丸自身は対象外'); }
+
+    // 例3w: OP02照合の修正
+    // OP02-042 ヤマト: 「カード名を「光月おでん」としても扱う」— f.name完全一致もエイリアスを見る
+    setupG('OP13-002'); { const ym=mkc('OP02-042');
+      ok(matchFilter(ym,{name:'光月おでん'})===true, '例3w: ヤマトはname:光月おでん完全一致に合致（aliasName）');
+      ok(matchFilter(ym,{name:'モモの助'})===false, '例3w: 無関係な名前には合致しない'); }
+    // OP02-064 ボン・クレー: 「このバトル終了時」に自身をデッキ下（旧はターン終了までズレ）— フルフロー
+    setupG('OP13-002'); { const me=G.players.me, cpu=G.players.cpu;
+      G.active='me'; G.winner=null; G.busy=false; G.myActable=true; G.firstPlayer='me'; me.turnsTaken=3; cpu.turnsTaken=3;
+      const bon=mkc('OP02-064'); bon.summonedTurn=1; bon.attachedDon=1; me.chars=[bon]; me.hand=[mkc('OP15-067')];
+      cpu.life=[mkc('ST01-006')]; cpu.hand=[]; me.deck=[mkc('ST01-006'),mkc('ST01-006')];
+      await declareAttack(bon, cpu.leader);
+      ok(!me.chars.includes(bon) && me.deck[me.deck.length-1].no==='OP02-064', '例3w: バトル終了時に自身がデッキ下へ（scheduleBattleEnd）'); }
+    // OP02-059 ハンコック: 「3枚までを捨てる」=0枚選択可（旧discardCostは3枚固定コスト扱い）
+    setupG('OP13-002'); { const me=G.players.me; me.hand=[mkc('OP15-067'),mkc('OP15-067')];
+      const _cf=chooseFromHand; chooseFromHand=function(){return Promise.resolve(null);}; // 1枚も選ばない
+      await doOp({op:'discardUpTo',count:3},{side:'me',self:me.leader});
+      chooseFromHand=_cf;
+      ok(me.hand.length===2 && me.trash.length===0, '例3w: discardUpToは0枚辞退可能（手札不変）'); }
+    // OP02-072 ゼットL: cpuCond=CPUは対象なしで4ドン払わない・人間は対象なしでも支払い+1000が合法
+    setupG('OP13-002'); { const me=G.players.me, cpu=G.players.cpu; cpu.chars=[]; me.don={active:4,rested:0}; me.isCPU=true;
+      await runFx(C['OP02-072'].fx.onAttack,{self:me.leader,side:'me'});
+      ok(donTotal('me')===4, '例3w: CPUはKO対象なしでドンを払わない（cpuCond）');
+      me.isCPU=false;
+      await runFx(C['OP02-072'].fx.onAttack,{self:me.leader,side:'me'});
+      ok(donTotal('me')===0 && power(me.leader)>=(me.leader.base.power||0)+1000, '例3w: 人間は対象なしでも支払い→リーダー+1000が通る'); }
+
+    // 例3x: OP02後半〜OP03の修正
+    // OP02-094 イスカ: 「バトルでKOした時」＝アタック宣言時の即アクティブは誤り。KOできなかったバトルでは発動しない
+    setupG('OP13-002'); { const me=G.players.me, cpu=G.players.cpu;
+      G.active='me'; G.winner=null; G.busy=false; G.myActable=true; G.firstPlayer='me'; me.turnsTaken=3; cpu.turnsTaken=3;
+      const iska=mkc('OP02-094'); iska.summonedTurn=1; iska.attachedDon=1; me.chars=[iska];
+      const wall=mkc('OP01-024'); wall.owner='cpu'; wall.rested=true; wall.attachedDon=0; cpu.chars=[wall]; cpu.hand=[];
+      // イスカ(3000+ドン1=4000?)がパワー同値以上ならKO→アクティブ / ここでは高パワー壁でKO失敗→レストのまま
+      const strong=power(wall)>power(iska);
+      await declareAttack(iska, wall);
+      if(strong) ok(iska.rested===true, '例3x: KOできなかったバトルではアクティブにならない');
+      else ok(true, 'skip'); }
+    // OP02-118: 選んだ1枚はこのバトル中KOされない（バトルKO+効果KOの両方・バトル終了で解除）
+    setupG('OP13-002'); { const me=G.players.me; const t=mkc('OP15-067'); me.chars=[t];
+      await doOp({op:'grantKoImmuneBattle',count:1},{side:'me',self:me.leader});
+      ok((await protectFromEffect(t,'battle',G.players.cpu.leader))===true, '例3x: バトルKO免除');
+      ok((await protectFromEffect(t,'ko',G.players.cpu.leader))===true, '例3x: 効果KOも免除（「KOされない」無限定）');
+      clearBattleBuffs();
+      ok((await protectFromEffect(t,'battle',G.players.cpu.leader))===false, '例3x: バトル終了で解除'); }
+    // OP03-013 マルコ: 【自分のターン中】ゲート＝相手ターンの登場(トリガー等)ではKOしない
+    setupG('OP13-002'); { const cpu=G.players.cpu; const v=mkc('OP15-067'); v.owner='cpu'; cpu.chars=[v]; G.active='cpu';
+      await runFx(C['OP03-013'].fx.onPlay,{self:mkc('OP03-013'),side:'me'});
+      ok(cpu.chars.includes(v), '例3x: 相手ターン中の登場ではKOが発動しない'); }
+
+    // 例3v: denyBlocker「このバトル中」スコープ（OP01-120シャンクス等7枚。旧実装はターン束縛=過剰）
+    setupG('OP13-002'); { const cpu=G.players.cpu; const blk=mkc('OP15-067'); blk.owner='cpu'; cpu.chars=[blk];
+      await doOp({op:'denyBlocker',all:true,battle:true},{side:'me',self:G.players.me.leader});
+      ok(blk.noBlockBattle===1, '例3v: battle:trueはnoBlockBattleを立てる（ターン束縛でない）');
+      clearBattleBuffs();
+      ok(!blk.noBlockBattle, '例3v: バトル終了(clearBattleBuffs)で解除＝同ターンの次のバトルではブロック可'); }
+
     // 例3s: E55 pump のpuctミラー(E59横展開) — ポンプ持ち相手（OP13-001=相手のアタック時restDonForBuff）に
     //       ドンを沈めるリーダー攻撃は同値着地＝ポンプ1回で不発・付与ドン丸損なので探索候補から除外。素(need0)は許可
     setupG('OP13-002'); { const me=G.players.me, cpu=G.players.cpu;

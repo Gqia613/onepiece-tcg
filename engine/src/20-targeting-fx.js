@@ -154,6 +154,7 @@
     async function doOp(op, ctx) {
       const side = ctx.side, o = opp(side), P = G.players[side], self = ctx.self;
       if (op.cond && !checkCond(op.cond, side, self)) return; // 全opで op.cond を尊重（【ドン!!×N】等の条件付き効果）
+      if (op.cpuCond && P.isCPU && !checkCond(op.cpuCond, side, self)) { ctx._declined = true; return; } // CPU専用の発動ガード（人間の合法プレイは制限しない。OP02-072ゼットL=KO対象なしでもコスト+1000は合法だがCPUには純損）
       switch (op.op) {
         case 'draw': { if (P._noEffectDrawTurn === G.turnSeq) { flog(side, 'このターンは自分の効果でカードを引けない'); break; } draw(side, op.n); flog(side, `${op.n}ドロー`); break; }
         case 'setNoEffectDraw': { P._noEffectDrawTurn = G.turnSeq; flog(side, 'このターン中、自分の効果でカードを引けない'); break; } // OP12-099カルガラ
@@ -746,7 +747,11 @@
         case 'bottomOwn': { for (let i = 0; i < op.n; i++) { const c = await chooseFromHand(side, P.hand, 'デッキ下に置く手札を選択'); if (!c) break; P.hand.splice(P.hand.indexOf(c), 1); P.deck.push(reset(c)); } flog(side, `手札${op.n}枚をデッキ下`); break; }
         // デッキ上 look 枚から filter一致のキャラ1枚を登場、残りをデッキ下（OP11-051サンジ）。grantKwで登場時付与。
         case 'playFromDeck': { const all = op.look === 'all'; const look = all ? P.deck.splice(0, P.deck.length) : P.deck.splice(0, op.look || 5); const cands = look.filter(c => (c.base.type === 'CHAR' || c.base.type === 'STAGE') && matchFilter(c, op.filter || {})); const pc = P.isCPU ? cands.slice().sort((a, b) => (b.base.power || 0) - (a.base.power || 0))[0] : await chooseCard(side, cands, '登場させるカードを選択（任意）', 'ownBig', true); if (pc) { look.splice(look.indexOf(pc), 1); if (pc.base.type === 'STAGE') { if (P.stage) P.trash.push(reset(P.stage)); P.stage = pc; pc.owner = side; pc.rested = false; if (pc.base.fx && pc.base.fx.onPlay && !isNegated(pc)) await runFx(pc.base.fx.onPlay, { self: pc, side }); } else { await summon(side, pc, false); if (op.rested && P.chars.includes(pc)) pc.rested = true; if (op.grantKw && P.chars.includes(pc)) pc.kwGrant.push({ kw: op.grantKw, dur: durTag(op.grantDuration, 'turn') }); } } let pfdTop = false; if (op.restPos === 'choose' && !all && look.length && !P.isCPU) pfdTop = (await showPrompt({ side, title: '残りのカード', text: `残り${look.length}枚をデッキの上と下、どちらに置きますか？`, opts: [{ t: 'デッキの下', v: 'b', primary: true }, { t: 'デッキの上', v: 't' }] })) === 't'; if (pfdTop) { for (let i = look.length - 1; i >= 0; i--)P.deck.unshift(look[i]); } else for (const r of look) P.deck.push(r); if (all || op.shuffle) shuffle(P.deck); flog(side, all ? 'デッキから登場（シャッフル）' : `デッキ上${op.look || 5}枚から登場・残りはデッキの${pfdTop ? '上' : '下'}`); render(); break; } // restPos:'choose'=「残りをデッキの上か下に置く」（ST12-010/013/017） // look:'all'=デッキ全体から登場しシャッフル（OP08-071/073）／STAGE対応（OP08-100）／rested=レストで登場（OP08-007）
-        case 'discardOwn': { const n = op.all ? P.hand.length : (op.toSize != null ? Math.max(0, P.hand.length - op.toSize) : op.n); for (let i = 0; i < n; i++) { const c = await chooseFromHand(side, P.hand, '⚠ 捨てる手札を選択', null, false, 'danger'); if (!c) break; P.hand.splice(P.hand.indexOf(c), 1); P.trash.push(reset(c)); } if (n) { flog(side, `手札${n}枚を捨てた`); await fireHandDiscarded(side, n, ctx.self); } break; }
+        case 'discardOwn': { const n = op.all ? P.hand.length : (op.toSize != null ? Math.max(0, P.hand.length - op.toSize) : op.n);
+          if (op.oppPick) { // 「相手が選び、捨てる」（OP01-038カン十郎）。Q129=裏向きのまま選ぶ＝選択に情報が無い→rng()の無情報ピック（ロックステップ安全・両者に選択UI不要）
+            let d = 0; for (let i = 0; i < n; i++) { if (!P.hand.length) break; const c = P.hand.splice(Math.floor(rng() * P.hand.length), 1)[0]; P.trash.push(reset(c)); d++; }
+            if (d) { flog(side, `相手が裏向きで選んだ手札${d}枚を捨てた`); render(); await fireHandDiscarded(side, d, ctx.self); } break; }
+          for (let i = 0; i < n; i++) { const c = await chooseFromHand(side, P.hand, '⚠ 捨てる手札を選択', null, false, 'danger'); if (!c) break; P.hand.splice(P.hand.indexOf(c), 1); P.trash.push(reset(c)); } if (n) { flog(side, `手札${n}枚を捨てた`); await fireHandDiscarded(side, n, ctx.self); } break; }
         case 'cond': if (checkCond(op.check, side, self)) await runFx(op.then, ctx); else { ctx._declined = true; if (op.else) await runFx(op.else, ctx); } break; // 条件不成立=未発動（onceゲート復元用マーカー）
         // 手札公開コスト: 手札の filter 一致カードを count 枚公開できる場合のみ then を実行（公開=手札に残す。任意）
         case 'revealCost': {
@@ -1065,6 +1070,19 @@
         }
         // 「このターン終了時」に fx を予約発動（登場時等から遅延）
         case 'scheduleTurnEnd': { (G._pendingTurnEnd = G._pendingTurnEnd || []).push({ side, fx: op.fx, self }); break; }
+        case 'scheduleBattleEnd': { (G._pendingBattleEnd = G._pendingBattleEnd || []).push({ side, fx: op.fx, self }); break; } // 「このバトル終了時」（OP02-064。declareAttack末尾で実行）
+        case 'ifBattledTargetKOed': { const bt = ctx.target; if (bt && !G.players[bt.owner].chars.includes(bt)) await runFx(op.then, ctx); else ctx._declined = true; break; } // 「バトルによって相手のキャラをKOした時」（OP02-094イスカ。onBattleEndVsChar内で対象の退場を確認）
+        case 'grantKoImmuneBattle': { // 「選んだキャラは、このバトル中、KOされない」（OP02-118八尺瓊勾玉＝バトルKOも効果KOも防ぐ。バトル終了(until:battle)で解除）
+          for (let i = 0; i < (op.count || 1); i++) { const cands = P.chars.filter(c => matchFilter(c, opFilter(op))); const t = P.isCPU ? cands[0] : await chooseCard(side, cands, 'このバトル中KOされないキャラを選択', 'ownBig', op.optional !== false); if (!t) break; t.buffs.push({ amount: 0, until: 'battle', koImmuneB: 1 }); floatOn(t.uid, '無敵', 'buff'); flog(side, `「${t.base.name}」はこのバトル中KOされない`); }
+          render(); break;
+        }
+        case 'discardUpTo': { // 「自分の手札N枚までを捨てる」＝効果（コストでない）・0〜N枚を自由に選べる（OP02-059/070。旧discardCost流用はN枚固定・全捨て強制で誤り）
+          const duCnt = op.count || 1; if (P.isCPU) break; // CPUは捨てない（手札0シナジーのリーダーはプリセット外＝保守的スキップ）
+          let duN = 0;
+          for (let i = 0; i < duCnt; i++) { const pick = await chooseFromHand(side, P.hand.filter(c => matchFilter(c, op.filter)), `捨てる手札を選択（任意 ${i + 1}/${duCnt}）`, null, true, 'danger'); if (!pick) break; P.hand.splice(P.hand.indexOf(pick), 1); P.trash.push(reset(pick)); duN++; render(); }
+          if (duN) { flog(side, `手札${duN}枚を捨てた`); await fireHandDiscarded(side, duN, ctx.self); }
+          break;
+        }
         case 'bounceStage': { // ステージ1枚（自分/相手）を持ち主の手札に戻す（任意）
           const stages = []; if (G.players.me.stage) stages.push(G.players.me.stage); if (G.players.cpu.stage) stages.push(G.players.cpu.stage);
           if (!stages.length) break;
@@ -1137,8 +1155,9 @@
         }
         // 相手キャラ count枚の【ブロッカー】をこのターン発動不可にする
         case 'denyBlocker': {
-          if (op.all) { for (const t of oppChars(side, opFilter(op))) t.noBlockSeq = G.turnSeq; flog(side, '相手の対象キャラは【ブロッカー】発動不可'); render(); break; } // 条件一致の相手キャラ全て（OP11-013グルス）
-          for (let i = 0; i < (op.count || 1); i++) { const cands = oppChars(side, opFilter(op)).filter(c => c.noBlockSeq !== G.turnSeq); const t = P.isCPU ? cands[0] : await chooseCard(side, cands, '【ブロッカー】発動不可にする相手キャラ', 'oppBig', op.optional); if (!t) break; t.noBlockSeq = G.turnSeq; flog(side, `「${t.base.name}」は【ブロッカー】発動不可`); }
+          const dbMark = t => { if (op.battle) t.noBlockBattle = 1; else t.noBlockSeq = G.turnSeq; }; // battle:true=「このバトル中」（OP01-120シャンクス等7枚。バトル終了のclearBattleBuffsで解除＝旧ターン束縛は過剰だった）
+          if (op.all) { for (const t of oppChars(side, opFilter(op))) dbMark(t); flog(side, '相手の対象キャラは【ブロッカー】発動不可'); render(); break; } // 条件一致の相手キャラ全て（OP11-013グルス）
+          for (let i = 0; i < (op.count || 1); i++) { const cands = oppChars(side, opFilter(op)).filter(c => (op.battle ? !c.noBlockBattle : c.noBlockSeq !== G.turnSeq)); const t = P.isCPU ? cands[0] : await chooseCard(side, cands, '【ブロッカー】発動不可にする相手キャラ', 'oppBig', op.optional); if (!t) break; dbMark(t); flog(side, `「${t.base.name}」は【ブロッカー】発動不可`); }
           render(); break;
         }
         // 相手キャラ count枚を「レストにできない」状態にする（アタック/ブロック不可・レスト効果対象外）
@@ -1338,16 +1357,20 @@
       if (!target) return false;
       // 「相手の効果ではKOされない」自身の常在: 効果KOのみ無効化（選択・パワー減少等は通すのでバックストップ）
       if (cause === 'ko' && isKoImmune(target)) { flog(target.owner, `「${target.base.name}」は相手の効果ではKOされない`); return true; }
+      // 「このバトル中、KOされない」付与（grantKoImmuneBattle＝OP02-118。バトルKO・効果KOの両方を防ぐ。until:battleのbuffなのでバトル終了で自然消滅）
+      if ((cause === 'battle' || cause === 'ko') && target.buffs && target.buffs.some(b => b.koImmuneB)) { flog(target.owner, `「${target.base.name}」はこのバトル中KOされない`); return true; }
       // 一時的な「自分の元々パワーN以下のキャラは相手の効果でKOされない」（OP10-070トレーボル＝次相手ターン終了まで）
       if (cause === 'ko') { const wk = G.players[target.owner] && G.players[target.owner]._weakKoImmune; if (wk && G.turnSeq <= wk.until && (target.base.power || 0) <= wk.maxBasePower) { flog(target.owner, `「${target.base.name}」は元々パワー${wk.maxBasePower}以下なので相手の効果でKOされない`); return true; } }
       if (cause === 'ko') { const tk = G.players[target.owner] && G.players[target.owner]._traitKoImmune; if (tk && G.turnSeq <= tk.until && matchFilter(target, tk.filter)) { flog(target.owner, `「${target.base.name}」は効果でKOされない`); return true; } } // 一時的なfilter一致KO耐性（OP09-033ロビン）
       // 自分の他キャラが提供する「アクティブの時、filter一致の味方は効果でKOされない」常在（OP08-029ペコムズ）
-      if (cause === 'ko') { const ow = G.players[target.owner]; for (const src of ow.chars) { if (src === target || isNegated(src)) continue; const st = src.base.fx && src.base.fx.static; if (!st) continue; for (const ob of st) { if (ob.op === 'allyKoImmune' && (!ob.whenActive || !src.rested) && (!ob.cond || checkCond(ob.cond, target.owner, src)) && lightMatch(target, ob.filter)) { flog(target.owner, `「${target.base.name}」は効果でKOされない`); return true; } } } }
+      if (cause === 'ko') { const ow = G.players[target.owner]; for (const src of ow.chars) { if (src === target || isNegated(src)) continue; const st = src.base.fx && src.base.fx.static; if (!st) continue; for (const ob of st) { if (ob.op === 'allyKoImmune' && !ob.battleOnly && (!ob.whenActive || !src.rested) && (!ob.cond || checkCond(ob.cond, target.owner, src)) && lightMatch(target, ob.filter)) { flog(target.owner, `「${target.base.name}」は効果でKOされない`); return true; } } } }
       // 「このキャラはバトルでKOされない」常在（condBuff battleImmune・cond対応。OP10-104カリブー）
       if (cause === 'battle' && !isNegated(target)) { const st = target.base.fx && target.base.fx.static; if (st) for (const o of st) { if (o.op === 'condBuff' && o.battleImmune && (!o.vsLeaderOnly || (source && source.base && source.base.type === 'LEADER')) && (!o.cond || checkCond(o.cond, target.owner, target))) { flog(target.owner, `「${target.base.name}」はバトルではKOされない`); return true; } } }
       // 「属性Xを持つ/持たないカードとのバトルでKOされない」常在（source=アタッカー。P-052ミホーク=斬を持つ/P-025スモーカー=特を持たない 等。cond対応＝ドン×1）
       if (cause === 'battle' && source && source.base && !isNegated(target)) { const st = target.base.fx && target.base.fx.static; if (st) for (const o of st) { if (o.op === 'battleImmuneVsAttr' && (!o.vsCharOnly || source.base.type === 'CHAR') && (!o.cond || checkCond(o.cond, target.owner, target))) { const has = (source.base.attribute || '').includes(o.attr); if (o.has ? has : !has) { flog(target.owner, `「${target.base.name}」は属性${o.attr}を${o.has ? '持つ' : '持たない'}カードとのバトルではKOされない`); return true; } } } }
       if (cause === 'battle' && target._battleImmuneUntil != null && G.turnSeq <= target._battleImmuneUntil) { flog(target.owner, `「${target.base.name}」はバトルではKOされない`); return true; } // 一時的なバトルKO耐性（OP06-030ドスン）
+      // 味方付与の「バトルでKOされない」常在（OP01-099せみ丸=黒炭家すべて。allyKoImmuneのbattleOnly変種＝効果KOは通す）
+      if (cause === 'battle') { const ow = G.players[target.owner]; for (const src of ow.chars) { if (src === target || isNegated(src)) continue; const st = src.base.fx && src.base.fx.static; if (!st) continue; for (const ob of st) { if (ob.op === 'allyKoImmune' && ob.battleOnly && (!ob.whenActive || !src.rested) && (!ob.cond || checkCond(ob.cond, target.owner, src)) && lightMatch(target, ob.filter)) { flog(target.owner, `「${target.base.name}」はバトルではKOされない`); return true; } } } }
       if (cause === 'battle') { const bg = G.players[target.owner] && G.players[target.owner]._battleImmuneGrant; if (bg && G.turnSeq <= bg.until && matchFilter(target, bg.filter)) { flog(target.owner, `「${target.base.name}」はバトルではKOされない`); return true; } } // プレイヤー付与の一時バトルKO耐性（OP06-096）
       // 「相手の元々パワーN以下のキャラの効果でKOされない」(OP14-003ベッジ。source=KO元のキャラ)
       if (cause === 'ko' && source && source.base && !isNegated(target)) {

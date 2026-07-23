@@ -516,7 +516,7 @@
     }
     function clearBattleBuffs() {
       for (const s of ['me', 'cpu']) {
-        const P = G.players[s]; const f = c => { c.buffs = c.buffs.filter(b => b.until !== 'battle'); c.battleTmp = 0; };
+        const P = G.players[s]; const f = c => { c.buffs = c.buffs.filter(b => b.until !== 'battle'); c.battleTmp = 0; c.noBlockBattle = 0; };
         f(P.leader); P.chars.forEach(f); if (P.stage) f(P.stage);
       }
     }
@@ -544,7 +544,7 @@
       if (f.traitIncludes && !(b.traits || []).some(t => t.includes(f.traitIncludes))) return false;
       if (f.traits && !(b.traits || []).some(t => f.traits.includes(t))) return false;
       if (f.color && !(b.color || []).includes(f.color)) return false;
-      if (f.name && normName(b.name) !== normName(f.name)) return false;
+      if (f.name && normName(b.name) !== normName(f.name) && !(b.aliasName && normName(b.aliasName) === normName(f.name))) return false; // 別名（「カード名をXとしても扱う」OP02-042ヤマト=光月おでん等）も一致扱い
       if (f.nameExcludes && normName(b.name).includes(normName(f.nameExcludes))) return false;
       if (f.minBaseCost != null && (b.cost || 0) < f.minBaseCost) return false;
       if (f.maxBaseCost != null && (b.cost || 0) > f.maxBaseCost) return false;
@@ -562,7 +562,7 @@
       if (f.attr && !((b.attribute || '').includes(f.attr))) return false; // 属性(斬/打/射/特/知)を持つ
       if (f.traitIncludes && !(b.traits || []).some(t => t.includes(f.traitIncludes))) return false; // 特徴の部分一致（例「白ひげ海賊団」を含む特徴）
       if (f.traits && !(b.traits || []).some(t => f.traits.includes(t))) return false;
-      if (f.name && normName(b.name) !== normName(f.name)) return false;
+      if (f.name && normName(b.name) !== normName(f.name) && !(b.aliasName && normName(b.aliasName) === normName(f.name))) return false; // 別名（「カード名をXとしても扱う」OP02-042ヤマト=光月おでん等）も一致扱い
       if (f.cost != null && b.cost !== f.cost) return false;
       // フィールドのキャラの実効コスト：ティーチ・リーダーは【相手のターン中】自分のキャラすべてコスト+1
       let _ec = b.cost || 0;
