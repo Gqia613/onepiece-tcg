@@ -208,6 +208,24 @@ function setupG(leaderNo){G.active='me';G.turnSeq=5;G.winner=null;const mkP=(ln,
       await runFx(C['ST34-004'].fx.onPlay,{self:mkc('ST34-004'),side:'me'});
       ok(donTotal('me')===1 && me.life.length===1, '例3k: 支払い成立でドン-4+ライフ追加'); }
 
+    // 例3l: 意味照合バッチ5の修正
+    // EB03-053: 【KO時】の表向きコストは辞退可・辞退なら登場効果なし
+    setupG('OP13-002'); { const me=G.players.me; me.life=[mkc('ST01-006')]; me.hand=[mkc('OP15-067')];
+      const _sp=showPrompt; showPrompt=function(cfg){const o=(cfg.opts||[]).find(x=>x.v==='n'||x.ghost); const v=o?o.v:'n'; if(cfg.onPick)cfg.onPick(v); return Promise.resolve(v);};
+      await runFx(C['EB03-053'].fx.onKO,{self:mkc('EB03-053'),side:'me'}); showPrompt=_sp;
+      ok(me.chars.length===0 && me.life[0]._faceUp!==true, '例3l: EB03-053は表向き辞退で登場効果なし（コスト化）'); }
+    // OP07-057: ブロッカー不可は「選んだカード」と同一対象（samePrev）
+    setupG('OP13-002'); { const me=G.players.me;
+      const shichi=Object.values(C).find(c=>c.type==='CHAR'&&(c.traits||[]).includes('王下七武海')&&c.cost<=4);
+      const a=mkc(shichi.no), b=mkc(shichi.no); me.chars=[a,b];
+      const _hp=humanPick; humanPick=function(cands){return Promise.resolve(cands.find(x=>x===b)||cands[0]);};
+      await runFx(C['OP07-057'].fx.main.fx,{self:mkc('OP07-057'),side:'me'}); humanPick=_hp;
+      ok(b.kwGrant.some(g=>g.kw==='unblockable') && !a.kwGrant.some(g=>g.kw==='unblockable'), '例3l: OP07-057は+2000と同じカードにブロッカー不可'); }
+    // OP04-056: 無指定「キャラ」=自分のキャラも選べる（side any）
+    setupG('OP13-002'); { const me=G.players.me; const own=mkc('OP15-067'); me.chars=[own]; me.deck=[];
+      await runFx(C['OP04-056'].fx.main.fx,{self:mkc('OP04-056'),side:'me'});
+      ok(me.chars.length===0 && me.deck.length===1, '例3l: OP04-056は自分のキャラもデッキ下に送れる'); }
+
     // 例3g: トリガーの空撃ち抑止 — 「全てcond包み・全check不成立」のトリガー（P-088ロー「超新星＋ライフ合計5以下なら登場」）は
     //       発動しても何も起こらずカードがトラッシュへ行くだけの純損（実対戦報告）。人間には発動UIを出さず・CPUも発動せず手札へ。
     // フルフロー: cond不成立（防御側リーダー非超新星）→ P-088はトラッシュでなく手札へ

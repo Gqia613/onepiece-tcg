@@ -527,6 +527,10 @@
         case 'donAttachAll': { let targets = op.incLeader ? [P.leader, ...P.chars] : P.chars; if (op.filter) targets = targets.filter(t => matchFilter(t, op.filter)); if (op.max != null) targets = targets.slice(0, op.max); for (const t of targets) { const k = Math.min(op.n, P.don.rested); t.attachedDon += k; P.don.rested -= k; } flog(side, op.incLeader ? 'リーダーとキャラにレストのドン付与' : '自キャラにレストのドン付与'); render(); break; } // filter=対象限定／max=最大対象数（OP08-001チョッパーL＝動物/ドラム王国3枚まで1枚ずつ）
         case 'selfToHand': { if (op.optional && !P.isCPU && !(await confirmUse(side, '手札に加える', `「${self.base.name}」を手札に加えますか？`, '加える'))) break; const z = P.trash; const i = z.indexOf(self); if (i >= 0) { z.splice(i, 1); P.hand.push(self); flog(side, `「${self.base.name}」をトラッシュから手札に加えた`); } else if (self && !P.hand.includes(self) && !P.chars.includes(self) && !P.life.includes(self)) { P.hand.push(self); flog(side, `「${self.base.name}」を手札に加えた`); } break; } // トラッシュ外＝トリガー解決中のlimboからも手札へ（「KOし、このカードを手札に加える」OP12-109等）
         case 'giveKeyword': {
+          if (op.samePrev) { // 「選んだカードは…【KW】」＝直前のpowerModが選んだ同一対象へ付与（OP07-057芳香脚。再選択させると別カードを選べてしまう）
+            for (const t of (ctx._pmPicked || [])) { t.kwGrant.push({ kw: op.kw, dur: durTag(op.duration, 'turn') }); floatOn(t.uid, op.kw, 'buff'); flog(side, `「${t.base.type === 'LEADER' ? 'リーダー' : t.base.name}」に【${op.kw}】を付与`); }
+            render(); break;
+          }
           if (op.target === 'allOwn' || op.target === 'allOwnL') { // 条件一致の自分のキャラ（Lはリーダー含む）全てに付与
             const dur = durTag(op.duration, 'turn');
             const pool = (op.target === 'allOwnL' ? [P.leader, ...P.chars] : P.chars).filter(c => matchFilter(c, opFilter(op)));
