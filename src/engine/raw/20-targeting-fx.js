@@ -366,6 +366,16 @@
           const restPool = () => { let arr = oppChars(side, opFilter(op)).filter(c => !c.rested && !isRestImmune(c) && !isOppRestImmune(c)); if (op.includeLeader && !G.players[o].leader.rested) arr = [G.players[o].leader, ...arr]; if (op.includeStage && G.players[o].stage && !G.players[o].stage.rested) arr = [...arr, G.players[o].stage]; return arr; };
           if (op.all) { const rs = restPool(); for (let t of rs) { t = await maybeRestRedirect(t); t.rested = true; await fireSelfRested(t, t.owner === side ? 'ownEffect' : 'oppEffect'); flog(side, `「${t.base.name === undefined ? '相手リーダー' : t.base.name}」をレスト`); } if (rs.length) await fireOwnRest(side); break; } // 条件一致を全てレスト
           for (let i = 0; i < (op.count || 1); i++) {
+            // orDon: 「相手の、キャラかドン‼合計N枚までを、レストにする」（OP12-037）＝各1枚ごとにキャラ/ドンを選べる
+            if (op.orDon) {
+              const cands0 = restPool(); const donOk = G.players[o].don.active > 0;
+              if (!cands0.length && !donOk) break;
+              let kind;
+              if (P.isCPU) kind = cands0.length ? 'char' : 'don'; // CPUはキャラ優先（盤面テンポ）→無ければドン
+              else { const opts = []; if (cands0.length) opts.push({ t: '相手のキャラをレスト', v: 'char', primary: true }); if (donOk) opts.push({ t: '相手のアクティブのドン1枚をレスト', v: 'don' }); opts.push({ t: 'やめる', v: 'no', ghost: true });
+                const v = await showPrompt({ side, title: 'レスト対象', text: progText('キャラかドン‼を選んでレストにします', i, op.count || 1), opts }); if (v === 'no' || v == null) break; kind = v; }
+              if (kind === 'don') { G.players[o].don.active--; G.players[o].don.rested++; flog(side, '相手のドン1枚をレストにした'); render(); continue; }
+            }
             const cands = restPool();
             let t = await chooseCard(side, cands, progText('レストにする相手キャラを選択', i, op.count || 1), 'oppBig', op.optional);
             if (!t) break; t = await maybeRestRedirect(t); t.rested = true; await fireSelfRested(t, t.owner === side ? 'ownEffect' : 'oppEffect'); flog(side, `「${t.base.name}」をレスト`); await fireOwnRest(side);

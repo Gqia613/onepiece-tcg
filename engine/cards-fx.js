@@ -145,7 +145,7 @@ window.CARD_FX = {
   "OP15-061": {"onPlay":[{"op":"donMinus","n":1},{"op":"draw","n":1}],"onAttack":[{"op":"powerMod","side":"opp","amount":-1000,"count":1,"cond":"don<=6","optional":true}]},
   "OP15-066": {"onPlay":[{"op":"donMinus","n":1},{"op":"draw","n":1}],"onAttack":[{"op":"scry","n":2,"cond":"don<=6"}]},
   "OP15-063": {"onPlay":[{"op":"donMinus","n":1},{"op":"draw","n":1}],"onKO":[{"op":"ko","side":"opp","maxEffPower":2000,"count":1,"optional":true,"cond":"don<=6"}]},
-  "OP12-071": {"onPlay":[{"op":"search","look":4,"filter":{"type":"EVENT"}}]},
+  "OP12-071": {"onPlay":[{"op":"search","look":4,"count":1,"filter":{"or":[{"name":"サンジ"},{"type":"EVENT"}]},"optional":true}]},
   "OP15-060": {"static":[{"op":"condBuff","cond":"don<=6","power":2000,"immune":true}],"act":{"label":"ドン-1:ブロッカー付与","cost":{},"fx":[{"op":"donMinus","n":1},{"op":"giveKeyword","target":"self","kw":"blocker","duration":"untilNextEnd"},{"op":"discardOwn","n":1}]}},
   "OP15-118": {"static":[{"op":"condBuff","cond":"don<=6","power":2000,"immune":true}],"onPlay":[{"op":"donMinus","n":1},{"op":"search","look":5,"filter":{}},{"op":"discardOwn","n":1}]},
   "OP15-076": {"main":{"fx":[{"op":"donMinus","n":1},{"op":"cond","check":{"leaderNameIncludes":"エネル"},"then":[{"op":"draw","n":1},{"op":"powerMod","side":"opp","amount":-1000,"count":1,"optional":true}]}]},"counter":{"cost":0,"fx":[{"op":"counterBuff","amount":2000}]}},
@@ -868,7 +868,7 @@ window.CARD_FX = {
   // OP12-036 ロロノア・ゾロ(c4): リーダーが属性(斬)なら+1000（※「効果で登場できない」「斬とのバトルでKOされない」は近似で省略）
   "OP12-036": {"static":[{"op":"condBuff","cond":{"leaderAttr":"斬"},"power":1000}]},
   // OP12-037 鬼気九刀流阿修羅: 【メイン】ドン3レスト：相手キャラ2枚までレスト（※「キャラかドン」のドン側は省略） ／【カウンター】リーダー+3000
-  "OP12-037": {"main":{"fx":[{"op":"restDonCost","n":3,"then":[{"op":"restChar","side":"opp","count":2,"optional":true}]}]},"counter":{"cost":0,"fx":[{"op":"leaderBuff","amount":3000,"duration":"battle"}]}},
+  "OP12-037": {"main":{"fx":[{"op":"restDonCost","n":3,"then":[{"op":"restChar","side":"opp","count":2,"optional":true,"orDon":true}]}]},"counter":{"cost":0,"fx":[{"op":"leaderBuff","amount":3000,"duration":"battle"}]}},
   // OP12-038 二刀流居合羅生門: 【メイン】ドン2レスト：相手レストの元々コスト4以下2枚KO ／【カウンター】リーダー+3000
   "OP12-038": {"main":{"fx":[{"op":"restDonCost","n":2,"then":[{"op":"ko","side":"opp","filter":{"maxBaseCost":4,"restedOnly":true},"count":2,"optional":true}]}]},"counter":{"cost":0,"fx":[{"op":"leaderBuff","amount":3000,"duration":"battle"}]}},
   // OP12-039 ルフィは海賊王になる男だ: 【メイン】ゾロ(リーダー)をアクティブにする
@@ -1093,7 +1093,7 @@ window.CARD_FX = {
   // OP11-066 シャーロット・オーブン: 【起動メイン】レスト＋コスト宣言：相手デッキ上が一致なら相手の元々コスト3以下1枚KO→ドン1レスト追加
   "OP11-066": {"act":{"label":"レスト+コスト宣言:一致で相手3以下KO","cost":{"restSelf":true},"fx":[{"op":"costGuess","cpuGuess":1,"then":[{"op":"ko","side":"opp","filter":{"maxBaseCost":3},"count":1,"optional":true},{"op":"donFromDeck","n":1,"mode":"rested"}]}]}},
   // OP11-067 シャーロット・カタクリ(c8): 【ブロッカー】 ／【自分のターン終了時】コスト3以上のビッグ・マム2枚をアクティブ→ドン1レスト追加
-  "OP11-067": {"onTurnEnd":[{"op":"activateOwnChar","count":2,"optional":true,"filter":{"minBaseCost":3,"traitIncludes":"ビッグ・マム海賊団"}},{"op":"donFromDeck","n":1,"mode":"rested"}]},
+  "OP11-067": {"onTurnEnd":[{"op":"activateOwnChar","count":2,"optional":true,"filter":{"minCost":3,"traitIncludes":"ビッグ・マム海賊団"}},{"op":"donFromDeck","n":1,"mode":"rested"}]},
   // OP11-069 シャーロット・ブリュレ: 【登場時】ライフ上1枚を手札に：ビッグ・マムリーダーならドン1アクティブ追加
   "OP11-069": {"onPlay":[{"op":"lifeToHand","n":1,"then":[{"op":"cond","check":{"leaderTraitIncludes":"ビッグ・マム海賊団"},"then":[{"op":"donFromDeck","n":1,"mode":"active"}]}]}]},
   // OP11-070 シャーロット・プリン(紫): 【登場時】デッキ上5枚からコスト2以上のビッグ・マム1枚を手札へ ／【起動メイン】ドン-1+レスト：相手デッキ上を見る

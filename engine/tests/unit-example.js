@@ -177,6 +177,27 @@ function setupG(leaderNo){G.active='me';G.turnSeq=5;G.winner=null;const mkP=(ln,
         ok(me.hand.length===0, '例3i: search excludeが全角Ｄルフィも除外（正規化）'); }
       else ok(true,'(全角Ｄ超新星ルフィなし=スキップ)'); }
 
+    // 例3j: 意味照合バッチ2の修正（2026-07-23）
+    // OP12-037: 「キャラかドン合計2枚まで」＝ドンもレストにできる（CPUはキャラ優先→残りドン）
+    setupG('OP13-002'); { const cpu=G.players.cpu; const a=mkc('OP15-067'); a.owner='cpu'; a.rested=false; cpu.chars=[a]; cpu.don={active:3,rested:0};
+      G.players.me.isCPU=true; // CPU判断パスで検証
+      await runFx([{op:'restChar',side:'opp',count:2,optional:true,orDon:true}],{self:mkc('OP12-037'),side:'me'});
+      G.players.me.isCPU=false;
+      ok(a.rested===true && cpu.don.active===2 && cpu.don.rested===1, '例3j: キャラ1+ドン1をレスト（orDon）'); }
+    // OP11-067: 「コスト3以上」=現在コスト（コスト2キャラは対象外・コスト3は対象）
+    setupG('OP13-002'); { const me=G.players.me;
+      const c3=Object.values(C).find(c=>c.type==='CHAR'&&c.cost===3&&(c.traits||[]).includes('ビッグ・マム海賊団'));
+      const c2=Object.values(C).find(c=>c.type==='CHAR'&&c.cost===2&&(c.traits||[]).includes('ビッグ・マム海賊団'));
+      const x3=mkc(c3.no); x3.rested=true; const x2=mkc(c2.no); x2.rested=true; me.chars=[x3,x2]; me.donMax=10;
+      await runFx(C['OP11-067'].fx.onTurnEnd,{self:mkc('OP11-067'),side:'me'});
+      ok(x3.rested===false && x2.rested===true, '例3j: OP11-067はコスト3以上のみアクティブ化(minCost)'); }
+    // OP12-071: 「サンジ」も公開して手札に加えられる
+    setupG('OP13-002'); { const me=G.players.me;
+      const sanji=Object.values(C).find(c=>c.type==='CHAR'&&c.name==='サンジ');
+      me.deck=[mkc(sanji.no),mkc('ST01-006'),mkc('ST01-006'),mkc('ST01-006')];
+      await runFx(C['OP12-071'].fx.onPlay,{self:mkc('OP12-071'),side:'me'});
+      ok(me.hand.some(c=>C[c.no].name==='サンジ'), '例3j: OP12-071は「サンジ」を手札に加えられる'); }
+
     // 例3g: トリガーの空撃ち抑止 — 「全てcond包み・全check不成立」のトリガー（P-088ロー「超新星＋ライフ合計5以下なら登場」）は
     //       発動しても何も起こらずカードがトラッシュへ行くだけの純損（実対戦報告）。人間には発動UIを出さず・CPUも発動せず手札へ。
     // フルフロー: cond不成立（防御側リーダー非超新星）→ P-088はトラッシュでなく手札へ
