@@ -3648,7 +3648,7 @@ window.CARD_FX = {
   "ST02-003": {"static":[{"op":"condBuff","cond":{"and":[{"donX1":true},{"selfCharCount":{"min":3}}]},"power":2000}]},
   "ST02-005": {"onPlay":[{"op":"ko","side":"opp","filter":{"restedOnly":true,"maxCost":3},"count":1,"optional":true}]},
   "ST02-007": {"act":{"label":"ドン1＋レスト:超新星サーチ","cost":{"restSelf":true},"fx":[{"op":"restDonCost","n":1,"then":[{"op":"search","look":5,"count":1,"filter":{"traitIncludes":"超新星"},"optional":true}]}]}},
-  "ST02-008": {"onAttack":[{"op":"cond","check":{"donX1":true},"then":[{"op":"restOppDon","n":1},{"op":"donRefreshLock","n":1}]}]},
+  "ST02-008": {"onAttack":[{"op":"cond","check":{"donX1":true},"then":[{"op":"restOppDon","n":1}]}]},
   "ST02-009": {"onPlay":[{"op":"activateOwnChar","count":1,"optional":true,"filter":{"restedOnly":true,"maxCost":5,"or":[{"traitIncludes":"超新星"},{"traitIncludes":"ハートの海賊団"}]}}]},
   "ST02-010": {"onAttack":[{"op":"condTargetChar","once":"turn","then":[{"op":"cond","check":{"donX1":true},"then":[{"op":"activateSelf"}]}]}]},
   "ST02-013": {"onTurnEnd":[{"op":"cond","check":{"donX1":true},"then":[{"op":"activateSelf"}]}]},

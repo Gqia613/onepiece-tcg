@@ -284,3 +284,15 @@ fxと公式text/Q&Aの意味レベル照合。観点=engine/CLAUDE.md §11の型
 - **機構統一**: battleImmuneVsAttr（has/vsCharOnly対応・base.attribute参照）が既存と判明→OP12-036で新設したbattleKoImmuneVsAttr（参照キー誤りで不動作）を撤去し既存opへ統一
 
 残り: ST01〜35 約290種。
+
+## ST01〜35全数照合（2026-07-23完了）
+
+remaining.txtのSTブロック249種を6バッチで照合。実バグ1件:
+- **ST02-008 スクラッチメン・アプー: textは「【ドン!!×1】【アタック時】相手のドン!!1枚までを、レストにする」のみなのに余分な`donRefreshLock`（次のリフレッシュでアクティブにならない）が付いていた** → 過剰強化を撤去（レストのみが正。相手ターン中のカウンターイベント費用を縛るのが本来の意味）
+
+正しさを個別確認した機構（容認判定に使った根拠）:
+- ST31-004 ルフィ: 「麦わらカード1枚につき-1000」= リーダー/ステージ/キャラmin1..5の7段cond展開で1枚ずつ対象選択（公式裁定の「1枚ごとに対象を選ぶ・重複可」に合致）
+- ST35-004 コアラ等の「【ブロッカー】を得て、コスト+1」型: 00-data.js innateKw正規表現がを得る(終止形)のみ除外しを得て(テ形)は自己常在として派生→blocker=true ✓。条件付き型(ST25-002/ST31-003)はstaticKeyword condがtext由来フラグを打ち消しhasKwがcond評価 ✓
+- 動的コストfilter: maxCostFrom oppLife/totalLife（ST29-002/ST29-013）・selfHandDiscardedThisTurn（ST33-004）・delayedDonActivate（ST24-005）全て実装済み確認
+
+**全セット意味照合 完遂**: マイデッキ185＋OP09〜16(717)＋EB01〜04(235)＋PRB02(16)＋P(104)＋ST(249)。累計実バグ約76件を修正・全て本番反映。

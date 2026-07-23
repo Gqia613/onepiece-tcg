@@ -327,6 +327,14 @@ function setupG(leaderNo){G.active='me';G.turnSeq=5;G.winner=null;const mkP=(ln,
       showPrompt=_sp;
       ok(r2===true, '例3g: 空撃ちでも「発動する」を選べる（トラッシュ肥やしの意図的プレイを許可）'); }
 
+    // 例3q: ST全数照合の修正
+    // ST02-008 アプー: textは「【ドン!!×1】【アタック時】相手のドン1枚までをレストにする」のみ。余分なdonRefreshLock（次リフレッシュ据え置き）が付いていた過剰強化を撤去
+    setupG('OP13-002'); { const cpu=G.players.cpu; cpu.don={active:2,rested:0}; cpu._donRefreshLock=0;
+      const apoo=mkc('ST02-008'); apoo.attachedDon=1; // 【ドン!!×1】成立
+      await runFx(C['ST02-008'].fx.onAttack,{self:apoo,side:'me'});
+      ok(cpu.don.rested===1, '例3q: ST02-008は相手のドン1枚をレストにする');
+      ok(!cpu._donRefreshLock, '例3q: リフレッシュ据え置き(donRefreshLock)は付かない（text非記載の過剰強化を撤去）'); }
+
     // 例3e: 「相手のデッキの上を見る」(peekOppDeck)は完了ボタンを押すまでカードを大写し（reveal付きshowPrompt）。人間のみ。OP11-062/070。
     setupG('OP11-062'); { const P=G.players.me; G.players.cpu.deck=[mkc('OP15-067')];
       let seen=null; const _sp=showPrompt; showPrompt=function(cfg){ seen=cfg; return Promise.resolve((cfg.opts&&cfg.opts[0]||{}).v); };
