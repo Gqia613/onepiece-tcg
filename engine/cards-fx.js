@@ -866,7 +866,7 @@ window.CARD_FX = {
   // OP12-034 ペローナ: 【登場時】リーダーが属性(斬)なら斬属性か緑イベント1枚をサーチ
   "OP12-034": {"onPlay":[{"op":"cond","check":{"leaderAttr":"斬"},"then":[{"op":"search","look":5,"count":1,"filter":{"or":[{"attr":"斬"},{"color":"緑","type":"EVENT"}]},"optional":true}]}]},
   // OP12-036 ロロノア・ゾロ(c4): リーダーが属性(斬)なら+1000（※「効果で登場できない」「斬とのバトルでKOされない」は近似で省略）
-  "OP12-036": {"static":[{"op":"cantPlayByEffect"},{"op":"condBuff","cond":{"leaderAttr":"斬"},"power":1000},{"op":"battleKoImmuneVsAttr","attr":"斬","cond":{"leaderAttr":"斬"}}]},
+  "OP12-036": {"static":[{"op":"cantPlayByEffect"},{"op":"condBuff","cond":{"leaderAttr":"斬"},"power":1000},{"op":"battleImmuneVsAttr","attr":"斬","has":true,"cond":{"leaderAttr":"斬"}}]},
   // OP12-037 鬼気九刀流阿修羅: 【メイン】ドン3レスト：相手キャラ2枚までレスト（※「キャラかドン」のドン側は省略） ／【カウンター】リーダー+3000
   "OP12-037": {"main":{"fx":[{"op":"restDonCost","n":3,"then":[{"op":"restChar","side":"opp","count":2,"optional":true,"orDon":true}]}]},"counter":{"cost":0,"fx":[{"op":"leaderBuff","amount":3000,"duration":"battle"}]}},
   // OP12-038 二刀流居合羅生門: 【メイン】ドン2レスト：相手レストの元々コスト4以下2枚KO ／【カウンター】リーダー+3000
@@ -3918,12 +3918,12 @@ window.CARD_FX = {
   "P-033": {"act":{"label":"このキャラをデッキ下:1ドロー","cost":{},"fx":[{"op":"selfToBottomCost","then":[{"op":"draw","n":1}]}]}},
   "P-034": {"static":[{"op":"condBuff","cond":{"and":[{"donX1":true},{"selfTurn":true},{"lifeAtMost":2}]},"power":2000}]},
   "P-035": {"onAttack":[{"op":"cond","check":{"donX1":true},"then":[{"op":"discardCost","count":1,"optional":true,"then":[{"op":"ko","side":"opp","filter":{"cost":0},"count":1,"optional":true}]}]}]},
-  "P-036": {"onAttack":[{"op":"lifeToHand","n":1,"then":[{"op":"powerMod","side":"self","target":"self","amount":1000,"duration":"turn"},{"op":"powerMod","side":"self","leader":true,"amount":1000,"duration":"turn","count":1,"optional":true,"filter":{"type":"LEADER"}}]}]},
+  "P-036": {"onAttack":[{"op":"lifeCost","action":"toHand","pos":"choose","then":[{"op":"powerMod","side":"self","target":"self","amount":1000,"duration":"turn"},{"op":"powerMod","side":"self","leader":true,"amount":1000,"duration":"turn","count":1,"optional":true,"filter":{"type":"LEADER"}}]}]},
   "P-037": {"onAttack":[{"op":"cond","check":{"selfRestedCharsAtLeast":2},"then":[{"op":"powerMod","side":"self","target":"self","amount":1000,"duration":"turn"}]}]},
   "P-038": {"onPlay":[{"op":"restOwnAsCost","filter":{"type":"LEADER"},"then":[{"op":"ko","side":"opp","filter":{"maxCost":1},"count":1,"optional":true}]}]},
   "P-039": {"static":[{"op":"condBuff","cond":{"and":[{"donX2":true},{"lifeAtMost":0}]},"power":2000}]},
   "P-040": {"static":[{"op":"condBuff","cond":{"oppDonAtLeast":10},"koImmune":true}]},
-  "P-043": {"onPlay":[{"op":"bounce","side":"opp","filter":{"maxCost":3},"count":1,"optional":true}]},
+  "P-043": {"onPlay":[{"op":"bounce","side":"any","filter":{"maxCost":3},"count":1,"optional":true}]},
   "P-044": {"static":[{"op":"condBuff","cond":{"and":[{"donX1":true},{"selfHandAtMost":4}]},"power":2000}]},
   "P-046": {"onPlay":[{"op":"handAllToBottomDraw"}]},
   "P-048": {"onAttack":[{"op":"cond","check":{"and":[{"donX1":true},{"lifeAtLeast":4}]},"then":[{"op":"oppHandToBottom","n":1}]}]},

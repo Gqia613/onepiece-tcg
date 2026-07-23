@@ -274,3 +274,13 @@ fxと公式text/Q&Aの意味レベル照合。観点=engine/CLAUDE.md §11の型
 - (EB01-047 anySide/EB02-021 freezeSamePrev/EB02-039 sameNameAsCostは前コミット)
 
 **残り: P(104)・ST01〜35(約290)＝計394種**（remaining.txtの「P-」以降）。
+
+## P（プロモ）全数照合（2026-07-23）
+
+104種を照合。実バグ3件+機構統一1件:
+- P-036: 「ライフの上か下から」の上下選択欠落→lifeCost pos:choose化
+- P-043: 無指定「キャラ」=両者のside漏れ
+- PRB02分は前節参照
+- **機構統一**: battleImmuneVsAttr（has/vsCharOnly対応・base.attribute参照）が既存と判明→OP12-036で新設したbattleKoImmuneVsAttr（参照キー誤りで不動作）を撤去し既存opへ統一
+
+残り: ST01〜35 約290種。

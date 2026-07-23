@@ -1336,11 +1336,6 @@
     /* ノラ/レオ系: 自分の元々パワー7000以下のキャラが相手効果で場を離れる時、代わりのコストで防ぐ（自動） */
     async function protectFromEffect(target, cause, source) {
       if (!target) return false;
-      // 「属性(X)を持つカードとのバトルでKOされない」常在（OP12-036ゾロ=斬とのバトル耐性）
-      if (cause === 'battle' && source && source.base && !isNegated(target)) {
-        const stA = target.base.fx && target.base.fx.static;
-        if (stA) for (const o of stA) if (o.op === 'battleKoImmuneVsAttr' && source.base.attr === o.attr && (!o.cond || checkCond(o.cond, target.owner, target))) { flog(target.owner, `「${target.base.name}」は属性(${o.attr})とのバトルでKOされない`); return true; }
-      }
       // 「相手の効果ではKOされない」自身の常在: 効果KOのみ無効化（選択・パワー減少等は通すのでバックストップ）
       if (cause === 'ko' && isKoImmune(target)) { flog(target.owner, `「${target.base.name}」は相手の効果ではKOされない`); return true; }
       // 一時的な「自分の元々パワーN以下のキャラは相手の効果でKOされない」（OP10-070トレーボル＝次相手ターン終了まで）
