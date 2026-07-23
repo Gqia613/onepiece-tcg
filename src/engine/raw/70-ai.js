@@ -394,6 +394,8 @@
       const P = G.players[side], D = G.players[opp(side)];
       const acts = [];
       const all = legalActions(side);
+      // ★E55 pump(puctミラー・E59横展開): 相手の被アタック時ポンプ（ドンだけで払える形）の最大量。プリセットは該当カード0＝無風。
+      const pumpAmt = (typeof e55On === 'function' && e55On(side, 'pump') && typeof oppLeaderPumpDon === 'function') ? oppLeaderPumpDon(side) : 0;
       for (const a of all) {
         if (a.k === 'attack') {
           const at = findCard(a.auid), tg = findCard(a.tuid);
@@ -405,6 +407,9 @@
             // ★太ドン同値除外(cpuPickAttックと同方針・ユーザー観察): 2ドン以上付与してリーダーへ同値は相手カウンター1枚で防がれ付与ドン使い切りの大損。相手手札0は別。
             const need = Math.max(0, Math.ceil((power(tg) - power(at)) / 1000));
             if (need >= 2 && (power(at) + need * 1000) === power(tg) && D.hand.length > 0) continue;
+            // ★E55 pump: puctの付与は常に最小（同値）＝ポンプ持ち相手にはドンを沈める攻撃が全てポンプ1回で不発・付与ドン丸損。
+            //   素(need0)はレスト代のみ＝相手のポンプドンを吸えるので許可（cpuPickAttackはポンプ超え予算を組めるが、puctの行動空間に上乗せ段が無い以上除外が忠実なミラー）
+            if (pumpAmt > 0 && need >= 1) continue;
             acts.push(a);
             // ★E41(opt-in G._atkDonVar): 「+1ドン上乗せ」変種＝相手のカウンター要求を1段(1000)引き上げるライン選択。
             //   現行の行動空間は常に最小付与(同値)のみで、この段はpuctの探索空間に存在しなかった（真の欠落）。

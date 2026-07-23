@@ -335,6 +335,20 @@ function setupG(leaderNo){G.active='me';G.turnSeq=5;G.winner=null;const mkP=(ln,
       ok(cpu.don.rested===1, '例3q: ST02-008は相手のドン1枚をレストにする');
       ok(!cpu._donRefreshLock, '例3q: リフレッシュ据え置き(donRefreshLock)は付かない（text非記載の過剰強化を撤去）'); }
 
+    // 例3s: E55 pump のpuctミラー(E59横展開) — ポンプ持ち相手（OP13-001=相手のアタック時restDonForBuff）に
+    //       ドンを沈めるリーダー攻撃は同値着地＝ポンプ1回で不発・付与ドン丸損なので探索候補から除外。素(need0)は許可
+    setupG('OP13-002'); { const me=G.players.me, cpu=G.players.cpu;
+      G.active='me'; G.turnSeq=5; me.turnsTaken=3; cpu.turnsTaken=3;
+      cpu.leader=mkc('OP13-001'); cpu.leader.owner='cpu'; cpu.leader.attachedDon=1; // cond donX1Self成立
+      cpu.don={active:2,rested:0}; cpu.chars=[]; cpu.hand=[]; // 手札0=太ドン同値除外は不発＝pump単独の判定を見る
+      const atk=mkc('OP15-067'); atk.owner='me'; atk.summonedTurn=1; atk.rested=false; me.chars=[atk]; me.don={active:5,rested:0};
+      const hasLatk=()=>candidateActions('me').some(a=>a.k==='attack'&&findCard(a.auid)===atk&&findCard(a.tuid)===cpu.leader);
+      ok(hasLatk()===false, '例3s: ポンプ持ち相手へのドン沈めリーダー攻撃は候補除外');
+      cpu.leader.attachedDon=0;  // cond不成立→pumpAmt=0
+      ok(hasLatk()===true, '例3s: ポンプ不能(cond不成立)なら従来どおり候補');
+      cpu.leader.attachedDon=1; atk.base=Object.assign({},atk.base,{power:6000}); // need0の素アタック
+      ok(hasLatk()===true, '例3s: 素(need0)はポンプ持ち相手でも候補（レスト代のみ・ポンプドンを吸える）'); }
+
     // 例3r: actgate拡張 — 先頭コストop支払い不能の起動はCPUが使わない（OP14-105=手札の九蛇/アマゾン・リリー3枚公開。
     //       不発でも _actTurn 消費済＝【ターン1回】の空費だった）
     setupG('OP13-002'); { const me=G.players.me; const gg=mkc('OP14-105'); me.chars=[gg];
