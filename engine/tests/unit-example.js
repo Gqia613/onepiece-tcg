@@ -226,6 +226,23 @@ function setupG(leaderNo){G.active='me';G.turnSeq=5;G.winner=null;const mkP=(ln,
       await runFx(C['OP04-056'].fx.main.fx,{self:mkc('OP04-056'),side:'me'});
       ok(me.chars.length===0 && me.deck.length===1, '例3l: OP04-056は自分のキャラもデッキ下に送れる'); }
 
+    // 例3m: 意味照合バッチ6-9の修正
+    // OP15-020 火拳: 「自分のリーダーを+3000」はリーダー固定（キャラを選べない）
+    setupG('OP13-002'); { const me=G.players.me; const c1=mkc('OP15-067'); me.chars=[c1];
+      const L0=power(me.leader), C0=power(c1);
+      const _hp=humanPick; humanPick=function(cands){return Promise.resolve(cands.find(x=>x===c1)||null);}; // キャラを選ぼうとしても
+      await runFx([C['OP15-020'].fx.main.fx[0]],{self:mkc('OP15-020'),side:'me'}); humanPick=_hp;
+      ok(power(me.leader)===L0+3000 && power(c1)===C0, '例3m: OP15-020の+3000はリーダー固定'); }
+    // OP12-051 ヒナ: 手札0なら発動不可（レスト損失なし）
+    setupG('OP13-002'); { const me=G.players.me; const hina=mkc('OP12-051'); hina.rested=false; me.chars=[hina]; me.hand=[];
+      await runFx(C['OP12-051'].fx.act.fx,{self:hina,side:'me'});
+      ok(hina.rested===false, '例3m: OP12-051は手札0で発動不可（レスト未消費=原子性）'); }
+    // P-096: ドン付与対象は「ナミ」完全一致（ナミュールは対象外）
+    setupG('OP13-002'); { const me=G.players.me; me.don={active:0,rested:1};
+      const namur=Object.values(C).find(c=>c.type==='CHAR'&&c.name==='ナミュール'); const nm=mkc(namur.no); me.chars=[nm];
+      await runFx(C['P-096'].fx.act.fx,{self:mkc('P-096'),side:'me'});
+      ok(nm.attachedDon===0, '例3m: P-096はナミュールに付与しない（name完全一致）'); }
+
     // 例3g: トリガーの空撃ち抑止 — 「全てcond包み・全check不成立」のトリガー（P-088ロー「超新星＋ライフ合計5以下なら登場」）は
     //       発動しても何も起こらずカードがトラッシュへ行くだけの純損（実対戦報告）。人間には発動UIを出さず・CPUも発動せず手札へ。
     // フルフロー: cond不成立（防御側リーダー非超新星）→ P-088はトラッシュでなく手札へ

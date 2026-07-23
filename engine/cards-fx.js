@@ -164,7 +164,7 @@ window.CARD_FX = {
   "OP15-021": {"costMod":{"cond":{"trashCount":{"filter":{"type":"EVENT"},"min":4}},"amount":-3},"main":{"don":0,"fx":[{"op":"powerMod","side":"opp","amount":-3000,"count":1,"optional":true}]},"counter":{"cost":0,"fx":[{"op":"powerMod","side":"opp","amount":-3000,"count":1,"battle":true,"optional":true}]}},
   "OP15-054": {"main":{"don":0,"fx":[{"op":"cond","check":{"leaderNameIncludes":"ルーシー"},"then":[{"op":"chooseOption","options":[{"label":"2ドロー・1捨て・ドレスローザ登場","fx":[{"op":"draw","n":2},{"op":"discardOwn","n":1},{"op":"playCharFromHand","count":1,"optional":true,"filter":{"maxCost":4,"trait":"ドレスローザ"}}]},{"label":"ステージ1枚を持ち主の手札に戻す","fx":[{"op":"bounceStage","optional":true}]}]}]}]}},
   "OP04-056": {"main":{"don":0,"fx":[{"op":"deckBottom","side":"any","count":1,"optional":true}]},"trigger":[{"op":"deckBottom","side":"any","count":1,"maxCost":4,"optional":true}]},
-  "OP15-020": {"main":{"don":0,"fx":[{"op":"powerMod","side":"self","amount":3000,"count":1,"leader":true},{"op":"powerMod","side":"opp","amount":-8000,"count":1,"optional":true,"duration":"untilNextEnd"},{"op":"discardCost","count":2,"then":[{"op":"ko","side":"opp","count":1,"optional":true,"filter":{"maxEffPower":0}}]}]}},
+  "OP15-020": {"main":{"don":0,"fx":[{"op":"leaderBuff","amount":3000,"duration":"turn"},{"op":"powerMod","side":"opp","amount":-8000,"count":1,"optional":true,"duration":"untilNextEnd"},{"op":"discardCost","count":2,"then":[{"op":"ko","side":"opp","count":1,"optional":true,"filter":{"maxEffPower":0}}]}]}},
   "OP15-056": {"main":{"don":0,"fx":[{"op":"draw","n":2},{"op":"leaderDoubleAttack","amount":3000,"cond":{"leaderNameIncludes":"ルーシー"}}]}},
   "OP15-057": {"onPlay":[{"op":"cond","check":"leaderDressrosa","then":[{"op":"draw","n":1}]}],"onOppAttack":[{"op":"restSelfCost","then":[{"op":"discardCost","count":1,"filter":{"or":[{"type":"EVENT"},{"type":"STAGE"}]},"then":[{"op":"powerMod","side":"self","amount":2000,"count":1,"leader":true,"battle":true,"optional":true}]}]}]},
   "OP15-042": {"onPlay":[{"op":"discardCost","count":1,"optional":true,"then":[{"op":"cond","check":{"leaderNameIncludes":"レベッカ"},"then":[{"op":"giveKeyword","target":"self","kw":"rush","duration":"turn"}]}]}],"onKO":[{"op":"selfToHand"}]},
@@ -207,7 +207,7 @@ window.CARD_FX = {
   "OP12-119": {"onPlay":[{"op":"discardCost","count":1,"then":[{"op":"lifeAddFromDeck","n":1,"optional":true},{"op":"addCostBuff","target":"self","amount":2,"duration":"untilNextEnd"}]}],"onKO":[{"op":"cond","check":"oppTurn","then":[{"op":"lifeAddFromDeck","n":1}]}]},
   "OP07-115": {"counter":{"cost":0,"fx":[{"op":"cond","check":"life<=2","then":[{"op":"counterBuff","amount":3000}]}]},"trigger":[{"op":"reviveFromTrash","maxCost":5,"filter":{"traitIncludes":"エッグヘッド"}}]},
   "OP06-106": {"onPlay":[{"op":"lifeCost","pos":"choose","then":[{"op":"handToLife"}]}]},
-  "P-096": {"onPlay":[{"op":"draw","n":1},{"op":"discardOwn","n":1}],"act":{"label":"「ナミ」にレストのドン付与","cost":{},"fx":[{"op":"donAttach","target":"chooseOwn","n":1,"filter":{"nameIncludes":"ナミ"}}]}},
+  "P-096": {"onPlay":[{"op":"draw","n":1},{"op":"discardOwn","n":1}],"act":{"label":"「ナミ」にレストのドン付与","cost":{},"fx":[{"op":"donAttach","target":"chooseOwn","n":1,"filter":{"name":"ナミ"}}]}},
   "OP15-052": {"static":[{"op":"leaveProtect","pay":"charToBottom"}]},
   "OP06-104": {"onKO":[{"op":"cond","check":"oppLife<=3","then":[{"op":"lifeAddFromDeck","n":1,"optional":true}]}],"trigger":[{"op":"cond","check":"oppLife<=3","then":[{"op":"playSelf"}]}]},
   "OP07-054": {"onPlay":[{"op":"draw","n":1}]},
@@ -431,7 +431,7 @@ window.CARD_FX = {
   "OP16-109": {"onKO":[{"op":"cond","check":"leaderBH","then":[{"op":"draw","n":1},{"op":"ko","side":"opp","maxCost":1,"count":2,"optional":true}]}],"trigger":[{"op":"cond","check":"leaderBH","then":[{"op":"draw","n":1},{"op":"ko","side":"opp","maxCost":1,"count":2,"optional":true}]}]},
   "OP09-096": {"main":{"don":0,"fx":[{"op":"search","look":3,"filter":{"trait":"黒ひげ海賊団"},"exclude":"おれの時代だァ!!!!","rest":"trash"}]},"trigger":[{"op":"search","look":3,"filter":{"trait":"黒ひげ海賊団"},"exclude":"おれの時代だァ!!!!","rest":"trash"}]},
   "OP16-116": {"main":{"don":0,"fx":[{"op":"cond","check":"don10","then":[{"op":"playSpecificFromHand","nameIncludes":"マーシャル","choose":true,"optional":true},{"op":"oppLifeToHand","n":1,"optional":true}]}]},"trigger":[{"op":"draw","n":2},{"op":"discardOwn","n":1}]},
-  "OP09-099": {"act":{"label":"デッキ上3枚から黒ひげ1枚","cost":{"restSelf":true},"fx":[{"op":"discardOwn","n":1},{"op":"search","look":3,"filter":{"trait":"黒ひげ海賊団"}}]}},
+  "OP09-099": {"act":{"label":"デッキ上3枚から黒ひげ1枚","cost":{"restSelf":true},"fx":[{"op":"cond","check":{"selfHand":{"min":1}},"then":[{"op":"discardOwn","n":1},{"op":"search","look":3,"filter":{"trait":"黒ひげ海賊団"}}]}]}},
   "EB01-023": {"onPlay":[{"op":"draw","n":1}]},
   "OP04-045": {"onPlay":[{"op":"draw","n":1}]},
   "OP07-044": {"onPlay":[{"op":"draw","n":1}]},
@@ -894,7 +894,7 @@ window.CARD_FX = {
   // OP12-048 ドンキホーテ・ロシナンテ(青): 青海軍が相手効果で場を離れる代わりに自カード1枚レスト（※「手札1捨て」併用は近似で省略）
   "OP12-048": {"static":[{"op":"leaveProtect","targetFilter":{"color":"青","traitIncludes":"海軍"},"pay":"restOwnCards","n":1}]},
   // OP12-051 ヒナ: 【起動メイン】レスト＋手札1捨て：相手の元々コスト4以下1枚はこのターン【ブロッカー】不可
-  "OP12-051": {"act":{"label":"レスト+手札1捨て:相手4以下をブロッカー不可","cost":{"restSelf":true},"fx":[{"op":"discardCost","count":1,"then":[{"op":"denyBlocker","side":"opp","filter":{"maxBaseCost":4},"count":1,"optional":true}]}]}},
+  "OP12-051": {"act":{"label":"レスト+手札1捨て:相手4以下をブロッカー不可","cost":{},"fx":[{"op":"cond","check":{"selfHand":{"min":1}},"then":[{"op":"restSelfCost","then":[{"op":"discardOwn","n":1},{"op":"denyBlocker","side":"opp","filter":{"maxBaseCost":4},"count":1,"optional":true}]}]}]}},
   // OP12-053 ボルサリーノ: 【ターン1回】場を離れる代わりに手札1捨て ／【相手のターン中】リーダー海軍なら【ブロッカー】＋1000
   "OP12-053": {"static":[{"op":"leaveProtect","targetSelf":true,"once":"turn","pay":"discardFromHand"},{"op":"staticKeyword","kw":"blocker","cond":{"and":[{"oppTurn":true},{"leaderTrait":"海軍"}]}},{"op":"condBuff","cond":{"and":[{"oppTurn":true},{"leaderTrait":"海軍"}]},"power":1000}]},
   // OP12-054 マーシャル・Ｄ・ティーチ: 【登場時】リーダー王下七武海なら相手コスト1以下1枚を手札に戻す
