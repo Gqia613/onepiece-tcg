@@ -198,6 +198,16 @@ function setupG(leaderNo){G.active='me';G.turnSeq=5;G.winner=null;const mkP=(ln,
       await runFx(C['OP12-071'].fx.onPlay,{self:mkc('OP12-071'),side:'me'});
       ok(me.hand.some(c=>C[c.no].name==='サンジ'), '例3j: OP12-071は「サンジ」を手札に加えられる'); }
 
+    // 例3k: ST34-004リンリン=コスト原子性（捨て辞退でドン未消費）
+    setupG('OP13-002'); { const me=G.players.me; me.don={active:5,rested:0}; me.hand=[mkc('ST01-006')];
+      const _hp=humanPick; humanPick=function(){return Promise.resolve(null);};
+      await runFx(C['ST34-004'].fx.onPlay,{self:mkc('ST34-004'),side:'me'});
+      humanPick=_hp;
+      ok(donTotal('me')===5 && me.hand.length===1, '例3k: ST34-004は捨て辞退でドン未消費（原子性）'); }
+    setupG('OP13-002'); { const me=G.players.me; me.don={active:5,rested:0}; me.hand=[mkc('ST01-006')]; me.deck=[mkc('ST01-006')]; me.life=[];
+      await runFx(C['ST34-004'].fx.onPlay,{self:mkc('ST34-004'),side:'me'});
+      ok(donTotal('me')===1 && me.life.length===1, '例3k: 支払い成立でドン-4+ライフ追加'); }
+
     // 例3g: トリガーの空撃ち抑止 — 「全てcond包み・全check不成立」のトリガー（P-088ロー「超新星＋ライフ合計5以下なら登場」）は
     //       発動しても何も起こらずカードがトラッシュへ行くだけの純損（実対戦報告）。人間には発動UIを出さず・CPUも発動せず手札へ。
     // フルフロー: cond不成立（防御側リーダー非超新星）→ P-088はトラッシュでなく手札へ

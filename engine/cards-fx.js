@@ -3845,7 +3845,7 @@ window.CARD_FX = {
   "ST23-003": {"onPlay":[{"op":"discardCost","count":1,"optional":true,"then":[{"op":"cond","check":{"leaderTraitIncludes":"赤髪海賊団"},"then":[{"op":"ko","side":"opp","filter":{"maxPower":4000},"count":1,"optional":true}]}]}]},
   "ST23-004": {"act":{"label":"ドン1+このキャラをレスト:相手1枚-1000","cost":{"don":1,"restSelf":true},"fx":[{"op":"powerMod","side":"opp","amount":-1000,"duration":"turn","count":1,"optional":true}]}},
   "ST24-001": {"onPlay":[{"op":"cond","check":{"restedCardsAtLeast":6},"then":[{"op":"draw","n":1},{"op":"discardOwn","n":1}]}]},
-  "ST24-002": {"onPlay":[{"op":"search","look":5,"count":1,"filter":{"traitIncludes":"超新星"},"optional":true}],"onOppAttack":[{"op":"trashSelfCost","then":[{"op":"donActivate","n":1}]}]},
+  "ST24-002": {"onPlay":[{"op":"search","look":5,"count":1,"filter":{"traitIncludes":"超新星"},"optional":true}],"onOppAttack":[{"op":"trashSelfCost","cpuSkip":true,"then":[{"op":"donActivate","n":1}]}]},
   "ST24-004": {"onPlay":[{"op":"lock","count":1,"optional":true},{"op":"cond","check":{"oppChar":{"restedOnly":true,"min":2}},"then":[{"op":"leaderBuff","amount":2000,"duration":"untilNextEnd"}]}]},
   "ST24-005": {"onPlay":[{"op":"cond","check":{"leaderTraitIncludes":"超新星"},"then":[{"op":"restChar","side":"opp","filter":{"maxCost":5},"count":1,"optional":true},{"op":"delayedDonActivate","n":1}]}]},
   "ST25-001": {"static":[{"op":"staticCost","amount":1,"cond":{"selfCharCount":{"filter":{"minBaseCost":5},"min":2}}}],"onPlay":[{"op":"cond","check":{"leaderNameIncludes":"バギー"},"then":[{"op":"draw","n":3},{"op":"discardOwn","n":2}]}]},
@@ -4060,7 +4060,7 @@ window.CARD_FX = {
   // ST34-003 ブリュレ:【登場時】デッキ上3枚から《ビッグ・マム海賊団》1枚まで手札（残りはデッキ下）
   "ST34-003": {"onPlay":[{"op":"search","look":3,"count":1,"filter":{"trait":"ビッグ・マム海賊団"},"optional":true}]},
   // ST34-004 リンリン:【登場時】ドン‼-4・手札1枚を捨てられる：デッキ上1枚までライフの上へ→相手キャラ1枚までを このターン中 元々のパワー0
-  "ST34-004": {"onPlay":[{"op":"donMinus","n":4},{"op":"discardCost","count":1,"optional":true,"then":[{"op":"lifeAddFromDeck","n":1},{"op":"setPower","side":"opp","value":0,"count":1,"optional":true,"duration":"turn"}]}]},
+  "ST34-004": {"onPlay":[{"op":"cond","check":{"donAtLeast":4},"then":[{"op":"discardCost","count":1,"optional":true,"then":[{"op":"donMinus","n":4,"then":[{"op":"lifeAddFromDeck","n":1},{"op":"setPower","side":"opp","value":0,"count":1,"optional":true,"duration":"turn"}]}]}]}]},
   // ST34-005 タマゴ男爵＆ペコムズ:【アタック時】ドン‼-1：相手の元々のパワー2000以下キャラ1枚までKO
   "ST34-005": {"onAttack":[{"op":"donMinus","n":1,"optional":true,"then":[{"op":"ko","side":"opp","filter":{"maxPower":2000},"count":1,"optional":true}]}]},
   // ST35-001 ハック:【ブロッカー】(text由来) ／【登場時】相手の元々のパワー2000以下キャラ1枚までKO
