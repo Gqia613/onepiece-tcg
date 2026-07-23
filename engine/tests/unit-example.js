@@ -243,6 +243,20 @@ function setupG(leaderNo){G.active='me';G.turnSeq=5;G.winner=null;const mkP=(ln,
       await runFx(C['P-096'].fx.act.fx,{self:mkc('P-096'),side:'me'});
       ok(nm.attachedDon===0, '例3m: P-096はナミュールに付与しない（name完全一致）'); }
 
+    // 例3n: OP16全数トライアルの修正
+    // OP16-073: ターン終了時のドン-2は任意（辞退でドン未消費・ブロッカー無し）
+    setupG('OP13-002'); { const me=G.players.me; const b=mkc('OP16-073'); b.rested=true; me.chars=[b]; me.don={active:3,rested:0};
+      const _sp=showPrompt; showPrompt=function(cfg){const o=(cfg.opts||[]).find(x=>x.v==='n'||x.ghost); const v=o?o.v:'n'; if(cfg.onPick)cfg.onPick(v); return Promise.resolve(v);};
+      await runFx(C['OP16-073'].fx.onTurnEnd,{self:b,side:'me'}); showPrompt=_sp;
+      ok(donTotal('me')===3 && b.rested===true && !b.kwGrant.some(g=>g.kw==='blocker'), '例3n: OP16-073は辞退でドン未消費・効果なし'); }
+    setupG('OP13-002'); { const me=G.players.me; const b=mkc('OP16-073'); b.rested=true; me.chars=[b]; me.don={active:3,rested:0};
+      await runFx(C['OP16-073'].fx.onTurnEnd,{self:b,side:'me'});
+      ok(donTotal('me')===1 && b.rested===false && b.kwGrant.some(g=>g.kw==='blocker'), '例3n: 承諾でドン-2+アクティブ+ブロッカー'); }
+    // OP16-035: 相手のリーダーもレスト対象に含む
+    setupG('OP13-002'); { const cpu=G.players.cpu; cpu.leader.rested=false; cpu.chars=[];
+      await runFx([C['OP16-035'].fx.onPlay[0]],{self:mkc('OP16-035'),side:'me'});
+      ok(cpu.leader.rested===true, '例3n: OP16-035は相手リーダーをレストにできる'); }
+
     // 例3g: トリガーの空撃ち抑止 — 「全てcond包み・全check不成立」のトリガー（P-088ロー「超新星＋ライフ合計5以下なら登場」）は
     //       発動しても何も起こらずカードがトラッシュへ行くだけの純損（実対戦報告）。人間には発動UIを出さず・CPUも発動せず手札へ。
     // フルフロー: cond不成立（防御側リーダー非超新星）→ P-088はトラッシュでなく手札へ
