@@ -423,6 +423,20 @@ function setupG(leaderNo){G.active='me';G.turnSeq=5;G.winner=null;const mkP=(ln,
       await runFx(C['OP03-013'].fx.onPlay,{self:mkc('OP03-013'),side:'me'});
       ok(cpu.chars.includes(v), '例3x: 相手ターン中の登場ではKOが発動しない'); }
 
+    // 例3y: onHitLife — 「このキャラのアタックによって相手のライフにダメージを与えた時」（OP03-041等4枚。
+    //       旧onAttack実装は宣言時発火＝ブロック/キャラ対象でも7枚ミルできる過剰だった）
+    setupG('OP13-002'); { const me=G.players.me, cpu=G.players.cpu;
+      G.active='me'; G.winner=null; G.busy=false; G.myActable=true; G.firstPlayer='me'; me.turnsTaken=3; cpu.turnsTaken=3;
+      const us=mkc('OP03-041'); us.summonedTurn=1; us.attachedDon=3; me.chars=[us];
+      for(let i=0;i<10;i++)me.deck.push(mkc('ST01-006'));
+      cpu.life=[mkc('ST01-006'),mkc('ST01-006')]; cpu.hand=[]; cpu.chars=[];
+      await declareAttack(us, cpu.leader);
+      ok(me.trash.length===7, '例3y: ライフダメージ成立でデッキ上7枚ミル');
+      const wall=mkc('OP15-067'); wall.owner='cpu'; wall.rested=true; cpu.chars=[wall];
+      const t0=me.trash.length; const us2=mkc('OP03-041'); us2.summonedTurn=1; us2.attachedDon=3; me.chars=[us2];
+      await declareAttack(us2, wall);
+      ok(me.trash.length===t0 || me.trash.length===t0+1, '例3y: キャラへのアタックではミルしない'); }
+
     // 例3v: denyBlocker「このバトル中」スコープ（OP01-120シャンクス等7枚。旧実装はターン束縛=過剰）
     setupG('OP13-002'); { const cpu=G.players.cpu; const blk=mkc('OP15-067'); blk.owner='cpu'; cpu.chars=[blk];
       await doOp({op:'denyBlocker',all:true,battle:true},{side:'me',self:G.players.me.leader});
@@ -1075,15 +1089,25 @@ function setupG(leaderNo){G.active='me';G.turnSeq=5;G.winner=null;const mkP=(ln,
       G.active='me';
     }
     // 例23: ★W2 onceゲート3種
-    // 23a: OP03-076ロブ・ルッチL【起動メイン】【ターン1回】— 同一ターンに2回使えない（_actTurn/actUsable）
-    setupG('OP03-076'); { const P=G.players.me; P.isCPU=true;
+    // 23a: OP03-076ロブ・ルッチL — 「相手のキャラがKOされた時」の誘発型（旧act実装はカード形状の取り違え。Q372/373）
+    setupG('OP03-076'); { const P=G.players.me, O=G.players.cpu; P.isCPU=true; G.active='me';
       P.leader.rested=true; P.hand=[mkc('OP15-067'),mkc('OP15-067')];
-      await leaderActivate('me');
-      ok(P.leader.rested===false && P.hand.length===0, '例23a: 手札2捨てでリーダーがアクティブ');
-      ok(P.leader._actTurn===G.turnSeq && actUsable(P.leader)===false, '例23a: 【ターン1回】を消費（actUsable=false）');
+      const v1=mkc('OP15-067'); v1.owner='cpu'; O.chars=[v1];
+      await koCard(v1,'oppEffect');
+      ok(P.leader.rested===false && P.hand.length===0, '例23a: 相手キャラKO時に手札2捨てでリーダーがアクティブ');
       P.leader.rested=true; P.hand=[mkc('OP15-067'),mkc('OP15-067')];
-      await leaderActivate('me');
-      ok(P.leader.rested===true && P.hand.length===2, '例23a: 同一ターン2回目は使えない（手札もレストも不変）');
+      const v2=mkc('OP15-067'); v2.owner='cpu'; O.chars=[v2];
+      await koCard(v2,'oppEffect');
+      ok(P.leader.rested===true && P.hand.length===2, '例23a: 同一ターン2回目のKOでは発動しない（ターン1回）');
+      // Q372: 手札不足で発動できなかった(辞退)場合は【ターン1回】未消費＝同ターンの次のKOで発動できる
+      G.turnSeq++; P.leader._oppKOTurn=null; P.leader.rested=true; P.hand=[mkc('OP15-067')]; // 1枚だけ=支払い不能
+      const v3=mkc('OP15-067'); v3.owner='cpu'; O.chars=[v3];
+      await koCard(v3,'oppEffect');
+      ok(P.leader.rested===true && P.hand.length===1, '例23a: 手札不足なら不発');
+      P.hand=[mkc('OP15-067'),mkc('OP15-067')];
+      const v4=mkc('OP15-067'); v4.owner='cpu'; O.chars=[v4];
+      await koCard(v4,'oppEffect');
+      ok(P.leader.rested===false, '例23a: 辞退はターン1回未消費＝次のKOで発動できる(Q372)');
     }
     // 23b: OP11-025イシリー【相手のアタック時】【ターン1回】ドン1レスト+自身レスト→+1000 — 同一ターン1回のみ（フルフロー）
     setupG('OP10-099'); { const P=G.players.me, O=G.players.cpu;

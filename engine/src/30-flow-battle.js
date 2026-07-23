@@ -298,13 +298,24 @@
     }
     // リーダーの onLeaderHitLife: このリーダー自身のアタックで相手ライフにダメージを与えた時に誘発
     async function checkLeaderHitLife(attacker) {
-      if (!attacker || attacker.base.type !== 'LEADER') return;
-      const side = attacker.owner, L = G.players[side].leader;
-      if (L !== attacker || isNegated(L)) return;
-      const cfg = L.base.fx && L.base.fx.onLeaderHitLife;
-      if (!cfg) return;
-      if (cfg.cond && !checkCond(cfg.cond, side, L)) return;
-      await runFx(cfg.fx, { self: L, side });
+      if (!attacker) return;
+      const side = attacker.owner;
+      if (attacker.base.type === 'LEADER') {
+        const L = G.players[side].leader;
+        if (L !== attacker || isNegated(L)) return;
+        const cfg = L.base.fx && L.base.fx.onLeaderHitLife;
+        if (!cfg) return;
+        if (cfg.cond && !checkCond(cfg.cond, side, L)) return;
+        await runFx(cfg.fx, { self: L, side });
+        return;
+      }
+      // キャラの onHitLife: 「このキャラのアタックによって相手のライフにダメージを与えた時」（OP03-041/043/047/051等。
+      //   旧実装はonAttack＝宣言時発火でブロック/キャラ対象でもミルできる過剰だった）
+      if (!G.players[side].chars.includes(attacker) || isNegated(attacker)) return;
+      const ccfg = attacker.base.fx && attacker.base.fx.onHitLife;
+      if (!ccfg) return;
+      if (ccfg.cond && !checkCond(ccfg.cond, side, attacker)) return;
+      await runFx(ccfg.fx, { self: attacker, side });
     }
     // デッキが0枚になった時、敗北の代わりに勝利するリーダー（ナミ等）
     function hasDeckOutWin(side) { const L = G.players[side].leader; return !!(L && !isNegated(L) && L.base.fx && L.base.fx.static && L.base.fx.static.some(o => o.op === 'deckOutWin')); }
@@ -322,7 +333,7 @@
       { const oL = ow.leader; if (card.base.type === 'CHAR' && (card.base.power || 0) >= 6000 && oL.base.leader === 'ace' && !isNegated(oL) && oL.attachedDon >= 1 && ow._aceDrawTurn !== G.turnSeq) { ow._aceDrawTurn = G.turnSeq; if (draw(card.owner, 1)) { floatOn(oL.uid, 'DRAW', 'heal'); flog(card.owner, '【エース】元々パワー6000以上のKOで1ドロー'); } } }
       await checkAllyLeave(card.owner, card, source === 'battle' ? 'battle' : 'oppEffect', true); // 自分のキャラが場を離れた時のリーダー誘発（KOはバトル/相手効果。第4引数isKo=true）
       // 「相手のキャラがKOされた時」誘発（OP01-061カイドウL）。KOされた側の相手＝koSide のキャラ/リーダーが反応。
-      { for (const koSide of ['me', 'cpu']) { const K = G.players[koSide]; if (!K) continue; for (const c of [K.leader, ...K.chars]) { const cfg = c && c.base.fx && c.base.fx.onOppKO; if (!cfg || isNegated(c)) continue; if (koSide === card.owner && !cfg.anySide) continue; if (koSide !== card.owner && cfg.anySide === 'ownOnly') continue; if (cfg.when === 'selfTurn' && koSide !== G.active) continue; if (cfg.cond && !checkCond(cfg.cond, koSide, c)) continue; if (cfg.once === 'turn') { if (c._oppKOTurn === G.turnSeq) continue; c._oppKOTurn = G.turnSeq; } await runFx(cfg.fx, { self: c, side: koSide }); } } } // anySide=自陣営のKOにも反応（ST08-001ルフィL「キャラがKOされた時」）
+      { for (const koSide of ['me', 'cpu']) { const K = G.players[koSide]; if (!K) continue; for (const c of [K.leader, ...K.chars]) { const cfg = c && c.base.fx && c.base.fx.onOppKO; if (!cfg || isNegated(c)) continue; if (koSide === card.owner && !cfg.anySide) continue; if (koSide !== card.owner && cfg.anySide === 'ownOnly') continue; if (cfg.when === 'selfTurn' && koSide !== G.active) continue; if (cfg.cond && !checkCond(cfg.cond, koSide, c)) continue; if (cfg.once === 'turn') { if (c._oppKOTurn === G.turnSeq) continue; c._oppKOTurn = G.turnSeq; } const kctx = { self: c, side: koSide }; await runFx(cfg.fx, kctx); if (cfg.once === 'turn' && kctx._declined && !kctx._committed) c._oppKOTurn = null; } } } // anySide=自陣営のKOにも反応（ST08-001ルフィL）。辞退は【ターン1回】未消費（OP03-076ルッチL Q372=同ターンの次のKOで再発動可）
       render();
     }
     function bounceCard(card) { removeCharTo(card, G.players[card.owner].hand); }
