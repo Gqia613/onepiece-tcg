@@ -413,12 +413,14 @@
           const ss = src.base.fx && src.base.fx.static; if (!ss) continue;
           for (const o of ss) { if (o.op === 'oppStaticPowerMod' && checkCond(o.cond, src.owner, src)) p += o.power || 0; }
         }
-        // 自分の他のキャラ/リーダーの static が「自分のフィルタ一致キャラにパワー±（allyPower）」を課す場合（OP14-034ルフィ：緑コスト4以上の麦わら全+1000）。
+        // 自分のキャラ/リーダーの static が「自分のフィルタ一致キャラにパワー±（allyPower）」を課す場合（OP14-034ルフィ：緑コスト4以上の麦わら全+1000）。
         // lightMatch を使い再帰（minEffPower等→power()）を避ける。
+        // ★「〜キャラすべて」はfilter一致なら発生源自身も含む（ラクヨウ/ST30-003白ひげ等8枚が自己バフ欠落だった）。
+        //   「このキャラ以外」明記のカード（OP04-012コブラ）のみ exSelf:true で自身を除外する。
         for (const src of [G.players[card.owner].leader, ...G.players[card.owner].chars, G.players[card.owner].stage]) {
-          if (!src || src === card || isNegated(src)) continue;
+          if (!src || isNegated(src)) continue;
           const ss = src.base.fx && src.base.fx.static; if (!ss) continue;
-          for (const o of ss) { if (o.op === 'allyPower' && (!o.cond || checkCond(o.cond, src.owner, src)) && lightMatch(card, o.filter)) p += o.power || 0; }
+          for (const o of ss) { if (o.op === 'allyPower' && !(src === card && o.exSelf) && (!o.cond || checkCond(o.cond, src.owner, src)) && lightMatch(card, o.filter)) p += o.power || 0; }
         }
       }
       // 相手ターン中に「元々のパワーをNにする」静的付与（フザ→シュラ/自身 等）
@@ -483,7 +485,7 @@
       // 自分のリーダー/キャラの static が「filter一致の自分のキャラにキーワード付与（allyKeyword）」する場合（OP11-001コビーL：SWORDに速攻：キャラ）。lightMatchで再帰回避。
       for (const src of [G.players[card.owner].leader, ...G.players[card.owner].chars]) {
         if (!src || isNegated(src)) continue; const ss = src.base.fx && src.base.fx.static; if (!ss) continue;
-        for (const o of ss) { if (o.op === 'allyKeyword' && o.kw === kw && (!o.cond || checkCond(o.cond, src.owner, src)) && lightMatch(card, o.filter)) return true; }
+        for (const o of ss) { if (o.op === 'allyKeyword' && o.kw === kw && !(src === card && o.exSelf) && (!o.cond || checkCond(o.cond, src.owner, src)) && lightMatch(card, o.filter)) return true; } // exSelf=「このキャラ以外」明記（OP04-118ビビ）
       }
       // 自分のキャラの static が「リーダーへキーワード付与（grantKeywordToLeader）」する場合
       if (b.type === 'LEADER') {
@@ -551,6 +553,8 @@
       if (f.basePower != null && (b.power || 0) !== f.basePower) return false;
       if (f.maxPower != null && (b.power || 0) > f.maxPower) return false; // 元々のパワーN以下（allyPower/allyCostの基本パワー判定。ST21-011フランキー等）
       if (f.minPower != null && (b.power || 0) < f.minPower) return false;
+      if (f.cost != null && (b.cost || 0) !== f.cost) return false; // 元々のコストN（OP04-119ロシナンテ=コスト5の味方保護）
+      if (f.activeOnly && card.rested) return false; // アクティブのキャラのみ（OP04-119）
       return true;
     }
     function matchFilter(card, f) {

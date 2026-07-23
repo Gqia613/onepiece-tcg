@@ -283,9 +283,10 @@
           if (op.all && op.side === 'any') { for (const sd of [o, side]) { const PP = G.players[sd]; for (const t of PP.chars.slice()) { if (!matchFilter(t, opFilter(op))) continue; if (sd === o && (isKoImmune(t) || await protectFromEffect(t, 'ko', self))) continue; await koCard(t, sd === side ? 'effect' : 'oppEffect'); } } render(); break; } // 両者対象の全体KO
           if (op.all) { for (const t of oppChars(side, opFilter(op)).filter(c => !isKoImmune(c))) { if (!(await protectFromEffect(t, 'ko', self))) await koCard(t, 'oppEffect'); } break; } // 条件一致の相手キャラを全てKO
           for (let i = 0; i < (op.count || 1); i++) {
-            const cands = oppChars(side, opFilter(op)).filter(c => !isKoImmune(c));
-            const t = await chooseCard(side, cands, progText('KOする相手キャラを選択', i, op.count || 1), 'oppBig', op.optional);
-            if (!t) break; if (await protectFromEffect(t, 'ko', self)) continue; await koCard(t, 'oppEffect');
+            const koOwnSide = op.side === 'own' || op.side === 'self'; // 自分のキャラをKO（OP04-079。自分の効果KO＝「相手の効果でKOされない」耐性は貫通・protectは相手効果用なのでスキップ）
+            const cands = koOwnSide ? P.chars.filter(c => matchFilter(c, opFilter(op))) : oppChars(side, opFilter(op)).filter(c => !isKoImmune(c));
+            const t = await chooseCard(side, cands, progText(koOwnSide ? 'KOする自分のキャラを選択' : 'KOする相手キャラを選択', i, op.count || 1), koOwnSide ? 'ownBig' : 'oppBig', op.optional);
+            if (!t) break; if (!koOwnSide && await protectFromEffect(t, 'ko', self)) continue; await koCard(t, koOwnSide ? 'effect' : 'oppEffect');
           }
           break;
         }
@@ -331,7 +332,10 @@
             let t;
             if (op.oppChooses) { const OP2 = G.players[o]; t = OP2.isCPU ? cands.slice().sort((a, b) => scoreChar(a) - scoreChar(b))[0] : await chooseCard(o, cands, '手札に戻す自分のキャラを選択', 'ownBig', false); } // 「相手は自身のキャラを戻す」=選択権は相手（EB01-028）
             else t = await chooseCard(side, cands, progText('手札に戻すキャラを選択', i, op.count || 1), op.side === 'own' ? 'ownBig' : 'oppBig', op.optional);
-            if (!t) break; if (await protectFromEffect(t, 'bounce')) continue; bounceCard(t); flog(side, `「${t.base.name}」を手札に戻した`); await checkAllyLeave(t.owner, t, t.owner === side ? 'ownEffect' : 'oppEffect'); if (t.owner !== side) fireSimpleReact(side, 'onOppBounce'); // 相手キャラを自分の効果で戻した時（EB02-023クロコダイル）
+            if (!t) break; if (await protectFromEffect(t, 'bounce')) continue;
+            // orDeckBottom: 「持ち主の手札かデッキの下に戻す」（OP04-043うるティ）＝行き先を効果の使用者が選ぶ。CPUは相手キャラならデッキ下（手札に渡さない）
+            if (op.orDeckBottom) { const toB = P.isCPU ? (t.owner !== side) : (await showPrompt({ side, title: '戻し先を選択', text: `「${t.base.name}」をどこに戻しますか？`, opts: [{ t: '持ち主の手札', v: 'h', primary: true }, { t: '持ち主のデッキの下', v: 'b' }] })) === 'b'; if (toB) { removeCharTo(t, G.players[t.owner].deck); flog(side, `「${t.base.name}」を持ち主のデッキの下に置いた`); await checkAllyLeave(t.owner, t, t.owner === side ? 'ownEffect' : 'oppEffect'); render(); continue; } }
+            bounceCard(t); flog(side, `「${t.base.name}」を手札に戻した`); await checkAllyLeave(t.owner, t, t.owner === side ? 'ownEffect' : 'oppEffect'); if (t.owner !== side) fireSimpleReact(side, 'onOppBounce'); // 相手キャラを自分の効果で戻した時（EB02-023クロコダイル）
             // バウンスした場合、その持ち主(相手)が手札からコストN以下のキャラを登場できる（OP13-119エース「そうした場合、相手は…登場」）
             if (op.oppPlayAfter != null) { const O = G.players[t.owner]; const cc = O.hand.filter(c => c.base.type === 'CHAR' && (c.base.cost || 0) <= op.oppPlayAfter); if (cc.length && O.chars.length < 5) { const pc = O.isCPU ? cc.slice().sort((a, b) => (b.base.power || 0) - (a.base.power || 0))[0] : await chooseFromHand(t.owner, cc, '登場させるキャラを選択（任意）', null, true); if (pc) { O.hand.splice(O.hand.indexOf(pc), 1); await summon(t.owner, pc, false); } } }
           }
@@ -435,6 +439,7 @@
           break;
         }
         case 'freezeSamePrev': { for (const t of (ctx._pmPicked || [])) { t.frozen = true; flog(side, `「${t.base.name}」は次のリフレッシュでアクティブにならない`); floatOn(t.uid, '凍結', 'dmg'); } render(); break; } // 「選んだキャラは次の自分のリフレッシュでアクティブにならない」（EB02-021）
+        case 'freezeSelf': { if (self) { self.frozen = true; flog(side, `「${self.base.name}」は次の自分のリフレッシュでアクティブにならない`); floatOn(self.uid, '凍結', 'dmg'); render(); } break; } // 「その後、このキャラは次の自分のリフレッシュでアクティブにならない」（OP04-090ルフィ）
         case 'powerMod': {
           const dur = op.battle ? 'battle' : durTag(op.duration, 'turnEnd');
           if (op.samePrev) { // 「そのカードを、…パワー+N」＝直前のpowerModが選んだ同一対象へ再付与（OP06-038。再選択させると別カードを選べてしまう）
@@ -1074,6 +1079,7 @@
         case 'scheduleTurnEnd': { (G._pendingTurnEnd = G._pendingTurnEnd || []).push({ side, fx: op.fx, self }); break; }
         case 'scheduleBattleEnd': { (G._pendingBattleEnd = G._pendingBattleEnd || []).push({ side, fx: op.fx, self }); break; } // 「このバトル終了時」（OP02-064。declareAttack末尾で実行）
         case 'ifBattledTargetKOed': { const bt = ctx.target; if (bt && !G.players[bt.owner].chars.includes(bt)) await runFx(op.then, ctx); else ctx._declined = true; break; } // 「バトルによって相手のキャラをKOした時」（OP02-094イスカ。onBattleEndVsChar内で対象の退場を確認）
+        case 'battledToDeckBottom': { const bt = ctx.target; if (bt && G.players[bt.owner].chars.includes(bt) && (op.maxCost == null || matchFilter(bt, { maxCost: op.maxCost }))) { removeCharTo(bt, G.players[bt.owner].deck); flog(side, `「${bt.base.name}」を持ち主のデッキの下に置いた`); await checkAllyLeave(bt.owner, bt, 'oppEffect'); render(); } break; } // 「バトルしたバトル終了時、相手のキャラをデッキ下」（OP04-047氷鬼。onBattleEndVsChar内・生存時のみ）
         case 'grantKoImmuneBattle': { // 「選んだキャラは、このバトル中、KOされない」（OP02-118八尺瓊勾玉＝バトルKOも効果KOも防ぐ。バトル終了(until:battle)で解除）
           for (let i = 0; i < (op.count || 1); i++) { const cands = P.chars.filter(c => matchFilter(c, opFilter(op))); const t = P.isCPU ? cands[0] : await chooseCard(side, cands, 'このバトル中KOされないキャラを選択', 'ownBig', op.optional !== false); if (!t) break; t.buffs.push({ amount: 0, until: 'battle', koImmuneB: 1 }); floatOn(t.uid, '無敵', 'buff'); flog(side, `「${t.base.name}」はこのバトル中KOされない`); }
           render(); break;
@@ -1365,7 +1371,7 @@
       if (cause === 'ko') { const wk = G.players[target.owner] && G.players[target.owner]._weakKoImmune; if (wk && G.turnSeq <= wk.until && (target.base.power || 0) <= wk.maxBasePower) { flog(target.owner, `「${target.base.name}」は元々パワー${wk.maxBasePower}以下なので相手の効果でKOされない`); return true; } }
       if (cause === 'ko') { const tk = G.players[target.owner] && G.players[target.owner]._traitKoImmune; if (tk && G.turnSeq <= tk.until && matchFilter(target, tk.filter)) { flog(target.owner, `「${target.base.name}」は効果でKOされない`); return true; } } // 一時的なfilter一致KO耐性（OP09-033ロビン）
       // 自分の他キャラが提供する「アクティブの時、filter一致の味方は効果でKOされない」常在（OP08-029ペコムズ）
-      if (cause === 'ko') { const ow = G.players[target.owner]; for (const src of ow.chars) { if (src === target || isNegated(src)) continue; const st = src.base.fx && src.base.fx.static; if (!st) continue; for (const ob of st) { if (ob.op === 'allyKoImmune' && !ob.battleOnly && (!ob.whenActive || !src.rested) && (!ob.cond || checkCond(ob.cond, target.owner, src)) && lightMatch(target, ob.filter)) { flog(target.owner, `「${target.base.name}」は効果でKOされない`); return true; } } } }
+      if (cause === 'ko') { const ow = G.players[target.owner]; for (const src of ow.chars) { if (src === target || isNegated(src)) continue; const st = src.base.fx && src.base.fx.static; if (!st) continue; for (const ob of st) { if (ob.op === 'allyKoImmune' && !ob.battleOnly && (!ob.whenActive || !src.rested) && (!ob.whenRested || src.rested) && (!ob.cond || checkCond(ob.cond, target.owner, src)) && lightMatch(target, ob.filter)) { flog(target.owner, `「${target.base.name}」は効果でKOされない`); return true; } } } }
       // 「このキャラはバトルでKOされない」常在（condBuff battleImmune・cond対応。OP10-104カリブー）
       if (cause === 'battle' && !isNegated(target)) { const st = target.base.fx && target.base.fx.static; if (st) for (const o of st) { if (o.op === 'condBuff' && o.battleImmune && (!o.vsLeaderOnly || (source && source.base && source.base.type === 'LEADER')) && (!o.cond || checkCond(o.cond, target.owner, target))) { flog(target.owner, `「${target.base.name}」はバトルではKOされない`); return true; } } }
       // 「属性Xを持つ/持たないカードとのバトルでKOされない」常在（source=アタッカー。P-052ミホーク=斬を持つ/P-025スモーカー=特を持たない 等。cond対応＝ドン×1）

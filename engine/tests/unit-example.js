@@ -437,6 +437,13 @@ function setupG(leaderNo){G.active='me';G.turnSeq=5;G.winner=null;const mkP=(ln,
       await declareAttack(us2, wall);
       ok(me.trash.length===t0 || me.trash.length===t0+1, '例3y: キャラへのアタックではミルしない'); }
 
+    // 例3z: allyPower自己包含 — 「〜キャラすべて」はfilter一致なら発生源も対象（ラクヨウ等8枚が自己バフ欠落）。「このキャラ以外」明記はexSelfで除外
+    setupG('OP13-002'); { const me=G.players.me; G.active='me';
+      const rk=mkc('OP02-019'); rk.attachedDon=1; me.chars=[rk]; const p0=rk.base.power||0;
+      ok(power(rk)===p0+1000+1000, '例3z: ラクヨウ(白ひげ全+1000)は自分自身にも+1000（付与ドン+1000込みで+2000）');
+      const cb=mkc('OP04-012'); me.chars=[cb]; const c0=cb.base.power||0;
+      ok(power(cb)===c0, '例3z: コブラ(このキャラ以外)は自身を含まない(exSelf)'); }
+
     // 例3v: denyBlocker「このバトル中」スコープ（OP01-120シャンクス等7枚。旧実装はターン束縛=過剰）
     setupG('OP13-002'); { const cpu=G.players.cpu; const blk=mkc('OP15-067'); blk.owner='cpu'; cpu.chars=[blk];
       await doOp({op:'denyBlocker',all:true,battle:true},{side:'me',self:G.players.me.leader});
