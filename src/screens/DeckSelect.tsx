@@ -13,9 +13,13 @@ import type { Deck } from '../engine/types';
 import { IMG, IMG_BIG } from '../engine/img';
 import { DeckListModal } from '../components/deck/DeckListModal';
 import { Icon } from '../components/ui/Icon';
-import { deleteCloudDeck } from '../state/decks';
+import { deleteCloudDeck, sharedToDeck } from '../state/decks';
+import { api } from '../api/client';
 import { beginCpuRecording } from '../net/cpuRecorder';
 import { useAuth } from '../state/auth';
+
+type DeckCat = 'custom' | 'shared' | 'preset';
+const CAT_LABEL: Record<DeckCat, string> = { custom: 'マイデッキ', shared: '共有デッキ', preset: 'プリセット' };
 
 // 元 renderSelect の tier 昇順ソート（src/60-screens-init.js:12-13）。
 const TIER_RANK: Record<string, number> = { 'TIER 1': 1, 'TIER 2': 2, 'TIER 3': 3 };
@@ -72,7 +76,8 @@ export default function DeckSelect() {
   const [listDeck, setListDeck] = useState<Deck | null>(null); // カードリスト表示中のデッキ
   const [delDeck, setDelDeck] = useState<Deck | null>(null);   // 削除確認モーダル
   const [step, setStep] = useState<'me' | 'cpu'>('me');        // ①あなた → ②CPU
-  const [cat, setCat] = useState<'custom' | 'preset'>('preset'); // カルーセルの表示カテゴリ
+  const [cat, setCat] = useState<DeckCat>('preset');           // カルーセルの表示カテゴリ
+  const [sharedList, setSharedList] = useState<Deck[]>([]);    // 友達の共有デッキ（CPUに持たせて練習できる）
   const catTouched = useRef(false);                            // ユーザーが手で切り替えたか
   const [activeIdx, setActiveIdx] = useState(0);               // カルーセル中央のデッキ
   const railRef = useRef<HTMLDivElement | null>(null);
@@ -85,7 +90,7 @@ export default function DeckSelect() {
     .sort((a, b) => (TIER_RANK[a.tier || ''] || 9) - (TIER_RANK[b.tier || ''] || 9));
   const customList: Deck[] = ((G?.customDecks || []) as Deck[]);
   const hasCustom = customList.length > 0;
-  const allDecks: Deck[] = customList.concat(presetList);
+  const allDecks: Deck[] = customList.concat(sharedList, presetList);
   // カスタムを先に: カスタムがあるのに未操作なら custom タブを既定にする（クラウド読込は非同期のため effect で追随）
   useEffect(() => {
     if (hasCustom && !catTouched.current && cat !== 'custom') setCat('custom');
@@ -93,7 +98,24 @@ export default function DeckSelect() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hasCustom]);
 
-  const ordered: Deck[] = cat === 'custom' ? customList : presetList;
+  // 友達の共有デッキを取得（CPUに持たせる/自分で使う練習用）
+  useEffect(() => {
+    let alive = true;
+    const eng = useEngineStore.getState().engine;
+    if (!eng) return;
+    api.listSharedDecks()
+      .then(({ decks }) => { if (alive) setSharedList(decks.map((d) => sharedToDeck(eng, d))); })
+      .catch(() => { /* オフライン等は空のまま */ });
+    return () => { alive = false; };
+  }, [engine]);
+
+  const ordered: Deck[] = cat === 'custom' ? customList : cat === 'shared' ? sharedList : presetList;
+  // 表示カテゴリの巡回順（存在するものだけ）。トグルは次のカテゴリへ回す
+  const cats: DeckCat[] = ([] as DeckCat[]).concat(hasCustom ? ['custom'] : [], sharedList.length ? ['shared'] : [], ['preset']);
+  const catOf = (id: string): DeckCat | null =>
+    customList.some((d) => d.id === id) ? 'custom'
+    : sharedList.some((d) => d.id === id) ? 'shared'
+    : presetList.some((d) => d.id === id) ? 'preset' : null;
 
   const bump = () => useEngineStore.getState().bump();
 
@@ -156,9 +178,8 @@ export default function DeckSelect() {
     if (!selId) return;
     const inCur = ordered.findIndex((d) => d.id === selId);
     if (inCur >= 0) { centerTo(inCur, false, false); return; }
-    const other: 'custom' | 'preset' = cat === 'custom' ? 'preset' : 'custom';
-    const otherList = other === 'custom' ? customList : presetList;
-    if (otherList.some((d) => d.id === selId)) setCat(other); // ↓のcat effectが位置合わせする
+    const other = catOf(selId as string);
+    if (other && other !== cat) setCat(other); // ↓のcat effectが位置合わせする
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [step]);
 
@@ -209,9 +230,23 @@ export default function DeckSelect() {
     const seed = (seedArr[0] >>> 0) || 1;
     e.seedRng(seed);
     const firstPref = (e.G.firstPref || 'random') as 'random' | 'me' | 'cpu';
+    // 共有デッキ（友達のデッキ）が選ばれていたら、開始の瞬間だけ customDecks に登録して
+    // エンジンの findDeck に解決させ、同期部（buildPlayer）が終わったら外す＝マイデッキ一覧を汚さない。
+    // buildPlayer は deck オブジェクトへの参照（P.meta）を保持するため、外しても対戦中は有効。
+    const temp: string[] = [];
+    for (const side of ['me', 'cpu'] as const) {
+      const id = e.G.sel![side] as string;
+      const sd = sharedList.find((d) => d.id === id);
+      if (sd && !(e.G.customDecks || []).some((x: any) => x.id === id)) {
+        e.G.customDecks = e.G.customDecks || [];
+        e.G.customDecks.push(sd);
+        temp.push(id);
+      }
+    }
     // startGame は同期部で盤面を立ち上げ(inGame=true)→そのままマリガンのモーダルを出して待機する。
     // 先に /battle/play へ遷移して盤面を表示してから解決を待つ（マリガンは盤面の上に出る）。
     const started = e.startGame(e.G.sel!.me as string, e.G.sel!.cpu as string);
+    if (temp.length) e.G.customDecks = (e.G.customDecks || []).filter((x: any) => !temp.includes(x.id));
     // デッキ名は id から引き直す（randomStart は G.sel を書き換えた直後に呼ぶ＝render時の meDeck/cpuDeck が古い）
     const nameOf = (id: unknown) => allDecks.find((d) => d.id === id)?.name || String(id);
     beginCpuRecording(e, {
@@ -239,10 +274,12 @@ export default function DeckSelect() {
     void start();
   };
 
-  const switchCat = (c: 'custom' | 'preset') => {
+  const switchCat = (c: DeckCat) => {
     catTouched.current = true;
     if (c !== cat) setCat(c); // 位置合わせと選択の付け替えは cat effect が行う
   };
+  // トグル: 存在するカテゴリを巡回（custom → shared → preset → custom …）
+  const nextCat = (): DeckCat => cats[(Math.max(0, cats.indexOf(cat)) + 1) % cats.length];
 
   const seg = <V extends string>(
     label: string,
@@ -297,14 +334,14 @@ export default function DeckSelect() {
             ② CPU のデッキ{cpuDeck ? <Icon.check size={13} /> : null}
           </button>
         </div>
-        {hasCustom ? (
+        {cats.length > 1 ? (
           <button
             className="ds-cat-toggle"
-            onClick={() => switchCat(cat === 'custom' ? 'preset' : 'custom')}
-            title={cat === 'custom' ? 'プリセットに切り替え' : 'マイデッキに切り替え'}
+            onClick={() => switchCat(nextCat())}
+            title={`${CAT_LABEL[nextCat()]}に切り替え`}
           >
             <Icon.repeat size={13} />
-            {cat === 'custom' ? `マイデッキ (${customList.length})` : `プリセット (${presetList.length})`}
+            {`${CAT_LABEL[cat]} (${ordered.length})`}
           </button>
         ) : null}
       </div>

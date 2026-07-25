@@ -31,5 +31,7 @@ export const onRequestDelete = async ({ env, data, params }) => {
     .bind(params.id, data.user.id)
     .run();
   if (!res.meta || res.meta.changes === 0) return json({ error: 'not_found' }, 404);
+  // 共有していた場合は共有も解除（テーブル未作成は無視）
+  try { await env.DB.prepare('DELETE FROM deck_shares WHERE deck_id = ?').bind(params.id).run(); } catch { /* noop */ }
   return json({ ok: true });
 };

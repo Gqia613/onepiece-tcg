@@ -559,6 +559,7 @@ html, body, #root { height: 100%; margin: 0; }
 .hc-online { --hc: #b07ce8; --hc-glow: rgba(176, 124, 232, .34); }
 .hc-decks { --hc: var(--gold); --hc-glow: rgba(255, 200, 87, .34); }
 .hc-builder { --hc: var(--legal); --hc-glow: rgba(53, 227, 154, .3); }
+.hc-stats { --hc: #ff9d5c; --hc-glow: rgba(255, 157, 92, .32); }
 
 /* 背景の漢字ウォーターマーク */
 .hc-kanji {

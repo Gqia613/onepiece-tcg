@@ -6,6 +6,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useEngineStore } from '../state/engineStore';
 import { useNetStore } from '../state/netStore';
 import { hostRoom, joinRoom, sendReady, sendConfig, leaveOnline } from '../net/onlineGame';
+import { spectateRoom, leaveSpectate } from '../net/spectate';
 import { startReplay } from '../net/replay';
 import { seatOf, type DeckPayload, type RoomConfig } from '../net/protocol';
 import { IMG } from '../engine/img';
@@ -62,6 +63,8 @@ export default function OnlineLobby() {
   const mySeat = useNetStore((s) => s.mySeat);
   const config = useNetStore((s) => s.config);
   const verMismatch = useNetStore((s) => s.verMismatch);
+  const spectating = useNetStore((s) => s.spectating);
+  const obsCount = useNetStore((s) => s.obsCount);
   const lobbyEpoch = useNetStore((s) => s.lobbyEpoch);   // 「部屋に戻る」で++。ローカルstateを初期化するトリガ
   const lastResult = useNetStore((s) => s.lastResult);   // 直前の対戦結果（部屋に戻ったとき表示）
   const myDeckId = useNetStore((s) => s.myDeckId);       // 直近で ready したデッキ（既定選択に使う）
@@ -145,6 +148,14 @@ export default function OnlineLobby() {
     catch (e: any) { setErr(e?.message === 'realtime_unconfigured' ? 'オンライン対戦は現在利用できません（サーバ未設定）' : '入室に失敗しました'); }
     finally { setBusy(false); }
   };
+  // 観戦: 席を取らずに部屋へ接続（対戦中なら即盤面へ・ロビーなら開始待ち）
+  const doSpectate = async () => {
+    if (!joinCode.trim()) return;
+    setErr(null); setBusy(true);
+    try { await spectateRoom(joinCode); }
+    catch (e: any) { setErr(e?.message === 'realtime_unconfigured' ? 'オンライン対戦は現在利用できません（サーバ未設定）' : '観戦の開始に失敗しました'); }
+    finally { setBusy(false); }
+  };
   const doReady = () => {
     const d = selected;
     if (!d || !d.leader || !d.list) return;
@@ -161,8 +172,11 @@ export default function OnlineLobby() {
   };
   // 戻る: 部屋にいるなら必ず退室してから帰る（WS・部屋の席を残さない＝相手が待ち続けるのを防ぐ）。
   // 入口画面（mode!=='online'）で doLeave を通すと leaveOnline→engine.backToSelect() で
-  // 進行中の CPU 対戦の盤面まで破棄されるため、mode で分ける。
-  const goBack = () => { if (mode === 'online') doLeave(); else navigate('/'); };
+  // 進行中の CPU 対戦の盤面まで破棄されるため、mode で分ける。観戦中は観戦の後片付けだけ行う。
+  const goBack = () => {
+    if (spectating) { leaveSpectate(); navigate('/'); return; }
+    if (mode === 'online') doLeave(); else navigate('/');
+  };
   const copy = async (kind: 'code' | 'link') => {
     if (!roomCode) return;
     const text = kind === 'code' ? roomCode : `${location.origin}/online?room=${roomCode}`;
@@ -189,7 +203,7 @@ export default function OnlineLobby() {
     finally { setReplayLoading(null); }
   };
 
-  const inLobby = mode === 'online' && (phase === 'lobby');
+  const inLobby = mode === 'online' && phase === 'lobby' && !spectating;
 
   return (
     <div className={'online-wrap' + (inLobby ? ' fit' : '')}>
@@ -217,7 +231,27 @@ export default function OnlineLobby() {
         </div>
       ) : null}
 
-      {!inLobby ? (
+      {spectating ? (
+        // 観戦待機（部屋がロビー中）。対戦が始まると /battle/play へ自動遷移する
+        <div style={panel}>
+          <b style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Icon.eye size={15} />観戦中 — 部屋 {roomCode}</b>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 12.5 }}>
+            {players.map((p) => (
+              <span key={p.seat} style={{ opacity: p.connected ? 1 : 0.45 }}>
+                {p.seat === 'host' ? '👑' : '⚔'} {p.name}
+                <b style={{ color: p.ready ? 'var(--good, #48c98a)' : 'var(--muted)', fontWeight: 700, fontSize: 11.5, marginLeft: 6 }}>
+                  {p.ready ? '✔ 準備完了' : p.connected ? '選択中…' : '切断中'}
+                </b>
+              </span>
+            ))}
+            {players.length < 2 ? <span style={{ color: 'var(--muted)' }}>対戦者の入室を待っています…</span> : null}
+          </div>
+          <div style={{ fontSize: 12.5, color: 'var(--muted)' }}>
+            対戦が始まると自動で盤面に切り替わります{obsCount > 1 ? `（観戦 ${obsCount}人）` : ''}
+          </div>
+          <button className="or-leave" style={{ alignSelf: 'flex-start' }} onClick={() => { leaveSpectate(); }}>観戦をやめる</button>
+        </div>
+      ) : !inLobby ? (
         <>
           <div style={panel}>
             <b>部屋を作る</b>
@@ -239,7 +273,9 @@ export default function OnlineLobby() {
                 }}
               />
               <button className="phasebtn go" style={{ flex: '0 0 auto' }} disabled={busy || joinCode.trim().length < 4} onClick={() => { void doJoin(); }}>参加</button>
+              <button className="phasebtn" style={{ flex: '0 0 auto' }} disabled={busy || joinCode.trim().length < 4} onClick={() => { void doSpectate(); }} title="席を取らずに対戦を見る">観戦</button>
             </div>
+            <div style={{ fontSize: 11.5, color: 'var(--muted)' }}>「観戦」は対戦の席を取らずに、友達の対戦をリアルタイムで見られます（途中からでもOK）</div>
           </div>
         </>
       ) : (
@@ -250,7 +286,7 @@ export default function OnlineLobby() {
             <span className="or-code-val">{roomCode}</span>
             <button className="or-copy" onClick={() => { void copy('code'); }}>{copied === 'code' ? '✓ コピー' : 'コード'}</button>
             <button className="or-copy" onClick={() => { void copy('link'); }}>{copied === 'link' ? '✓ コピー' : '招待リンク'}</button>
-            <span className="or-conn">{conn === 'ok' ? '接続中' : conn === 'reconnecting' ? '再接続中…' : '接続待ち…'}・{isHost ? 'ホスト' : 'ゲスト'}</span>
+            <span className="or-conn">{conn === 'ok' ? '接続中' : conn === 'reconnecting' ? '再接続中…' : '接続待ち…'}・{isHost ? 'ホスト' : 'ゲスト'}{obsCount > 0 ? `・観戦${obsCount}` : ''}</span>
           </div>
 
           {/* プレイヤー状況 + 対戦設定（要約1行・ホストは設定ボタンでモーダル） */}
@@ -362,9 +398,9 @@ export default function OnlineLobby() {
         </div>
       ) : null}
 
-      {/* 戦績（リプレイ再生）— 入室前の入口画面のみ表示。部屋内(デッキ選択中)は非表示にして
+      {/* 戦績（リプレイ再生）— 入室前の入口画面のみ表示。部屋内(デッキ選択中)・観戦待機中は非表示にして
           セットアップをファーストビューで完結させる（戦績閲覧は対戦準備の導線ではないため） */}
-      {!inLobby ? (
+      {!inLobby && !spectating ? (
       <div style={{ ...panel, gap: 6 }}>
         <b style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Icon.layers size={15} />オンライン戦績</b>
         {history === null ? (

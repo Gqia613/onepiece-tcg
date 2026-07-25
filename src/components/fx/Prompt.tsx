@@ -144,6 +144,7 @@ export function Prompt() {
   const online = useNetStore((s) => s.mode) === 'online';
   const earlyMull = useNetStore((s) => s.earlyMulligan);
   const replayActive = useNetStore((s) => s.replayActive);
+  const spectating = useNetStore((s) => s.spectating);
   const onPlay = useLocation().pathname === '/battle/play';
   useEngineStore((s) => s.version); // pendingChoice の変化（render→bump）を拾う
 
@@ -190,8 +191,8 @@ export function Prompt() {
   const pendingChoice = !!(engine && engine.G && engine.G.pendingChoice);
   const showScrim = !!prompt && !isRemote && !(peek && canPeek) && !pick && !pendingChoice && !trigger;
 
-  // リプレイ再生中: プロンプトの応答はログが自動供給するため、選択UIは一切出さない
-  if (replayActive) return <div id="promptHost" />;
+  // リプレイ再生中・観戦中: プロンプトの応答は入力ログが自動供給するため、選択UIは一切出さない
+  if (replayActive || spectating) return <div id="promptHost" />;
   // 盤面（/battle/play）以外ではモーダルを出さない（対戦中に他画面へ移動しても残留させない。
   // エンジンは待ったまま＝盤面に戻れば再表示される）
   if (!onPlay) return <div id="promptHost" />;

@@ -12,6 +12,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useEngineStore } from '../../state/engineStore';
 import { useNetStore } from '../../state/netStore';
 import { requestRematch, requestLobby, leaveOnline } from '../../net/onlineGame';
+import { leaveSpectate } from '../../net/spectate';
 
 // 元 _esMotes(): 勝利の上昇する金粉。9個・ランダム位置/サイズ/速度。
 function makeMotes() {
@@ -39,6 +40,7 @@ export function EndScreen() {
   const end = useEngineStore((s) => s.end);
   const online = useNetStore((s) => s.mode) === 'online';
   const replayActive = useNetStore((s) => s.replayActive);
+  const spectating = useNetStore((s) => s.spectating);
   const [rematchAsked, setRematchAsked] = useState(false);
   const [lobbyAsked, setLobbyAsked] = useState(false);
   useEffect(() => { if (!end) { setRematchAsked(false); setLobbyAsked(false); } }, [end]); // 成立（end消滅）でリセット
@@ -120,10 +122,16 @@ export function EndScreen() {
           )}
 
           <div className="es-core">
-            <div className="es-title">{win ? 'VICTORY' : 'DEFEAT'}</div>
-            <div className="es-sub">{win ? '勝利' : '敗北'}</div>
+            <div className="es-title">{spectating ? 'GAME SET' : win ? 'VICTORY' : 'DEFEAT'}</div>
+            <div className="es-sub">{spectating ? '対戦終了' : win ? '勝利' : '敗北'}</div>
             {end.reason && <div className="es-reason">{end.reason}</div>}
-            {replayActive ? (
+            {spectating ? (
+              // 観戦の終局: 盤面確認 or 退出（次の対戦が始まれば自動で観戦が続く）
+              <div style={{ display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap' }}>
+                <button className="es-btn" onClick={() => { useEngineStore.getState().setEnd(null); }}>盤面を見る</button>
+                <button className="es-btn" onClick={() => { leaveSpectate(); navigate('/online'); }} style={{ opacity: 0.85 }}>観戦を終える</button>
+              </div>
+            ) : replayActive ? (
               // リプレイ再生の終局: 操作は下部の ReplayBar（終了する）に集約。対戦用ボタンは出さない
               <div className="es-reason" style={{ opacity: 0.8 }}>リプレイ再生（操作は下のバーから）</div>
             ) : online ? (

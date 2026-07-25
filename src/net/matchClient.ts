@@ -19,6 +19,7 @@ let ws: WebSocket | null = null;
 let closedByUser = true;      // 初期状態は「切断されていて正常」
 let roomCode: string | null = null;
 let baseUrl: string | null = null;
+let observer = false;         // 観戦接続（?obs=1・読み取り専用席）
 let lastSeqSeen = 0;          // 受信済み最大 seq（再接続時の after パラメタ）
 let curGameNo = 0;
 let backoff = 1000;
@@ -49,7 +50,10 @@ export async function createRoom(): Promise<string> {
 
 function wsUrl(base: string, code: string): string {
   const u = base.replace(/^http/, 'ws');
-  const q = curGameNo > 0 ? `?game=${curGameNo}&after=${lastSeqSeen}` : '';
+  const ps: string[] = [];
+  if (curGameNo > 0) ps.push(`game=${curGameNo}`, `after=${lastSeqSeen}`);
+  if (observer) ps.push('obs=1');
+  const q = ps.length ? '?' + ps.join('&') : '';
   return `${u}/rooms/${encodeURIComponent(code)}/ws${q}`;
 }
 
@@ -130,10 +134,11 @@ function scheduleReconnect(): void {
   backoff = Math.min(backoff * 2, 15000);
 }
 
-// 部屋に接続（部屋作成後・コード参加どちらも）。以後は自動再接続する。
-export async function connectRoom(code: string): Promise<void> {
+// 部屋に接続（部屋作成後・コード参加・観戦のどれも）。以後は自動再接続する。
+export async function connectRoom(code: string, opts?: { observer?: boolean }): Promise<void> {
   roomCode = code.toUpperCase();
   closedByUser = false;
+  observer = !!opts?.observer;
   curGameNo = 0; lastSeqSeen = 0;
   wireVisibility();
   await open();
@@ -149,5 +154,6 @@ export function leaveMatch(): void {
   stopPing();
   setSender(null);
   roomCode = null;
+  observer = false;
   useNetStore.getState().setConn('closed');
 }

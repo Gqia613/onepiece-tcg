@@ -22,9 +22,10 @@ export function Controls() {
   const online = useNetStore((s) => s.mode) === 'online';
   const sending = useNetStore((s) => s.sending);
   const replay = useNetStore((s) => s.replayActive);
+  const spectating = useNetStore((s) => s.spectating);
   useEngineStore((s) => s.version); // 再描画トリガ（値は使わないが購読）
   if (!engine) return null;
-  if (replay) return null; // リプレイ中の操作UIは ReplayBar が担当
+  if (replay || spectating) return null; // リプレイ中は ReplayBar が担当・観戦中は操作UIなし
   const G = engine.G;
 
   // 勝敗確定：もう一度プレイ（オンライン時のリマッチ/退室は EndScreen/OnlineLobby 側が担当）

@@ -14,6 +14,7 @@ export function EmoteLayer() {
   const mySeat = useNetStore((s) => s.mySeat);
   const last = useNetStore((s) => s.lastEmote);
   const replay = useNetStore((s) => s.replayActive);
+  const spectating = useNetStore((s) => s.spectating);
   const [open, setOpen] = useState(false);
   const [bubble, setBubble] = useState<{ mine: boolean; text: string; id: number } | null>(null);
   const coolRef = useRef(0);
@@ -26,7 +27,7 @@ export function EmoteLayer() {
   }, [last, mySeat]);
 
   if (!onPlay) return null; // 盤面（/battle/play）以外では出さない（画面遷移後の残留防止・フックの後に判定）
-  if (!online || replay || (phase !== 'playing' && phase !== 'ended')) return null;
+  if (!online || replay || spectating || (phase !== 'playing' && phase !== 'ended')) return null;
 
   const pick = (i: number) => {
     const now = Date.now();

@@ -80,6 +80,15 @@ export default function Home() {
           <span className="hc-go"><Icon.chevronRight size={16} /></span>
         </button>
 
+        <button className="home-card hc-stats" onClick={() => navigate('/stats')}>
+          <img className="hc-chara" aria-hidden="true" src={IMG('OP02-001')} referrerPolicy="no-referrer" decoding="async" alt=""
+            onError={(e) => { e.currentTarget.style.display = 'none'; }} />
+          <span className="hc-icon"><Icon.award size={28} /></span>
+          <span className="hc-en">戦績</span>
+          <span className="hc-desc">グループ内のリーダーTier表・相性表・リプレイ再生。</span>
+          <span className="hc-go"><Icon.chevronRight size={16} /></span>
+        </button>
+
         <button className="home-card hc-builder" onClick={openBuilder}>
           <img className="hc-chara" aria-hidden="true" src={IMG('OP01-013')} referrerPolicy="no-referrer" decoding="async" alt=""
             onError={(e) => { e.currentTarget.style.display = 'none'; }} />

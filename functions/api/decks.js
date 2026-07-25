@@ -7,12 +7,23 @@ const MAX_DECKS = 100;
 export const onRequestGet = async ({ env, data }) => {
   if (!data.user) return json({ error: 'unauthorized' }, 401);
   if (!env.DB) return json({ error: 'no_db' }, 500);
-  const { results } = await env.DB
-    .prepare('SELECT id, name, leader, list, updated_at FROM decks WHERE user_id = ? ORDER BY updated_at DESC')
-    .bind(data.user.id).all();
+  let results;
+  try {
+    ({ results } = await env.DB
+      .prepare(`SELECT d.id, d.name, d.leader, d.list, d.updated_at,
+                       (s.deck_id IS NOT NULL) AS shared
+                FROM decks d LEFT JOIN deck_shares s ON s.deck_id = d.id
+                WHERE d.user_id = ? ORDER BY d.updated_at DESC`)
+      .bind(data.user.id).all());
+  } catch {
+    // deck_shares 未作成（schema 未適用）でもデッキ一覧は生かす
+    ({ results } = await env.DB
+      .prepare('SELECT id, name, leader, list, updated_at FROM decks WHERE user_id = ? ORDER BY updated_at DESC')
+      .bind(data.user.id).all());
+  }
   const decks = (results || []).map((r) => ({
     id: r.id, name: r.name, leader: r.leader,
-    list: safeParse(r.list), updatedAt: r.updated_at,
+    list: safeParse(r.list), updatedAt: r.updated_at, shared: !!r.shared,
   }));
   return json({ decks });
 };

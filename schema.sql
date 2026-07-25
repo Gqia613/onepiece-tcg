@@ -25,6 +25,13 @@ CREATE TABLE IF NOT EXISTS user_settings (
   updated_at INTEGER NOT NULL            -- epoch ms
 );
 
+-- デッキ共有（私的グループ内の全体公開）。行が存在すれば共有ON。
+-- decks への列追加は冪等再適用（CREATE TABLE IF NOT EXISTS）と相性が悪いため別テーブルで持つ。
+CREATE TABLE IF NOT EXISTS deck_shares (
+  deck_id   TEXT PRIMARY KEY,            -- decks.id（デッキ削除時に一緒に削除）
+  shared_at INTEGER NOT NULL             -- epoch ms
+);
+
 -- AI 1日あたり利用回数（KV書込上限回避のため D1 でカウント）
 CREATE TABLE IF NOT EXISTS ai_usage (
   user_id TEXT NOT NULL,

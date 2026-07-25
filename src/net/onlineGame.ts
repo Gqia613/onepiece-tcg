@@ -188,9 +188,10 @@ function handleMsg(m: S2C): void {
   const net = useNetStore.getState();
   switch (m.t) {
     case 'joined': {
-      net.setMySeat(seatOf(m.seat));
+      if (m.seat !== 'obs') net.setMySeat(seatOf(m.seat)); // 観戦席は spectate.ts のハンドラが受ける（型ガードのみ）
       net.setPlayers(m.players);
       net.setConfig(m.config);
+      if (typeof m.obs === 'number') net.setObsCount(m.obs);
       /* ★取りこぼし回収: WSが切れている間に相手が「部屋に戻る」を押すと、復帰時に来るのは joined(status:'lobby') だけ
          （welcome は status==='playing' のときしか来ない）。自分だけ盤面/終了画面に取り残されるのを防ぐ。
          ★入室直後（phase は enterRoom で既に 'lobby'）では走らせない: CPU対戦中に部屋を作った人の盤面を壊すため。 */
@@ -211,6 +212,7 @@ function handleMsg(m: S2C): void {
     }
     case 'peer': {
       net.setPlayers(m.players);
+      if (typeof m.obs === 'number') net.setObsCount(m.obs);
       const oppSeatRoom = roomSeatOf(net.mySeat === 'me' ? 'cpu' : 'me');
       const opp = m.players.find((p) => p.seat === oppSeatRoom);
       const oppConnected = !!opp?.connected && m.players.length >= 2;
@@ -303,7 +305,8 @@ function handleMsg(m: S2C): void {
 type StartMsg = Extract<S2C, { t: 'start' }>;
 type WelcomeMsg = Extract<S2C, { t: 'welcome' }>;
 
-function bootGame(gameNo: number, seed: number, decks: Record<RoomSeat, DeckPayload>, names: Record<RoomSeat, string>, first: RoomSeat | null, config: RoomConfig, startTs: number): void {
+// ★spectate.ts（観戦）からも再利用する（観戦は同じ決定論プロトコルで盤面を構築し、入力を購読適用するだけ）
+export function bootGame(gameNo: number, seed: number, decks: Record<RoomSeat, DeckPayload>, names: Record<RoomSeat, string>, first: RoomSeat | null, config: RoomConfig, startTs: number): void {
   const es = useEngineStore.getState();
   const net = useNetStore.getState();
   const eng = es.resetEngine(); // uid採番・rngを初期状態に（両クライアントで一致させる）
@@ -372,7 +375,8 @@ function resumeOnlineGame(m: WelcomeMsg): void {
 }
 
 // リプレイ消化を待って通常モードへ復帰。afterDone は desync 復旧時の追加処理。
-function finishReplay(eng2: any, lastSeq: number, afterDone: (() => void) | null): void {
+// ★観戦の途中参加（welcome の高速追いつき）でも使う（spectate.ts から import）。
+export function finishReplay(eng2: any, lastSeq: number, afterDone: (() => void) | null): void {
   const started = Date.now();
   const finish = () => {
     const done = lastSeq <= 0 || lockstepNextSeq() > lastSeq; // 全入力適用済み＝次seqがlastSeqを超えた
@@ -426,6 +430,7 @@ function wireWatchers(): void {
   useEngineStore.subscribe(() => {
     const net = useNetStore.getState();
     if (net.mode !== 'online') return;
+    if (net.spectating) return; // 観戦は結果申告しない（終局表示は spectate.ts のウォッチャーが担当）
     const eng = useEngineStore.getState().engine;
     if (!eng) return;
     const G = eng.G;

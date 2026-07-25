@@ -1,7 +1,7 @@
 // デッキのカードリストを画像付きで表示するモーダル（デッキ選択画面の「📋 カードリスト」から開く）。
 // .modal-back/.modal/.close/.trash-modal-grid/.tm-card/.tm-fb（battle.css）を再利用。engine.C からカードメタを引く。
 // 画像は in-battle Card と同じ2段フォールバック（IMG=weserv → IMG_RAW=直リンク → 名前表示）。パラレル(_rN)は no そのままで解決。
-import { useState, useEffect } from 'react';
+import { useState, useEffect, type ReactNode } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { IMG_SM, IMG_RAW } from '../../engine/img';
 import { ZoomView } from './CardZoom';
@@ -45,13 +45,14 @@ function Thumb({ no, name, count, cost, onZoom }: { no: string; name: string; co
   );
 }
 
-export function DeckListModal({ deck, C, onClose, onEdit, editLabel, onDelete }: {
+export function DeckListModal({ deck, C, onClose, onEdit, editLabel, onDelete, actions }: {
   deck: Deck | null;
   C: Record<string, any>;
   onClose: () => void;
   onEdit?: () => void;   // ビルダーで開く（クラウド=編集 / プリセット=コピーして編集）
   editLabel?: string;
   onDelete?: () => void; // クラウド保存デッキのみ
+  actions?: ReactNode; // 追加操作（共有トグル・コピー等）を dsm-actions 行に差し込む
 }) {
   const open = !!deck;
   const [zoom, setZoom] = useState<{ no: string; name: string } | null>(null); // タップ拡大中のカード
@@ -136,10 +137,11 @@ export function DeckListModal({ deck, C, onClose, onEdit, editLabel, onDelete }:
               </div>
             </div>
 
-            {/* 操作（編集/削除）: タイル上のアイコンを廃止し、モーダルに集約 */}
-            {(onEdit || onDelete) ? (
+            {/* 操作（編集/削除/共有など）: タイル上のアイコンを廃止し、モーダルに集約 */}
+            {(onEdit || onDelete || actions) ? (
               <div className="dsm-actions" style={{ justifyContent: 'flex-start', margin: '10px 0 2px' }}>
                 {onEdit ? <button className="dsm-pill gold" onClick={onEdit}>{editLabel || '編集'}</button> : null}
+                {actions}
                 {onDelete ? <button className="dsm-pill danger" onClick={onDelete}>削除</button> : null}
               </div>
             ) : null}

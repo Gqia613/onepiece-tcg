@@ -70,9 +70,10 @@ export type C2S =
   | { t: 'leave' };
 
 // DO → クライアント
+// seat:'obs'=観戦席（読み取り専用・席を消費しない）。obs=現在の観戦者数。
 export type S2C =
-  | { t: 'joined'; seat: RoomSeat; code: string; players: PlayerInfo[]; status: RoomStatus; gameNo: number; config: RoomConfig; ver?: string }
-  | { t: 'peer'; players: PlayerInfo[]; ts: number }
+  | { t: 'joined'; seat: RoomSeat | 'obs'; code: string; players: PlayerInfo[]; status: RoomStatus; gameNo: number; config: RoomConfig; ver?: string; obs?: number }
+  | { t: 'peer'; players: PlayerInfo[]; ts: number; obs?: number }
   | { t: 'config'; config: RoomConfig }
   | { t: 'version-mismatch'; vers: Record<RoomSeat, string> } // ready突合で不一致（両者readyは解除される）
   | { t: 'start'; gameNo: number; seed: number; decks: Record<RoomSeat, DeckPayload>; names: Record<RoomSeat, string>; firstSeq: number; config: RoomConfig; first: RoomSeat | null; ts: number }

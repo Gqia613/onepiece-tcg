@@ -1,18 +1,31 @@
 // デッキのクラウド保存の橋渡し。エンジンの builderValidate/builderToDeck を再利用して
 // サーバ(D1)のデッキと engine.G.customDecks を整合させる。
-import { api, type SavedDeck } from '../api/client';
+import { api, type SavedDeck, type SharedDeck } from '../api/client';
 import type { EngineAPI } from '../engine/bootstrap';
 
 // SavedDeck(サーバ) → engine の customDeck 形（colors/tier 等つき・id はサーバ発行を維持）
 export function toCustomDeck(engine: EngineAPI, d: SavedDeck): any {
+  let deck: any;
   try {
-    const deck = engine.builderToDeck({ leaderNo: d.leader, list: d.list, name: d.name }, d.id);
+    deck = engine.builderToDeck({ leaderNo: d.leader, list: d.list, name: d.name }, d.id);
     deck.cloud = true;
-    return deck;
   } catch {
     const colors = (engine.C[d.leader] && engine.C[d.leader].color) || [];
-    return { id: d.id, name: d.name, leader: d.leader, list: d.list, colors, tier: 'CUSTOM', usage: '保存', style: 'カスタム', accuracy: 'high', desc: '保存したデッキ', custom: true, cloud: true };
+    deck = { id: d.id, name: d.name, leader: d.leader, list: d.list, colors, tier: 'CUSTOM', usage: '保存', style: 'カスタム', accuracy: 'high', desc: '保存したデッキ', custom: true, cloud: true };
   }
+  deck.shared = !!d.shared;
+  return deck;
+}
+
+// SharedDeck(他ユーザーの共有デッキ) → 表示/コピー用の Deck 形。
+// cloud=false ＝ ビルダーで開くと「コピーして編集」（新規保存）になる。
+export function sharedToDeck(engine: EngineAPI, d: SharedDeck): any {
+  const deck = toCustomDeck(engine, d as any);
+  deck.cloud = false;
+  deck.shared = false;
+  deck.sharedBy = d.owner;
+  deck.tier = d.owner; // DeckCard の tierbadge に所有者名を表示
+  return deck;
 }
 
 // ログイン時: クラウドのデッキを customDecks に反映（cloud 既存分は入れ替え）

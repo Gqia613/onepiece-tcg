@@ -44,7 +44,7 @@ interface RoomRecord {
   lastActivity: number;
 }
 
-interface Attachment { seat: RoomSeat; uid: string; name: string }
+interface Attachment { seat: RoomSeat | 'obs'; uid: string; name: string }
 
 interface Env { DB?: D1Database; CLAIM_GRACE_MS?: string }
 
@@ -118,7 +118,7 @@ export class MatchRoom {
     for (const ws of this.ctx.getWebSockets()) { try { ws.send(s); } catch { /* ignore */ } }
   }
   private broadcastPeer(r: RoomRecord): void {
-    this.broadcast({ t: 'peer', players: this.players(r), ts: Date.now() });
+    this.broadcast({ t: 'peer', players: this.players(r), obs: this.ctx.getWebSockets('obs').length, ts: Date.now() });
   }
 
   // ---- HTTP: /init（Worker からの部屋作成） / /ws（アップグレード） / /dump（デバッグ回収） ----
@@ -181,6 +181,33 @@ export class MatchRoom {
       };
 
       if (!r || r.status === 'ended') return refuse({ t: 'error', code: 'not_found' });
+
+      // ---- 観戦席（?obs=1）: 読み取り専用。プレイヤー席を消費せず、開始/入力の購読だけを行う ----
+      if (url.searchParams.get('obs') === '1') {
+        this.ctx.acceptWebSocket(server, ['obs']);
+        server.serializeAttachment({ seat: 'obs', uid, name } satisfies Attachment);
+        this.send(server, {
+          t: 'joined', seat: 'obs', code: r.code, players: this.players(r),
+          status: r.status, gameNo: r.gameNo, config: r.config,
+          obs: this.ctx.getWebSockets('obs').length,
+        });
+        // 対戦中の途中参加/再接続: これまでの入力ログを渡してクライアント側で追いつく
+        if (r.status === 'playing') {
+          const after = Number(url.searchParams.get('after') ?? -1);
+          const sameGame = Number(url.searchParams.get('game') ?? -1) === r.gameNo;
+          const from = sameGame && after >= 0 ? after : 0;
+          const inputs = await this.listInputs(r.gameNo, from);
+          this.send(server, {
+            t: 'welcome', gameNo: r.gameNo, seed: r.seed,
+            decks: { host: r.decks.host!, guest: r.decks.guest! },
+            names: { host: r.hostName, guest: r.guestName || '' },
+            inputs, lastSeq: r.nextSeq - 1, status: r.status,
+            config: r.config, first: r.first, ts: Date.now(), startTs: r.startTs,
+          });
+        }
+        this.broadcastPeer(r);
+        return new Response(null, { status: 101, webSocket: client, headers: { 'Sec-WebSocket-Protocol': 'opcg' } });
+      }
 
       // 座席決定: uid=ホスト→host / ゲスト未定 or 同一uid→guest / それ以外→満室
       let seat: RoomSeat;
@@ -246,6 +273,18 @@ export class MatchRoom {
     if (!att) return;
     const r = await this.room();
     if (!r) { this.send(ws, { t: 'error', code: 'not_found' }); return; }
+
+    // 観戦席は読み取り専用: 追いつき用の resume と退出だけを受け、対局への干渉は全て無視する
+    if (att.seat === 'obs') {
+      if (msg.t === 'resume' && r.status === 'playing') {
+        const inputs = await this.listInputs(r.gameNo, Math.max(0, msg.afterSeq | 0));
+        for (const rec of inputs) this.send(ws, { t: 'input', seq: rec.seq, seat: rec.seat, d: rec.d, ts: rec.ts || 0 });
+      } else if (msg.t === 'leave') {
+        try { ws.close(4002, 'left'); } catch { /* ignore */ }
+        this.broadcastPeer(r);
+      }
+      return;
+    }
     const seat: RoomSeat = att.seat;
 
     switch (msg.t) {
@@ -562,10 +601,10 @@ export class MatchRoom {
     this.rate.delete(ws);
     // ★閉じつつあるソケット自身が getWebSockets() にまだ含まれることがあるため、自分を除外して判定する
     const tags = this.ctx.getTags(ws);
-    const seat = (tags && tags[0]) as RoomSeat | undefined;
+    const seat = (tags && tags[0]) as RoomSeat | 'obs' | undefined;
     const r = await this.room();
     if (!r) return;
-    if (seat && this.ctx.getWebSockets(seat).filter((s) => s !== ws).length === 0 && r.connLost[seat] == null) {
+    if ((seat === 'host' || seat === 'guest') && this.ctx.getWebSockets(seat).filter((s) => s !== ws).length === 0 && r.connLost[seat] == null) {
       r.connLost[seat] = Date.now(); // 席の全ソケットが落ちた時刻（claim検証・クロック表示用）
       await this.putRoom(r);
     }

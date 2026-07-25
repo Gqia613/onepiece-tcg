@@ -158,6 +158,39 @@ async function waitReady(): Promise<void> {
         e2.G.customDecks.push(e2.builderToDeck({ leaderNo: base.leader, list: base.list, name: 'クラウド2' }, undefined as any));
       }
 
+      // ---- 観戦者（?obs=1・読み取り専用席）----
+      // 対戦開始後に途中参加し、welcome の入力ログで追いつき→以後の入力を購読して同一結末に到達する
+      const obsToken = await signJWT({ uid: 303, un: 'e2e-obs', scope: 'match' }, SECRET, 60);
+      const ows = new WS(`${BASE.replace('http', 'ws')}/rooms/${code}/ws?obs=1`, ['opcg', obsToken]);
+      const obs: Client = makeClient('me', null); // 受信専用（視点=ホスト）
+      let obsSeat: string | null = null;
+      let obsBooted = false;
+      ows.on('message', (buf: any) => {
+        const m = JSON.parse(String(buf)) as S2C;
+        if (m.t === 'joined') { obsSeat = (m as any).seat; return; }
+        if (m.t === 'welcome' || m.t === 'start') {
+          const eng = obs.engine;
+          const reg = (d: DeckPayload, id: string) => eng.builderToDeck({ leaderNo: d.leader, list: d.list, name: d.name }, id);
+          eng.G.customDecks = [reg(m.decks.host, 'net-host'), reg(m.decks.guest, 'net-guest')];
+          eng.G.players = {}; eng.G.winner = null; eng.G.inGame = false;
+          eng.G.aiOn = false;
+          eng.G.firstPref = m.first == null ? 'random' : m.first === 'host' ? 'me' : 'cpu';
+          eng.G.names = { me: m.names.host, cpu: m.names.guest };
+          eng.seedRng(m.seed);
+          void eng.startGame('net-host', 'net-guest', { cpuHuman: true });
+          eng.G._sim = true;
+          obsBooted = true;
+          if (m.t === 'welcome') for (const rec of m.inputs) obs.driver.onRemoteInput(rec.seq, seatOf(rec.seat), rec.d);
+          return;
+        }
+        if (m.t === 'input') { obs.driver.onRemoteInput(m.seq, seatOf(m.seat), m.d); return; }
+      });
+      await new Promise<void>((res, rej) => { ows.on('open', res); ows.on('error', rej); });
+      expect(await waitFor(() => obsSeat === 'obs'), '観戦席（obs）で入室した').toBe(true);
+      expect(await waitFor(() => obsBooted, 8000), '観戦者が welcome から盤面を構築した').toBe(true);
+      // 観戦者数がプレイヤーへ peer で配布される
+      expect(await waitFor(() => useNetStore.getState().obsCount === 1, 8000), 'ホストに観戦1人が見える').toBe(true);
+
       // ---- ホスト側の自動運転（本物の uiDispatch / ストアを使用）----
       const hostTick = async () => {
         const net = useNetStore.getState();
@@ -209,6 +242,7 @@ async function waitReady(): Promise<void> {
         else if (Date.now() - lastProgress > 20000) { console.log('[diag] 20秒間進捗なしで打ち切り'); break; }
         await new Promise((r) => setTimeout(r, 60));
         guest.driver.pump();
+        obs.driver.pump(); // 観戦者は受信入力の適用のみ（自分からは何も送らない）
         await hostTick();
         await tickClient(guest);
       }
@@ -216,6 +250,9 @@ async function waitReady(): Promise<void> {
       // テスト専用の _sim 高速化を解除（本番watcherは _sim 中は動かない設計のため、ここで発火させる）
       { const hg2 = useEngineStore.getState().engine!.G; if (hg2._sim) { hg2._sim = false; useEngineStore.getState().bump(); } }
       guest.engine.G._sim = false;
+      obs.engine.G._sim = false;
+      // 観戦者は最後の入力消化に一拍かかることがある→勝敗確定まで pump を回す
+      await waitFor(() => { obs.driver.pump(); return !!obs.engine.G.winner; }, 10000);
       await new Promise((r) => setTimeout(r, 300));
 
       // 診断: 未決着ならスナップショットを出力
@@ -245,6 +282,10 @@ async function waitReady(): Promise<void> {
       expect(hostG.winner, '勝者一致').toBe(guest.engine.G.winner);
       expect(useEngineStore.getState().engine!.hashGameState(), '最終状態hash一致').toBe(guest.engine.hashGameState());
       expect(useNetStore.getState().phase).toBe('ended');
+      // 観戦者も同一の結末に到達している（読み取り専用の完全同期）
+      expect(obs.isDesynced(), '観戦者desyncなし').toBe(false);
+      expect(obs.engine.G.winner, '観戦者も同一勝者').toBe(hostG.winner);
+      expect(obs.engine.hashGameState(), '観戦者の最終状態hash一致').toBe(useEngineStore.getState().engine!.hashGameState());
 
       // ---- 終局申告→D1（ローカル）へ戦績＋リプレイが書かれる ----
       // ホストは watcher が自動申告済み。ゲスト（ハーネス）はここで申告して一致させる。
@@ -276,6 +317,7 @@ async function waitReady(): Promise<void> {
       expect(dj.host?.state).toBe('{"probe":1}');
 
       try { gws.close(); } catch { /* ignore */ }
+      try { ows.close(); } catch { /* ignore */ }
     }
 
     async function waitFor(pred: () => boolean, ms = 8000): Promise<boolean> {

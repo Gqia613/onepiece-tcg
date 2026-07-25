@@ -17,7 +17,13 @@ async function req<T>(path: string, opts: RequestInit = {}): Promise<T> {
 }
 
 export type User = { id: string; username: string };
-export type SavedDeck = { id: string; name: string; leader: string; list: Record<string, number>; updatedAt: number };
+export type SavedDeck = { id: string; name: string; leader: string; list: Record<string, number>; updatedAt: number; shared?: boolean };
+export type SharedDeck = { id: string; name: string; leader: string; list: Record<string, number>; updatedAt: number; owner: string };
+export type StatsMatchRow = {
+  id: number; host_uid: string; guest_uid: string; host_name: string; guest_name: string;
+  host_leader: string; guest_leader: string; winner: 'host' | 'guest' | 'draw';
+  reason: string | null; turns: number | null; created_at: string; has_replay?: number;
+};
 export type UserSettings = { muted: boolean; bgmOn: boolean; bgmVolume: number; bgmTrack: string };
 
 export const api = {
@@ -36,6 +42,14 @@ export const api = {
     req<{ deck: SavedDeck }>('/api/decks/' + encodeURIComponent(id), { method: 'PUT', body: JSON.stringify(d) }),
   deleteDeck: (id: string) =>
     req<{ ok: true }>('/api/decks/' + encodeURIComponent(id), { method: 'DELETE' }),
+  setDeckShared: (id: string, shared: boolean) =>
+    req<{ ok: true; shared: boolean }>('/api/decks/' + encodeURIComponent(id) + '/share', { method: 'PUT', body: JSON.stringify({ shared }) }),
+  listSharedDecks: () => req<{ decks: SharedDeck[] }>('/api/decks/shared'),
+
+  // ---- 戦績（オンライン対人戦の集計・リプレイ）----
+  matchStats: () => req<{ matches: StatsMatchRow[] }>('/api/match/stats'),
+  matchReplay: (id: number) =>
+    req<{ id: number; viewerSeat: 'host' | 'guest'; replay: any }>('/api/match/replay?id=' + id),
 
   // ---- アカウントごとの設定（効果音/BGM）----
   getSettings: () => req<{ settings: UserSettings }>('/api/settings'),

@@ -10,9 +10,13 @@ import DeckSelect from './screens/DeckSelect';
 import DeckBuilder from './screens/DeckBuilder';
 import Battle from './screens/Battle';
 import OnlineLobby from './screens/OnlineLobby';
+import Stats from './screens/Stats';
+import ProxyPrint from './screens/ProxyPrint';
 import { useNetStore } from './state/netStore';
 import { forfeitOnline } from './net/onlineGame';
+import { leaveSpectate } from './net/spectate';
 import { stopReplay } from './net/replay';
+import { seatLabel } from './state/netStore';
 import { Prompt } from './components/fx/Prompt';
 import { FxLayer } from './components/fx/FxLayer';
 import { AtkAnnounce } from './components/fx/AtkAnnounce';
@@ -76,6 +80,7 @@ const PHASE_STEPS = ['リフレッシュ', 'ドロー', 'ドン', 'メイン', '
 function TurnPill({ engine }: { engine: any }) {
   const G = engine.G;
   const mySeat = useNetStore((s) => s.mySeat);
+  const spectating = useNetStore((s) => s.spectating);
   const active: 'me' | 'cpu' | undefined = G.active;
   const mine = active === mySeat;
   const cur = PHASE_STEPS.indexOf(G.phase);
@@ -94,14 +99,14 @@ function TurnPill({ engine }: { engine: any }) {
           title="この対戦の先攻/後攻"
           style={{ fontSize: 11, fontWeight: 700, padding: '1px 7px', borderRadius: 999, border: '1px solid var(--surface-edge)', color: G.firstPlayer === mySeat ? 'var(--self-accent)' : 'var(--opp-accent)' }}
         >
-          あなた{G.firstPlayer === mySeat ? '先攻' : '後攻'}
+          {spectating ? `先攻: ${seatLabel(G.firstPlayer)}` : `あなた${G.firstPlayer === mySeat ? '先攻' : '後攻'}`}
         </span>
       ) : null}
       <span
         id="whoTurn"
         style={{ color: active ? (mine ? 'var(--self-accent)' : 'var(--opp-accent)') : 'var(--muted)', fontWeight: 700 }}
       >
-        {active ? (mine ? 'あなたの番' : '相手の番') : ''}
+        {active ? (spectating ? `${seatLabel(active)}の番` : mine ? 'あなたの番' : '相手の番') : ''}
       </span>
     </div>
   );
@@ -209,6 +214,12 @@ function Shell({ username, logout }: { username: string; logout: () => void }) {
       navigate('/online'); // 遷移するだけ。停止と後片付けは ReplayBar の不変条件エフェクトが担う
       return;
     }
+    if (net.spectating) {
+      leaveSpectate();
+      setMenuOpen(false);
+      navigate('/online');
+      return;
+    }
     if (net.mode === 'online') {
       if (engine!.G.inGame && !engine!.G.winner) forfeitOnline();
       setMenuOpen(false);
@@ -264,6 +275,12 @@ function Shell({ username, logout }: { username: string; logout: () => void }) {
             <button className="ham-item" style={hamItem} onClick={() => go('/decks')}>
               <Icon.layers size={15} />マイデッキ
             </button>
+            <button className="ham-item" style={hamItem} onClick={() => go('/stats')}>
+              <Icon.award size={15} />戦績
+            </button>
+            <button className="ham-item" style={hamItem} onClick={() => go('/proxy')}>
+              <Icon.printer size={15} />プロキシ印刷
+            </button>
             <button className="ham-item" style={hamItem} onClick={() => { toggleMute(); }}>
               {muted ? <><Icon.volumeMute size={15} />効果音 OFF</> : <><Icon.volume size={15} />効果音 ON</>}
             </button>
@@ -303,7 +320,7 @@ function Shell({ username, logout }: { username: string; logout: () => void }) {
             ) : null}
             {inGame ? (
               <button className="ham-item" style={hamItem} onClick={abandonBattle}>
-                <Icon.flag size={15} />{useNetStore.getState().mode === 'online' ? '投了する' : '対戦を中断'}
+                <Icon.flag size={15} />{useNetStore.getState().spectating ? '観戦を終える' : useNetStore.getState().mode === 'online' ? '投了する' : '対戦を中断'}
               </button>
             ) : null}
             <button className="ham-item" style={hamItem} onClick={() => { setMenuOpen(false); logout(); }}>
@@ -321,6 +338,8 @@ function Shell({ username, logout }: { username: string; logout: () => void }) {
           <Route path="/builder" element={<DeckBuilder />} />
           <Route path="/battle" element={<DeckSelect />} />
           <Route path="/online" element={<OnlineLobby />} />
+          <Route path="/stats" element={<Stats />} />
+          <Route path="/proxy" element={<ProxyPrint />} />
           {/* 盤面が無い時の戻り先: オンライン中・リプレイはロビー（CPU対戦のデッキ選択に飛ばさない） */}
           <Route path="/battle/play" element={inGame || replayActive ? <Battle /> : <Navigate to={netMode === 'online' ? '/online' : '/battle'} replace />} />
           <Route path="*" element={<Navigate to="/" replace />} />
