@@ -10,6 +10,7 @@ import { api } from '../api/client';
 import { sharedToDeck } from '../state/decks';
 import { IMG_SM, IMG_RAW } from '../engine/img';
 import { Icon } from '../components/ui/Icon';
+import { ZoomView } from '../components/deck/CardZoom';
 import { buildProxyPdf, computeLayout, pageCount, type ProxyPaper } from '../lib/proxyPdf';
 import type { Deck } from '../engine/types';
 
@@ -20,6 +21,14 @@ const TYPE_LABEL: Array<[string, string]> = [['LEADER', 'リーダー'], ['CHAR'
 const COLOR_HEX: Record<string, string> = {
   赤: '#d2473f', 緑: '#2f9e63', 青: '#3a7fc9', 紫: '#9a57d4', 黒: '#7a8496', 黄: '#c9b03a',
 };
+
+// 検索結果の並び: 最新弾から降順。カード番号の接頭辞（OP13 等）を系列＋弾番号にパースして比較する。
+// 系列の優先: OP（メイン弾）→ EB → PRB → ST → その他（プロモP等）。同一系列内は弾番号の降順。
+const SERIES_RANK: Record<string, number> = { OP: 4, EB: 3, PRB: 2, ST: 1 };
+function setSortKey(no: string): { rank: number; num: number } {
+  const m = /^([A-Z]+)(\d+)?-/.exec(no) || [];
+  return { rank: SERIES_RANK[m[1] || ''] ?? 0, num: parseInt(m[2] || '0', 10) || 0 };
+}
 
 // デッキ（{leader,list}）→ 印刷行（リーダー1枚を先頭に、種別→コスト順）
 function deckRows(deck: { leader: string; list?: Record<string, number> }, C: Record<string, any>): Row[] {
@@ -71,9 +80,25 @@ export default function ProxyPrint() {
   const [q, setQ] = useState('');
   const [colorF, setColorF] = useState<string | null>(null);
   const [typeF, setTypeF] = useState<string | null>(null);
+  const [zoom, setZoom] = useState<{ no: string; name: string } | null>(null); // 長押し拡大中のカード
 
   const urlRef = useRef<string | null>(null); // 生成済みPDFの blob URL（再生成・画面離脱で解放）
   const initedRef = useRef(false);            // 遷移元デッキの初期読み込みは1回だけ
+  // 長押し検出（450ms・8px以上動いたら不成立）。成立したらタップ追加を抑止して拡大表示。
+  const lpTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lpFired = useRef(false);
+  const lpPos = useRef<{ x: number; y: number } | null>(null);
+  const lpStart = (no: string, name: string, x: number, y: number) => {
+    lpFired.current = false;
+    lpPos.current = { x, y };
+    if (lpTimer.current) clearTimeout(lpTimer.current);
+    lpTimer.current = setTimeout(() => { lpFired.current = true; setZoom({ no, name }); }, 450);
+  };
+  const lpCancel = () => { if (lpTimer.current) { clearTimeout(lpTimer.current); lpTimer.current = null; } };
+  const lpMove = (x: number, y: number) => {
+    const p = lpPos.current;
+    if (p && (Math.abs(x - p.x) > 8 || Math.abs(y - p.y) > 8)) lpCancel(); // スクロール操作は長押しにしない
+  };
 
   useEffect(() => () => { if (urlRef.current) URL.revokeObjectURL(urlRef.current); }, []);
 
@@ -137,29 +162,39 @@ export default function ProxyPrint() {
     setResult(null);
   }
 
+  // 枚数変更。0枚になったら行そのものをリストから消す
   const setCount = (no: string, count: number) => {
-    setRows((rs) => rs.map((r) => (r.no === no ? { ...r, count: Math.max(0, Math.min(10, count)) } : r)));
+    setRows((rs) => (count <= 0
+      ? rs.filter((r) => r.no !== no)
+      : rs.map((r) => (r.no === no ? { ...r, count: Math.min(10, count) } : r))));
     setResult(null);
   };
 
   // ---- 全カード検索（エンジンの C = 全カードDB をローカルフィルタ）----
+  // ★パラレル(_rN=別イラストの同一カード)も C に別キーで入っているため除外（重複表示の原因）。
+  //   並びは最新弾から降順（setSortKey）→ 全件ソート後に上位60件を表示。
   const searchOn = q.trim() !== '' || colorF !== null || typeF !== null;
-  const results = useMemo(() => {
-    if (!searchOn) return [] as Array<{ no: string; b: any }>;
+  const search = useMemo(() => {
+    if (!searchOn) return { list: [] as Array<{ no: string; b: any }>, capped: false };
     const query = q.trim().toLowerCase();
     const out: Array<{ no: string; b: any }> = [];
-    for (const no of Object.keys(C).sort()) {
+    for (const no of Object.keys(C)) {
+      if (/_r\d+$/.test(no)) continue; // パラレルはノーマル版に集約
       const b = C[no];
       if (!b || !b.type) continue;
       if (typeF && b.type !== typeF) continue;
       if (colorF && !((b.color || []) as string[]).includes(colorF)) continue;
       if (query && !(no.toLowerCase().includes(query) || String(b.name || '').toLowerCase().includes(query))) continue;
       out.push({ no, b });
-      if (out.length >= 60) break; // 表示上限（グリッドの肥大防止）
     }
-    return out;
+    out.sort((a, bb) => {
+      const ka = setSortKey(a.no), kb = setSortKey(bb.no);
+      return kb.rank - ka.rank || kb.num - ka.num || a.no.localeCompare(bb.no);
+    });
+    return { list: out.slice(0, 60), capped: out.length > 60 };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [q, colorF, typeF, engine, searchOn]);
+  const results = search.list;
 
   const countOf = (no: string) => rows.find((r) => r.no === no)?.count || 0;
 
@@ -300,8 +335,20 @@ export default function ProxyPrint() {
                   {results.map(({ no, b }) => {
                     const cnt = countOf(no);
                     return (
-                      <div key={no} onClick={() => addCard(no, b)} title={`${b.name} をリストに追加`}
-                        style={{ cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
+                      <div
+                        key={no}
+                        title={`${b.name} — タップで追加・長押しで拡大`}
+                        onPointerDown={(e) => lpStart(no, b.name, e.clientX, e.clientY)}
+                        onPointerMove={(e) => lpMove(e.clientX, e.clientY)}
+                        onPointerUp={lpCancel}
+                        onPointerCancel={lpCancel}
+                        onPointerLeave={lpCancel}
+                        onContextMenu={(e) => e.preventDefault()}
+                        onClick={() => { if (lpFired.current) { lpFired.current = false; return; } addCard(no, b); }}
+                        style={{
+                          cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3,
+                          userSelect: 'none', WebkitUserSelect: 'none', WebkitTouchCallout: 'none', touchAction: 'manipulation',
+                        } as React.CSSProperties}>
                         <div style={{ position: 'relative' }}>
                           <Thumb no={no} name={b.name} size={56} />
                           {cnt > 0 ? (
@@ -321,7 +368,7 @@ export default function ProxyPrint() {
                 </div>
               </div>
               <div style={{ fontSize: 11.5, color: 'var(--muted)' }}>
-                タップでリストに追加（もう一度タップで+1）{results.length >= 60 ? '・60件まで表示中 — 検索語で絞り込めます' : ''}
+                タップで追加（もう一度で+1）・長押しで拡大{search.capped ? '・60件まで表示中 — 検索語で絞り込めます' : ''}
               </div>
             </>
           )
@@ -361,7 +408,7 @@ export default function ProxyPrint() {
 
           <div style={{ width: '100%', maxWidth: 1000, display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: 6 }}>
             {rows.map((r) => (
-              <div key={r.no} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '5px 8px', background: 'var(--ocean-850)', border: '1px solid var(--surface-edge)', borderRadius: 8, opacity: r.count === 0 ? 0.45 : 1 }}>
+              <div key={r.no} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '5px 8px', background: 'var(--ocean-850)', border: '1px solid var(--surface-edge)', borderRadius: 8 }}>
                 <Thumb no={r.no} name={r.name} />
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: 12, fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.name}</div>
@@ -415,6 +462,9 @@ export default function ProxyPrint() {
           </div>
         </div>
       ) : null}
+
+      {/* 長押し拡大オーバーレイ（高解像度＝効果テキストが読める。タップで閉じる） */}
+      {zoom ? <ZoomView key={zoom.no} no={zoom.no} name={zoom.name} onClose={() => setZoom(null)} /> : null}
     </div>
   );
 }
