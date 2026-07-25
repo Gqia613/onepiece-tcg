@@ -2,7 +2,7 @@
 // デッキを選ぶ→枚数を調整→A3横(18枚/頁)/A4縦(9枚/頁)・等倍63×88mmのPDFをその場で生成してダウンロード。
 // 画像は weserv 経由の公式画像（CORS可・原寸PNG）をブラウザだけで取得＝サーバ不要。
 // できたPDFは netprint（かんたんnetprint）にアップして、セブンのマルチコピー機で等倍印刷する。
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useEngineStore } from '../state/engineStore';
 import { api } from '../api/client';
@@ -59,8 +59,11 @@ export default function ProxyPrint() {
   const [marks, setMarks] = useState<boolean>(true);
   const [busy, setBusy] = useState(false);
   const [prog, setProg] = useState<{ done: number; total: number } | null>(null);
-  const [result, setResult] = useState<{ size: number; pages: number; name: string } | null>(null);
+  const [result, setResult] = useState<{ size: number; pages: number; name: string; url: string; opened: boolean } | null>(null);
   const [err, setErr] = useState<string | null>(null);
+  const urlRef = useRef<string | null>(null); // 生成済みPDFの blob URL（再生成・画面離脱で解放）
+
+  useEffect(() => () => { if (urlRef.current) URL.revokeObjectURL(urlRef.current); }, []);
 
   // 共有デッキも選択肢に
   useEffect(() => {
@@ -107,26 +110,45 @@ export default function ProxyPrint() {
 
   async function generate() {
     if (!rows || total === 0 || busy) return;
+    // ★別タブで開く: 画像取得(async)の後の window.open はポップアップブロックされるため、
+    //   クリックの同期文脈で先に空タブを確保し、生成完了後に blob URL へ差し替える。
+    const win = typeof window.open === 'function' ? window.open('', '_blank') : null;
+    try {
+      if (win) {
+        win.document.title = 'プロキシPDFを生成中…';
+        win.document.body.innerHTML = '<p style="font-family:sans-serif;padding:24px;color:#333">プロキシPDFを生成しています…（カード画像の取得に数秒かかります）</p>';
+      }
+    } catch { /* 書き込めない環境は無視（PDF差し替えは可能） */ }
     setBusy(true); setErr(null); setResult(null); setProg(null);
     try {
+      const name = `${sanitizeName(deckName)}_proxy_${paper.toUpperCase()}.pdf`;
       const bytes = await buildProxyPdf(
         rows.filter((r) => r.count > 0).map((r) => ({ no: r.no, count: r.count })),
-        { paper, gapMm: gap, marks, onProgress: (done, totalN) => setProg({ done, total: totalN }) },
+        { paper, gapMm: gap, marks, title: name, onProgress: (done, totalN) => setProg({ done, total: totalN }) },
       );
-      const name = `${sanitizeName(deckName)}_proxy_${paper.toUpperCase()}.pdf`;
       const blob = new Blob([bytes as any], { type: 'application/pdf' });
       const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url; a.download = name;
-      document.body.appendChild(a); a.click(); a.remove();
-      setTimeout(() => URL.revokeObjectURL(url), 60000);
-      setResult({ size: bytes.length, pages, name });
+      if (urlRef.current) URL.revokeObjectURL(urlRef.current);
+      urlRef.current = url;
+      const opened = !!(win && !win.closed);
+      if (opened) win!.location.href = url;
+      setResult({ size: bytes.length, pages, name, url, opened });
     } catch (e: any) {
+      try { win?.close(); } catch { /* ignore */ }
       setErr(e?.message || 'PDFの生成に失敗しました');
     } finally {
       setBusy(false); setProg(null);
     }
   }
+
+  // 手動で開き直す/保存する（result パネルのボタン。クリック直下なのでブロックされない）
+  const openPdf = () => { if (result) window.open(result.url, '_blank'); };
+  const downloadPdf = () => {
+    if (!result) return;
+    const a = document.createElement('a');
+    a.href = result.url; a.download = result.name;
+    document.body.appendChild(a); a.click(); a.remove();
+  };
 
   if (!engine) return null;
 
@@ -223,7 +245,7 @@ export default function ProxyPrint() {
             <button className="decks-btn" onClick={() => setRows((rs) => (rs || []).map((r) => ({ ...r, count: r.deckCount })))}>デッキ通りに戻す</button>
             <button className="decks-btn" onClick={() => setRows((rs) => (rs || []).map((r) => ({ ...r, count: 0 })))}>全て0にする</button>
             <button className="decks-btn gold" disabled={busy || total === 0} onClick={() => void generate()}>
-              <Icon.printer size={14} /> {busy ? (prog ? `画像取得中… ${prog.done}/${prog.total}` : '生成中…') : 'PDFを生成してダウンロード'}
+              <Icon.printer size={14} /> {busy ? (prog ? `画像取得中… ${prog.done}/${prog.total}` : '生成中…') : 'PDFを生成（別タブで開く）'}
             </button>
           </div>
 
@@ -231,7 +253,19 @@ export default function ProxyPrint() {
 
           {result ? (
             <div style={{ width: '100%', maxWidth: 720, padding: 12, background: 'linear-gradient(180deg, var(--ocean-800), var(--ocean-850))', border: '1px solid var(--surface-edge)', borderRadius: 10, fontSize: 12.5, lineHeight: 1.8 }}>
-              <b style={{ color: 'var(--good, #48c98a)' }}>✓ {result.name}（{mb(result.size)}MB・{result.pages}ページ）をダウンロードしました</b>
+              <b style={{ color: 'var(--good, #48c98a)' }}>
+                ✓ {result.name}（{mb(result.size)}MB・{result.pages}ページ）を生成しました
+                {result.opened ? '（別タブで開いています）' : ''}
+              </b>
+              {!result.opened ? (
+                <div style={{ color: 'var(--danger-glow, #ff6a4d)' }}>
+                  ⚠ タブを開けませんでした（ポップアップブロック）。下の「PDFを開く」を押してください。
+                </div>
+              ) : null}
+              <div style={{ display: 'flex', gap: 8, margin: '6px 0', flexWrap: 'wrap' }}>
+                <button className="dsm-pill gold" onClick={openPdf}>PDFを開く</button>
+                <button className="dsm-pill" onClick={downloadPdf}>ダウンロード</button>
+              </div>
               {result.size > 10 * 1024 * 1024 ? (
                 <div style={{ color: 'var(--danger-glow, #ff6a4d)' }}>
                   ⚠ netprint の上限（10MB）を超えています。枚数を分けて2回に分割してください（セブンのマルチコピーアプリなら30MBまで可）。
@@ -239,7 +273,7 @@ export default function ProxyPrint() {
               ) : null}
               <div style={{ color: 'var(--muted)' }}>
                 セブンで印刷する手順:<br />
-                ① netprint / かんたんnetprint アプリにこのPDFをアップロード（共有→netprint）<br />
+                ① 開いたPDFの共有メニューから netprint / かんたんnetprint アプリへ渡す<br />
                 ② マルチコピー機でプリント番号を入力し、用紙サイズ <b style={{ color: 'var(--ink)' }}>{paper === 'a3' ? 'A3' : 'A4'}</b>・カラーを選択<br />
                 ③ <b style={{ color: 'var(--ink)' }}>倍率は必ず等倍（100%）</b>にする（「用紙に合わせる」だとカードサイズがずれます）
               </div>

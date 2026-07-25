@@ -98,6 +98,7 @@ export interface BuildOpts {
   paper: ProxyPaper;
   gapMm: number;
   marks: boolean;
+  title?: string; // PDFメタデータのタイトル（別タブで開いたときのタブ名になる）
   onProgress?: (done: number, total: number) => void; // 画像取得の進捗
 }
 
@@ -107,7 +108,7 @@ export async function buildProxyPdf(cards: Array<{ no: string; count: number }>,
   if (uniq.length === 0) throw new Error('印刷するカードがありません');
 
   const doc = await PDFDocument.create();
-  doc.setTitle('OPCG Proxy');
+  doc.setTitle(opts.title || 'OPCG Proxy');
 
   // 画像はユニークカードごとに1回だけ取得・埋め込み（同名4枚でも1画像を使い回す）
   const imgs = new Map<string, PDFImage>();
