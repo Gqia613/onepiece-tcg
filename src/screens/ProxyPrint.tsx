@@ -22,12 +22,15 @@ const COLOR_HEX: Record<string, string> = {
   赤: '#d2473f', 緑: '#2f9e63', 青: '#3a7fc9', 紫: '#9a57d4', 黒: '#7a8496', 黄: '#c9b03a',
 };
 
-// 検索結果の並び: 最新弾から降順。カード番号の接頭辞（OP13 等）を系列＋弾番号にパースして比較する。
+// 弾コード（'OP13'/'ST21'/'EB02'/'P' 等）→ 並び順キー。最新弾から降順に使う。
 // 系列の優先: OP（メイン弾）→ EB → PRB → ST → その他（プロモP等）。同一系列内は弾番号の降順。
 const SERIES_RANK: Record<string, number> = { OP: 4, EB: 3, PRB: 2, ST: 1 };
-function setSortKey(no: string): { rank: number; num: number } {
-  const m = /^([A-Z]+)(\d+)?-/.exec(no) || [];
+function parseSetCode(code: string): { rank: number; num: number } {
+  const m = /^([A-Z]+)(\d+)?$/.exec(code) || [];
   return { rank: SERIES_RANK[m[1] || ''] ?? 0, num: parseInt(m[2] || '0', 10) || 0 };
+}
+function setSortKey(no: string): { rank: number; num: number } {
+  return parseSetCode(no.split('-')[0]);
 }
 
 // デッキ（{leader,list}）→ 印刷行（リーダー1枚を先頭に、種別→コスト順）
@@ -80,6 +83,7 @@ export default function ProxyPrint() {
   const [q, setQ] = useState('');
   const [colorF, setColorF] = useState<string | null>(null);
   const [typeF, setTypeF] = useState<string | null>(null);
+  const [setF, setSetF] = useState<string | null>(null); // 弾の絞り込み（収録弾ベース）
   const [zoom, setZoom] = useState<{ no: string; name: string } | null>(null); // 長押し拡大中のカード
 
   const urlRef = useRef<string | null>(null); // 生成済みPDFの blob URL（再生成・画面離脱で解放）
@@ -170,10 +174,26 @@ export default function ProxyPrint() {
     setResult(null);
   };
 
+  // 弾の選択肢（収録弾 b.sets の全集合。スタートデッキ再録も収録弾で正しく引っかかる）。最新弾から降順。
+  const allSets = useMemo(() => {
+    const s = new Set<string>();
+    for (const no of Object.keys(C)) {
+      if (/_r\d+$/.test(no)) continue;
+      const b = C[no];
+      if (!b || !b.type) continue;
+      for (const x of (b.sets || [no.split('-')[0]]) as string[]) s.add(x);
+    }
+    return [...s].sort((a, b) => {
+      const ka = parseSetCode(a), kb = parseSetCode(b);
+      return kb.rank - ka.rank || kb.num - ka.num || a.localeCompare(b);
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [engine]);
+
   // ---- 全カード検索（エンジンの C = 全カードDB をローカルフィルタ）----
   // ★パラレル(_rN=別イラストの同一カード)も C に別キーで入っているため除外（重複表示の原因）。
   //   並びは最新弾から降順（setSortKey）→ 全件ソート後に上位60件を表示。
-  const searchOn = q.trim() !== '' || colorF !== null || typeF !== null;
+  const searchOn = q.trim() !== '' || colorF !== null || typeF !== null || setF !== null;
   const search = useMemo(() => {
     if (!searchOn) return { list: [] as Array<{ no: string; b: any }>, capped: false };
     const query = q.trim().toLowerCase();
@@ -184,6 +204,7 @@ export default function ProxyPrint() {
       if (!b || !b.type) continue;
       if (typeF && b.type !== typeF) continue;
       if (colorF && !((b.color || []) as string[]).includes(colorF)) continue;
+      if (setF && !(((b.sets || [no.split('-')[0]]) as string[]).includes(setF))) continue;
       if (query && !(no.toLowerCase().includes(query) || String(b.name || '').toLowerCase().includes(query))) continue;
       out.push({ no, b });
     }
@@ -193,7 +214,7 @@ export default function ProxyPrint() {
     });
     return { list: out.slice(0, 60), capped: out.length > 60 };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [q, colorF, typeF, engine, searchOn]);
+  }, [q, colorF, typeF, setF, engine, searchOn]);
   const results = search.list;
 
   const countOf = (no: string) => rows.find((r) => r.no === no)?.count || 0;
@@ -311,7 +332,7 @@ export default function ProxyPrint() {
             style={{ ...selStyle, flex: '1 1 auto', minWidth: 0 }}
           />
           {searchOn ? (
-            <button className="dsm-pill" onClick={() => { setQ(''); setColorF(null); setTypeF(null); }}>クリア</button>
+            <button className="dsm-pill" onClick={() => { setQ(''); setColorF(null); setTypeF(null); setSetF(null); }}>クリア</button>
           ) : null}
         </div>
         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
@@ -324,6 +345,16 @@ export default function ProxyPrint() {
           {TYPE_LABEL.map(([t, label]) => (
             <button key={t} style={chip(typeF === t)} onClick={() => setTypeF(typeF === t ? null : t)}>{label}</button>
           ))}
+          <span style={{ width: 8 }} />
+          <select
+            style={{ ...selStyle, padding: '5px 8px', fontSize: 12, borderRadius: 999, fontWeight: setF ? 800 : 500, borderColor: setF ? 'var(--gold, #ffc857)' : 'var(--surface-edge)' }}
+            value={setF ?? ''}
+            onChange={(e) => setSetF(e.target.value || null)}
+            title="収録弾で絞り込み"
+          >
+            <option value="">弾: すべて</option>
+            {allSets.map((s) => <option key={s} value={s}>{s}</option>)}
+          </select>
         </div>
         {searchOn ? (
           results.length === 0 ? (
