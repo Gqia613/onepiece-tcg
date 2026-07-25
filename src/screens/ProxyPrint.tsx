@@ -1,7 +1,8 @@
 // プロキシ印刷PDF生成画面。/proxy でマイデッキ/デッキ一覧から遷移。
-// デッキを選ぶ→枚数を調整→A3横(18枚/頁)/A4縦(9枚/頁)・等倍63×88mmのPDFをその場で生成してダウンロード。
+// 「印刷リスト（カート）」方式: デッキ読み込み（追加/置き換え）と全カード検索の両方から
+// リストに積み、枚数を調整して A3横(18枚/頁)/A4縦(9枚/頁)・等倍63×88mmのPDFを生成する。
 // 画像は weserv 経由の公式画像（CORS可・原寸PNG）をブラウザだけで取得＝サーバ不要。
-// できたPDFは netprint（かんたんnetprint）にアップして、セブンのマルチコピー機で等倍印刷する。
+// できたPDFは別タブで開き、共有から netprint（かんたんnetprint）へ渡してセブンで等倍印刷する。
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useEngineStore } from '../state/engineStore';
@@ -12,9 +13,13 @@ import { Icon } from '../components/ui/Icon';
 import { buildProxyPdf, computeLayout, pageCount, type ProxyPaper } from '../lib/proxyPdf';
 import type { Deck } from '../engine/types';
 
-interface Row { no: string; name: string; count: number; deckCount: number }
+interface Row { no: string; name: string; count: number; deckCount: number } // deckCount=読み込んだデッキでの枚数（検索追加は0）
 
 const TYPE_ORDER: Record<string, number> = { LEADER: 0, CHAR: 1, EVENT: 2, STAGE: 3 };
+const TYPE_LABEL: Array<[string, string]> = [['LEADER', 'リーダー'], ['CHAR', 'キャラ'], ['EVENT', 'イベント'], ['STAGE', 'ステージ']];
+const COLOR_HEX: Record<string, string> = {
+  赤: '#d2473f', 緑: '#2f9e63', 青: '#3a7fc9', 紫: '#9a57d4', 黒: '#7a8496', 黄: '#c9b03a',
+};
 
 // デッキ（{leader,list}）→ 印刷行（リーダー1枚を先頭に、種別→コスト順）
 function deckRows(deck: { leader: string; list?: Record<string, number> }, C: Record<string, any>): Row[] {
@@ -27,18 +32,19 @@ function deckRows(deck: { leader: string; list?: Record<string, number> }, C: Re
 }
 
 function sanitizeName(s: string): string {
-  return (s || 'deck').replace(/[\\/:*?"<>|]/g, '_').slice(0, 40);
+  return (s || 'proxy').replace(/[\\/:*?"<>|]/g, '_').slice(0, 40);
 }
 
-function Thumb({ no, name }: { no: string; name: string }) {
+function Thumb({ no, name, size = 40 }: { no: string; name: string; size?: number }) {
   const [stage, setStage] = useState(0);
   const src = stage === 0 ? IMG_SM(no) : stage === 1 ? IMG_RAW(no) : '';
+  const h = Math.round(size * 1.4);
   return src ? (
     <img src={src} referrerPolicy="no-referrer" decoding="async" alt={name} title={name}
-      style={{ width: 40, height: 56, objectFit: 'cover', borderRadius: 4, border: '1px solid var(--surface-edge)' }}
+      style={{ width: size, height: h, objectFit: 'cover', borderRadius: 4, border: '1px solid var(--surface-edge)', display: 'block' }}
       onError={() => setStage((s) => s + 1)} />
   ) : (
-    <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 40, height: 56, fontSize: 8, background: 'var(--ocean-850)', borderRadius: 4, border: '1px solid var(--surface-edge)', color: 'var(--muted)', textAlign: 'center', overflow: 'hidden' }}>{name}</span>
+    <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: size, height: h, fontSize: 8, background: 'var(--ocean-850)', borderRadius: 4, border: '1px solid var(--surface-edge)', color: 'var(--muted)', textAlign: 'center', overflow: 'hidden' }}>{name}</span>
   );
 }
 
@@ -52,7 +58,7 @@ export default function ProxyPrint() {
 
   const [shared, setShared] = useState<Deck[]>([]);
   const [selVal, setSelVal] = useState<string>(passed ? '__passed' : '');
-  const [rows, setRows] = useState<Row[] | null>(null);
+  const [rows, setRows] = useState<Row[]>([]);
   const [deckName, setDeckName] = useState<string>(passed?.name || '');
   const [paper, setPaper] = useState<ProxyPaper>('a3');
   const [gap, setGap] = useState<number>(0);
@@ -61,7 +67,13 @@ export default function ProxyPrint() {
   const [prog, setProg] = useState<{ done: number; total: number } | null>(null);
   const [result, setResult] = useState<{ size: number; pages: number; name: string; url: string; opened: boolean } | null>(null);
   const [err, setErr] = useState<string | null>(null);
+  // ---- 全カード検索 ----
+  const [q, setQ] = useState('');
+  const [colorF, setColorF] = useState<string | null>(null);
+  const [typeF, setTypeF] = useState<string | null>(null);
+
   const urlRef = useRef<string | null>(null); // 生成済みPDFの blob URL（再生成・画面離脱で解放）
+  const initedRef = useRef(false);            // 遷移元デッキの初期読み込みは1回だけ
 
   useEffect(() => () => { if (urlRef.current) URL.revokeObjectURL(urlRef.current); }, []);
 
@@ -80,36 +92,84 @@ export default function ProxyPrint() {
   const custom: Deck[] = ((engine?.G?.customDecks || []) as Deck[]);
   const presets: Deck[] = ((engine?.DECKS || []) as Deck[]);
 
-  // 初期デッキ（遷移元から渡されたもの）
+  // 初期デッキ（遷移元から渡されたもの）を読み込み
   useEffect(() => {
-    if (passed && engine && rows === null) {
+    if (passed && engine && !initedRef.current) {
+      initedRef.current = true;
       setRows(deckRows(passed, engine.C || {}));
       setDeckName(passed.name);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [engine]);
 
-  const pickDeck = (val: string) => {
-    setSelVal(val);
+  // 選択中デッキの解決（'__passed' = 遷移元デッキ）
+  const selDeck: any = selVal === '__passed'
+    ? passed || null
+    : custom.find((x) => x.id === selVal) || shared.find((x) => x.id === selVal) || presets.find((x) => x.id === selVal) || null;
+
+  // デッキを印刷リストへ（add=合算 / replace=置き換え）
+  function addDeckToList(mode: 'add' | 'replace') {
+    const d = selDeck;
+    if (!d || !d.list) return;
+    const newRows = deckRows(d, C);
+    const wasEmpty = rows.length === 0;
+    setRows((prev) => {
+      if (mode === 'replace' || prev.length === 0) return newRows;
+      const out = prev.map((r) => ({ ...r }));
+      for (const nr of newRows) {
+        const ex = out.find((r) => r.no === nr.no);
+        if (ex) { ex.count = Math.min(10, ex.count + nr.count); ex.deckCount = Math.max(ex.deckCount, nr.deckCount); }
+        else out.push(nr);
+      }
+      return out;
+    });
+    if (mode === 'replace' || wasEmpty) setDeckName(d.name);
     setResult(null); setErr(null);
-    if (!engine) return;
-    if (val === '__passed' && passed) { setRows(deckRows(passed, C)); setDeckName(passed.name); return; }
-    const d = custom.find((x) => x.id === val) || shared.find((x) => x.id === val) || presets.find((x) => x.id === val);
-    if (d && d.list) { setRows(deckRows(d as any, C)); setDeckName(d.name); }
-  };
+  }
+
+  // 検索結果からカードを1枚追加（既にあれば+1）
+  function addCard(no: string, b: any) {
+    setRows((prev) => {
+      const i = prev.findIndex((r) => r.no === no);
+      if (i >= 0) return prev.map((r, j) => (j === i ? { ...r, count: Math.min(10, r.count + 1) } : r));
+      return [...prev, { no, name: b.name || no, count: 1, deckCount: 0 }];
+    });
+    setResult(null);
+  }
 
   const setCount = (no: string, count: number) => {
-    setRows((rs) => (rs || []).map((r) => (r.no === no ? { ...r, count: Math.max(0, Math.min(10, count)) } : r)));
+    setRows((rs) => rs.map((r) => (r.no === no ? { ...r, count: Math.max(0, Math.min(10, count)) } : r)));
     setResult(null);
   };
 
-  const total = useMemo(() => (rows || []).reduce((s, r) => s + r.count, 0), [rows]);
-  const kinds = useMemo(() => (rows || []).filter((r) => r.count > 0).length, [rows]);
+  // ---- 全カード検索（エンジンの C = 全カードDB をローカルフィルタ）----
+  const searchOn = q.trim() !== '' || colorF !== null || typeF !== null;
+  const results = useMemo(() => {
+    if (!searchOn) return [] as Array<{ no: string; b: any }>;
+    const query = q.trim().toLowerCase();
+    const out: Array<{ no: string; b: any }> = [];
+    for (const no of Object.keys(C).sort()) {
+      const b = C[no];
+      if (!b || !b.type) continue;
+      if (typeF && b.type !== typeF) continue;
+      if (colorF && !((b.color || []) as string[]).includes(colorF)) continue;
+      if (query && !(no.toLowerCase().includes(query) || String(b.name || '').toLowerCase().includes(query))) continue;
+      out.push({ no, b });
+      if (out.length >= 60) break; // 表示上限（グリッドの肥大防止）
+    }
+    return out;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [q, colorF, typeF, engine, searchOn]);
+
+  const countOf = (no: string) => rows.find((r) => r.no === no)?.count || 0;
+
+  const total = useMemo(() => rows.reduce((s, r) => s + r.count, 0), [rows]);
+  const kinds = useMemo(() => rows.filter((r) => r.count > 0).length, [rows]);
   const pages = total > 0 ? pageCount(total, paper, gap) : 0;
   const L = computeLayout(paper, gap);
 
   async function generate() {
-    if (!rows || total === 0 || busy) return;
+    if (total === 0 || busy) return;
     // ★別タブで開く: 画像取得(async)の後の window.open はポップアップブロックされるため、
     //   クリックの同期文脈で先に空タブを確保し、生成完了後に blob URL へ差し替える。
     const win = typeof window.open === 'function' ? window.open('', '_blank') : null;
@@ -163,6 +223,13 @@ export default function ProxyPrint() {
     background: on ? 'linear-gradient(180deg, rgba(255,200,87,.18), rgba(255,200,87,.06))' : 'var(--ocean-850)',
     color: on ? 'var(--gold-soft, #ffd98a)' : 'var(--ink)', fontWeight: on ? 800 : 500,
   });
+  const chip = (on: boolean, accent?: string): React.CSSProperties => ({
+    padding: '4px 10px', borderRadius: 999, fontSize: 12, cursor: 'pointer',
+    border: '1px solid ' + (on ? (accent || 'var(--gold, #ffc857)') : 'var(--surface-edge)'),
+    background: on ? 'rgba(255,255,255,.08)' : 'var(--ocean-850)',
+    color: 'var(--ink)', fontWeight: on ? 800 : 500,
+    display: 'inline-flex', alignItems: 'center', gap: 5,
+  });
 
   return (
     <div className="select-wrap decks-wrap proxy-wrap">
@@ -174,10 +241,10 @@ export default function ProxyPrint() {
         <span className="bd-note">スタンダード63×88mm・等倍印刷用PDF</span>
       </div>
 
-      {/* デッキ選択 */}
-      <div style={{ width: '100%', maxWidth: 1000, display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
-        <span style={{ fontSize: 13, fontWeight: 700 }}>デッキ:</span>
-        <select style={selStyle} value={selVal} onChange={(e) => pickDeck(e.target.value)}>
+      {/* ===== デッキから追加 ===== */}
+      <div className="sect-label">デッキから追加</div>
+      <div style={{ width: '100%', maxWidth: 1000, display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+        <select style={{ ...selStyle, flex: '1 1 220px', minWidth: 0 }} value={selVal} onChange={(e) => setSelVal(e.target.value)}>
           <option value="" disabled>デッキを選択…</option>
           {passed ? <option value="__passed">{passed.name}（開いていたデッキ）</option> : null}
           {custom.length ? (
@@ -194,38 +261,104 @@ export default function ProxyPrint() {
             {presets.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
           </optgroup>
         </select>
+        <button className="dsm-pill gold" disabled={!selDeck} onClick={() => addDeckToList('add')} title="今のリストに合算します">リストに追加</button>
+        <button className="dsm-pill" disabled={!selDeck} onClick={() => addDeckToList('replace')} title="リストをこのデッキだけにします">置き換え</button>
       </div>
 
-      {rows === null ? (
-        <div className="decks-empty">デッキを選ぶと、カードごとの印刷枚数を調整できます。</div>
+      {/* ===== 全カードから検索して追加 ===== */}
+      <div className="sect-label">カードを検索して追加</div>
+      <div style={{ width: '100%', maxWidth: 1000, display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          <input
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            placeholder="カード名・カード番号で検索（例: ルフィ / OP01-001）"
+            style={{ ...selStyle, flex: '1 1 auto', minWidth: 0 }}
+          />
+          {searchOn ? (
+            <button className="dsm-pill" onClick={() => { setQ(''); setColorF(null); setTypeF(null); }}>クリア</button>
+          ) : null}
+        </div>
+        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
+          {Object.entries(COLOR_HEX).map(([c, hex]) => (
+            <button key={c} style={chip(colorF === c, hex)} onClick={() => setColorF(colorF === c ? null : c)}>
+              <span className="dot" style={{ width: 9, height: 9, borderRadius: '50%', background: hex, display: 'inline-block' }} />{c}
+            </button>
+          ))}
+          <span style={{ width: 8 }} />
+          {TYPE_LABEL.map(([t, label]) => (
+            <button key={t} style={chip(typeF === t)} onClick={() => setTypeF(typeF === t ? null : t)}>{label}</button>
+          ))}
+        </div>
+        {searchOn ? (
+          results.length === 0 ? (
+            <div style={{ fontSize: 12.5, color: 'var(--muted)' }}>該当するカードがありません</div>
+          ) : (
+            <>
+              <div style={{ maxHeight: 320, overflowY: 'auto', border: '1px solid var(--surface-edge)', borderRadius: 10, padding: 10, background: 'linear-gradient(180deg, var(--ocean-800), var(--ocean-850))' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(68px, 1fr))', gap: 8 }}>
+                  {results.map(({ no, b }) => {
+                    const cnt = countOf(no);
+                    return (
+                      <div key={no} onClick={() => addCard(no, b)} title={`${b.name} をリストに追加`}
+                        style={{ cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
+                        <div style={{ position: 'relative' }}>
+                          <Thumb no={no} name={b.name} size={56} />
+                          {cnt > 0 ? (
+                            <span style={{
+                              position: 'absolute', right: -4, top: -4, zIndex: 2,
+                              fontFamily: 'var(--font-num)', fontWeight: 800, fontSize: 11, lineHeight: '15px',
+                              minWidth: 18, textAlign: 'center', padding: '0 4px', borderRadius: 999,
+                              background: 'linear-gradient(180deg,var(--gold-soft),var(--gold))', color: '#1a1205',
+                              boxShadow: '0 1px 4px #000a', border: '1px solid #0006',
+                            }}>×{cnt}</span>
+                          ) : null}
+                        </div>
+                        <span style={{ fontSize: 9.5, color: 'var(--muted)', maxWidth: 66, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{b.name}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+              <div style={{ fontSize: 11.5, color: 'var(--muted)' }}>
+                タップでリストに追加（もう一度タップで+1）{results.length >= 60 ? '・60件まで表示中 — 検索語で絞り込めます' : ''}
+              </div>
+            </>
+          )
+        ) : (
+          <div style={{ fontSize: 12.5, color: 'var(--muted)' }}>検索語を入れるか、色・種別で絞り込むと全カードから追加できます。</div>
+        )}
+      </div>
+
+      {/* ===== 印刷設定 ===== */}
+      <div className="sect-label">印刷設定</div>
+      <div style={{ width: '100%', maxWidth: 1000, display: 'flex', gap: '10px 26px', flexWrap: 'wrap', alignItems: 'center' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: '0 0 auto' }}>
+          <span style={{ fontSize: 12.5, color: 'var(--muted)' }}>用紙</span>
+          <button style={optBtn(paper === 'a3')} onClick={() => { setPaper('a3'); setResult(null); }}>A3 横（18枚/頁）</button>
+          <button style={optBtn(paper === 'a4')} onClick={() => { setPaper('a4'); setResult(null); }}>A4 縦（9枚/頁）</button>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: '0 0 auto' }}>
+          <span style={{ fontSize: 12.5, color: 'var(--muted)' }}>間隔</span>
+          {[0, 1, 2].map((g) => (
+            <button key={g} style={optBtn(gap === g)} onClick={() => { setGap(g); setResult(null); }}>{g}mm</button>
+          ))}
+        </div>
+        <button style={{ ...optBtn(marks), flex: '0 0 auto' }} onClick={() => { setMarks(!marks); setResult(null); }}>
+          {marks ? '✓ ' : ''}切り取りガイド
+        </button>
+      </div>
+
+      {/* ===== 印刷リスト ===== */}
+      <div className="sect-label">印刷リスト{rows.length ? `（${total}枚・${kinds}種）` : ''}</div>
+      {rows.length === 0 ? (
+        <div className="decks-empty">デッキを読み込むか、カードを検索して印刷リストに追加してください。</div>
       ) : (
         <>
-          {/* オプション（ラベルとボタン群を1グループ＝折り返してもバラけない） */}
-          <div className="sect-label">印刷設定</div>
-          <div style={{ width: '100%', maxWidth: 1000, display: 'flex', gap: '10px 26px', flexWrap: 'wrap', alignItems: 'center' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: '0 0 auto' }}>
-              <span style={{ fontSize: 12.5, color: 'var(--muted)' }}>用紙</span>
-              <button style={optBtn(paper === 'a3')} onClick={() => { setPaper('a3'); setResult(null); }}>A3 横（18枚/頁）</button>
-              <button style={optBtn(paper === 'a4')} onClick={() => { setPaper('a4'); setResult(null); }}>A4 縦（9枚/頁）</button>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: '0 0 auto' }}>
-              <span style={{ fontSize: 12.5, color: 'var(--muted)' }}>間隔</span>
-              {[0, 1, 2].map((g) => (
-                <button key={g} style={optBtn(gap === g)} onClick={() => { setGap(g); setResult(null); }}>{g}mm</button>
-              ))}
-            </div>
-            <button style={{ ...optBtn(marks), flex: '0 0 auto' }} onClick={() => { setMarks(!marks); setResult(null); }}>
-              {marks ? '✓ ' : ''}切り取りガイド
-            </button>
-          </div>
-
-          {/* サマリ */}
           <div style={{ width: '100%', maxWidth: 1000, fontSize: 12.5, color: 'var(--muted)', lineHeight: 1.7 }}>
             合計 <b style={{ color: 'var(--ink)' }}>{total}</b> 枚（{kinds}種）→ {paper.toUpperCase()} <b style={{ color: 'var(--ink)' }}>{pages}</b> ページ（{L.cols}×{L.rows}面付け・余白 左右{L.originX.toFixed(1)}mm/上下{L.originY.toFixed(1)}mm）
           </div>
 
-          {/* カードごとの枚数調整 */}
-          <div className="sect-label">カードごとの枚数</div>
           <div style={{ width: '100%', maxWidth: 1000, display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: 6 }}>
             {rows.map((r) => (
               <div key={r.no} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '5px 8px', background: 'var(--ocean-850)', border: '1px solid var(--surface-edge)', borderRadius: 8, opacity: r.count === 0 ? 0.45 : 1 }}>
@@ -244,45 +377,44 @@ export default function ProxyPrint() {
           </div>
 
           <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap', justifyContent: 'center', marginTop: 6 }}>
-            <button className="decks-btn" onClick={() => setRows((rs) => (rs || []).map((r) => ({ ...r, count: r.deckCount })))}>デッキ通りに戻す</button>
-            <button className="decks-btn" onClick={() => setRows((rs) => (rs || []).map((r) => ({ ...r, count: 0 })))}>全て0にする</button>
+            <button className="decks-btn" onClick={() => { setRows([]); setDeckName(''); setResult(null); }}>リストを空にする</button>
             <button className="decks-btn gold" disabled={busy || total === 0} onClick={() => void generate()}>
               <Icon.printer size={14} /> {busy ? (prog ? `画像取得中… ${prog.done}/${prog.total}` : '生成中…') : 'PDFを生成（別タブで開く）'}
             </button>
           </div>
-
-          {err ? <div style={{ color: 'var(--danger-glow, #ff6a4d)', fontSize: 13 }}>{err}</div> : null}
-
-          {result ? (
-            <div style={{ width: '100%', maxWidth: 720, padding: 12, background: 'linear-gradient(180deg, var(--ocean-800), var(--ocean-850))', border: '1px solid var(--surface-edge)', borderRadius: 10, fontSize: 12.5, lineHeight: 1.8 }}>
-              <b style={{ color: 'var(--good, #48c98a)' }}>
-                ✓ {result.name}（{mb(result.size)}MB・{result.pages}ページ）を生成しました
-                {result.opened ? '（別タブで開いています）' : ''}
-              </b>
-              {!result.opened ? (
-                <div style={{ color: 'var(--danger-glow, #ff6a4d)' }}>
-                  ⚠ タブを開けませんでした（ポップアップブロック）。下の「PDFを開く」を押してください。
-                </div>
-              ) : null}
-              <div style={{ display: 'flex', gap: 8, margin: '6px 0', flexWrap: 'wrap' }}>
-                <button className="dsm-pill gold" onClick={openPdf}>PDFを開く</button>
-                <button className="dsm-pill" onClick={downloadPdf}>ダウンロード</button>
-              </div>
-              {result.size > 10 * 1024 * 1024 ? (
-                <div style={{ color: 'var(--danger-glow, #ff6a4d)' }}>
-                  ⚠ netprint の上限（10MB）を超えています。枚数を分けて2回に分割してください（セブンのマルチコピーアプリなら30MBまで可）。
-                </div>
-              ) : null}
-              <div style={{ color: 'var(--muted)' }}>
-                セブンで印刷する手順:<br />
-                ① 開いたPDFの共有メニューから netprint / かんたんnetprint アプリへ渡す<br />
-                ② マルチコピー機でプリント番号を入力し、用紙サイズ <b style={{ color: 'var(--ink)' }}>{paper === 'a3' ? 'A3' : 'A4'}</b>・カラーを選択<br />
-                ③ <b style={{ color: 'var(--ink)' }}>倍率は必ず等倍（100%）</b>にする（「用紙に合わせる」だとカードサイズがずれます）
-              </div>
-            </div>
-          ) : null}
         </>
       )}
+
+      {err ? <div style={{ color: 'var(--danger-glow, #ff6a4d)', fontSize: 13 }}>{err}</div> : null}
+
+      {result ? (
+        <div style={{ width: '100%', maxWidth: 720, padding: 12, background: 'linear-gradient(180deg, var(--ocean-800), var(--ocean-850))', border: '1px solid var(--surface-edge)', borderRadius: 10, fontSize: 12.5, lineHeight: 1.8 }}>
+          <b style={{ color: 'var(--good, #48c98a)' }}>
+            ✓ {result.name}（{mb(result.size)}MB・{result.pages}ページ）を生成しました
+            {result.opened ? '（別タブで開いています）' : ''}
+          </b>
+          {!result.opened ? (
+            <div style={{ color: 'var(--danger-glow, #ff6a4d)' }}>
+              ⚠ タブを開けませんでした（ポップアップブロック）。下の「PDFを開く」を押してください。
+            </div>
+          ) : null}
+          <div style={{ display: 'flex', gap: 8, margin: '6px 0', flexWrap: 'wrap' }}>
+            <button className="dsm-pill gold" onClick={openPdf}>PDFを開く</button>
+            <button className="dsm-pill" onClick={downloadPdf}>ダウンロード</button>
+          </div>
+          {result.size > 10 * 1024 * 1024 ? (
+            <div style={{ color: 'var(--danger-glow, #ff6a4d)' }}>
+              ⚠ netprint の上限（10MB）を超えています。枚数を分けて2回に分割してください（セブンのマルチコピーアプリなら30MBまで可）。
+            </div>
+          ) : null}
+          <div style={{ color: 'var(--muted)' }}>
+            セブンで印刷する手順:<br />
+            ① 開いたPDFの共有メニューから netprint / かんたんnetprint アプリへ渡す<br />
+            ② マルチコピー機でプリント番号を入力し、用紙サイズ <b style={{ color: 'var(--ink)' }}>{paper === 'a3' ? 'A3' : 'A4'}</b>・カラーを選択<br />
+            ③ <b style={{ color: 'var(--ink)' }}>倍率は必ず等倍（100%）</b>にする（「用紙に合わせる」だとカードサイズがずれます）
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }
