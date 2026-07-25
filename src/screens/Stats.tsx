@@ -279,7 +279,8 @@ export default function Stats() {
             </table>
           </div>
 
-          {/* ---- プレイヤー成績 ---- */}
+          {/* ---- プレイヤー成績（2026-07-26 ユーザー指示で非表示。戻すときは false を外す）---- */}
+          {false && (<>
           <div className="sect-label">プレイヤー成績</div>
           <div style={{ width: '100%', maxWidth: 1000, display: 'flex', gap: 10, flexWrap: 'wrap' }}>
             {playerList.map((uid) => {
@@ -314,6 +315,7 @@ export default function Stats() {
               ))}
             </div>
           ) : null}
+          </>)}
 
           {/* ---- 対戦履歴（リプレイ再生）---- */}
           <div className="sect-label">対戦履歴（{total}戦）</div>
