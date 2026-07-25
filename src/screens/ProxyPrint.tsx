@@ -165,7 +165,7 @@ export default function ProxyPrint() {
   });
 
   return (
-    <div className="select-wrap decks-wrap">
+    <div className="select-wrap decks-wrap proxy-wrap">
       <div className="bd-head" style={{ width: '100%', maxWidth: 1000 }}>
         <button className="bd-back" onClick={() => navigate(-1)} aria-label="戻る" title="戻る">
           <Icon.arrowLeft size={22} />
@@ -200,30 +200,32 @@ export default function ProxyPrint() {
         <div className="decks-empty">デッキを選ぶと、カードごとの印刷枚数を調整できます。</div>
       ) : (
         <>
-          {/* オプション */}
-          <div style={{ width: '100%', maxWidth: 1000, display: 'flex', gap: 14, flexWrap: 'wrap', alignItems: 'center' }}>
-            <span style={{ fontSize: 12.5, color: 'var(--muted)' }}>用紙</span>
-            <div style={{ display: 'flex', gap: 6 }}>
+          {/* オプション（ラベルとボタン群を1グループ＝折り返してもバラけない） */}
+          <div className="sect-label">印刷設定</div>
+          <div style={{ width: '100%', maxWidth: 1000, display: 'flex', gap: '10px 26px', flexWrap: 'wrap', alignItems: 'center' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: '0 0 auto' }}>
+              <span style={{ fontSize: 12.5, color: 'var(--muted)' }}>用紙</span>
               <button style={optBtn(paper === 'a3')} onClick={() => { setPaper('a3'); setResult(null); }}>A3 横（18枚/頁）</button>
               <button style={optBtn(paper === 'a4')} onClick={() => { setPaper('a4'); setResult(null); }}>A4 縦（9枚/頁）</button>
             </div>
-            <span style={{ fontSize: 12.5, color: 'var(--muted)' }}>間隔</span>
-            <div style={{ display: 'flex', gap: 6 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: '0 0 auto' }}>
+              <span style={{ fontSize: 12.5, color: 'var(--muted)' }}>間隔</span>
               {[0, 1, 2].map((g) => (
                 <button key={g} style={optBtn(gap === g)} onClick={() => { setGap(g); setResult(null); }}>{g}mm</button>
               ))}
             </div>
-            <button style={optBtn(marks)} onClick={() => { setMarks(!marks); setResult(null); }}>
+            <button style={{ ...optBtn(marks), flex: '0 0 auto' }} onClick={() => { setMarks(!marks); setResult(null); }}>
               {marks ? '✓ ' : ''}切り取りガイド
             </button>
           </div>
 
           {/* サマリ */}
-          <div style={{ width: '100%', maxWidth: 1000, fontSize: 12.5, color: 'var(--muted)' }}>
+          <div style={{ width: '100%', maxWidth: 1000, fontSize: 12.5, color: 'var(--muted)', lineHeight: 1.7 }}>
             合計 <b style={{ color: 'var(--ink)' }}>{total}</b> 枚（{kinds}種）→ {paper.toUpperCase()} <b style={{ color: 'var(--ink)' }}>{pages}</b> ページ（{L.cols}×{L.rows}面付け・余白 左右{L.originX.toFixed(1)}mm/上下{L.originY.toFixed(1)}mm）
           </div>
 
           {/* カードごとの枚数調整 */}
+          <div className="sect-label">カードごとの枚数</div>
           <div style={{ width: '100%', maxWidth: 1000, display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: 6 }}>
             {rows.map((r) => (
               <div key={r.no} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '5px 8px', background: 'var(--ocean-850)', border: '1px solid var(--surface-edge)', borderRadius: 8, opacity: r.count === 0 ? 0.45 : 1 }}>
@@ -241,7 +243,7 @@ export default function ProxyPrint() {
             ))}
           </div>
 
-          <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap', justifyContent: 'center' }}>
+          <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap', justifyContent: 'center', marginTop: 6 }}>
             <button className="decks-btn" onClick={() => setRows((rs) => (rs || []).map((r) => ({ ...r, count: r.deckCount })))}>デッキ通りに戻す</button>
             <button className="decks-btn" onClick={() => setRows((rs) => (rs || []).map((r) => ({ ...r, count: 0 })))}>全て0にする</button>
             <button className="decks-btn gold" disabled={busy || total === 0} onClick={() => void generate()}>

@@ -6565,6 +6565,16 @@ button.hb-chip:not(.zero):not([disabled]):hover {
   padding: 12px 14px 60px;
 }
 
+/* プロキシ印刷画面: .select-wrap は gap を持たない（Decks は sect-label 等の自前マージンで
+   間隔が付く）ため、素の div を積むこの画面はセクション間の縦余白を flex gap で付与する */
+.select-wrap.proxy-wrap {
+  gap: 12px;
+}
+
+.proxy-wrap .sect-label {
+  margin: 4px auto 0; /* 親の gap(12px) と足し合わせて上16/下12 になるよう詰める */
+}
+
 /* 保存直後のデッキ: 金色のお祝いパルス（一回きり） */
 .deck-card.just-saved {
   animation: savedPulse 1.8s ease .15s 1;
