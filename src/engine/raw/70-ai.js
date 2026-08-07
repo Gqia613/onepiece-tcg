@@ -698,10 +698,14 @@
       scored.sort((x, y) => y.q - x.q);
       return { scored, stop: false };
     }
-    // puctが苦手なリーダーを heuristic にフォールバックさせる枠（測定駆動）。現在は空＝全リーダーで探索する。
-    //   ※enel はミラー実測で puct が -29pt(探索がランプ機構を壊す)だが、ユーザー指定で条件を撤去（常に探索）。
-    //   再びフォールバックさせたいリーダーがあれば { enel:1 } のように追加。`G._puctNoSkip` で一時的に無効化も可。
-    var PUCT_SKIP = {};
+    // puctが苦手なリーダーを heuristic にフォールバックさせる枠（測定駆動）。`G._puctNoSkip` で一時的に無効化も可。
+    //   ※enel はミラー実測で puct が -29pt(探索がランプ機構を壊す)だが、ユーザー指定で条件を撤去（常に探索→PUCT_MCTSでmcts直行）。
+    // ★E60(2026-08-07): 実利用リーダーのpuct適合性を実測（mirror 2帯×2構成＋対yamatoクロス・N=40・同一seedペア）。
+    //   mihawk(_OP14-020)/青緑ルフィ(_OP16-022)/黄キッド(_OP10-099)は全構成・全文脈で puct ≤ heuristic
+    //   （基準3/1/5: mihawkミラー-35pt★・luffygbミラー-25pt★・kidd-17.5pt。深くしてもhに届かない。
+    //     E53〜E59でheuristicが強化された結果、探索が逆転される状態だった）→ heuristicフォールバック。
+    //   詳細 docs/pm/experiments.md E60。
+    var PUCT_SKIP = { '_OP14-020': 1, '_OP16-022': 1, '_OP10-099': 1 };
     var PUCT_MCTS = { enel: 1 };   // ★enel特化: enelはmctsがpuctを上回る(N60 mcts+8.3pt p0.063改善5/退行0 / puct±0)→puct指定時はmctsで読む。G._puctNoSkipで無効化可。
     // ★per-leader 探索の深さ。enelは浅い探索(det3)だとミラー-20ptと弱い（コントロール/ランプの計画が見えない）が、
     //   深い探索(det6/look2/w6)で±0pt＝中立(弱くない)になる。実測スイープで確認。docs/ai-design.md §9.11。
@@ -710,8 +714,12 @@
     //   det9/look2/w8 が頂点（対h lucy+30.0★/teach+25.0★/hancock+18.3★/nami+13.3/ace+11.7・対base合算 改善60/退行29 p≈0.002★）。
     //   det12/w10 は4/5で飽和/微減＝この先は逓減。探索は軽い(1手<0.5s)のでUI許容。docs/ai-design.md §9.12。
     var PUCT_DEEP = { det: 9, look: 2, width: 8 };
+    // ★E60(2026-08-07): kuzan(_OP12-040)/yamato(_OP16-079)に深さ適用（ミラー2帯＋クロスで strong vs base 正/中立）:
+    //   kuzan svb +7.5/+12.5/+17.5(対yamatoクロス)・対h 9/2/8で+35★/+30★。yamato svb +15/+10/±0(対kidd)・対h -10/0→+5/+10。
+    //   赤緑ルフィ(_OP13-001)は保留＝基準puctが全文脈でh以上の唯一の非curated（deepはミラー+12.5×2だが対yamatoクロス-12.5で逆符号）。
     var PUCT_DEPTH = { enel: { det: 6, look: 2, width: 6 },
-      lucy: PUCT_DEEP, ace: PUCT_DEEP, nami: PUCT_DEEP, hancock: PUCT_DEEP, teach: PUCT_DEEP };
+      lucy: PUCT_DEEP, ace: PUCT_DEEP, nami: PUCT_DEEP, hancock: PUCT_DEEP, teach: PUCT_DEEP,
+      '_OP12-040': PUCT_DEEP, '_OP16-079': PUCT_DEEP };
     async function puctTurn(side) {
       if (G._sim) return heuristicTurn(side);                          // 入れ子探索＝指数爆発を防ぐ
       // ★enel特化: enelはmctsがpuct/heuristicを上回る(N60 mcts+8.3pt p0.063・改善5/退行0 / puct±0)。探索がランプを壊さないflat決定化MC(mcts)で読む。
