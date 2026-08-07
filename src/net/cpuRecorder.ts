@@ -32,6 +32,8 @@ interface CpuRecording {
   // 記録開始時点の store.end 参照。前局の勝敗画面が未クリアのまま新局が始まっても
   // 「同一参照の end」は終局扱いしない（実終局の setEnd は必ず新オブジェクト）。
   endAtStart: unknown;
+  // 開始時点の uid カウンタ値（=この対戦の最小uid-1）。同一セッション2戦目以降のリプレイ再現用。
+  uidBase: number;
 }
 
 let rec: CpuRecording | null = null;
@@ -56,9 +58,19 @@ export function beginCpuRecording(engine: any, meta: CpuRecordingMeta): void {
     host: snapshotDeck(G, 'me', meta.deckNames.me),
     guest: snapshotDeck(G, 'cpu', meta.deckNames.cpu),
   };
+  // uid採番はページロードから連番＝同一セッション2戦目以降は開始uidがズレる。
+  // リプレイ再現用に「この対戦の最小uid-1」（=開始時点のカウンタ値）を記録する（scripts/cpu-replay-dump.ts が使用）。
+  let minUid = Infinity;
+  for (const side of ['me', 'cpu'] as const) {
+    const P = G.players[side];
+    const zones: any[] = [[P.leader], P.deck || [], P.hand || [], P.life || [], P.trash || [], P.chars || []];
+    if (P.stage) zones.push([P.stage]);
+    for (const z of zones) for (const c of z) { if (c && typeof c.uid === 'number' && c.uid < minUid) minUid = c.uid; }
+  }
+  const uidBase = Number.isFinite(minUid) ? minUid - 1 : 0;
   // 終局検知: store 購読で「勝敗画面(end)」の出現を見る（コンポーネント非依存）
   const unsub = useEngineStore.subscribe(() => check());
-  rec = { engine, meta, decks, inputs: [], seq: 0, unsub, done: false, endAtStart: useEngineStore.getState().end };
+  rec = { engine, meta, decks, inputs: [], seq: 0, unsub, done: false, endAtStart: useEngineStore.getState().end, uidBase };
 }
 
 // オフライン分岐の各チョークポイントから呼ぶ。オンライン中・非記録中は無視。
@@ -110,7 +122,7 @@ async function upload(r: CpuRecording, result: { winner: 'host' | 'guest'; reaso
     // agent はマリガン中は startGame 既定のまま・終了後に puct が設定される（DeckSelect.start() の順序）。
     // リプレイ実装時は同じ順序を再現すること（CPUのマリガン判断が変わり以降が全てズレる）。
     // puctCap: モバイル端末の探索上限（G._puctCap）。CPUの着手が変わるため、リプレイ再生時は同値を設定すること。
-    cpu: { agent: 'puct', cpuMode: 'strong', aiOn: false, puctCap: G._puctCap || null, firstPref: r.meta.firstPref, deckIds: r.meta.deckIds, ver },
+    cpu: { agent: 'puct', cpuMode: 'strong', aiOn: false, puctCap: G._puctCap || null, firstPref: r.meta.firstPref, deckIds: r.meta.deckIds, ver, uidBase: r.uidBase },
   };
   const body = JSON.stringify({
     ver,

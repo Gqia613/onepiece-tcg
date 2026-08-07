@@ -8,6 +8,9 @@
 //  - デッキは「元の定義順」が必須（buildPlayer の展開順→uid採番→シャッフルが変わるため、
 //    replay.decks のゾーン走査スナップショットでは代用不可）。プリセットIDはエンジン内で解決・
 //    カスタム/共有IDは OPCG_DECKS_FILE（D1 decks の {id:{leader,list,name}} マップ）から注入する。
+//  - ★uidオフセット: エンジンの uid 採番（++UID）はページロードから連番＝同一セッション2戦目以降の
+//    記録は uid が +B ずれている（実測: 約+102/戦）。replay.cpu.uidBase があれば B=uidBase で確定シフト。
+//    無い旧行は「最初の uid 参照入力 × 停止時の手札/盤面 uid」から B 候補を自動検出してリトライする。
 //  - 検証: 開始直後の全ゾーン走査を replay.decks と多重集合比較（不一致＝デッキが対戦後に編集された）
 //  - G._sim は立てない（CPUに実際に思考させる）。誤終局記録バグ（2026-08-07修正）以前の行は
 //    inputs が途中で切れている＝入力枯渇後は「CPUが人間入力待ちで停泊」した時点で打ち切り truncated=true
@@ -16,7 +19,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { makeClient } from '../tests/_lockstep-helpers';
-import { seatOf, type SeqInput, type RoomSeat, type DeckPayload } from '../src/net/protocol';
+import { seatOf, type SeqInput, type RoomSeat, type DeckPayload, type GameInput } from '../src/net/protocol';
 
 interface CpuReplayJson {
   seed: number;
@@ -24,7 +27,7 @@ interface CpuReplayJson {
   names: Record<RoomSeat, string>;
   first: RoomSeat | null;
   inputs: SeqInput[];
-  cpu?: { agent?: string; cpuMode?: string; aiOn?: boolean; puctCap?: any; firstPref?: string; deckIds?: { me: string; cpu: string }; ver?: string };
+  cpu?: { agent?: string; cpuMode?: string; aiOn?: boolean; puctCap?: any; firstPref?: string; deckIds?: { me: string; cpu: string }; ver?: string; uidBase?: number };
 }
 
 // 演出待ちを即時化（replay-dump.ts と同方針。dispatch の実タイマーは module 読込時に確保済み）
@@ -35,7 +38,24 @@ const stripTags = (s: string) => String(s).replace(/<[^>]*>/g, '');
 const DECKS_MAP: Record<string, { leader: string; list: Record<string, number>; name?: string }> =
   process.env.OPCG_DECKS_FILE ? JSON.parse(fs.readFileSync(process.env.OPCG_DECKS_FILE, 'utf8')) : {};
 
-// 盤面の全ゾーンを歩いてデッキ多重集合を復元（cpuRecorder.snapshotDeck と同じ走査）
+// --- uid オフセットシフト（記録セッションの uid 連番 → フレッシュ起動の uid へ写像） ---
+const shiftV = (v: any, B: number): any => {
+  if (typeof v === 'string' && v.startsWith('pick:')) { const n = Number(v.slice(5)); return Number.isFinite(n) ? 'pick:' + (n - B) : v; }
+  if (typeof v === 'string' && v.startsWith('blk:')) { const n = Number(v.slice(4)); return Number.isFinite(n) ? 'blk:' + (n - B) : v; }
+  if (typeof v === 'number' && v > B) return v - B; // uid値のみシフト（枚数選択などの小さい数値は不変）
+  if (Array.isArray(v)) return v.map((x) => shiftV(x, B));
+  return v;
+};
+const shiftInput = (din: GameInput, B: number): GameInput => {
+  if (!B) return din;
+  const d: any = { ...din };
+  if (typeof d.uid === 'number') d.uid -= B;
+  if (typeof d.auid === 'number') d.auid -= B;
+  if (typeof d.tuid === 'number') d.tuid -= B;
+  if ('v' in d) d.v = shiftV(d.v, B);
+  return d;
+};
+
 function zoneMultiset(G: any, side: 'me' | 'cpu'): Record<string, number> {
   const P = G.players[side];
   const list: Record<string, number> = {};
@@ -50,10 +70,15 @@ function sameMultiset(a: Record<string, number>, b: Record<string, number>): boo
   return ka.every((k) => a[k] === b[k]);
 }
 
-async function dumpCpuReplay(file: string): Promise<void> {
-  const raw = JSON.parse(fs.readFileSync(file, 'utf8'));
-  const d = (raw.replay ? raw.replay : raw) as CpuReplayJson;
-  const rowMeta = raw.replay ? { id: raw.id, winner: raw.winner, turns: raw.turns, ver: raw.ver } : {};
+interface AttemptResult {
+  ok: boolean;            // 全入力を消費できた
+  out: any;               // ダンプ本体
+  anchorUids: number[];   // 早期停止時: 停止時点の自陣 hand/chars/leader の uid（B候補生成用）
+  pendingUidRef: number | null; // 早期停止時: 次に適用できなかった入力の uid 参照値
+  deckNg: boolean;
+}
+
+async function runAttempt(file: string, d: CpuReplayJson, rowMeta: any, B: number): Promise<AttemptResult> {
   const c = makeClient('me', null); // 受信専用（送信しない）
   const eng: any = c.engine;
   const G: any = eng.G;
@@ -70,7 +95,6 @@ async function dumpCpuReplay(file: string): Promise<void> {
   G._puctCap = d.cpu?.puctCap || null;
   G.firstPref = d.first == null ? 'random' : d.first === 'host' ? 'me' : 'cpu';
   const ids = d.cpu?.deckIds || { me: 'net-host', cpu: 'net-guest' };
-  // カスタム/共有デッキを注入（プリセットIDはエンジンの findDeck が先に解決する）
   G.customDecks = [];
   for (const side of ['me', 'cpu'] as const) {
     const id = ids[side];
@@ -87,16 +111,18 @@ async function dumpCpuReplay(file: string): Promise<void> {
     startResolved = true;
   }).catch((e) => { startErr = e; startResolved = true; });
   await tick(); // startGame 同期部（盤面構築）を確定させる
-  if (!G.players || !G.players.me) { console.error(`${path.basename(file)}: startGame失敗（デッキID未解決? ids=${JSON.stringify(ids)}）`); return; }
+  if (!G.players || !G.players.me) {
+    console.error(`${path.basename(file)}: startGame失敗（デッキID未解決? ids=${JSON.stringify(ids)}）`);
+    return { ok: false, out: null, anchorUids: [], pendingUidRef: null, deckNg: true };
+  }
 
-  // デッキ検証: 記録時のゾーン走査スナップショットと多重集合一致するか（不一致＝対戦後にデッキ編集）
   const deckOk = {
     host: sameMultiset({ ...zoneMultiset(G, 'me'), [G.players.me.leader?.no]: (zoneMultiset(G, 'me')[G.players.me.leader?.no] || 0) + 1 }, { ...d.decks.host.list, [d.decks.host.leader]: (d.decks.host.list[d.decks.host.leader] || 0) + 1 }),
     guest: sameMultiset({ ...zoneMultiset(G, 'cpu'), [G.players.cpu.leader?.no]: (zoneMultiset(G, 'cpu')[G.players.cpu.leader?.no] || 0) + 1 }, { ...d.decks.guest.list, [d.decks.guest.leader]: (d.decks.guest.list[d.decks.guest.leader] || 0) + 1 }),
   };
   if ((!deckOk.host || !deckOk.guest) && !process.env.OPCG_FORCE) {
     console.error(`${path.basename(file)}: デッキ不一致（編集/削除済み） host=${deckOk.host} guest=${deckOk.guest} — OPCG_FORCE=1 で強行可`);
-    return;
+    return { ok: false, out: null, anchorUids: [], pendingUidRef: null, deckNg: true };
   }
 
   const cardOf = (uid: any) => {
@@ -147,40 +173,50 @@ async function dumpCpuReplay(file: string): Promise<void> {
     applied.push(e);
   });
 
-  // 全入力を投入 → pump（CPUの手番はエンジンが自走・人間入力は待ち状態に達したときだけ配達される）
-  for (const rec of d.inputs) c.driver.onRemoteInput(rec.seq, seatOf(rec.seat), rec.d);
+  // 全入力を（uidシフトして）投入 → pump（CPUの手番はエンジンが自走・人間入力は待ち状態でのみ配達）
+  for (const rec of d.inputs) c.driver.onRemoteInput(rec.seq, seatOf(rec.seat), shiftInput(rec.d, B));
   const lastSeq = d.inputs.length ? d.inputs[d.inputs.length - 1].seq : 0;
   const T0 = Date.now();
   const TIME_CAP = +(process.env.OPCG_TIME_CAP_MS || 15 * 60 * 1000);
   let iter = 0;
+  let quietTicks = 0;
+  const waitingHuman = () => {
+    const p = c.store.prompt;
+    if (p && !p.local && ((p.side || 'me') === 'me')) return true;
+    if (G.attackSel && G.active === 'me') return true;
+    return G.active === 'me' && G.myActable && !G.busy && !G.promptState && !G.pendingChoice && startResolved;
+  };
   while (c.driver.nextSeq() <= lastSeq && iter < 5000000 && Date.now() - T0 < TIME_CAP) {
     await tick();
     iter++;
     c.driver.pump();
+    // 適用待ちの入力が残っているのに「人間の入力待ちで停泊」が続く＝uidズレ等の無音no-op → 早期打ち切り
+    if (waitingHuman()) { quietTicks++; if (quietTicks > 400) break; } else quietTicks = 0;
   }
-  // 入力枯渇後: CPUの終局手（最後の人間入力の後にCPUがリーサル等）を進める。
-  // 「人間の入力待ちで停泊」（active=me で actable / meのプロンプト待ち）に達したら打ち切り＝truncated。
-  let stalled = false;
-  let quietTicks = 0;
-  while (!G.winner && iter < 5000000 && Date.now() - T0 < TIME_CAP) {
+  const consumed0 = c.driver.nextSeq() - 1;
+  // 入力枯渇後: CPUの終局手（最後の人間入力の後のリーサル等）を進め、人間入力待ちに達したら打ち切り
+  let stalled = consumed0 < lastSeq;
+  quietTicks = 0;
+  while (!stalled && !G.winner && iter < 5000000 && Date.now() - T0 < TIME_CAP) {
     await tick();
     iter++;
-    const waitingHuman = (() => {
-      const p = c.store.prompt;
-      if (p && !p.local && ((p.side || 'me') === 'me')) return true;
-      if (G.attackSel && G.active === 'me') return true;
-      return G.active === 'me' && G.myActable && !G.busy && !G.promptState && !G.pendingChoice && startResolved;
-    })();
-    if (waitingHuman) { quietTicks++; if (quietTicks > 200) { stalled = true; break; } }
+    if (waitingHuman()) { quietTicks++; if (quietTicks > 200) { stalled = true; break; } }
     else quietTicks = 0;
   }
   snap('final');
+
+  // 早期uidズレ検出用のアンカー: 次に適用できなかった入力の uid 参照と、自陣の現 uid 一覧
+  const pending = d.inputs.find((r) => r.seq === c.driver.nextSeq());
+  const pd: any = pending?.d || null;
+  const pendingUidRef = pd ? (typeof pd.uid === 'number' ? pd.uid : typeof pd.auid === 'number' ? pd.auid : null) : null;
+  const P = G.players.me;
+  const anchorUids = [...(P.hand || []), ...(P.chars || []), P.leader].filter(Boolean).map((x: any) => x.uid);
 
   const out = {
     file: path.basename(file),
     row: rowMeta,
     seed: d.seed, first: d.first, names: d.names, cpu: d.cpu || null,
-    decks: d.decks, deckOk,
+    decks: d.decks, deckOk, uidOffset: B,
     winner: G.winner, turnSeq: G.turnSeq, desynced: c.isDesynced(),
     consumed: c.driver.nextSeq() - 1, totalInputs: lastSeq,
     truncated: stalled || (!G.winner && c.driver.nextSeq() <= lastSeq),
@@ -189,9 +225,37 @@ async function dumpCpuReplay(file: string): Promise<void> {
     timeline: applied,
     log: gameLog.map((l: any, i: number) => ({ i, cls: l.cls, text: stripTags(l.html) })),
   };
+  return { ok: c.driver.nextSeq() > lastSeq, out, anchorUids, pendingUidRef, deckNg: false };
+}
+
+async function dumpCpuReplay(file: string): Promise<void> {
+  const raw = JSON.parse(fs.readFileSync(file, 'utf8'));
+  const d = (raw.replay ? raw.replay : raw) as CpuReplayJson;
+  const rowMeta = raw.replay ? { id: raw.id, winner: raw.winner, turns: raw.turns, ver: raw.ver } : {};
+  const B0 = typeof d.cpu?.uidBase === 'number' ? d.cpu.uidBase : (process.env.OPCG_UID_OFFSET ? +process.env.OPCG_UID_OFFSET : 0);
+  let att = await runAttempt(file, d, rowMeta, B0);
+  if (att.deckNg) return;
+  // 自動オフセット検出: uid参照入力が「適用されたのに実体解決できていない」（timeline上 card/attacker が null）
+  // ＝uidズレの無音no-op。最初の該当入力の記録uidと、停止時の自陣uid群から B 候補を作り総当たり。
+  if (!att.ok && !d.cpu?.uidBase && att.out) {
+    const firstNull = (att.out.timeline as any[]).find((e) =>
+      ((e.t === 'play' || e.t === 'menu') && !e.card) || (e.t === 'attack' && !e.attacker));
+    const rec = firstNull ? d.inputs[firstNull.i - 1] : null;
+    const rd: any = rec?.d || null;
+    const U = rd ? (typeof rd.uid === 'number' ? rd.uid : typeof rd.auid === 'number' ? rd.auid : null) : att.pendingUidRef;
+    if (U != null) {
+      const cands = [...new Set(att.anchorUids.map((u) => U - u).filter((b) => b > 0))].sort((a, b) => a - b);
+      for (const B of cands.slice(0, 12)) {
+        const a2 = await runAttempt(file, d, rowMeta, B);
+        if (a2.ok || (a2.out?.consumed ?? 0) > (att.out?.consumed ?? 0) + 10) { att = a2; if (a2.ok) break; }
+      }
+    }
+  }
+  const out = att.out;
+  if (!out) return;
   const outPath = file.replace(/\.json$/, '') + '.dump.json';
   fs.writeFileSync(outPath, JSON.stringify(out, null, 1));
-  console.log(`${path.basename(file)}: winner=${G.winner} turnSeq=${G.turnSeq} inputs=${out.consumed}/${lastSeq} truncated=${out.truncated} desync=${out.desynced} deckOk=${deckOk.host}/${deckOk.guest} log=${out.log.length}行 → ${outPath}`);
+  console.log(`${path.basename(file)}: winner=${out.winner} turnSeq=${out.turnSeq} inputs=${out.consumed}/${out.totalInputs} truncated=${out.truncated} uidB=${out.uidOffset} desync=${out.desynced} deckOk=${out.deckOk.host}/${out.deckOk.guest} log=${out.log.length}行 → ${outPath}`);
 }
 
 const files = process.argv.slice(2);
