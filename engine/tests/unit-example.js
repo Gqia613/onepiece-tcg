@@ -1321,6 +1321,97 @@ function setupG(leaderNo){G.active='me';G.turnSeq=5;G.winner=null;const mkP=(ln,
       const pick=cpuPickAttack('me',{});
       ok(pick && pick.target===big && pick.attacker.attachedDon===7, '例32e: marginmax=5000+7ドン(同値2+上乗せ5)=12000で要求5000（手札3枚の上限近くまで積む）');
     }
+    // 例33: ★E61 リプレイ研究第2弾の7部品（heur2+G._h2Partsで単離。既定E61_DEF=0＝既定挙動は不変）
+    // 33a finord: ブロッカー健在+他に未行動アタッカー+素でブロッカーを倒せる→上乗せ温存。ブロッカー不在ならmargin2どおり+2000
+    setupG('OP01-062'); { const P=G.players.me, O=G.players.cpu; P.isCPU=true; P.agent='heur2'; G._h2Parts={finord:1}; G.active='me';
+      const atk=mkc('OP01-065'); atk.summonedTurn=1; P.chars=[atk]; P.don.active=5; // P7000。リーダー5000も未行動＝アタッカー2枚
+      const blk=mkc('OP01-065'); blk.owner='cpu'; blk.base=Object.assign({},blk.base,{power:5000,blocker:true}); O.chars=[blk]; // アクティブ5000ブロッカー
+      O.life=[mkc('OP15-067'),mkc('OP15-067')]; O.hand=[mkc('OP15-067')]; O.deck=[mkc('OP15-067')];
+      const pick=cpuPickAttack('me',{});
+      ok(pick && pick.target===O.leader && pick.attacker.attachedDon===0, '例33a: finord=素でブロッカーを倒せる中間手は上乗せ温存（付与0）');
+      O.chars=[]; if(pick) pick.attacker.attachedDon=0; P.don.active=5;
+      const pick2=cpuPickAttack('me',{});
+      ok(pick2 && pick2.target===O.leader && pick2.attacker.attachedDon===2, '例33a: ブロッカー不在なら margin2 どおり+2000上乗せ');
+      G._h2Parts=null; }
+    // 33b koval: 同条件のレスト・ブロッカー2択で「登場時ドロー級エンジン」側を優先KO（部品OFFなら走査順=先頭を選ぶ）
+    setupG('OP01-062'); { const P=G.players.me, O=G.players.cpu; P.isCPU=true; P.agent='heur2'; G.active='me';
+      P.leader.rested=true;
+      const atk=mkc('OP01-065'); atk.summonedTurn=1; P.chars=[atk]; P.don.active=0; // P7000のみ
+      const van=mkc('OP01-065'); van.owner='cpu'; van.rested=true; van.base=Object.assign({},van.base,{power:5000,blocker:true});
+      const eng=mkc('OP01-065'); eng.owner='cpu'; eng.rested=true; eng.base=Object.assign({},eng.base,{no:'ZZ-KOVAL',power:5000,blocker:true,fx:{onPlay:[{op:'draw',n:1}]}});
+      O.chars=[van,eng]; O.life=[mkc('OP15-067'),mkc('OP15-067'),mkc('OP15-067'),mkc('OP15-067'),mkc('OP15-067')]; O.hand=[]; O.deck=[mkc('OP15-067')];
+      G._h2Parts={};
+      const pick0=cpuPickAttack('me',{});
+      ok(pick0 && pick0.target===van, '例33b: koval OFF=同点なら走査順（バニラ側）');
+      G._h2Parts={koval:1}; atk.attachedDon=0;
+      const pick=cpuPickAttack('me',{});
+      ok(pick && pick.target===eng, '例33b: koval=登場時ドロー級エンジンのKOを優先');
+      G._h2Parts=null; }
+    // 33c guardcost: 再KO圏かつ止めに2枚以上（need≥2000）→キャラを見捨てる。need1000（1枚）なら従来どおり守る
+    setupG('OP01-062'); { const P=G.players.me, O=G.players.cpu; P.isCPU=true; P.agent='heur2'; G._h2Parts={guardcost:1}; G.active='cpu';
+      const tgt=mkc('OP01-065'); tgt.base=Object.assign({},tgt.base,{power:9000}); P.chars=[tgt]; // sc=9+4=13≥11＝守る価値
+      P.life=[mkc('OP15-067'),mkc('OP15-067'),mkc('OP15-067'),mkc('OP15-067'),mkc('OP15-067')];
+      P.hand=[mkc('OP02-075'),mkc('OP02-075')];
+      const a1=mkc('OP01-065'); a1.owner='cpu'; a1.summonedTurn=-1; a1.base=Object.assign({},a1.base,{power:11000});
+      const rk=mkc('OP01-065'); rk.owner='cpu'; rk.summonedTurn=-1; rk.base=Object.assign({},rk.base,{power:9000});
+      O.chars=[a1,rk]; O.deck=[mkc('OP15-067')];
+      await cpuCounter('me', a1, tgt);
+      ok(P.hand.length===2, '例33c: guardcost=再KO圏かつ2枚必要なら守らない（手札温存）');
+      a1.base=Object.assign({},a1.base,{power:10000}); // need1000=1枚で守れる
+      await cpuCounter('me', a1, tgt);
+      ok(P.hand.length===1, '例33c: need1000（1枚）なら従来どおり守る');
+      G._h2Parts=null; G.active='me'; }
+    // 33d blockx: フルフロー=9000アタックを8000ブロッカーがブロック+ちょうど2000で生還（壁もライフも無傷・手札1枚だけ消費）
+    setupG('OP01-062'); { const P=G.players.me, O=G.players.cpu; P.isCPU=true; P.agent='heur2'; G.active='cpu'; G.firstPlayer='me'; G.busy=false; G.myActable=true;
+      const blk=mkc('OP01-065'); blk.base=Object.assign({},blk.base,{power:8000,blocker:true}); P.chars=[blk];
+      P.hand=[mkc('OP02-075')]; P.life=[mkc('OP15-067'),mkc('OP15-067'),mkc('OP15-067'),mkc('OP15-067')];
+      P.deck=[mkc('OP15-067')]; O.life=[mkc('OP15-067')]; O.deck=[mkc('OP15-067')];
+      const a1=mkc('OP01-065'); a1.owner='cpu'; a1.summonedTurn=1; a1.base=Object.assign({},a1.base,{power:9000}); O.chars=[a1];
+      G._h2Parts={};
+      await declareAttack(a1, P.leader);
+      ok(P.life.length===3 && P.chars.includes(blk) && P.hand.length===2, '例33d: blockx OFF=高ライフはブロックせず素受け（従来・被弾ライフは手札へ）');
+      G.busy=false; G.myActable=true; a1.rested=false; G._h2Parts={blockx:1};
+      await declareAttack(a1, P.leader);
+      ok(P.life.length===3 && P.chars.includes(blk) && P.hand.length===1 && blk.rested===true, '例33d: blockx=ブロック+ちょうど1枚でライフ・壁とも無傷（手札1消費）');
+      ok(P.trash.length>=1, '例33d: カウンターはトラッシュへ');
+      G._h2Parts=null; G.active='me'; }
+    // 33e nowor: 相手にダブルアタッカー視認+ライフ3(受け後2)+手札2（従来はhand<3でskip）→1枚で前倒し止め
+    setupG('OP01-062'); { const P=G.players.me, O=G.players.cpu; P.isCPU=true; P.agent='heur2'; G.active='cpu';
+      P.life=[mkc('OP15-067'),mkc('OP15-067'),mkc('OP15-067')]; P.hand=[mkc('OP02-075'),mkc('OP02-075')]; P.deck=[mkc('OP15-067')];
+      const a1=mkc('OP01-065'); a1.owner='cpu'; a1.summonedTurn=1; a1.base=Object.assign({},a1.base,{power:6000}); // need1000
+      const dblc=mkc('OP01-065'); dblc.owner='cpu'; dblc.summonedTurn=1; dblc.base=Object.assign({},dblc.base,{power:7000,doubleAttack:true});
+      O.chars=[a1,dblc]; O.deck=[mkc('OP15-067')];
+      G._h2Parts={};
+      await cpuCounter('me', a1, P.leader);
+      ok(P.hand.length===2, '例33e: nowor OFF=手札2枚では素受け（従来）');
+      G._h2Parts={nowor:1};
+      await cpuCounter('me', a1, P.leader);
+      ok(P.hand.length===1, '例33e: nowor=ダブルアタック視認なら1枚で前倒し止め');
+      G._h2Parts=null; G.active='me'; }
+    // 33f lifefloor: 受けたら「次ターン最大被弾数」を下回る→1枚で止める（ダブルアタッカー無しでも発火）
+    setupG('OP01-062'); { const P=G.players.me, O=G.players.cpu; P.isCPU=true; P.agent='heur2'; G.active='cpu';
+      P.life=[mkc('OP15-067'),mkc('OP15-067'),mkc('OP15-067')]; P.hand=[mkc('OP02-075'),mkc('OP02-075')]; P.deck=[mkc('OP15-067')];
+      const a1=mkc('OP01-065'); a1.owner='cpu'; a1.summonedTurn=1; a1.base=Object.assign({},a1.base,{power:6000});
+      const c2=mkc('OP01-065'); c2.owner='cpu'; c2.rested=true; const c3=mkc('OP01-065'); c3.owner='cpu'; c3.rested=true;
+      O.chars=[a1,c2,c3]; O.deck=[mkc('OP15-067')]; // 次ターン最大被弾=リーダー+3体=4 > 受け後ライフ2
+      G._h2Parts={lifefloor:1};
+      await cpuCounter('me', a1, P.leader);
+      ok(P.hand.length===1, '例33f: lifefloor=受けると詰み圏（2<4）なら1枚で止める');
+      G._h2Parts=null; G.active='me'; }
+    // 33g wastecut: ライフ0で「この1本は止められるが次の1本を止める資源が無い」→1枚も切らず温存
+    setupG('OP01-062'); { const P=G.players.me, O=G.players.cpu; P.isCPU=true; P.agent='heur2'; G.active='cpu';
+      P.life=[]; P.hand=[mkc('OP02-075')]; P.deck=[mkc('OP15-067')];
+      const a1=mkc('OP01-065'); a1.owner='cpu'; a1.summonedTurn=-1; a1.base=Object.assign({},a1.base,{power:6000}); // need1000←2000で止まる
+      const a2=mkc('OP01-065'); a2.owner='cpu'; a2.summonedTurn=-1; a2.base=Object.assign({},a2.base,{power:8000}); // 次の1本=要求4000
+      O.chars=[a1,a2]; O.deck=[mkc('OP15-067')];
+      G._h2Parts={};
+      const h0=P.hand.length;
+      await cpuCounter('me', a1, P.leader);
+      ok(h0===1 && P.hand.length===0, '例33g: wastecut OFF=survivalが2000を切る（従来）');
+      P.hand=[mkc('OP02-075')]; G._h2Parts={wastecut:1};
+      await cpuCounter('me', a1, P.leader);
+      ok(P.hand.length===1, '例33g: wastecut=次の1本を止められないなら温存');
+      G._h2Parts=null; G.active='me'; }
   }catch(e){ console.log('EXCEPTION:', e.message); fail++; }
   console.log('ユニットテスト: pass='+pass+' fail='+fail);
   process.exit(fail?1:0);

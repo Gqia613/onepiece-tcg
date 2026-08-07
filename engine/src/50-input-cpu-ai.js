@@ -455,6 +455,26 @@
     //   ＝2帯符号再現・合算 改善8/退行1(符号検定p≈0.039★)。buggy vs enel は±0（発火機会が稀）。退行機構なし→採用。
     var E57_DEF = { evgate: 1 };
     function e57On(side, part) { return !!E57_DEF[part] || (isHeur2(side) && h2On(part)); }
+    // ★E61採用テーブル（2026-08-07 リプレイ研究第2弾 docs/pm/replay-study-20260807.md 由来・第1波7部品）:
+    //   finord   = 詰め順序の再設計（E55 orderの複合ゲート形）: 上乗せ温存は「素でブロッカーを倒せる中間手」の時だけ
+    //   koval    = KO対象の継続価値: ETBドロー/サーチ級エンジンを加点＋デバフ済みは元パワー基準で取り返す
+    //   blockx   = 生存化ブロック: 「ブロック＋ちょうど1枚カウンター」で壁が生き残るなら高ライフでも行う
+    //   guardcost= E55 rekoの絞り版: 再KO圏 かつ 止めに2枚以上要る時だけキャラを見捨てる
+    //   nowor    = 対ダブルアタック視認の前倒し止め（要求は単調増加＝安く止まる今のうちに止める）
+    //   lifefloor= 高ライフ素受けでも「受けた後のライフ<相手の次ターン最大被弾」なら1枚で止める
+    //   wastecut = ライフ0で「このアタックを止めても次で確実死」なら1枚も切らない
+    var E61_DEF = { finord: 0, koval: 0, blockx: 0, guardcost: 0, nowor: 0, lifefloor: 0, wastecut: 0 };
+    function e61On(side, part) { return !!E61_DEF[part] || (isHeur2(side) && h2On(part)); }
+    // E61共通: 相手の「次ターン最大被弾数」（全員リフレッシュ前提・ダブルアタック=2。lifefloorの詰み圏判定）
+    function oppNextTurnMaxHits(dSide) {
+      const A = G.players[opp(dSide)];
+      return [A.leader, ...A.chars].reduce((s, c) => s + (hasKw(c, 'doubleAttack') ? 2 : 1), 0);
+    }
+    function oppHasDoubleAttacker(dSide) {
+      const A = G.players[opp(dSide)];
+      return [A.leader, ...A.chars].some(c => hasKw(c, 'doubleAttack'));
+    }
+    var _kovalEngMemo = {};   // koval: 番号→ETBエンジン判定のメモ（baseへの書き込みを避ける）
     // ★E57 evgate: イベントの main が「今の盤面で先頭コストを支払えない／払っても直後のcondが不成立」なら能動プレイしない。
     //   fx-fire-coverage 実測(30試合)で restDonCost/donMinus系イベントの無駄撃ち9回（イベントカード+プレイコストを消費して効果不発。
     //   OP16-038/OP14-096/OP13-040/OP16-059/OP15-074）。actgate（E53・リーダー起動版）のイベント版。
@@ -680,6 +700,16 @@
             if (!cBlk && fxc && (fxc.act || fxc.onAttack || fxc.static || fxc.onOppAttack || fxc.onTurnEnd)) score += 7;
             score += Math.max(0, 6000 - pw) / 4000;
           }
+          // ★E61 koval: KO対象の「継続価値」— ①登場時ドロー/サーチ級エンジンは生かすと毎ターン手札差が開く
+          //   （m20: エンジン8体駆逐が敗→勝を分けた最大因子） ②デバフ済み（現在<元々）は元パワー基準で
+          //   価値を取り返す＝安い打点で回収してよい大物（m21 T17: リーダー6000で0化9000壁を処理）
+          if (e61On(side, 'koval')) {
+            let eng = _kovalEngMemo[c.base.no];
+            if (eng === undefined) { const fp = c.base.fx && c.base.fx.onPlay; eng = _kovalEngMemo[c.base.no] = !!(fp && /"op":"(draw|search|scry|trashToHand)"/.test(JSON.stringify(fp))); }
+            if (donNeed <= 1 && eng) score += 6;
+            const cpow = power(c), basePw = c.base.power || 0;
+            if (basePw > cpow + 1000) score += (basePw - cpow) / 1500;
+          }
           // ★E55 chase: ブロックでレストした敵ブロッカーは同ターン内の追撃でKO/手札ドレイン（game2 T8/T10。KO枝はレスト対象のみ走査済み）
           if (e55On(side, 'chase') && cBlk && donNeed <= 2) score += 4;
           if (isBlk && holdBlk) score -= 30;
@@ -721,7 +751,14 @@
       // ★E55 order: 相手のアクティブブロッカーが残り、かつ自分に未行動の別アタッカーがいる間は上乗せを抑止
       //   （game3 T14: 人間は0/0/+4/+6配分＝先の攻撃で素〜同値で殴ってブロック/カウンターを吸わせ、最終攻撃だけに残ドンを集中。
       //     現行は最初の攻撃に積んでブロックされると付与ドンが丸損）。ブロッカー枯渇後/最後のアタッカーで一括適用（capは適用時点の相手手札で再計算）
-      const holdMargin = e55On(side, 'order') && oppActiveBlockers >= 1 && attackers.some(x => x !== best.attacker);
+      const holdMarginE55 = e55On(side, 'order') && oppActiveBlockers >= 1 && attackers.some(x => x !== best.attacker);
+      // ★E61 finord: E55 orderの再設計。温存ゲートに「素（現付与込み）でブロッカーを倒せる」を追加＝
+      //   倒せない中間手が生存ブロックに吸われて丸損する退行（E55 order Σ-9.2pt）を塞ぐ。温存した分は
+      //   後続（最後）のアタッカーが margin2/marginmax で一括投下する（study 2026-08-07 E61-1・全12戦の勝ちターン共通型）
+      const minBlkPow = oppActiveBlockers >= 1 ? Math.min.apply(null, D.chars.filter(x => !x.rested && hasKw(x, 'blocker')).map(x => power(x))) : 0;
+      const holdMarginE61 = e61On(side, 'finord') && best.target === D.leader && oppActiveBlockers >= 1 &&
+        attackers.some(x => x !== best.attacker) && power(best.attacker) >= minBlkPow;
+      const holdMargin = holdMarginE55 || holdMarginE61;
       if (!holdMargin && e54On(side, 'margin2') && best.target === D.leader && (D.life.length <= 2 || lethal) && D.hand.length >= 1) {
         const extra = Math.min(marginCap, Math.max(0, spare - best.donNeed));
         for (let i = 0; i < extra && P.don.active > 0; i++) { best.attacker.attachedDon++; P.don.active--; }
