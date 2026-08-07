@@ -29,6 +29,9 @@ interface CpuRecording {
   seq: number;
   unsub: () => void;
   done: boolean;
+  // 記録開始時点の store.end 参照。前局の勝敗画面が未クリアのまま新局が始まっても
+  // 「同一参照の end」は終局扱いしない（実終局の setEnd は必ず新オブジェクト）。
+  endAtStart: unknown;
 }
 
 let rec: CpuRecording | null = null;
@@ -53,9 +56,9 @@ export function beginCpuRecording(engine: any, meta: CpuRecordingMeta): void {
     host: snapshotDeck(G, 'me', meta.deckNames.me),
     guest: snapshotDeck(G, 'cpu', meta.deckNames.cpu),
   };
-  // 終局検知: エンジン描画の bump を購読し G.winner を見る（コンポーネント非依存）
+  // 終局検知: store 購読で「勝敗画面(end)」の出現を見る（コンポーネント非依存）
   const unsub = useEngineStore.subscribe(() => check());
-  rec = { engine, meta, decks, inputs: [], seq: 0, unsub, done: false };
+  rec = { engine, meta, decks, inputs: [], seq: 0, unsub, done: false, endAtStart: useEngineStore.getState().end };
 }
 
 // オフライン分岐の各チョークポイントから呼ぶ。オンライン中・非記録中は無視。
@@ -76,19 +79,25 @@ function check(): void {
   if (!rec || rec.done) return;
   const G = rec.engine.G;
   if (!G) return;
-  if (G.winner) {
+  // ★AI探索(_sim)中の一時状態は見ない。さらに終局の信号は「勝敗画面(end)」のみを使う＝
+  //   lose() は _sim 中に G.winner だけ立てて showEndScreen へ到達させないため、end は sim 安全。
+  //   素の G.winner をトリガにすると探索ロールアウトの一時 winner を誤検知する
+  //   （本番 cpu_matches 38/39件が winner='draw'・inputs途中切断で破損した実バグ・2026-08-07修正）。
+  if (G._sim) return;
+  const end = useEngineStore.getState().end;
+  if (end && end !== rec.endAtStart) {
+    // 検知した瞬間の値で結果を確定する（後読みすると状態が変わり得る）。
+    const winner = G.winner === 'me' ? 'host' : G.winner === 'cpu' ? 'guest' : null;
     rec.done = true;
     const r = rec;
-    // lose() は winner設定→log→render→showEndScreen(setEnd) の順のため、理由（end.reason）が
-    // ストアに載るのを少し待ってから送る
-    setTimeout(() => { void upload(r); }, 300);
     endCpuRecording();
+    if (winner) void upload(r, { winner, reason: (end as { reason?: string }).reason || '', turns: G.turnSeq || 0 });
     return;
   }
   if (!G.inGame) endCpuRecording(); // 終局前に盤面が破棄された（中断）＝記録しない
 }
 
-async function upload(r: CpuRecording): Promise<void> {
+async function upload(r: CpuRecording, result: { winner: 'host' | 'guest'; reason: string; turns: number }): Promise<void> {
   let ver = '';
   try { ver = __BUILD_ID__; } catch { /* dev */ }
   const G = r.engine.G;
@@ -108,9 +117,9 @@ async function upload(r: CpuRecording): Promise<void> {
     seed: r.meta.seed,
     leader: r.decks.host.leader,
     cpu_leader: r.decks.guest.leader,
-    winner: G.winner === 'me' ? 'host' : G.winner === 'cpu' ? 'guest' : 'draw',
-    reason: useEngineStore.getState().end?.reason || '',
-    turns: G.turnSeq || 0,
+    winner: result.winner,
+    reason: result.reason,
+    turns: result.turns,
     replay,
   });
   if (body.length > 900000) return; // D1 行サイズ安全域（room.ts と同基準）

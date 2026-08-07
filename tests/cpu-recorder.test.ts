@@ -124,6 +124,59 @@ describe('cpuRecorder', () => {
     expect(body.replay.inputs[0].d.t).toBe('play');
   });
 
+  it('AI探索中の一時的なwinnerでは誤検知しない（2026-08-07 実バグ回帰: 38/39件draw化）', async () => {
+    const eng = fakeEngine();
+    beginCpuRecording(eng, META);
+    recordCpuInput({ t: 'endTurn' });
+    // ロールアウト中: _sim=true のまま winner が一時的に立ち、ログ等で store 購読が発火する
+    eng.G._sim = true;
+    eng.G.winner = 'cpu';
+    useEngineStore.getState().pushLog({ cls: 'sys', html: 'rollout' });
+    // 探索の状態復元（winner が戻る）
+    eng.G.winner = null;
+    eng.G._sim = false;
+    useEngineStore.getState().bump();
+    await vi.advanceTimersByTimeAsync(1000);
+    expect(fetchMock).not.toHaveBeenCalled();
+    // 記録は生きている＝以降の入力も記録され、実終局で正しく1回送信される
+    recordCpuInput({ t: 'play', uid: 7 });
+    eng.G.winner = 'me';
+    eng.G.turnSeq = 12;
+    useEngineStore.getState().setEnd({ win: true, reason: 'ライフ0で被弾' });
+    await vi.advanceTimersByTimeAsync(300);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    const body = JSON.parse(fetchMock.mock.calls[0][1].body);
+    expect(body.winner).toBe('host');
+    expect(body.reason).toBe('ライフ0で被弾');
+    expect(body.turns).toBe(12);
+    expect(body.replay.inputs).toHaveLength(2);
+  });
+
+  it('復元前の隙間（_sim=false・winner一時残存・endなし）でも送信しない', async () => {
+    const eng = fakeEngine();
+    beginCpuRecording(eng, META);
+    eng.G.winner = 'cpu'; // 探索の復元順序の隙間を模擬（end は出ていない）
+    useEngineStore.getState().bump();
+    eng.G.winner = null;
+    await vi.advanceTimersByTimeAsync(1000);
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('前局の勝敗画面(end)が未クリアでも新局の記録を殺さない（参照同一性ガード）', async () => {
+    useEngineStore.getState().setEnd({ win: false, reason: '前局' }); // 未クリアの前局end
+    const eng = fakeEngine();
+    beginCpuRecording(eng, META);
+    useEngineStore.getState().bump(); // 同一参照の end では終局扱いしない
+    await vi.advanceTimersByTimeAsync(500);
+    expect(fetchMock).not.toHaveBeenCalled();
+    eng.G.winner = 'me';
+    eng.G.turnSeq = 5;
+    useEngineStore.getState().setEnd({ win: true, reason: 'ライフ0' }); // 実終局＝新オブジェクト
+    await vi.advanceTimersByTimeAsync(300);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(JSON.parse(fetchMock.mock.calls[0][1].body).winner).toBe('host');
+  });
+
   it('再開始(begin)で前局の記録を破棄し、購読も張り替える', async () => {
     const e1 = fakeEngine();
     beginCpuRecording(e1, META);

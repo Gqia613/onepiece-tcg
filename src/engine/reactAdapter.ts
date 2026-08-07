@@ -193,8 +193,10 @@ export function makeReactAdapter(store: AdapterStoreApi, opts?: { mySeat?: () =>
       rafPending = true;
       raf(() => { rafPending = false; if (!sim()) S().bump(); });
     },
-    log: (cls, html) => S().pushLog({ cls, html }),
-    flog: (side, text) => S().pushLog({ cls: side, html: text }),
+    // ★log/flog も _sim ガード必須: 探索ロールアウト中の pushLog は store 購読を同期発火させ、
+    //   一時的な G.winner を購読者（cpuRecorder等）が実終局と誤検知する（cpu_matches 38/39件がdraw化した実バグ）。
+    log: (cls, html) => { if (sim()) return; S().pushLog({ cls, html }); },
+    flog: (side, text) => { if (sim()) return; S().pushLog({ cls: side, html: text }); },
     toast: (text) => { if (sim()) return; S().pushFx({ type: 'toast', id: ++fxId, text }); },
     // 公開カードの大写し（サーチで手札に加えた／イベント・カウンター発動）。盤面に残らないカードは
     // 何が起きたか分からないため、一枚だけ短く見せる。演出専用＝G には触れない。

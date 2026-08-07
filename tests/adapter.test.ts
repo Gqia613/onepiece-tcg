@@ -38,6 +38,23 @@ describe('reactAdapter render (_sim guard + rAFコアレス)', () => {
   });
 });
 
+describe('reactAdapter log/flog (_sim guard)', () => {
+  it('AI探索中は pushLog しない（購読同期発火→cpuRecorder誤終局検知の回帰・2026-08-07）', () => {
+    const { state, api } = mockStore();
+    let pushed = 0;
+    (state as any).pushLog = () => { pushed++; };
+    const ui = makeReactAdapter(api);
+    state.engine.G._sim = true;
+    ui.log!('sys', 'rollout');
+    ui.flog!('me', 'rollout');
+    expect(pushed).toBe(0); // 探索中のログは store に流さない
+    state.engine.G._sim = false;
+    ui.log!('sys', 'real');
+    ui.flog!('me', 'real');
+    expect(pushed).toBe(2);
+  });
+});
+
 describe('reactAdapter showPrompt', () => {
   it('resolves with the picked value and clears prompt', async () => {
     const { state, api } = mockStore();
