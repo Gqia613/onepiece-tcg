@@ -463,7 +463,12 @@
     //   nowor    = 対ダブルアタック視認の前倒し止め（要求は単調増加＝安く止まる今のうちに止める）
     //   lifefloor= 高ライフ素受けでも「受けた後のライフ<相手の次ターン最大被弾」なら1枚で止める
     //   wastecut = ライフ0で「このアタックを止めても次で確実死」なら1枚も切らない
-    var E61_DEF = { finord: 0, koval: 0, blockx: 0, guardcost: 0, nowor: 0, lifefloor: 0, wastecut: 0 };
+    // 測定（同一seedペア・N=120・5ライン: luffygb↔mihawk 2帯 / teach→enel / yamato→kuzan / mihawk→luffygb）:
+    //   ✅blockx=発火帯で+5.0pt(6/0 p=0.031★)・他中立、✅guardcost/✅finord=全対面無害＋リプレイ実証（kohand型基準）。
+    //   合成(3部品)=+5.8pt(7/0 p=0.016★)/-0.8/-0.8＝負の干渉なし。
+    //   ❌koval=負傾向(Σ8/18)・❌wastecut=負符号再現(Σ0/7)＝温存が裏目。⏸nowor/lifefloor=プリセット対面に
+    //   D.Atk持ちが不在で発火ゼロ＝実デッキ対面（probe-decks.json）での測定後に判断（E62候補）。
+    var E61_DEF = { finord: 1, koval: 0, blockx: 1, guardcost: 1, nowor: 0, lifefloor: 0, wastecut: 0 };
     function e61On(side, part) { return !!E61_DEF[part] || (isHeur2(side) && h2On(part)); }
     // E61共通: 相手の「次ターン最大被弾数」（全員リフレッシュ前提・ダブルアタック=2。lifefloorの詰み圏判定）
     function oppNextTurnMaxHits(dSide) {
@@ -978,17 +983,20 @@
     // heur2 = heuristic ＋ 実験的改良（各意思決定関数が isHeur2(side) で分岐）。measure-matchupで heuristic とA/B比較し、
     //   有意に勝った改良だけ本採用（フラグを外して既定化）する＝測定駆動の改良ループ。詳細 docs/ai-design.md §7。
     function isHeur2(side) { return !!(G.players[side] && G.players[side].agent === 'heur2'); }
+    // ★E48: 既定CPUでも LINE_PLAY 掲載リーダー(黒ヤマト)はコンボライン候補化(lineTurn)を通す。
+    //   lineTurnは_sim中/ライン不一致では素のheuristicTurnと同一＝他リーダー・ロールアウトはバイト等価。
+    // ★E61の学び: heur2/heur3（測定用エージェント）も必ずこの既定経路を通すこと。従来は素のheuristicTurn直結で、
+    //   LINE_PLAYリーダー(yamato)をheroにした単離測定が「既定-ライン」のハンデを部品差と誤計上した（-19〜-22pt★の偽退行）。
+    const defaultTakeTurn = async (side) => (typeof LINE_PLAY !== 'undefined' && LINE_PLAY[leaderKeyOf(side)] && typeof lineTurn === 'function') ? lineTurn(side) : heuristicTurn(side);
     const AGENTS = {
-      // ★E48: 既定CPUでも LINE_PLAY 掲載リーダー(黒ヤマト)はコンボライン候補化(lineTurn)を通す。
-      //   lineTurnは_sim中/ライン不一致では素のheuristicTurnと同一＝他リーダー・ロールアウトはバイト等価。
-      heuristic: { takeTurn: async (side) => (typeof LINE_PLAY !== 'undefined' && LINE_PLAY[leaderKeyOf(side)] && typeof lineTurn === 'function') ? lineTurn(side) : heuristicTurn(side) },
+      heuristic: { takeTurn: defaultTakeTurn },
       random: { takeTurn: randomTurn },
-      heur2: { takeTurn: heuristicTurn },   // 能動ターンは同じ。差は isHeur2 で分岐する各種ヒューリスティック改良
+      heur2: { takeTurn: defaultTakeTurn },   // 能動ターンは既定と同一。差は isHeur2 で分岐する各種ヒューリスティック改良
       // ★E39: DECK_PLANS有効のheuristic（測定用）。usePlanはプレーン値＝cloneを生き残り、ロールアウト内の自己モデルも一貫する。
       planh: { takeTurn: async (side) => { G.players[side].usePlan = 1; return heuristicTurn(side); } },
       // ★E40: 脅威判定器(assessThreat/threatOppLethal)有効のheuristic（測定用）。差は isThreatAware で分岐
       //   （holdBlk精密化・reserveゲート精密化・cpuCounterの「どのみち死ぬ列に壁を捨てない」温存）。
-      heur3: { takeTurn: heuristicTurn }
+      heur3: { takeTurn: defaultTakeTurn }
     };
     // 能動ターンのエントリ。beginTurn から side を受けて、そのサイドのエージェントに委譲。
     async function cpuTurn(side) {

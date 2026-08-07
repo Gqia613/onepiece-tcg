@@ -700,6 +700,14 @@
           if (typeof e55On === 'function' && e55On(dSide, 'survblock')) return safeMin;
           return null;                                      // ライフに余裕→受けてドロー
         }
+        // ★E61 blockx: 生存化ブロック＝「ブロック＋ちょうど1枚（≤2000）のカウンター」で壁が生き残るなら行う
+        //   （m21: 8000壁が9000/11000級を6回ブロックして無傷＝1枚で攻撃1回を無効化しつつ壁とライフを両方保つ）。
+        //   仕上げのカウンターは cpuCounter が G._blockxUid を見て添える。最後の1体は致死回避用に温存。
+        if (typeof e61On === 'function' && e61On(dSide, 'blockx') && !(onlyOne && D.life.length <= 2)) {
+          const near = blockers.filter(b => { const nd = atkP - power(b); return nd >= 0 && D.hand.some(c => { const v = counterVal(c, dSide); return v > nd && v <= 2000; }); })
+            .sort((a, b) => power(b) - power(a))[0];
+          if (near) { G._blockxUid = near.uid; return near; }
+        }
         if (D.life.length <= 2) return blockers.sort((a, b) => power(b) - power(a))[0]; // 生存不可でも相打ち覚悟で止める
         return null;
       }
@@ -820,6 +828,7 @@
     }
     async function cpuCounter(dSide, attacker, target) {
       const D = G.players[dSide], A = G.players[opp(dSide)];
+      const blockxUid = G._blockxUid; G._blockxUid = null; // ★E61 blockx: 予約は必ず消費（バトル中断で残留しても次のcounterで破棄）
       if (D._teachSacUid && target.uid === D._teachSacUid) return; // 誘発目的で引き込んだキャラは守らない
       if (power(attacker) - power(target) < 0) return; // 既に耐える
       const isLeader = target.base.type === 'LEADER';
@@ -835,6 +844,11 @@
         // 中盤ライフ2-3＋手札に余裕：1枚で効率的に止められるリーダーアタックは受け止める
         // （素受けしすぎ＝指摘3対策。止められない/小さすぎるアタックはefficientが自動でskip＝手札は浪費しない）
         else if (lifeAfter <= 3 && D.hand.length >= 3) { mode = 'efficient'; maxCards = 1; allowBig = true; }
+        // ★E61 nowor: 相手にダブルアタックが見えている＝止めるコストは今後単調増加＋2点被弾の詰み筋。
+        //   ライフ≤3圏は手札枚数に関わらず「1枚で止まる攻撃」を前倒しで止める（m22 T9の2連スルー→T13受け不能の根絶）
+        else if (typeof e61On === 'function' && e61On(dSide, 'nowor') && lifeAfter <= 2 && oppHasDoubleAttacker(dSide)) { mode = 'efficient'; maxCards = 1; allowBig = true; }
+        // ★E61 lifefloor: 素受けでも「受けた後のライフ < 相手の次ターン最大被弾数」なら詰み圏へ入る＝1枚で止まるなら止める
+        else if (typeof e61On === 'function' && e61On(dSide, 'lifefloor') && lifeAfter <= 2 && lifeAfter < oppNextTurnMaxHits(dSide) && D.hand.length >= 2) { mode = 'efficient'; maxCards = 1; allowBig = true; }
         else mode = 'skip'; // 高ライフ(4+)→素受け（実質ドロー）でカウンター温存
         // ★E55 knownlife: 自分のライフの一番上が表向きの強トリガー（自分で仕込んだ）なら非致死の被弾は受けて発動させる（game3 T11: 仕込んだP-088の登場を見込んでノーカウンター受け）
         if (typeof e55On === 'function' && e55On(dSide, 'knownlife') && mode === 'efficient' && D.life[0] && D.life[0]._faceUp && (D.life[0].base.trigger || (D.life[0].base.fx && D.life[0].base.fx.trigger))) mode = 'skip';
@@ -846,7 +860,13 @@
         //   （game5: michiruは守った直後に別アタッカーで再KOされカウンター5枚浪費→手札0が敗着。カウンターのバフはバトル終了で失効＝防衛後パワーは素のpower(target)）
         const rekill = typeof e55On === 'function' && e55On(dSide, 'reko') &&
           [A.leader, ...A.chars].some(c => !c.rested && c !== attacker && !(c.base.type === 'CHAR' && c.summonedTurn === G.turnSeq && !hasKw(c, 'rush')) && power(c) >= power(target));
-        if (!safe || rekill) mode = 'skip';                          // 致死圏：キャラは見捨て、カウンターはリーダー防御へ温存
+        // ★E61 guardcost: rekoの絞り版＝「再KO圏 かつ 止めに2枚以上必要（need≥2000）」の時だけ見捨てる
+        //   （全廃=E55 rekoはΣ-3.3ptで行き過ぎ。1枚で守れるケースまで捨てていた、が学び）
+        const rekill2 = typeof e61On === 'function' && e61On(dSide, 'guardcost') && (power(attacker) - power(target)) >= 2000 &&
+          [A.leader, ...A.chars].some(c => !c.rested && c !== attacker && !(c.base.type === 'CHAR' && c.summonedTurn === G.turnSeq && !hasKw(c, 'rush')) && power(c) >= power(target));
+        // ★E61 blockx: 直前に宣言した「生存化ブロック」の仕上げ＝+ちょうど1枚で壁を生かす（宣言時に1枚≤2000で足りることは確認済み）
+        if (typeof e61On === 'function' && e61On(dSide, 'blockx') && blockxUid === target.uid) { mode = 'efficient'; maxCards = 1; allowBig = true; }
+        else if (!safe || rekill || rekill2) mode = 'skip';          // 致死圏：キャラは見捨て、カウンターはリーダー防御へ温存
         else if (sc >= 11) { mode = 'efficient'; maxCards = 2; allowBig = true; }
         else if (sc >= 8) { mode = 'efficient'; maxCards = 1; allowBig = false; }
         else mode = 'skip';
@@ -887,6 +907,17 @@
         const tB = assessThreat(dSide, 'now', { wallOverride: wallAll });                          // 受けた場合の残り攻撃
         const lethalLine = D.life.length + 1;
         if (tA.effHits >= lethalLine && tB.effHits + hitsThis >= lethalLine) return;
+      }
+      // ★E61 wastecut: ライフ0の絶体絶命で「このアタックは止められるが、続く攻撃列を止める資源が残らない」なら
+      //   1枚も切らない（m22 T13: 1本目に1000×4を全投入→2本目で確定死。トリガー/ブロッカーに望みを残して温存）。
+      //   残り要求は素のリーダーパワー基準+1000の楽観値＝それでも足りないなら確実死。
+      if (typeof e61On === 'function' && e61On(dSide, 'wastecut') && D.life.length === 0 && isLeader) {
+        const Lp0 = power(D.leader);
+        const remCosts = [A.leader, ...A.chars]
+          .filter(c => !c.rested && c !== attacker && !(c.base.type === 'CHAR' && c.summonedTurn === G.turnSeq && !hasKw(c, 'rush')))
+          .map(c => Math.max(0, power(c) - Lp0) + 1000);
+        const wallAll0 = numSum + evSum + lucyVal + aceVal;
+        if (remCosts.length >= 1 && wallAll0 < (need0 + 1000) + Math.min.apply(null, remCosts)) return;
       }
       // ★E55 alloc: 目前の1アタックに総動員せず、相手の残りアタック列まで含めた「受け/止め」割当を合計カウンター最小で選ぶ
       //   （game5 T10: tikumaruは要求3000の2本を素受けし、止めコスト最小の列だけ止めてライフ0を許容＝目前総動員の手札約2.5倍浪費を解消）。

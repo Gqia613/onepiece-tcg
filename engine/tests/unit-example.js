@@ -1361,20 +1361,16 @@ function setupG(leaderNo){G.active='me';G.turnSeq=5;G.winner=null;const mkP=(ln,
       await cpuCounter('me', a1, tgt);
       ok(P.hand.length===1, '例33c: need1000（1枚）なら従来どおり守る');
       G._h2Parts=null; G.active='me'; }
-    // 33d blockx: フルフロー=9000アタックを8000ブロッカーがブロック+ちょうど2000で生還（壁もライフも無傷・手札1枚だけ消費）
-    setupG('OP01-062'); { const P=G.players.me, O=G.players.cpu; P.isCPU=true; P.agent='heur2'; G.active='cpu'; G.firstPlayer='me'; G.busy=false; G.myActable=true;
+    // 33d blockx（✅採用=既定ON）: フルフロー=9000アタックを8000ブロッカーがブロック+ちょうど2000で生還（ライフ・壁とも無傷）
+    setupG('OP01-062'); { const P=G.players.me, O=G.players.cpu; P.isCPU=true; G.active='cpu'; G.firstPlayer='me'; G.busy=false; G.myActable=true;
       const blk=mkc('OP01-065'); blk.base=Object.assign({},blk.base,{power:8000,blocker:true}); P.chars=[blk];
       P.hand=[mkc('OP02-075')]; P.life=[mkc('OP15-067'),mkc('OP15-067'),mkc('OP15-067'),mkc('OP15-067')];
       P.deck=[mkc('OP15-067')]; O.life=[mkc('OP15-067')]; O.deck=[mkc('OP15-067')];
       const a1=mkc('OP01-065'); a1.owner='cpu'; a1.summonedTurn=1; a1.base=Object.assign({},a1.base,{power:9000}); O.chars=[a1];
-      G._h2Parts={};
       await declareAttack(a1, P.leader);
-      ok(P.life.length===3 && P.chars.includes(blk) && P.hand.length===2, '例33d: blockx OFF=高ライフはブロックせず素受け（従来・被弾ライフは手札へ）');
-      G.busy=false; G.myActable=true; a1.rested=false; G._h2Parts={blockx:1};
-      await declareAttack(a1, P.leader);
-      ok(P.life.length===3 && P.chars.includes(blk) && P.hand.length===1 && blk.rested===true, '例33d: blockx=ブロック+ちょうど1枚でライフ・壁とも無傷（手札1消費）');
+      ok(P.life.length===4 && P.chars.includes(blk) && blk.rested===true && P.hand.length===0, '例33d: blockx=ブロック+ちょうど1枚でライフ・壁とも無傷（手札1消費）');
       ok(P.trash.length>=1, '例33d: カウンターはトラッシュへ');
-      G._h2Parts=null; G.active='me'; }
+      G.active='me'; }
     // 33e nowor: 相手にダブルアタッカー視認+ライフ3(受け後2)+手札2（従来はhand<3でskip）→1枚で前倒し止め
     setupG('OP01-062'); { const P=G.players.me, O=G.players.cpu; P.isCPU=true; P.agent='heur2'; G.active='cpu';
       P.life=[mkc('OP15-067'),mkc('OP15-067'),mkc('OP15-067')]; P.hand=[mkc('OP02-075'),mkc('OP02-075')]; P.deck=[mkc('OP15-067')];

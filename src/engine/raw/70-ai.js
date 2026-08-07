@@ -66,6 +66,7 @@
       '_planOverride', '_hintsOn', // AI専用
       '_puctCap', '_lastPuctOpt',  // 端末ローカルの探索上限（モバイル発熱対策）と実効値記録＝ゲーム状態ではない
       '_evVar',        // ★E59: puctev変種フラグ（測定専用。takeTurn内でset/resetされるが0残置がhashに乗らないよう保険で除外）
+      '_blockxUid',    // ★E61 blockx: CPU防御のブロック→カウンター受け渡し（バトル内の一時予約。オンラインはCPU不在＝保険で除外）
     ]);
     // G の正準直列化（キーソート・除外規則込み）。hashGameState の入力そのもの＝desyncデバッグの一次資料。
     function canonGameState(src) {
