@@ -1,6 +1,8 @@
 # CPU強化計画 2026-08-07 — 直近20日の対戦履歴分析より
 
-> **進捗（2026-08-07 同日実施済み）**: Phase 0 ✅完了（コミット7130ed8・本番反映済み＝log/flog simガード＋cpuRecorderをend駆動に再設計＋回帰テスト4本）。Phase 1 ✅完了（E60・コミット5b4001c・本番反映済み＝mihawk/青緑ルフィ/黄キッドを `PUCT_SKIP`、kuzan/yamato を `PUCT_DEEP`、赤緑ルフィは保留。**測定で「出荷puctがheuristicより弱い逆転」が3リーダーで発覚**＝F2の想定より深刻だった。詳細 experiments.md E60）。次は Phase 2（観察ルート: オンライン12戦のリプレイ研究・CPU戦再生ツール・E55 S級再設計）と Phase 4（修理後データが30戦貯まったら対人間勝率の定点クエリ）。
+> **進捗（2026-08-07 同日実施済み）**: Phase 0 ✅完了（コミット7130ed8・本番反映済み＝log/flog simガード＋cpuRecorderをend駆動に再設計＋回帰テスト4本）。Phase 1 ✅完了（E60・コミット5b4001c・本番反映済み＝mihawk/青緑ルフィ/黄キッドを `PUCT_SKIP`、kuzan/yamato を `PUCT_DEEP`、赤緑ルフィは保留。**測定で「出荷puctがheuristicより弱い逆転」が3リーダーで発覚**＝F2の想定より深刻だった。詳細 experiments.md E60）。
+> Phase 2a ✅完了（リプレイ研究第2弾 `replay-study-20260807.md`＝オンライン12戦を完全再生・4並列解析→**E61候補 S級5/A級6**。E55 S級の退行原因だった複合ゲートの具体形を実測で確定）。Phase 2b ✅完了（`scripts/cpu-replay-dump.ts` 新設＝cpu_matches 40行中35行を再生可能化・uidオフセット自動検出＋recorderにuidBase記録・コミットe27b37a本番反映済み）。Phase 2d ✅（observations.md 新設）。
+> **残**: Phase 2c＝E61 の実装＋単離測定（仕様は replay-study-20260807.md §2、共通部品=相手カウンター推定器/Lmax推定器から）／Phase 3（測定バンドの対ヤマト常設）／Phase 4（id≥40 の正しいデータが30戦貯まったら対人間勝率の定点クエリ）。
 
 - 対象データ: 本番D1 `cpu_matches` 全39行（収集開始2026-07-20〜08-06・CPU戦は常に「強いCPU」=puct）／`matches`（オンライン）17行（id9〜25・7/19〜8/5）。
 - 結論（3行）:
