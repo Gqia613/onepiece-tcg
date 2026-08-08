@@ -300,6 +300,11 @@
     async function checkLeaderHitLife(attacker) {
       if (!attacker) return;
       const side = attacker.owner;
+      // ★効果ダメージ（oppDamage/selfDamage のダミーattacker {base:{}}＝owner無し）はアタック由来でない＝
+      //   onLeaderHitLife/onHitLife は誘発しない。従来はここで G.players[undefined].chars が throw し、
+      //   runFx の catch に呑まれて後続の checkLifeZero（エネルのライフ補充）と leaderOnDamage まで
+      //   毎回スキップされていた（op失敗ログ×3の正体・2026-08-09修正）。
+      if (!side || !G.players[side]) return;
       if (attacker.base.type === 'LEADER') {
         const L = G.players[side].leader;
         if (L !== attacker || isNegated(L)) return;
@@ -528,6 +533,10 @@
           if (onceGated && c._oppAtkTurn === G.turnSeq) continue;
           const opsA = c.base.fx.onOppAttack;
           if (opsA.every(o => o.op === 'cond' && o.check && !o.else) && !opsA.some(o => checkCond(o.check, dSide, c))) continue; // 全条件不成立＝発動機会なし。カットインを出さない（毎アタック出ると「発動しようとして失敗」に見える＝ST36-005指摘）
+          // ★E61追補 reactlead: CPU防御側の「任意ドン払いリアクティブパンプ」（紫カタクリL型）は、
+          //   ①パンプ単体でこの攻撃が不成立になる ②致死圏 の時だけ発動し、それ以外は温存（ドンと【ターン1回】を残す）。
+          //   従来は confirmUse がCPU無条件YES＝止めない攻撃にも毎回ドン-1を浪費していた（study S2/E61-5。onceはcontinueで未消費）
+          if (G.players[dSide].isCPU && typeof e61On === 'function' && e61On(dSide, 'reactlead') && typeof reactPumpDecline === 'function' && reactPumpDecline(dSide, c, attacker, target)) continue;
           const prevAtkTurn = c._oppAtkTurn;
           if (onceGated) c._oppAtkTurn = G.turnSeq;
           const octx = { self: c, side: dSide, attacker, target };

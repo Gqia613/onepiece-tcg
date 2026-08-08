@@ -21,6 +21,9 @@ const SEED0 = +(process.env.OPCG_SEED0 || 600000);
 const CHUNK = +(process.env.OPCG_CHUNK || 50);   // 1harnessあたりの試合数（mcts ~8s なので 50×8=400s<590s）
 // AGENT=hybrid のLLM戦略キャッシュ(fixture)。事前ウォーム(tools/llm-warm-cache.js)した戦略を流し込み、live問い合わせ無しで決定的に再生する。
 const LLM_CACHE_JSON = process.env.OPCG_LLM_CACHE ? require('fs').readFileSync(process.env.OPCG_LLM_CACHE, 'utf8') : 'null';
+// ★E62: 実デッキ対面。OPCG_DECKS_FILE（tools/probe-decks.json 形式）を G.customDecks に注入して
+//   'c_OP13-001' 等のIDを hero/villain に使えるようにする（nowor/lifefloor 等「プリセット対面で発火しない部品」の測定用）
+const CUSTOM_DECKS_JSON = process.env.OPCG_DECKS_FILE ? require('fs').readFileSync(process.env.OPCG_DECKS_FILE, 'utf8') : 'null';
 
 function chunkHarness(hero, villain, s0, n) {
   return String.raw`
@@ -32,6 +35,9 @@ showPrompt = function (cfg) { const t = cfg.title || ''; let v;
   if (cfg.onPick) cfg.onPick(v); return Promise.resolve(v); };
 humanPick = function (c) { return Promise.resolve(c[0] || null); };
 if (typeof loadLLMCache === 'function') loadLLMCache(` + LLM_CACHE_JSON + `);  // AGENT=hybrid用のLLM戦略キャッシュ(あれば。無ければnull=liveフォールバック)
+// ★E62: 実デッキ対面（OPCG_DECKS_FILE=probe-decks.json 形式 [{id,name,leader,list}]）。
+//   プリセットに無いリーダー（実対戦リプレイ抽出デッキ）を hero/villain に使えるようにする。
+{ const CUSTOM_DECKS = ` + CUSTOM_DECKS_JSON + `; if (CUSTOM_DECKS) G.customDecks = CUSTOM_DECKS; }
 const HERO = ` + JSON.stringify(hero) + `, VILLAIN = ` + JSON.stringify(villain) + `, S0 = ` + s0 + `, N = ` + n + `, AGENT = ` + JSON.stringify(AGENT) + `, BASE = ` + JSON.stringify(BASE) + `, LIFE_AGGR = ` + (+process.env.OPCG_LIFE_AGGR || 0) + `, NOSKIP = ` + (process.env.OPCG_NOSKIP === '1') + `;
 G._thrParts = ` + (THR ? JSON.stringify(Object.fromEntries(THR.split(',').map(s => [s.trim(), 1]))) : 'null') + `;   // E40部品の単離（null=全部on）
 G._h2Parts = ` + (H2 ? JSON.stringify(Object.fromEntries(H2.split(',').map(s => [s.trim(), 1]))) : 'null') + `;    // E42部品の単離（null=全部on）

@@ -468,7 +468,11 @@
     //   合成(3部品)=+5.8pt(7/0 p=0.016★)/-0.8/-0.8＝負の干渉なし。
     //   ❌koval=負傾向(Σ8/18)・❌wastecut=負符号再現(Σ0/7)＝温存が裏目。⏸nowor/lifefloor=プリセット対面に
     //   D.Atk持ちが不在で発火ゼロ＝実デッキ対面（probe-decks.json）での測定後に判断（E62候補）。
-    var E61_DEF = { finord: 1, koval: 0, blockx: 1, guardcost: 1, nowor: 0, lifefloor: 0, wastecut: 0 };
+    //   第2波（E61追補 2026-08-09・実デッキ対面=OPCG_DECKS_FILE で測定）: ✅reactlead=3ライン全正
+    //   （カタクリ実デッキ視点 対mihawk +5.0/+6.7pt★・対luffygb +7.5pt(9/0 p=0.004★)）＝「CPU無条件YESの
+    //   ドン-1浪費」根絶。✅killest=発火0の無害＋m16実証（pump系の穴埋め）。❌nowor/lifefloor=実デッキ対面でも
+    //   発火0〜1＝既存「lifeAfter≤3&&手札≥3で止める」が主被覆・残窓（手札1-2枚）は極小と機序特定→close。
+    var E61_DEF = { finord: 1, koval: 0, blockx: 1, guardcost: 1, nowor: 0, lifefloor: 0, wastecut: 0, killest: 1, reactlead: 1 };
     function e61On(side, part) { return !!E61_DEF[part] || (isHeur2(side) && h2On(part)); }
     // E61共通: 相手の「次ターン最大被弾数」（全員リフレッシュ前提・ダブルアタック=2。lifefloorの詰み圏判定）
     function oppNextTurnMaxHits(dSide) {
@@ -480,6 +484,31 @@
       return [A.leader, ...A.chars].some(c => hasKw(c, 'doubleAttack'));
     }
     var _kovalEngMemo = {};   // koval: 番号→ETBエンジン判定のメモ（baseへの書き込みを避ける）
+    // ★E61追補 reactlead: onOppAttackの「任意ドン払いパンプ」（optional donMinus/restDonCost→then leaderBuff/powerMod自陣+）を
+    //   今回は使わないか（true=辞退）。発動するのは ①パンプ単体でこの攻撃が不成立になる（0≤need<amt）
+    //   ②リーダー対象の致死・準致死圏（lifeAfter≤1＝止めにいく局面） のみ。対象shape以外は false（従来どおり自動発動）。
+    function reactPumpDecline(dSide, src, attacker, target) {
+      const ops = src.base.fx && src.base.fx.onOppAttack;
+      if (!Array.isArray(ops)) return false;
+      let amt = 0;
+      for (const o of ops) {
+        if (!o.optional || (o.op !== 'donMinus' && o.op !== 'restDonCost')) continue;
+        const walk = arr => { for (const p of arr || []) {
+          if (p.op === 'leaderBuff' || (p.op === 'powerMod' && p.side === 'self' && (p.amount || 0) > 0)) amt = Math.max(amt, p.amount || 0);
+          if (p.op === 'cond') { walk(p.then); walk(p.else); }
+        } };
+        walk(o.then);
+      }
+      if (amt <= 0) return false;
+      const D = G.players[dSide];
+      if (target === D.leader) {
+        const lifeAfter = D.life.length - (hasKw(attacker, 'doubleAttack') ? 2 : 1);
+        if (lifeAfter <= 1) return false;             // 致死・準致死圏＝止めにいく（発動して壁に算入）
+      }
+      const need = power(attacker) - power(target);
+      if (need >= 0 && need < amt) return false;      // パンプ単体で不成立化＝カード0枚の完全防御（発動）
+      return true;                                    // それ以外＝温存
+    }
     // ★E57 evgate: イベントの main が「今の盤面で先頭コストを支払えない／払っても直後のcondが不成立」なら能動プレイしない。
     //   fx-fire-coverage 実測(30試合)で restDonCost/donMinus系イベントの無駄撃ち9回（イベントカード+プレイコストを消費して効果不発。
     //   OP16-038/OP14-096/OP13-040/OP16-059/OP15-074）。actgate（E53・リーダー起動版）のイベント版。
@@ -752,7 +781,9 @@
       //   カウンター要求を2枚（+2000と+1000）に引き上げる（観察: +1000上乗せは2000カウンター1枚で足りてしまい要求が甘い）
       // ★E54 marginmax: 上乗せの上限。既定+2 → marginmax採用時は「相手の理論最大カウンター(手札×2000)を超える要求」まで
       //   （それ以上積んでも要求は増えない=過剰付与しない。手札1枚なら2×1=+2で従来と同一）
-      const marginCap = e54On(side, 'marginmax') ? 2 * D.hand.length : 2;
+      // ★E61追補 killest: 上限に相手の無料防御（ドン払いリアクティブパンプ上限）を加算＝
+      //   最終要求が「手札×2000＋無料パンプ」を超えるまで積める（m16: ポンプ持ちへの中途半端な上乗せが無料で消された）
+      const marginCap = (e54On(side, 'marginmax') ? 2 * D.hand.length : 2) + (e61On(side, 'killest') ? Math.ceil((pumpAmt || 0) / 1000) : 0);
       // ★E55 order: 相手のアクティブブロッカーが残り、かつ自分に未行動の別アタッカーがいる間は上乗せを抑止
       //   （game3 T14: 人間は0/0/+4/+6配分＝先の攻撃で素〜同値で殴ってブロック/カウンターを吸わせ、最終攻撃だけに残ドンを集中。
       //     現行は最初の攻撃に積んでブロックされると付与ドンが丸損）。ブロッカー枯渇後/最後のアタッカーで一括適用（capは適用時点の相手手札で再計算）

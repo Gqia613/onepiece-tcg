@@ -1412,12 +1412,36 @@ function setupG(leaderNo){G.active='me';G.turnSeq=5;G.winner=null;const mkP=(ln,
     //   従来: ダミーattacker{base:{}}のowner=undefinedで checkLeaderHitLife が throw → runFxのcatchに呑まれ
     //   後続の checkLifeZero（OP05-098エネルのライフ0補充）が毎回スキップされていた（op失敗ログ×3の正体）
     setupG('OP01-062'); { const P=G.players.me, O=G.players.cpu;
-      P.leader=mkc('OP05-098'); P.leader.owner='me'; G.active='cpu'; // when:'oppTurn'＝相手ターン中のみ発火
+      P.isCPU=true; P.leader=mkc('OP05-098'); P.leader.owner='me'; G.active='cpu'; // when:'oppTurn'＝相手ターン中のみ発火。isCPU=捨て選択を自動化
       P.life=[mkc('OP15-067')]; P.hand=[mkc('OP15-067'),mkc('OP15-067')]; P.deck=[mkc('OP15-067'),mkc('OP15-067')];
       await doOp({op:'oppDamage', n:1}, {side:'cpu', self:O.leader});
       ok(P.life.length===1, '例34: 効果ダメージでライフ0→onLifeZeroが発火してライフ補充（従来はスキップ）');
-      ok(P.hand.length===1, '例34: 補充の捨てコスト（discardOwn 1）も解決される');
+      ok(P.hand.length===2 && P.trash.length>=1, '例34: 捨てコストも解決（被弾ライフ+1と捨て-1が相殺で手札2・トラッシュ+1）');
       G.active='me'; }
+    // 例35: ★E61追補 killest（margin上限にポンプ加算）/ reactlead（リアクティブパンプの温存）
+    // 35a killest: 相手リーダーが「ドンレスト+2000/枚」型（アクティブ2＝無料防御4000）を持つ時、上乗せ上限が+4拡大
+    setupG('OP01-062'); { const P=G.players.me, O=G.players.cpu; P.isCPU=true; P.agent='heur2'; G.active='me';
+      P.leader.rested=true;
+      const atk=mkc('OP01-065'); atk.summonedTurn=1; P.chars=[atk]; P.don.active=7; // P7000
+      O.leader.base=Object.assign({},O.leader.base,{fx:{onOppAttack:[{op:'restDonForBuff',amount:2000}]}});
+      O.don.active=2; O.life=[mkc('OP15-067')]; O.hand=[mkc('OP15-067')]; O.deck=[mkc('OP15-067')];
+      const p1=cpuPickAttack('me',{lethal:true});
+      ok(p1 && p1.target===O.leader && p1.attacker.attachedDon===7, '例35a: killest（✅採用=既定ON）=capにポンプ4000分(+4)を加算して7ドン（旧capなら5）');
+      }
+    // 35b reactlead: CPU防御側の任意ドン払いパンプ＝「単体で不成立化する時だけ」発動・それ以外は温存
+    setupG('OP01-062'); { const P=G.players.me, O=G.players.cpu; P.isCPU=true; P.agent='heur2'; G.active='cpu'; G.firstPlayer='me'; G.busy=false; G.myActable=true;
+      G._h2Parts={reactlead:1};
+      P.leader.base=Object.assign({},P.leader.base,{fx:{onOppAttack:[{op:'donMinus',n:1,once:'turn',optional:true,then:[{op:'leaderBuff',amount:1000,duration:'battle'}]}]}});
+      P.don.active=3; P.hand=[]; P.life=[mkc('OP15-067'),mkc('OP15-067'),mkc('OP15-067'),mkc('OP15-067')]; P.deck=[mkc('OP15-067')];
+      O.life=[mkc('OP15-067')]; O.deck=[mkc('OP15-067')];
+      const a1=mkc('OP01-065'); a1.owner='cpu'; a1.summonedTurn=1; O.chars=[a1]; // P7000: need2000≥1000＝温存
+      await declareAttack(a1, P.leader);
+      ok(P.don.active===3 && P.leader._oppAtkTurn!==G.turnSeq && P.life.length===3, '例35b: 止めない攻撃には発動しない（ドン・ターン1回とも温存）');
+      G.busy=false; G.myActable=true;
+      const a2=mkc('OP01-065'); a2.owner='cpu'; a2.summonedTurn=1; a2.base=Object.assign({},a2.base,{power:5000}); O.chars=[a1,a2]; // 5000 vs 5000: need0<1000＝単体で不成立化
+      await declareAttack(a2, P.leader);
+      ok(P.don.active===2 && P.leader._oppAtkTurn===G.turnSeq && P.life.length===3, '例35b: 単体で不成立化する攻撃には発動（ドン-1・攻撃失敗・ライフ無傷）');
+      G._h2Parts=null; G.active='me'; }
   }catch(e){ console.log('EXCEPTION:', e.message); fail++; }
   console.log('ユニットテスト: pass='+pass+' fail='+fail);
   process.exit(fail?1:0);
