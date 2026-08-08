@@ -52,7 +52,7 @@ function Thumb({ no, name, size = 40 }: { no: string; name: string; size?: numbe
   const src = stage === 0 ? IMG_SM(no) : stage === 1 ? IMG_RAW(no) : '';
   const h = Math.round(size * 1.4);
   return src ? (
-    <img src={src} referrerPolicy="no-referrer" decoding="async" alt={name} title={name}
+    <img src={src} referrerPolicy="no-referrer" decoding="async" loading="lazy" alt={name} title={name}
       style={{ width: size, height: h, objectFit: 'cover', borderRadius: 4, border: '1px solid var(--surface-edge)', display: 'block' }}
       onError={() => setStage((s) => s + 1)} />
   ) : (
@@ -174,14 +174,16 @@ export default function ProxyPrint() {
     setResult(null);
   };
 
-  // 弾の選択肢（収録弾 b.sets の全集合。スタートデッキ再録も収録弾で正しく引っかかる）。最新弾から降順。
+  // 弾の選択肢（カード番号の接頭辞 = OP16/ST21/EB02/P 等）。最新弾から降順。
+  // ★収録弾(b.sets)ベースだと再録カード（例: PRB01収録のOP番号カード）が「別の弾なのに出る」ように
+  //   見えて混乱するため、ユーザーの直感どおり番号接頭辞で絞る。
   const allSets = useMemo(() => {
     const s = new Set<string>();
     for (const no of Object.keys(C)) {
       if (/_r\d+$/.test(no)) continue;
       const b = C[no];
       if (!b || !b.type) continue;
-      for (const x of (b.sets || [no.split('-')[0]]) as string[]) s.add(x);
+      s.add(no.split('-')[0]);
     }
     return [...s].sort((a, b) => {
       const ka = parseSetCode(a), kb = parseSetCode(b);
@@ -192,10 +194,10 @@ export default function ProxyPrint() {
 
   // ---- 全カード検索（エンジンの C = 全カードDB をローカルフィルタ）----
   // ★パラレル(_rN=別イラストの同一カード)も C に別キーで入っているため除外（重複表示の原因）。
-  //   並びは最新弾から降順（setSortKey）→ 全件ソート後に上位60件を表示。
-  const searchOn = q.trim() !== '' || colorF !== null || typeF !== null || setF !== null;
-  const search = useMemo(() => {
-    if (!searchOn) return { list: [] as Array<{ no: string; b: any }>, capped: false };
+  //   絞り込みなし＝全カードを表示（件数上限なし・画像は loading="lazy" で遅延取得）。
+  //   並びは最新弾から降順（setSortKey）。
+  const searchOn = q.trim() !== '' || colorF !== null || typeF !== null || setF !== null; // クリアボタンの表示判定
+  const results = useMemo(() => {
     const query = q.trim().toLowerCase();
     const out: Array<{ no: string; b: any }> = [];
     for (const no of Object.keys(C)) {
@@ -204,7 +206,7 @@ export default function ProxyPrint() {
       if (!b || !b.type) continue;
       if (typeF && b.type !== typeF) continue;
       if (colorF && !((b.color || []) as string[]).includes(colorF)) continue;
-      if (setF && !(((b.sets || [no.split('-')[0]]) as string[]).includes(setF))) continue;
+      if (setF && no.split('-')[0] !== setF) continue; // 番号接頭辞で厳密一致
       if (query && !(no.toLowerCase().includes(query) || String(b.name || '').toLowerCase().includes(query))) continue;
       out.push({ no, b });
     }
@@ -212,10 +214,9 @@ export default function ProxyPrint() {
       const ka = setSortKey(a.no), kb = setSortKey(bb.no);
       return kb.rank - ka.rank || kb.num - ka.num || a.no.localeCompare(bb.no);
     });
-    return { list: out.slice(0, 60), capped: out.length > 60 };
+    return out;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [q, colorF, typeF, setF, engine, searchOn]);
-  const results = search.list;
+  }, [q, colorF, typeF, setF, engine]);
 
   const countOf = (no: string) => rows.find((r) => r.no === no)?.count || 0;
 
@@ -329,6 +330,10 @@ export default function ProxyPrint() {
             value={q}
             onChange={(e) => setQ(e.target.value)}
             placeholder="カード名・カード番号で検索（例: ルフィ / OP01-001）"
+            lang="ja"
+            autoCorrect="off"
+            autoCapitalize="off"
+            enterKeyHint="search"
             style={{ ...selStyle, flex: '1 1 auto', minWidth: 0 }}
           />
           {searchOn ? (
@@ -356,10 +361,9 @@ export default function ProxyPrint() {
             {allSets.map((s) => <option key={s} value={s}>{s}</option>)}
           </select>
         </div>
-        {searchOn ? (
-          results.length === 0 ? (
-            <div style={{ fontSize: 12.5, color: 'var(--muted)' }}>該当するカードがありません</div>
-          ) : (
+        {results.length === 0 ? (
+          <div style={{ fontSize: 12.5, color: 'var(--muted)' }}>該当するカードがありません</div>
+        ) : (
             <>
               <div style={{ maxHeight: 320, overflowY: 'auto', border: '1px solid var(--surface-edge)', borderRadius: 10, padding: 10, background: 'linear-gradient(180deg, var(--ocean-800), var(--ocean-850))' }}>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(68px, 1fr))', gap: 8 }}>
@@ -399,12 +403,9 @@ export default function ProxyPrint() {
                 </div>
               </div>
               <div style={{ fontSize: 11.5, color: 'var(--muted)' }}>
-                タップで追加（もう一度で+1）・長押しで拡大{search.capped ? '・60件まで表示中 — 検索語で絞り込めます' : ''}
+                タップで追加（もう一度で+1）・長押しで拡大・全{results.length}件
               </div>
             </>
-          )
-        ) : (
-          <div style={{ fontSize: 12.5, color: 'var(--muted)' }}>検索語を入れるか、色・種別で絞り込むと全カードから追加できます。</div>
         )}
       </div>
 
