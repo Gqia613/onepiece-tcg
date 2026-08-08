@@ -452,7 +452,14 @@
 - **測定基盤の実バグ発見**: heur2/heur3 の takeTurn が素の heuristicTurn 直結で、**E48採用済みの lineTurn 経路（LINE_PLAY=yamato）を経由していなかった**。yamatoをheroにした単離測定で「既定-ライン」のハンデが部品差として **-19.2〜-22.5pt★の偽退行** を出した（finord/koval の2部品が同一対面で同時に大負け=部品でなく基盤を疑うシグナル）。`defaultTakeTurn` に共通化して修正。**E54〜E59の過去測定は非LINEリーダーのみ＝影響なし**。
 - ✅採用: `E61_DEF={finord:1, blockx:1, guardcost:1}`（コミットc983dfc・本番反映済み）。
 - ★学び: ①2つの独立部品が同一対面だけで同時に大負けしたら部品でなく**測定基盤の系統誤差**を疑う（今回はheur2のライン欠落） ②防御系部品はCPU対CPU計測に写りにくい（E54 kohandの再確認）＝発火する対面の探索（本件はluffygb視点b1のみ）と実デッキ対面の整備が測定の前提 ③「温存」系（wastecut）は保守近似の向きに注意＝死の過大評価は温存過多で逆に負ける。
-- 残: nowor/lifefloor の実デッキ対面測定／E61-2 killest（打点式）と E61-5 reactlead（リアクティブリーダー汎用化）は第2波として未実装／op失敗 checkLeaderHitLife×3（既存ノイズ・KO連鎖中のoppDamageでside未解決）のトリアージ。
+- 残: ~~nowor/lifefloor の実デッキ対面測定／killest・reactlead の第2波／op失敗トリアージ~~ → 全て追補で完了（下記）。
+- **追補（2026-08-09・第2波＝E62基盤込み・コミット3801b97）**:
+  - **E62基盤**: measure-matchup に `OPCG_DECKS_FILE`（probe-decks.json 形式）＝実対戦リプレイ抽出デッキを hero/villain に使用可能に。紫カタクリ実デッキ（c_OP11-062）を追加。**「プリセット対面で発火しない部品」の測定手段が恒常化**。
+  - ✅**reactlead**: CPU防御側の任意ドン払いリアクティブパンプ（紫カタクリL型）を「①パンプ単体で攻撃不成立化（0≤need<amt） ②準致死圏（lifeAfter≤1）」の時だけ発動。従来は `confirmUse` が **CPU無条件YES＝止めない攻撃にも毎回ドン-1を浪費**していた（study S2 の実装）。実デッキ測定: カタクリ視点 対mihawk **+5.0/+6.7pt★**・対luffygb **+7.5pt（改善9/退行0 p=0.004★）**＝3ライン全正・合算 26/3。合成（killest同時）も単離と一致＝干渉なし。
+  - ✅**killest**: margin 上限（2×手札）に相手の無料防御（ポンプ上限）を加算。360局で発火0＝無害＋m16実証（pump系の穴埋め）として採用。
+  - ❌**nowor/lifefloor close**: D.Atk入り実デッキ（c_OP13-001）対面でも発火0〜1。**既存ルール「lifeAfter≤3 && 手札≥3 → 止める」が主ケース（m22型）を既に被覆**しており、残窓（手札1-2枚）は極小と機序特定。仮説自体が「CPUには既に穴が無い」で決着。
+  - **潜在バグ修正**: 効果ダメージ（oppDamage/selfDamage）のダミーattacker（owner無し）で `checkLeaderHitLife` が throw → runFx の catch に呑まれ、**後続の checkLifeZero（エネル型ライフ0補充）と leaderOnDamage が効果ダメージ時に毎回スキップ**されていた（op失敗ログ×3の正体）。ガード追加・回帰=例34。
+  - ★学び: ①CPUの optional 自動YES（confirmUse）は「発動しない」が正解の局面を持つ効果で系統的な浪費源＝リアクティブ系は発動条件をCPU判断に接続する ②「発火しない部品」は原因が2種ある＝(a)対面に機会が無い（blockx型→対面を探す） (b)既存ルールが被覆している（nowor型→close）。機序まで特定してから閉じる。
 
 ## 台帳サマリ（2026-07-03 時点・opcg-pm）
 
