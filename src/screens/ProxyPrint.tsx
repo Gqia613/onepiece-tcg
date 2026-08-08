@@ -327,12 +327,14 @@ export default function ProxyPrint() {
       <div style={{ width: '100%', maxWidth: 1000, display: 'flex', flexDirection: 'column', gap: 8 }}>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
           {/* ★属性は付けない（素の input）: iOS17系は input の lang 指定でキーボード言語を固定し
-              地球儀キーが消えることがある。DeckBuilder の検索欄（日本語入力実績あり）と同一構成にする */}
+              地球儀キーが消えることがある。日本語入力実績のある DeckBuilder の検索欄（.bd-search）と
+              class もマークアップも完全同一にする（インラインstyleすら差異にしない） */}
           <input
+            className="bd-search"
             value={q}
             onChange={(e) => setQ(e.target.value)}
             placeholder="カード名・カード番号で検索（例: ルフィ / OP01-001）"
-            style={{ ...selStyle, flex: '1 1 auto', minWidth: 0 }}
+            style={{ maxWidth: 'none' }}
           />
           {searchOn ? (
             <button className="dsm-pill" onClick={() => { setQ(''); setColorF(null); setTypeF(null); setSetF(null); }}>クリア</button>
