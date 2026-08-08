@@ -326,14 +326,12 @@ export default function ProxyPrint() {
       <div className="sect-label">カードを検索して追加</div>
       <div style={{ width: '100%', maxWidth: 1000, display: 'flex', flexDirection: 'column', gap: 8 }}>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          {/* ★属性は付けない（素の input）: iOS17系は input の lang 指定でキーボード言語を固定し
+              地球儀キーが消えることがある。DeckBuilder の検索欄（日本語入力実績あり）と同一構成にする */}
           <input
             value={q}
             onChange={(e) => setQ(e.target.value)}
             placeholder="カード名・カード番号で検索（例: ルフィ / OP01-001）"
-            lang="ja"
-            autoCorrect="off"
-            autoCapitalize="off"
-            enterKeyHint="search"
             style={{ ...selStyle, flex: '1 1 auto', minWidth: 0 }}
           />
           {searchOn ? (

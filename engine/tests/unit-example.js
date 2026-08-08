@@ -1408,6 +1408,16 @@ function setupG(leaderNo){G.active='me';G.turnSeq=5;G.winner=null;const mkP=(ln,
       await cpuCounter('me', a1, P.leader);
       ok(P.hand.length===1, '例33g: wastecut=次の1本を止められないなら温存');
       G._h2Parts=null; G.active='me'; }
+    // 例34: 効果ダメージ（oppDamage/selfDamage）でも checkLifeZero が走る（2026-08-09修正の回帰）
+    //   従来: ダミーattacker{base:{}}のowner=undefinedで checkLeaderHitLife が throw → runFxのcatchに呑まれ
+    //   後続の checkLifeZero（OP05-098エネルのライフ0補充）が毎回スキップされていた（op失敗ログ×3の正体）
+    setupG('OP01-062'); { const P=G.players.me, O=G.players.cpu;
+      P.leader=mkc('OP05-098'); P.leader.owner='me'; G.active='cpu'; // when:'oppTurn'＝相手ターン中のみ発火
+      P.life=[mkc('OP15-067')]; P.hand=[mkc('OP15-067'),mkc('OP15-067')]; P.deck=[mkc('OP15-067'),mkc('OP15-067')];
+      await doOp({op:'oppDamage', n:1}, {side:'cpu', self:O.leader});
+      ok(P.life.length===1, '例34: 効果ダメージでライフ0→onLifeZeroが発火してライフ補充（従来はスキップ）');
+      ok(P.hand.length===1, '例34: 補充の捨てコスト（discardOwn 1）も解決される');
+      G.active='me'; }
   }catch(e){ console.log('EXCEPTION:', e.message); fail++; }
   console.log('ユニットテスト: pass='+pass+' fail='+fail);
   process.exit(fail?1:0);

@@ -300,6 +300,11 @@
     async function checkLeaderHitLife(attacker) {
       if (!attacker) return;
       const side = attacker.owner;
+      // ★効果ダメージ（oppDamage/selfDamage のダミーattacker {base:{}}＝owner無し）はアタック由来でない＝
+      //   onLeaderHitLife/onHitLife は誘発しない。従来はここで G.players[undefined].chars が throw し、
+      //   runFx の catch に呑まれて後続の checkLifeZero（エネルのライフ補充）と leaderOnDamage まで
+      //   毎回スキップされていた（op失敗ログ×3の正体・2026-08-09修正）。
+      if (!side || !G.players[side]) return;
       if (attacker.base.type === 'LEADER') {
         const L = G.players[side].leader;
         if (L !== attacker || isNegated(L)) return;
