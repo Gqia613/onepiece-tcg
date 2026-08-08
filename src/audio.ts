@@ -190,6 +190,7 @@ function fadeTo(target: number, ms: number, onDone?: () => void) {
 export function startBgm(src: string) {
   const el = ensureBgmEl();
   if (!el) return;
+  hiddenPaused = false; // 明示的な再生開始＝非表示時の自動pause状態を破棄
   routeBgm(); // AudioContext のグラフへ接続（unlock 後。SE とセッション統合）
   if (curSrc === src && !el.paused) { fadeTo(bgmEnabled ? bgmVol : 0, 400); return; }
   curSrc = src;
@@ -217,6 +218,7 @@ export function setBgmEnabled(on: boolean) {
 export function stopBgm(opts?: { fade?: boolean }) {
   const el = bgmEl;
   curSrc = '';
+  hiddenPaused = false;
   if (!el) return;
   if (opts && opts.fade) {
     fadeTo(0, 600, () => { try { el.pause(); el.currentTime = 0; } catch { /* ignore */ } });
@@ -235,3 +237,65 @@ export function setBgmVolume(v: number) {
 }
 
 export function getBgmVolume() { return bgmVol; }
+
+// ── ページライフサイクル（iOSバックグラウンド再生対策）──
+// iOSは再生中の <audio loop> をメディアセッションとして扱い、タブを閉じたり Safari を
+// バックグラウンドへ回しても再生が続くことがある（しかも背景で AudioContext が
+// interrupted になると MediaElementSource を迂回して gain 消音まで無効になり生音が漏れる）。
+// 対策: 非表示になったら要素を pause＋context を suspend（keepAlive も止まる）、
+// 表示復帰で自動再開。ページ破棄（pagehide で bfcache 非対象）ならセッションごと完全解放。
+let hiddenPaused = false; // 非表示時に自動pauseした（＝表示復帰時だけ自動再開する）
+
+function onPageHidden() {
+  const el = bgmEl;
+  if (el && !el.paused) {
+    if (curSrc) hiddenPaused = true; // 停止フェード中(curSrc='')は復帰時も再開しない
+    clearFade();
+    try { el.pause(); } catch { /* ignore */ }
+    if (!curSrc) applyBgmLevel(0); // stopBgm のフェードを即完了扱いに
+  }
+  if (ctx && ctx.state === 'running') { try { ctx.suspend(); } catch { /* ignore */ } }
+}
+
+function onPageVisible() {
+  if (unlocked && ctx && ctx.state !== 'running') { try { ctx.resume(); } catch { /* ignore */ } }
+  if (!hiddenPaused) return;
+  hiddenPaused = false;
+  const el = bgmEl;
+  if (el && curSrc) {
+    applyBgmLevel(bgmEnabled ? bgmVol : 0); // フェード打ち切りの中途音量を確定値へ
+    try {
+      const p = el.play();
+      if (p && typeof (p as Promise<void>).catch === 'function') {
+        (p as Promise<void>).catch(() => { /* 拒否時は次のユーザー操作の startBgm 系で復帰 */ });
+      }
+    } catch { /* ignore */ }
+  }
+}
+
+// タブ/ページ破棄時: メディア要素を解放し AudioContext を close してオーディオ
+// セッションを OS へ確実に返す（pause だけだと iOS で再生が残る報告があるため）。
+function teardownAudio() {
+  hiddenPaused = false;
+  curSrc = '';
+  clearFade();
+  const el = bgmEl;
+  if (el) { try { el.pause(); el.removeAttribute('src'); el.load(); } catch { /* ignore */ } }
+  if (keepAlive) { try { keepAlive.stop(); } catch { /* ignore */ } keepAlive = null; }
+  if (ctx) { try { (ctx.close() as Promise<void>)?.catch?.(() => { /* ignore */ }); } catch { /* ignore */ } }
+  ctx = null; bgmSource = null; bgmGain = null; // 万一 bfcache 復帰したら次の unlock で再構築
+}
+
+if (typeof document !== 'undefined' && typeof window !== 'undefined') {
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') onPageHidden();
+    else onPageVisible();
+  });
+  // iOS は unload/beforeunload が不発なことがあり pagehide が本命。persisted=false（bfcache
+  // に入らない＝破棄）なら完全解放、true なら pause のみ（pageshow で再開できる状態を残す）。
+  window.addEventListener('pagehide', (e: PageTransitionEvent) => {
+    onPageHidden();
+    if (!e.persisted) teardownAudio();
+  });
+  window.addEventListener('pageshow', onPageVisible); // bfcache 復帰
+}
