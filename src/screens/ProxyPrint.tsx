@@ -326,14 +326,19 @@ export default function ProxyPrint() {
       <div className="sect-label">カードを検索して追加</div>
       <div style={{ width: '100%', maxWidth: 1000, display: 'flex', flexDirection: 'column', gap: 8 }}>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-          {/* ★属性は付けない（素の input）: iOS17系は input の lang 指定でキーボード言語を固定し
-              地球儀キーが消えることがある。日本語入力実績のある DeckBuilder の検索欄（.bd-search）と
-              class もマークアップも完全同一にする（インラインstyleすら差異にしない） */}
+          {/* ★placeholder に「カード番号」を書かない: Safari の自動入力ヒューリスティックが
+              決済のカード番号欄と誤判定し、数字系キーボードに切り替わって地球儀キーが消える
+              （＝日本語入力に切り替えられなくなる。iOS実機で再現）。type=search / name=q /
+              autocomplete=off も同じ誤判定を避けるための指定で、外すと再発しうる。 */}
           <input
             className="bd-search"
+            type="search"
+            name="q"
+            inputMode="text"
+            autoComplete="off"
             value={q}
             onChange={(e) => setQ(e.target.value)}
-            placeholder="カード名・カード番号で検索（例: ルフィ / OP01-001）"
+            placeholder="カード名・型番で検索（例: ルフィ / OP01-001）"
             style={{ maxWidth: 'none' }}
           />
           {searchOn ? (

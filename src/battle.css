@@ -4413,6 +4413,18 @@ button.hb-chip:not(.zero):not([disabled]):hover {
   border-color: var(--self-line)
 }
 
+/* type="search" のネイティブ装飾を無効化して .bd-search の見た目を保つ。
+   （type=search は Safari の決済フィールド誤検出を避けるために使っている。ProxyPrint 参照） */
+.bd-search[type="search"] {
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.bd-search::-webkit-search-cancel-button {
+  -webkit-appearance: none;
+  display: none;
+}
+
 /* 検索フィールド内にフリーアイコン（虫眼鏡）を置くラッパー。元の .bd-search の flex 挙動を維持。 */
 .bd-search-wrap {
   position: relative;
