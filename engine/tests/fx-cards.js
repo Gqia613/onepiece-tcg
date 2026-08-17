@@ -1644,6 +1644,22 @@ humanPick=function(c){return Promise.resolve((c||[])[0]||null);};
     { const me=LP('OP13-003'); me.don={active:5,rested:0};
       ok(power(me.leader)===5000, 'OP13-003: 場のドン9以下でリーダー-2000(condBuff donAtMost)');
       me.don={active:10,rested:0}; ok(power(me.leader)===7000, 'OP13-003: ドン10では通常'); }
+    // OP13-003 ロジャーL: donPhaseAttach＝「ドンフェイズに置かれるドン1枚」だけが付与される（公式Q&A No.1044）
+    { const me=LP('OP13-003'); G.firstPlayer='cpu'; me.deck=[I('OP01-006','me'),I('OP01-006','me')];
+      me.turnsTaken=3; me.don={active:10,rested:0}; me.leader.attachedDon=0;
+      await beginTurn('me');
+      ok(me.don.active===10 && me.leader.attachedDon===0, '★OP13-003: 場のドンが上限10（置かれるドン0）ではリーダーに付与しない＝10コストが登場できる'); }
+    { const me=LP('OP13-003'); G.firstPlayer='cpu'; me.deck=[I('OP01-006','me'),I('OP01-006','me')];
+      me.turnsTaken=3; me.don={active:9,rested:0}; me.leader.attachedDon=0;
+      await beginTurn('me');
+      ok(me.don.active===9 && me.leader.attachedDon===1 && donTotal('me')===10, 'OP13-003: 場のドン9なら置かれた1枚がリーダーに付与される'); }
+    { const me=LP('OP13-003'); G.firstPlayer='me'; me.deck=[I('OP01-006','me'),I('OP01-006','me')];
+      me.turnsTaken=0; me.don={active:0,rested:0}; me.leader.attachedDon=0;
+      await beginTurn('me');
+      ok(me.don.active===1 && me.leader.attachedDon===0, 'OP13-003: ターン開始時に場のドンが0（最初のターン）なら付与されない（公式Q&A No.1044）');
+      me.turnsTaken=1; me.don={active:1,rested:0};
+      await beginTurn('me');
+      ok(me.don.active===2 && me.leader.attachedDon===1, 'OP13-003: 場にドンがあるターンは置かれたドン1枚が付与される'); }
     // OP13-004 サボL: boardBuff（ドン×1＋コスト8キャラで全+1000）
     { const me=LP('OP13-004'); me.life=[I('OP15-067','me')]; me.leader.attachedDon=1; G.active='me';
       C['__c8s__']={no:'__c8s__',name:'C8',type:'CHAR',color:[],cost:8,power:8000,counter:1000,traits:[]};

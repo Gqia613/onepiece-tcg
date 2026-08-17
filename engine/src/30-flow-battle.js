@@ -412,11 +412,15 @@
       render(); await sleep(220);
       // ドン
       setPhase('ドン');
+      const donBefore = donTotal(side); // ドンを置く前＝ターン開始時の場のドン（ロジャーの条件判定に使う）
       let add = (P.turnsTaken === 1 && side === G.firstPlayer) ? 1 : 2;
-      add = Math.min(add, P.donMax - donTotal(side));
+      add = Math.min(add, P.donMax - donBefore);
       P.don.active += add;
-      // ゴール・Ｄ・ロジャー(OP13-003): ドンフェイズに置かれるドン1枚をリーダーに付与（場にドンがある場合）
-      if (!isNegated(P.leader) && P.leader.base.fx && P.leader.base.fx.static && P.leader.base.fx.static.some(o => o.op === 'donPhaseAttach') && P.don.active >= 1) { P.don.active--; P.leader.attachedDon++; flog(side, '【ロジャー】ドンフェイズのドン1枚をリーダーに付与'); }
+      /* ゴール・Ｄ・ロジャー(OP13-003): 「ドンフェイズに置かれるドン1枚」をリーダーに付与。
+         ①公式Q&A(No.1044): そのターン開始時に自分の場のドンが1枚も無い場合は付与されない（最初のターン等）＝ donBefore>=1。
+         ②「置かれるドン」が対象＝1枚も置かれないターン（場のドンが上限10で add=0）は付与しない。
+            add を見ずに付与すると毎ターン1枚がリーダーに固定され、10コストが永久に登場できなくなる（実対戦報告）。*/
+      if (add >= 1 && donBefore >= 1 && !isNegated(P.leader) && P.leader.base.fx && P.leader.base.fx.static && P.leader.base.fx.static.some(o => o.op === 'donPhaseAttach')) { P.don.active--; P.leader.attachedDon++; flog(side, '【ロジャー】ドンフェイズのドン1枚をリーダーに付与'); }
       if (add > 0) sfx('don');
       render(); await sleep(260);
       // メイン
