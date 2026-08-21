@@ -1442,6 +1442,126 @@ function setupG(leaderNo){G.active='me';G.turnSeq=5;G.winner=null;const mkP=(ln,
       await declareAttack(a2, P.leader);
       ok(P.don.active===2 && P.leader._oppAtkTurn===G.turnSeq && P.life.length===3, '例35b: 単体で不成立化する攻撃には発動（ドン-1・攻撃失敗・ライフ無傷）');
       G._h2Parts=null; G.active='me'; }
+
+    /* ===== OP-17（世界最強の戦士）回帰 ===== 正本=tools/official-full.json / 裁定=tools/official-qa.json */
+    // 例36a フルフロー: OP17-058 カイドウL【アタック時】ドン!!-1：相手キャラ1枚 このターン中-2000（宣言→アタック時効果まで実フローで通す）
+    setupG('OP17-058'); { const P=G.players.me, O=G.players.cpu;
+      G.active='me'; G.winner=null; G.busy=false; G.myActable=true; G.firstPlayer='me';
+      P.don.active=3; P.life=[mkc('ST01-006')]; P.deck=[mkc('ST01-006')];
+      O.life=[mkc('ST01-006'),mkc('ST01-006')]; O.deck=[mkc('ST01-006')]; O.hand=[];
+      const wall=mkc('OP17-035'); wall.owner='cpu'; wall.rested=true; O.chars=[wall]; // バニラ P8000
+      const before=donTotal('me');
+      await declareAttack(P.leader, wall);
+      ok(donTotal('me')===before-1, '例36a: OP17-058L アタック時にドン!!-1を支払う');
+      ok(power(wall)===6000, '例36a: 対象の相手キャラが このターン中-2000'); }
+    // 例36b 痩せた盤面: コストエリア0（ドン全付与）でも OP17-058L のドン!!-1 は付与ドンから支払える
+    setupG('OP17-058'); { const P=G.players.me; P.don.active=0; P.don.rested=0; P.leader.attachedDon=2;
+      const before=donTotal('me'); const ctx={side:'me',self:P.leader};
+      await doOp({op:'donMinus',n:1,optional:true,then:[{op:'powerMod',side:'opp',amount:-2000,duration:'turn',count:1,optional:true}]},ctx);
+      ok(ctx._committed && donTotal('me')===before-1, '例36b: 痩せた盤面（コストエリア0）でも付与ドンで支払える'); }
+    // 例36c 辞退パス: OP17-001 ニューゲートL【相手のアタック時】【ターン1回】手札1枚捨て → 「捨てない」なら手札未消費・【ターン1回】未消費
+    setupG('OP17-001'); { const P=G.players.me, O=G.players.cpu;
+      G.active='cpu'; G.winner=null; G.busy=false; G.myActable=true; G.firstPlayer='cpu';
+      P.hand=[mkc('ST01-006'),mkc('ST01-006')]; P.life=[mkc('ST01-006'),mkc('ST01-006')]; P.deck=[mkc('ST01-006')];
+      O.life=[mkc('ST01-006')]; O.deck=[mkc('ST01-006')];
+      const atk=mkc('OP15-067'); atk.owner='cpu'; atk.summonedTurn=1; O.chars=[atk];
+      const _sp=showPrompt; showPrompt=function(cfg){return Promise.resolve('n');}; // 「発動しない」
+      const hb=P.hand.length; await declareAttack(atk, P.leader); showPrompt=_sp;
+      ok(P.hand.length===hb && P.leader._oppAtkTurn!==G.turnSeq, '例36c: 辞退なら手札もターン1回も未消費（同ターンの次アタックで再選択できる）'); }
+    // 例36d Q&A1417: 手札0枚では OP17-001L の【相手のアタック時】は発動できない（払えない＝発動しない）
+    setupG('OP17-001'); { const P=G.players.me; P.hand=[];
+      const ctx={side:'me',self:P.leader};
+      await runFx(C['OP17-001'].fx.onOppAttack, ctx);
+      ok(!ctx._committed && !P.leader.buffs.length, '例36d: 手札0枚なら発動しない（Q&A1417）'); }
+    // 例36q OP17-041 王直:「相手の」元々のコスト1のキャラすべてをデッキ下（allSide:'opp'）。
+    //   ★op.side は読まない: OP05-058「コスト3以下のキャラすべて」は無指定＝両者対象なのに実効のない side:'opp' を持つため。
+    setupG('OP17-039'); { const P=G.players.me, O=G.players.cpu; P.isCPU=true;
+      const mine=mkc('OP17-014'); P.chars=[mine]; P.deck=[]; // 自分のコスト1
+      const theirs=mkc('OP17-014'); theirs.owner='cpu'; O.chars=[theirs]; O.deck=[];
+      await doOp({op:'deckBottom',allSide:'opp',all:true,filter:{cost:1}},{side:'me',self:P.leader});
+      ok(O.chars.length===0 && P.chars.length===1, '例36q: allSide:opp は相手のみ（自分のコスト1は残る）'); }
+    setupG('OP17-039'); { const P=G.players.me, O=G.players.cpu; P.isCPU=true;
+      const mine=mkc('OP17-014'); P.chars=[mine]; P.deck=[];
+      const theirs=mkc('OP17-014'); theirs.owner='cpu'; O.chars=[theirs]; O.deck=[];
+      await doOp({op:'deckBottom',side:'opp',all:true,filter:{maxCost:3}},{side:'me',self:P.leader});
+      ok(O.chars.length===0 && P.chars.length===0, '例36q: 無指定(all)は両者対象＝OP05-058の挙動を維持'); }
+    // 例36e OP17-079 ルフィL: 自分のコスト12以上のキャラすべてが【ブロッカー】（staticCost+12込みの盤面実効コストで判定）
+    setupG('OP17-079'); { const P=G.players.me;
+      const dolly=mkc('OP17-085'), usopp=mkc('OP17-080'); P.chars=[dolly,usopp];
+      ok(boardCost(dolly)===17 && hasKw(dolly,'blocker'), '例36e: コスト5+12=17のドリーは【ブロッカー】を得る');
+      ok(boardCost(usopp)===2 && !hasKw(usopp,'blocker'), '例36e: コスト12未満のウソップは得ない'); }
+    // 例36f 公式Q&A「このキャラのコスト+12」は場にある間だけ＝手札/トラッシュでは加算しない（登場/回収の maxCost 判定が公式どおりになる）
+    setupG('OP17-079'); { const P=G.players.me; const inHand=mkc('OP17-085'); P.hand=[inHand];
+      ok(boardCost(inHand)===5, '例36f: 手札のドリーはコスト5のまま（Q&A）');
+      ok(matchFilter(inHand,{name:'ブロギー'})===false && matchFilter(inHand,{name:'ドリー',maxCost:5}), '例36f: 手札のコスト5以下フィルタに乗る'); }
+    // 例36g OP17-119 ロキ【登場時】相手のキャラを コストの合計が4以下になるようにKO（Q&A: 望む枚数＝2枚以上も可）
+    setupG('OP17-079'); { const P=G.players.me, O=G.players.cpu; P.isCPU=true;
+      const a=mkc('OP17-012'), b=mkc('OP17-012'); a.owner='cpu'; b.owner='cpu'; O.chars=[a,b]; O.trash=[]; // コスト2×2＝合計4
+      await doOp({op:'koSumCost',maxSum:4},{side:'me',self:P.leader});
+      ok(O.chars.length===0 && O.trash.length===2, '例36g: コスト合計4以下なら2枚まとめてKOできる'); }
+    setupG('OP17-079'); { const P=G.players.me, O=G.players.cpu; P.isCPU=true;
+      const big=mkc('OP17-035'); big.owner='cpu'; O.chars=[big]; O.trash=[]; // コスト7＞4
+      await doOp({op:'koSumCost',maxSum:4},{side:'me',self:P.leader});
+      ok(O.chars.length===1 && O.trash.length===0, '例36g: 合計を超える候補は選べない（KO0枚）'); }
+    // 例36h OP17-118 ジーベック【登場時】手札からカード名の異なる《ロックス海賊団》2枚までを コスト合計9以下で登場
+    setupG('OP17-039'); { const P=G.players.me; P.isCPU=true;
+      P.hand=[mkc('OP17-041'),mkc('OP17-045'),mkc('OP17-050')]; P.deck=[mkc('ST01-006'),mkc('ST01-006')]; P.don.active=0;
+      await doOp({op:'playCharFromHandSum',maxSum:9,count:2,distinctName:true,filter:{traitIncludes:'ロックス海賊団'}},{side:'me',self:P.leader});
+      ok(P.chars.length===2 && P.chars.reduce((s,c)=>s+(c.base.cost||0),0)<=9, '例36h: コスト合計9以下で2枚まで登場（ドンは払わない＝踏み倒し）'); }
+    // 例36i OP17-118 手札のこのカードのカウンター+2000（Q&A: 自分のキャラ0枚なら持たない／カウンター持ちが混ざれば持たない）
+    setupG('OP17-039'); { const P=G.players.me; const zb=mkc('OP17-118'); P.hand=[zb];
+      P.chars=[];
+      ok(counterVal(zb,'me')===0, '例36i: 自分のキャラ0枚ならカウンター+2000を持たない（Q&A）');
+      P.chars=[mkc('OP17-040')]; // カウンター0のキャラのみ
+      ok(counterVal(zb,'me')===2000, '例36i: カウンターを持たないキャラのみならカウンター+2000');
+      P.chars=[mkc('OP17-040'),mkc('OP17-035')]; // OP17-035はカウンター2000
+      ok(counterVal(zb,'me')===0, '例36i: カウンター持ちが混ざれば+2000は付かない'); }
+    // 例36j OP17-117 鳴光剣【トリガー】相手は手札3枚を捨ててもよい。捨てなかった場合、相手のコスト6以下のキャラ1枚までKO（Q&A: 選ぶのは相手）
+    setupG('OP17-099'); { const P=G.players.me, O=G.players.cpu; P.isCPU=true;
+      O.hand=[mkc('ST01-006'),mkc('ST01-006'),mkc('ST01-006')]; O.hand.forEach(c=>c.owner='cpu');
+      const t=mkc('OP17-012'); t.owner='cpu'; O.chars=[t]; O.trash=[];
+      await runFx(C['OP17-117'].fx.trigger,{side:'me',self:P.leader});
+      ok(O.hand.length===3 && O.chars.length===0, '例36j: CPUは手札を温存→効果を受ける（コスト6以下をKO）'); }
+    // 例36k OP17-112 リンリン:【自分のターン中】自分の元々のパワー4000の【トリガー】持ちキャラすべてを 元々のパワー8000に
+    setupG('OP17-099'); { const P=G.players.me; const linlin=mkc('OP17-112'), kata=mkc('OP17-103'); P.chars=[linlin,kata];
+      G.active='me'; ok(power(kata)===8000, '例36k: 自分のターン中は元々P4000のトリガー持ちがP8000');
+      G.active='cpu'; ok(power(kata)===4000, '例36k: 相手のターン中は元に戻る'); G.active='me'; }
+    // 例36l OP17-044 キャプテン・ジョン: レスト中は相手はキャラの「キャプテン・ジョン」以外にアタックできない（リーダーは通常どおり）
+    setupG('OP17-039'); { const P=G.players.me, O=G.players.cpu;
+      const john=mkc('OP17-044'); john.rested=true; const other=mkc('OP17-045'); other.rested=true; P.chars=[john,other];
+      const atk=mkc('OP15-067'); atk.owner='cpu'; O.chars=[atk];
+      const tg=legalTargets('cpu', atk);
+      ok(tg.includes(P.leader) && tg.includes(john) && !tg.includes(other), '例36l: 対象はリーダーとキャプテン・ジョンのみ'); }
+    // 例36m OP17-040 エドワード・ニューゲート(青): 自分の『ロックス海賊団』リーダーがアタックした時、手札1枚を捨てて リーダーを このバトル中+3000
+    setupG('OP17-039'); { const P=G.players.me, O=G.players.cpu;
+      G.active='me'; G.winner=null; G.busy=false; G.myActable=true; G.firstPlayer='me';
+      P.chars=[mkc('OP17-040')]; P.hand=[mkc('ST01-006'),mkc('ST01-006')]; P.deck=[mkc('ST01-006')]; P.life=[mkc('ST01-006')];
+      O.life=[mkc('ST01-006'),mkc('ST01-006')]; O.deck=[mkc('ST01-006')]; O.hand=[];
+      const hb=P.hand.length;
+      await declareAttack(P.leader, O.leader);
+      // リーダー自身の【アタック時】(OP17-039＝手札1枚捨て)と OP17-040 のフック(手札1枚捨て)で計2枚
+      ok(P.hand.length===hb-2, '例36m: 自リーダーのアタック時に onOwnLeaderAttack が発火（手札を1枚捨てる）'); }
+    // バトル中バフはバトル終了で失効するため、効果本体は単体でも検証する
+    setupG('OP17-039'); { const P=G.players.me; P.chars=[mkc('OP17-040')]; P.hand=[mkc('ST01-006')];
+      const pb=power(P.leader);
+      await runFx(C['OP17-040'].fx.onOwnLeaderAttack.fx,{side:'me',self:P.chars[0]});
+      ok(P.hand.length===0 && power(P.leader)===pb+3000, '例36m: 手札1枚を捨てて自分のリーダーが このバトル中+3000'); }
+    // 例36n OP17-023 ナミ: 自分の《東の海》/《麦わらの一味》キャラがKOされる場合、代わりに自身をレストにできる（Q&A: 自身がKO対象でも可）
+    setupG('OP17-020'); { const P=G.players.me; const nami=mkc('OP17-023'); P.chars=[nami]; P.trash=[];
+      const blocked=await protectFromEffect(nami,'ko',null);
+      ok(blocked===true && nami.rested===true && P.chars.includes(nami), '例36n: 自身がKOされる場合も自身をレストにして場に残る'); }
+    // 例36o P-142 ゴーイング・メリー号(STAGE): 元々P8000以下の《麦わらの一味》がKOされる場合、代わりにこのステージをトラッシュへ
+    setupG('OP17-079'); { const P=G.players.me; const merry=mkc('P-142'); P.stage=merry;
+      const zoro=mkc('OP17-095'); P.chars=[zoro]; P.trash=[];
+      const blocked=await protectFromEffect(zoro,'ko',null);
+      ok(blocked===true && P.stage===null && P.trash.some(c=>c.no==='P-142') && P.chars.includes(zoro), '例36o: ステージが身代わりになりキャラは場に残る'); }
+    // 例36p OP17-005 ニューゲート:【登場時】自分の「単色の」リーダーを 次の相手エンド終了時まで 元々のパワー8000に（Q&A: 単色=色が1つ）
+    setupG('OP17-001'); { const P=G.players.me;
+      await runFx(C['OP17-005'].fx.onPlay,{side:'me',self:mkc('OP17-005')});
+      ok(power(P.leader)===8000, '例36p: 単色リーダーなら元々パワー8000');
+      const P2=G.players.me; P2.leader.buffs=[]; P2.leader.base=Object.assign({},P2.leader.base,{color:['赤','緑']});
+      await runFx(C['OP17-005'].fx.onPlay,{side:'me',self:mkc('OP17-005')});
+      ok(power(P2.leader)===5000, '例36p: 多色リーダーには効かない'); }
   }catch(e){ console.log('EXCEPTION:', e.message); fail++; }
   console.log('ユニットテスト: pass='+pass+' fail='+fail);
   process.exit(fail?1:0);

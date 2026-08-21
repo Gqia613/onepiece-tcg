@@ -228,6 +228,7 @@
         case 'setNoDonActivateChar': { P._noDonActivateTurn = G.turnSeq; flog(side, 'このターン中、キャラの効果でドンをアクティブにできない'); break; } // EB04-016トリ
         case 'grantBattleKoSubstitute': { P._battleKoSubSeq = G.turnSeq; flog(side, 'このターン中、自分のキャラはバトルKOの代わりに手札1枚を捨てられる'); break; } // EB02-030
         case 'condTargetChar': { const tg = ctx.target; if (tg && tg.base.type === 'CHAR' && (!op.attr || (tg.base.attribute || '').includes(op.attr))) await runFx(op.then, ctx); else ctx._declined = true; break; } // アタック対象がキャラ（ST02-010/ST05-010。ブロッカー介入後の変化は見ない近似）
+        case 'condTargetLeader': { const tg = ctx.target; if (tg && tg === P.leader) await runFx(op.then, ctx); else ctx._declined = true; break; } // アタック対象が自分のリーダー（OP17-040ニューゲート＝自分のリーダーがアタックされた時）。ctx由来＝ロックステップ安全
         case 'condAttacker': { if (ctx.attacker && (ctx.attacker.base.attribute || '').includes(op.attr)) await runFx(op.then, ctx); else ctx._declined = true; break; } // アタッカーが属性Xを持つ場合（OP11-088シュウ）。不一致=未発動
         case 'peekOppDeck': { const D = G.players[o].deck; if (!D.length) { flog(side, '相手のデッキが0枚で見られない'); break; } const c = D[0]; flog(side, `相手のデッキの上を確認: 「${c.base.name}」`); if (!P.isCPU) await showPrompt({ side, title: '相手のデッキの上', text: '相手のデッキの一番上のカードです。確認したら「完了」を押してください。', reveal: { no: c.no, name: c.base.name }, opts: [{ t: '完了', v: 'ok', primary: true }] }); render(); break; } // 相手デッキトップを見る（OP11-062/070カタクリ等）。人間は完了ボタンを押すまでカードを大写しで表示
         // デッキの上1枚を公開し、filter一致なら登場させてもよい（OP12-058）。grantKwで登場時にキーワード付与。
@@ -290,6 +291,58 @@
           }
           break;
         }
+        // 「相手のキャラを、コストの合計がN以下になるようにKOする」（OP17-119ロキ）。
+        //   公式Q&A: 望む枚数を選べる＝0枚も2枚以上も可・コスト0のキャラも選べる。合計が maxSum を超える候補は都度除外する。
+        case 'koSumCost': {
+          const maxSum = op.maxSum || 0; let used = 0; const picked = [];
+          while (true) {
+            const cands = oppChars(side, opFilter(op)).filter(c => !isKoImmune(c) && !picked.includes(c) && used + boardCost(c) <= maxSum);
+            if (!cands.length) break;
+            let t;
+            if (P.isCPU) { t = cands.slice().sort((a, b) => scoreChar(b) - scoreChar(a))[0]; } // CPUは価値の高い順に取れるだけ取る
+            else t = await chooseCard(side, cands, `KOする相手キャラを選択（コスト合計${used}/${maxSum}・選ばないで終了）`, 'oppBig', true);
+            if (!t) break;
+            picked.push(t); used += boardCost(t);
+            if (await protectFromEffect(t, 'ko', self)) continue;
+            await koCard(t, 'oppEffect');
+          }
+          if (picked.length) flog(side, `コスト合計${used}以下で${picked.length}枚をKO`); else await fxNote(side, `コスト合計${maxSum}以下でKOできる相手キャラなし`, '');
+          render(); break;
+        }
+        // 「自分の手札からカード名の異なる〜カードN枚までを、コストの合計がM以下になるように登場させる」（OP17-118ジーベック）
+        case 'playCharFromHandSum': {
+          const maxSum = op.maxSum || 0, cnt = op.count || 2; let used = 0; const names = [];
+          for (let i = 0; i < cnt; i++) {
+            const cands = P.hand.filter(h => h.base.type === 'CHAR' && matchFilter(h, opFilter(op)) && used + (h.base.cost || 0) <= maxSum && !(op.distinctName && names.includes(normName(h.base.name))));
+            if (!cands.length) break;
+            const c = P.isCPU ? cands.slice().sort((a, b) => (b.base.cost || 0) - (a.base.cost || 0))[0]
+              : await chooseFromHand(side, cands, `登場させるカードを選択（${i + 1}/${cnt}・コスト合計${used}/${maxSum}）`, null, true);
+            if (!c) break;
+            P.hand.splice(P.hand.indexOf(c), 1); used += c.base.cost || 0; names.push(normName(c.base.name));
+            await summon(side, c, false, 'hand');
+          }
+          if (names.length) flog(side, `手札から${names.length}枚を登場（コスト合計${used}）`);
+          render(); break;
+        }
+        // 「相手は自身の手札N枚を捨ててもよい。そうしなかった場合、elseFx」（OP17-117 鳴光剣のトリガー）。
+        //   公式Q&A: 捨てるか何もしないかを選ぶのは相手。手札がN枚未満なら捨てられない＝elseFx。
+        case 'oppMayDiscardElse': {
+          const O = G.players[o]; const n = op.n || 1; let paid = false;
+          if (O.hand.length >= n) {
+            let yes = false;
+            if (O.isCPU) yes = false; // CPUは手札を温存し効果を受ける（近似。手札N枚の方が重い）
+            else yes = (await showPrompt({ side: o, title: '手札を捨てる？', text: `自分の手札${n}枚を捨てますか？（捨てないと効果を受けます）`, opts: [{ t: `捨てる（手札-${n}）`, v: 'y', primary: true }, { t: '捨てない', v: 'n', ghost: true }] })) === 'y';
+            if (yes) {
+              for (let i = 0; i < n; i++) {
+                const c = O.isCPU ? O.hand[0] : await chooseFromHand(o, O.hand, `捨てるカードを選択（${i + 1}/${n}）`, null, false, 'danger');
+                if (!c) break; O.hand.splice(O.hand.indexOf(c), 1); O.trash.push(reset(c));
+              }
+              flog(o, `手札${n}枚を捨てた`); await fireHandDiscarded(o, n, self); paid = true; render();
+            }
+          }
+          if (!paid) { flog(side, '相手は手札を捨てなかった'); await runFx(op.elseFx, ctx); }
+          break;
+        }
         // 「相手のキャラを（1枚まで/count枚）トラッシュに置く」。KOではない＝「相手の効果でKOされない」を貫通し【KO時】は誘発しない（公式: トラッシュに置くはKOと別。KOされない耐性を無視）。
         // 「相手の効果で場を離れない」/身代わりは尊重し、場を離れた時の誘発は起こる（deckBottomと同じ非KO除去で行き先がトラッシュ）。OP09-009ベックマン/OP06-092ブルック/OP07-091ルフィ/OP08-079カイドウ/ST19-003たしぎ。
         case 'trashChar': {
@@ -343,7 +396,7 @@
         }
         case 'deckBottom': {
           if (op.condLeader && !checkCond(op.condLeader, side, self)) break;
-          if (op.all) { for (const sd of [o, side]) { const PP = G.players[sd]; for (const t of PP.chars.slice()) { if (!matchFilter(t, opFilter(op))) continue; if (sd === o && (isImmune(t) || await protectFromEffect(t, 'deckBottom'))) continue; removeCharTo(t, G.players[t.owner].deck); flog(side, `「${t.base.name}」をデッキ下へ`); await checkAllyLeave(t.owner, t, t.owner === side ? 'ownEffect' : 'oppEffect'); } } render(); break; } // 「コストN以下のキャラすべて」＝両者の場が対象（OP05-058）
+          if (op.all) { for (const sd of (op.allSide === 'opp' ? [o] : [o, side])) { const PP = G.players[sd]; for (const t of PP.chars.slice()) { if (!matchFilter(t, opFilter(op))) continue; if (sd === o && (isImmune(t) || await protectFromEffect(t, 'deckBottom'))) continue; removeCharTo(t, G.players[t.owner].deck); flog(side, `「${t.base.name}」をデッキ下へ`); await checkAllyLeave(t.owner, t, t.owner === side ? 'ownEffect' : 'oppEffect'); } } render(); break; } // 「コストN以下のキャラすべて」＝両者の場が対象（OP05-058）。allSide:'opp'明記なら相手のみ（OP17-041王直「相手の元々のコスト1のキャラすべて」）。★op.sideは読まない: OP05-058が実効のないside:'opp'を持っており、両者対象という正しい挙動が壊れる
           // side省略=相手 / 'own'=自分 / 'any'=両者（公式textの無指定「キャラ」は両者対象）。count枚まで順に選択。
           const dbPool = () => op.side === 'any' ? [...oppChars(side, opFilter(op)), ...P.chars.filter(c => matchFilter(c, opFilter(op)))]
             : (op.side === 'own' || op.side === 'self') ? P.chars.filter(c => matchFilter(c, opFilter(op)))
@@ -1081,6 +1134,7 @@
           const opts = op.options || []; if (!opts.length) break;
           let idx = 0;
           const chP = op.chooser === 'opp' ? G.players[o] : P; // chooser:'opp'=「相手は以下から1つを選ぶ」（ST20-005リンリン）。CPUは先頭選択（近似）
+          if (chP.isCPU && op.cpuPick != null) idx = Math.min(op.cpuPick, opts.length - 1); // CPUが選択者のときの既定（OP17-049リンリン=CPUは手札2枚捨てを選ぶ）
           if (!chP.isCPU) { const v = await showPrompt({ side: op.chooser === 'opp' ? o : side, title: '効果を選択', text: (op.chooser === 'opp' ? '相手の効果: ' : '') + '以下から1つを選ぶ', opts: opts.map((o, i) => ({ t: o.label || ('選択' + (i + 1)), v: 'opt:'+ i })) }); idx = (typeof v === 'string' && v.indexOf('opt:') === 0) ? +v.slice(4) : 0; }
           await runFx(opts[idx].fx, ctx); break;
         }
@@ -1246,7 +1300,9 @@
         // 相手のドン!!を n枚 ドンデッキに戻す（相手のドン総数を減らす）
         case 'oppDonMinus': { const O = G.players[o]; const k = Math.min(op.n || 1, O.don.active + O.don.rested); for (let i = 0; i < k; i++) { if (O.don.rested > 0) O.don.rested--; else if (O.don.active > 0) O.don.active--; } if (k) flog(side, `相手のドン!!-${k}（ドンデッキへ）`); render(); break; }
         // 相手が自身の手札 n枚を捨てる
-        case 'oppDiscard': { const O = G.players[o]; const k = Math.min(op.n || 1, O.hand.length); for (let i = 0; i < k; i++) { let c; if (O.isCPU) c = O.hand.slice().sort((a, b) => (a.base.cost || 0) - (b.base.cost || 0))[0]; else c = await chooseFromHand(o, O.hand.slice(), `捨てる手札（${i + 1}/${k}）`); if (!c) break; O.hand.splice(O.hand.indexOf(c), 1); O.trash.push(reset(c)); } if (k) { flog(side, `相手は手札${k}枚を捨てた`); await fireHandDiscarded(o, k, ctx.self); } render(); break; }
+        // random:true=「相手の手札1枚を捨てる」（効果を使う側が裏向きで無作為に選ぶ。OP17-075ドレークの公式Q&A）。
+        //   既定（無指定）=「相手は自身の手札N枚を捨てる」＝捨てるカードは相手が選ぶ。
+        case 'oppDiscard': { const O = G.players[o]; const k = Math.min(op.n || 1, O.hand.length); for (let i = 0; i < k; i++) { let c; if (op.random) c = O.hand[Math.floor(rng() * O.hand.length)]; else if (O.isCPU) c = O.hand.slice().sort((a, b) => (a.base.cost || 0) - (b.base.cost || 0))[0]; else c = await chooseFromHand(o, O.hand.slice(), `捨てる手札（${i + 1}/${k}）`); if (!c) break; O.hand.splice(O.hand.indexOf(c), 1); O.trash.push(reset(c)); } if (k) { flog(side, `相手は手札${k}枚を捨てた`); await fireHandDiscarded(o, k, ctx.self); } render(); break; }
         // 自分のトラッシュから filter一致のカードを count枚 手札に加える
         case 'trashToHand': { for (let i = 0; i < (op.count || 1); i++) { const cands = P.trash.filter(c => matchFilter(c, op.filter || {})); if (!cands.length) break; const t = P.isCPU ? (((G._linePickR || G._linePick) || []).map(no => cands.find(c => c.base.no === no)).find(Boolean) || cands[0]) : await chooseCard(side, cands, 'トラッシュから手札に加えるカード', 'ownBig', op.optional); if (!t) break; P.trash.splice(P.trash.indexOf(t), 1); P.hand.push(t); flog(side, `「${t.base.name}」を手札に加えた`); } render(); break; } // E49: _linePick=ライン実行中の回収対象steering
         // 自分のデッキの上 n枚をトラッシュに置く（ミル）
@@ -1412,7 +1468,7 @@
       // 「相手の効果で場を離れない」自身の常在(condBuff immune): バウンス/デッキ送り/トラッシュ置きも無効化（選択・無効化・パワー減少は通す）
       if ((cause === 'bounce' || cause === 'deckBottom' || cause === 'trash') && isLeaveImmune(target)) { flog(target.owner, `「${target.base.name}」は相手の効果で場を離れない`); return true; }
       const ow = G.players[target.owner];
-      for (const p of [ow.leader, ...ow.chars]) { // リーダー提供の身代わりも拾う
+      for (const p of [ow.leader, ...ow.chars, ow.stage]) { // リーダー/ステージ提供の身代わりも拾う（P-142ゴーイング・メリー号＝ステージ自身をトラッシュ）
         if (!p || isNegated(p)) continue; // 効果無効中のキャラは身代わり保護を提供しない
         const st = p.base.fx && p.base.fx.static; if (!st) continue;
         const prot = st.find(o => o.op === 'leaveProtect'); if (!prot) continue;
@@ -1452,8 +1508,9 @@
           for (const c of picks) { c.rested = true; await fireSelfRested(c, 'ownEffect'); }
           flog(target.owner, `【${p.base.name}】カード${n}枚をレストにして「${target.base.name}」を守った`); return true;
         } else if (prot.pay === 'restSelf') {
-          // 代わりにこのキャラ(p=身代わり元)をレストにして target を場に残す（OP12-027コウシロウ）。p===target/既にレストなら不可
-          if (p === target || p.rested) continue;
+          // 代わりにこのキャラ(p=身代わり元)をレストにして target を場に残す（OP12-027コウシロウ）。既にレストなら不可
+          // allowSelf: 自分自身がKO対象のときも自身をレストにして残せる（OP17-023ナミの公式Q&A）
+          if ((p === target && !prot.allowSelf) || p.rested) continue;
           if (!(await confirmUse(target.owner, `【${p.base.name}】身代わり`, `「${p.base.name}」をレストにして「${target.base.name}」を場に残しますか？`, '残す（このキャラをレスト）', '残さない', { noSrc: true }))) continue;
           p.rested = true; await fireSelfRested(p, 'ownEffect'); flog(target.owner, `【${p.base.name}】自身をレストにして「${target.base.name}」を場に残した`); render(); return true;
         } else if (prot.pay === 'free') {
@@ -1500,9 +1557,18 @@
           if (p === target) continue;
           if (!(await confirmUse(target.owner, `【${p.base.name}】身代わり`, `「${p.base.name}」を手札に戻して「${target.base.name}」を場に残しますか？`, '残す（このキャラを手札へ）', '残さない', { noSrc: true }))) continue;
           bounceCard(p); flog(target.owner, `【${p.base.name}】自身を手札に戻して「${target.base.name}」を場に残した`); await checkAllyLeave(p.owner, p, 'ownEffect'); render(); return true;
-        } else if (prot.pay === 'koSelf') {
-          // このキャラ(p)自身をKO(代わりにトラッシュへ)して target を守る。p===target は不可
+        } else if (prot.pay === 'trashSelf') {
+          // 代わりにこのカード(p=身代わり元。キャラ/ステージ)をトラッシュに置いて target を場に残す（P-142ゴーイング・メリー号）。p===target は不可
           if (p === target) continue;
+          if (!(await confirmUse(target.owner, `【${p.base.name}】身代わり`, `「${p.base.name}」をトラッシュに置いて「${target.base.name}」を守りますか？`, '守る（トラッシュに置く）', '守らない', { cls: 'danger', noSrc: true }))) continue;
+          if (ow.stage === p) { ow.don.rested += p.attachedDon || 0; ow.stage = null; ow.trash.push(reset(p)); }
+          else if (ow.chars.includes(p)) removeCharTo(p, ow.trash);
+          else continue;
+          flog(target.owner, `【${p.base.name}】自身をトラッシュに置いて「${target.base.name}」を守った`); render(); return true;
+        } else if (prot.pay === 'koSelf') {
+          // このキャラ(p)自身をKO(代わりにトラッシュへ)して target を守る。
+          // allowSelf: 自身が手札/デッキ下へ送られる場合も「代わりに自身をKO」を選べる（OP17-015マルコの公式Q&A）
+          if (p === target && !(prot.allowSelf && cause !== 'ko')) continue;
           if (!(await confirmUse(target.owner, `【${p.base.name}】身代わり`, `「${p.base.name}」をKOして「${target.base.name}」を守りますか？`, '守る（このキャラをKO）', '守らない', { cls: 'danger', noSrc: true }))) continue;
           removeCharTo(p, ow.trash);
           flog(target.owner, `【${p.base.name}】自身をKOして「${target.base.name}」を守った`); if (prot.drawAfter) draw(target.owner, prot.drawAfter); return true;

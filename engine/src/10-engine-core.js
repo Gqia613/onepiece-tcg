@@ -262,6 +262,9 @@
       if (c.trashHas != null && !P.trash.some(x => matchFilter(x, c.trashHas))) return false; // 自分のトラッシュに条件一致のカードがある
       if (c.leaderPowerAtMost != null && power(P.leader) > c.leaderPowerAtMost) return false; // 自リーダーの実効パワーがN以下
       if (c.leaderPowerAtLeast != null && power(P.leader) < c.leaderPowerAtLeast) return false;
+      if (c.oppLeaderPowerAtLeast != null && power(O.leader) < c.oppLeaderPowerAtLeast) return false; // 相手のリーダーのパワーがN以上（OP17-034ロックスター）
+      if (c.leaderAttachedDonAtLeast != null && (P.leader.attachedDon || 0) < c.leaderAttachedDonAtLeast) return false; // 自分のリーダーに付与されているドン!!がN枚以上（P-159ルフィ）
+      if (c.oppLeaderPowerAtMost != null && power(O.leader) > c.oppLeaderPowerAtMost) return false;
       if (c.selfPowerAtLeast != null && (!card || power(card) < c.selfPowerAtLeast)) return false; // このキャラ(ctx.self)の実効パワーがN以上
       if (c.selfPowerAtMost != null && (!card || power(card) > c.selfPowerAtMost)) return false;
       if (c.selfRested != null && (!card || (!!card.rested !== !!c.selfRested))) return false; // このキャラがレスト(true)/アクティブ(false)の状態
@@ -556,7 +559,38 @@
       if (f.minPower != null && (b.power || 0) < f.minPower) return false;
       if (f.cost != null && (b.cost || 0) !== f.cost) return false; // 元々のコストN（OP04-119ロシナンテ=コスト5の味方保護）
       if (f.activeOnly && card.rested) return false; // アクティブのキャラのみ（OP04-119）
+      if (f.hasTrigger && !(b.triggerText || (b.fx && b.fx.trigger) || /【トリガー】/.test(b.text || ''))) return false; // 【トリガー】を持つカード（OP17-112リンリン=元々P4000のトリガー持ちをP8000に）
+      if (f.noCounter && (b.counter || 0) > 0) return false;
+      // 実効コスト（自身の staticCost + 一時コストbuff込み）。allyKeyword/allySetBase から呼ばれるため再帰ガード必須。
+      //   OP17: 「このキャラのコスト+12」(staticCost) を前提にした「コスト12以上のキャラ」参照（OP17-079ルフィL=コスト12以上に【ブロッカー】）。
+      if (f.minCost != null || f.maxCost != null) {
+        let lc = b.cost || 0;
+        if (!_lmCost.has(card)) {
+          _lmCost.add(card);
+          try { if (!isNegated(card) && b.fx && b.fx.static) for (const o of b.fx.static) { if (o.op === 'staticCost' && (!o.cond || checkCond(o.cond, card.owner, card))) lc += o.per ? Math.floor(G.players[card.owner].trash.length / o.per) * (o.amount || 0) : (o.amount || 0); } }
+          finally { _lmCost.delete(card); }
+        }
+        if (card.buffs) lc += card.buffs.reduce((s2, bf) => s2 + (bf.costAmt || 0), 0);
+        lc = Math.max(0, lc);
+        if (f.minCost != null && lc < f.minCost) return false;
+        if (f.maxCost != null && lc > f.maxCost) return false;
+      }
       return true;
+    }
+    const _lmCost = new Set(); // lightMatch の実効コスト評価の再帰ガード
+    // 盤面のカードの実効コスト（base + ティーチL + staticCost + allyCost + oppCostMod + 一時コストbuff）。
+    // matchFilter の cost 判定と、コスト合計を数える op（koSumCost 等）の共通正本。
+    function boardCost(card) {
+      const b = card.base; let ec = b.cost || 0;
+      // ★「このキャラのコスト+N」は場にある間だけ（公式Q&A: OP17-085/089/092/094/119。手札/トラッシュ/デッキでは加算しない）。
+      //   場にいないカード（手札・トラッシュ・デッキ）は印刷コストのみ＝revive/登場/回収の maxCost 判定が公式どおりになる。
+      { const ow = card.owner && G.players[card.owner]; if (!ow || !(ow.chars.includes(card) || ow.leader === card || ow.stage === card)) return Math.max(0, ec + (card.buffs ? card.buffs.reduce((s2, bf) => s2 + (bf.costAmt || 0), 0) : 0)); }
+      { const o = card.owner; if (o && G.players[o]) { const L = G.players[o].leader; if (L && L.base.leader === 'teach' && !isNegated(L) && G.active !== o && G.players[o].chars.includes(card)) ec += 1; } } // ティーチL:【相手のターン中】自分のキャラすべてコスト+1
+      if (!isNegated(card) && b.fx && b.fx.static) for (const o of b.fx.static) { if (o.op === 'staticCost' && (!o.cond || checkCond(o.cond, card.owner, card))) ec += o.per ? Math.floor(G.players[card.owner].trash.length / o.per) * (o.amount || 0) : (o.amount || 0); } // 常在「このキャラのコスト+N」（盤面の実効コストのみ。プレイコストには影響しない）
+      { const ow2 = card.owner; if (ow2 && G.players[ow2]) for (const src of [G.players[ow2].leader, ...G.players[ow2].chars]) { if (!src || src === card || isNegated(src)) continue; const ss = src.base.fx && src.base.fx.static; if (!ss) continue; for (const o of ss) { if (o.op === 'allyCost' && (!o.cond || checkCond(o.cond, ow2, src)) && lightMatch(card, o.filter)) ec += o.amount || 0; } } } // 自分の他キャラ/リーダーの「フィルタ一致キャラのコスト±」（OP14-086ザラ/OP10-042ウソップL）。lightMatchで再帰回避
+      { const ow2 = card.owner; const en = ow2 && G.players[opp(ow2)]; if (en) for (const src of [en.leader, ...en.chars]) { if (!src || isNegated(src)) continue; const ss = src.base.fx && src.base.fx.static; if (!ss) continue; for (const o of ss) { if (o.op === 'oppCostMod' && (!o.cond || checkCond(o.cond, opp(ow2), src)) && lightMatch(card, o.filter)) ec += o.amount || 0; } } } // 相手盤面の「相手のキャラすべてのコスト±」（OP08-083シープスヘッド）
+      if (card.buffs) ec += card.buffs.reduce((s2, bf) => s2 + (bf.costAmt || 0), 0); // 一時コスト増減（addCostBuff）
+      return Math.max(0, ec);
     }
     function matchFilter(card, f) {
       if (!f) return true; const b = card.base;
@@ -569,14 +603,7 @@
       if (f.traits && !(b.traits || []).some(t => f.traits.includes(t))) return false;
       if (f.name && normName(b.name) !== normName(f.name) && !(b.aliasName && normName(b.aliasName) === normName(f.name))) return false; // 別名（「カード名をXとしても扱う」OP02-042ヤマト=光月おでん等）も一致扱い
       if (f.cost != null && b.cost !== f.cost) return false;
-      // フィールドのキャラの実効コスト：ティーチ・リーダーは【相手のターン中】自分のキャラすべてコスト+1
-      let _ec = b.cost || 0;
-      { const o = card.owner; if (o && G.players[o]) { const L = G.players[o].leader; if (L && L.base.leader === 'teach' && !isNegated(L) && G.active !== o && G.players[o].chars.includes(card)) _ec += 1; } }
-      if (!isNegated(card) && b.fx && b.fx.static) for (const o of b.fx.static) { if (o.op === 'staticCost' && (!o.cond || checkCond(o.cond, card.owner, card))) _ec += o.per ? Math.floor(G.players[card.owner].trash.length / o.per) * (o.amount || 0) : (o.amount || 0); } // 常在「このキャラのコスト+N」（盤面の実効コストのみ。プレイコストには影響しない。cond対応）
-      { const ow2 = card.owner; if (ow2 && G.players[ow2]) for (const src of [G.players[ow2].leader, ...G.players[ow2].chars]) { if (!src || src === card || isNegated(src)) continue; const ss = src.base.fx && src.base.fx.static; if (!ss) continue; for (const o of ss) { if (o.op === 'allyCost' && (!o.cond || checkCond(o.cond, ow2, src)) && lightMatch(card, o.filter)) _ec += o.amount || 0; } } } // 自分の他キャラ/リーダーのstaticが「自分のフィルタ一致キャラのコスト±（allyCost）」（OP14-086ザラ：B・W全+2／OP10-042ウソップL：ドレスローザ+1）。lightMatchで再帰回避
-      { const ow2 = card.owner; const en = ow2 && G.players[opp(ow2)]; if (en) for (const src of [en.leader, ...en.chars]) { if (!src || isNegated(src)) continue; const ss = src.base.fx && src.base.fx.static; if (!ss) continue; for (const o of ss) { if (o.op === 'oppCostMod' && (!o.cond || checkCond(o.cond, opp(ow2), src)) && lightMatch(card, o.filter)) _ec += o.amount || 0; } } } // 相手の盤面のstaticが「相手のキャラすべてのコスト±（oppCostMod）」を課す（OP08-083シープスヘッド：相手全コスト-1）
-      if (card.buffs) _ec += card.buffs.reduce((s, bf) => s + (bf.costAmt || 0), 0); // 盤面の一時コスト増減（addCostBuff）
-      _ec = Math.max(0, _ec);
+      const _ec = boardCost(card);
       if (f.minCost != null && _ec < f.minCost) return false;
       if (f.maxCostFrom === 'oppLife' && _ec > (G.players[card.owner] ? G.players[card.owner].life.length : 0)) return false; // 「相手のライフ枚数以下のコスト」＝対象の持ち主のライフ枚数で動的判定
       if (f.maxCostFrom === 'don' && _ec > (G.players[card.owner] ? donTotal(card.owner) : 0)) return false; // 「自分の場のドン枚数以下のコスト」（OP13-099虚の玉座）

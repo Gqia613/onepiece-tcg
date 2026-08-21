@@ -513,6 +513,19 @@
       if (attacker.base.type === 'LEADER' && target && target.base.type === 'CHAR') G.players[aSide]._leaderBattledTurn = G.turnSeq; // リーダーが相手キャラとバトル（OP12-020ゾロLの起動メイン条件）
       // リーダーの onLeaderAttack: このリーダーがアタックした時（vsLeaderで相手リーダー限定。cond対応。OP12-081コアラL）
       if (attacker.base.type === 'LEADER' && attacker.base.fx && attacker.base.fx.onLeaderAttack && !isNegated(attacker)) { const cfg = attacker.base.fx.onLeaderAttack; if ((!cfg.vsLeader || (target && target.base.type === 'LEADER')) && (!cfg.cond || checkCond(cfg.cond, aSide, attacker))) await runFx(cfg.fx, { self: attacker, side: aSide }); }
+      // 自分のリーダーがアタックした時に反応する自分のキャラ（onOwnLeaderAttack。OP17-040ニューゲート＝【ターン1回】アタックした時/された時）。
+      //   「された時」側は onOppAttack が担当（公式Q&A: ブロッカー/カウンターより前＝【相手のアタック時】と同じタイミング）。
+      if (attacker.base.type === 'LEADER') {
+        for (const c of G.players[aSide].chars) {
+          const cfg = c.base.fx && c.base.fx.onOwnLeaderAttack; if (!cfg || isNegated(c)) continue;
+          if (cfg.cond && !checkCond(cfg.cond, aSide, c)) continue;
+          if (cfg.once === 'turn' && c._ownLdrAtkTurn === G.turnSeq) continue;
+          const prevOnce = c._ownLdrAtkTurn; if (cfg.once === 'turn') c._ownLdrAtkTurn = G.turnSeq;
+          const lctx = { self: c, side: aSide, attacker, target };
+          await fxNote(aSide, '自分のリーダーのアタック時', c.base.name); await runFx(cfg.fx, lctx);
+          if (cfg.once === 'turn' && lctx._declined && !lctx._committed) c._ownLdrAtkTurn = prevOnce; // 辞退なら【ターン1回】未消費
+        }
+      }
       // このキャラがレストになった時（アタック宣言でレスト）の誘発
       await fireSelfRested(attacker, 'attack');
       flog(aSide, `「${attacker.base.name}」が${target.base.type === 'LEADER' ? 'リーダー' : '「' + target.base.name + '」'}にアタック`);
@@ -738,7 +751,10 @@
     // 手札のカードの実効カウンター値（盤面の handCounterBuff static を加味。例: 手札のP8000キャラのカウンター+2000）
     function counterVal(c, side) {
       let v = c.base.counter || 0;
-      for (const src of [G.players[side].leader, ...G.players[side].chars]) { if (!src || isNegated(src)) continue; const st = src.base.fx && src.base.fx.static; if (!st) continue; for (const o of st) { if (o.op === 'handCounterBuff' && matchFilter(c, o.filter || {})) v += o.amount || 0; } }
+      for (const src of [G.players[side].leader, ...G.players[side].chars]) { if (!src || isNegated(src)) continue; const st = src.base.fx && src.base.fx.static; if (!st) continue; for (const o of st) { if (o.op === 'handCounterBuff' && (!o.cond || checkCond(o.cond, side, src)) && matchFilter(c, o.filter || {})) v += o.amount || 0; } }
+      // 手札のカード自身が持つ条件付きカウンター（「手札のこのカードは、〜の場合、カウンター+N を持つ」OP17-118ジーベック）。
+      //   盤面のカードではなく手札のカード自身が供給元なので上のループでは拾えない。
+      { const st = c.base.fx && c.base.fx.static; if (st) for (const o of st) { if (o.op === 'selfHandCounterBuff' && (!o.cond || checkCond(o.cond, side, c))) v += o.amount || 0; } }
       return v;
     }
     async function counterStep(dSide, attacker, target) {
