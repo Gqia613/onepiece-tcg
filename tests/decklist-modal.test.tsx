@@ -28,12 +28,12 @@ const listBtns = () =>
   Array.from(document.querySelectorAll('button')).filter((b) => (b.textContent || '').includes('カードリスト'));
 
 describe('DeckSelect カードリストモーダル', () => {
-  it('カルーセルに全デッキが並び、中央デッキ用の「カードリスト」ボタンが1つ出る', () => {
+  it('グリッドに全デッキが並び、選択中デッキ用の「カードリスト」ボタンが1つ出る', () => {
     render(<DeckSelect />);
     const decks = (engine.DECKS || []).length;
     expect(decks).toBeGreaterThanOrEqual(9); // 組み込み7 + 新規2
-    // v2: グリッド2回ではなくカルーセル1本（.dsc-item がデッキ数分）＋アクティブデッキのメタ行に「カードリスト」1つ
-    expect(document.querySelectorAll('.dsc-item').length).toBe(decks);
+    // v4: 横4列のグリッド1つ（.dsg-item がデッキ数分）＋選択中デッキのメタ行に「カードリスト」1つ
+    expect(document.querySelectorAll('.dsg-item').length).toBe(decks);
     expect(listBtns().length).toBe(1);
   });
 
@@ -71,8 +71,8 @@ describe('DeckSelect カードリストモーダル', () => {
 
   it('新デッキ 青緑ルフィ のモーダルにリーダー名と50枚が出る', () => {
     render(<DeckSelect />);
-    // v2: カルーセルの「青緑ルフィ」をクリックして中央（アクティブ）にし、メタ行のカードリストを押す
-    const items = Array.from(document.querySelectorAll('.dsc-item'));
+    // v4: グリッドの「青緑ルフィ」をクリックして選択中にし、メタ行のカードリストを押す
+    const items = Array.from(document.querySelectorAll('.dsg-item'));
     const luffyItem = items.find((c) => (c.textContent || '').includes('青緑ルフィ'));
     expect(luffyItem).toBeTruthy();
     act(() => { fireEvent.click(luffyItem!); });

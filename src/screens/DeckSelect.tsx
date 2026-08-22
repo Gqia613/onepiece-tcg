@@ -1,6 +1,6 @@
-// 対戦セットアップ画面（/battle）— v3「固定1画面のアプリ型レイアウト」。
-// - 画面はスクロールしない（カルーセルが残り高さにフィット）
-// - 中央のデッキ＝現在ステップ（①あなた/②CPU）の選択（ライブ反映・決定ボタン廃止）
+// 対戦セットアップ画面（/battle）— v4「固定1画面 + デッキグリッド」。
+// - 画面自体はスクロールしない（グリッドが残り高さにフィットし、その枠の中だけ縦スクロール）
+// - デッキ一覧は横4列のグリッド。タップしたデッキ＝現在ステップ（①あなた/②CPU）の選択（ライブ反映・決定ボタン廃止）
 // - カスタムデッキとプリセットはタブで切替（カスタムがあればカスタムを先に表示）
 // - 下部アクションバー: おまかせ即対戦 + 対戦開始（常時同じ位置＝親指域）
 // 選択状態は従来どおり engine.G.sel に持つ（start() のロジックは不変）。
@@ -10,7 +10,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useEngineStore } from '../state/engineStore';
 import { unlockAudio } from '../audio';
 import type { Deck } from '../engine/types';
-import { IMG, IMG_BIG } from '../engine/img';
+import { IMG } from '../engine/img';
 import { DeckListModal } from '../components/deck/DeckListModal';
 import { Icon } from '../components/ui/Icon';
 import { deleteCloudDeck, sharedToDeck } from '../state/decks';
@@ -76,12 +76,10 @@ export default function DeckSelect() {
   const [listDeck, setListDeck] = useState<Deck | null>(null); // カードリスト表示中のデッキ
   const [delDeck, setDelDeck] = useState<Deck | null>(null);   // 削除確認モーダル
   const [step, setStep] = useState<'me' | 'cpu'>('me');        // ①あなた → ②CPU
-  const [cat, setCat] = useState<DeckCat>('preset');           // カルーセルの表示カテゴリ
+  const [cat, setCat] = useState<DeckCat>('preset');           // グリッドの表示カテゴリ
   const [sharedList, setSharedList] = useState<Deck[]>([]);    // 友達の共有デッキ（CPUに持たせて練習できる）
   const catTouched = useRef(false);                            // ユーザーが手で切り替えたか
-  const [activeIdx, setActiveIdx] = useState(0);               // カルーセル中央のデッキ
-  const railRef = useRef<HTMLDivElement | null>(null);
-  const rafPending = useRef(false);
+  const gridRef = useRef<HTMLDivElement | null>(null);         // デッキグリッド（選択中デッキを見える位置へ寄せる）
 
   const G = engine?.G;
 
@@ -119,44 +117,17 @@ export default function DeckSelect() {
 
   const bump = () => useEngineStore.getState().bump();
 
-  // 中央のデッキ＝現在ステップの選択（ライブ反映）
-  const bindSelection = (idx: number) => {
-    const d = ordered[idx];
+  // タップしたデッキ＝現在ステップ（①あなた/②CPU）の選択（ライブ反映）
+  const pickDeck = (d: Deck) => {
     if (!G || !d) return;
     if (!G.sel) G.sel = {};
     if (G.sel[step] !== d.id) { G.sel[step] = d.id; bump(); }
   };
 
-  // カルーセル: 中央に最も近いアイテムを activeIdx に（スクロール中は rAF で間引き）
-  const onRailScroll = () => {
-    if (rafPending.current) return;
-    rafPending.current = true;
-    requestAnimationFrame(() => {
-      rafPending.current = false;
-      const rail = railRef.current;
-      if (!rail || !rail.children.length) return;
-      const center = rail.scrollLeft + rail.clientWidth / 2;
-      let best = 0, bd = Infinity;
-      Array.from(rail.children).forEach((el, i) => {
-        const h = el as HTMLElement;
-        const c = h.offsetLeft + h.clientWidth / 2;
-        const d = Math.abs(c - center);
-        if (d < bd) { bd = d; best = i; }
-      });
-      setActiveIdx((cur) => (cur === best ? cur : best));
-      bindSelection(best);
-    });
-  };
-
-  const centerTo = (i: number, smooth = true, bind = true) => {
-    const n = Math.max(0, Math.min(ordered.length - 1, i));
-    setActiveIdx(n);
-    if (bind) bindSelection(n);
-    const rail = railRef.current;
-    const el = rail?.children[n] as HTMLElement | undefined;
-    if (rail && el && typeof rail.scrollTo === 'function') {
-      rail.scrollTo({ left: el.offsetLeft - (rail.clientWidth - el.clientWidth) / 2, behavior: smooth ? 'smooth' : 'auto' });
-    }
+  // 選択中のデッキがグリッドの見える位置に来るように寄せる（ステップ/カテゴリ切替時）
+  const scrollSelIntoView = () => {
+    const el = gridRef.current?.querySelector('.dsg-item.on') as HTMLElement | null;
+    if (el && typeof el.scrollIntoView === 'function') el.scrollIntoView({ block: 'nearest' });
   };
 
   // 初期化: あなた=リストの先頭 / CPU=ランダム（両方埋めて即対戦できる状態から始める）
@@ -171,33 +142,24 @@ export default function DeckSelect() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [engine]);
 
-  // ステップ切替時: そのステップで選択済みのデッキの位置へ寄せる。
+  // ステップ切替時: そのステップで選択済みのデッキが見える位置へ寄せる。
   // 別カテゴリのデッキならタブも追随（★catの変更では発火しない＝手動のタブ切替を打ち消さない）
   useEffect(() => {
     const selId = G?.sel?.[step];
     if (!selId) return;
-    const inCur = ordered.findIndex((d) => d.id === selId);
-    if (inCur >= 0) { centerTo(inCur, false, false); return; }
+    if (ordered.some((d) => d.id === selId)) { scrollSelIntoView(); return; }
     const other = catOf(selId as string);
     if (other && other !== cat) setCat(other); // ↓のcat effectが位置合わせする
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [step]);
 
-  // カテゴリ切替（手動/自動とも）: 選択中デッキがこのカテゴリにあればそこへ、
-  // 無ければ先頭デッキを中央に置いて選択し直す（「中央のデッキ＝選択」の原則を維持）
+  // カテゴリ切替: 一覧を見て回るだけなので選択は変えない（タップで初めて選択が動く）。
+  // 選択中デッキがこのカテゴリにあれば見える位置へ寄せるだけ。
   useEffect(() => {
     if (!ordered.length) return;
-    const selId = G?.sel?.[step];
-    const i = selId ? ordered.findIndex((d) => d.id === selId) : -1;
-    centerTo(i >= 0 ? i : 0, false, i < 0);
+    scrollSelIntoView();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cat, ordered.length]);
-
-  // デッキ数の変化（カスタム削除など）で activeIdx が範囲外にならないように
-  useEffect(() => {
-    if (activeIdx > ordered.length - 1) setActiveIdx(Math.max(0, ordered.length - 1));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ordered.length]);
 
   if (!engine || !G) return null;
 
@@ -209,7 +171,7 @@ export default function DeckSelect() {
   const meDeck = allDecks.find((d) => d.id === G.sel!.me);
   const cpuDeck = allDecks.find((d) => d.id === G.sel!.cpu);
   const ready = !!(meDeck && cpuDeck);
-  const active: Deck | undefined = ordered[activeIdx];
+  const active: Deck | undefined = step === 'me' ? meDeck : cpuDeck; // 下部の操作ピルは現在ステップの選択デッキに効く
 
   async function start() {
     if (!G!.sel!.me || !G!.sel!.cpu) return;
@@ -306,7 +268,7 @@ export default function DeckSelect() {
           <Icon.arrowLeft size={22} />
         </button>
         <span className="bd-title">対戦</span>
-        <span className="bd-note">中央のデッキが選ばれます</span>
+        <span className="bd-note">デッキをタップで選択</span>
       </div>
 
       {/* ===== VS ステージ: 選んだリーダー同士が向き合う ===== */}
@@ -346,30 +308,37 @@ export default function DeckSelect() {
         ) : null}
       </div>
 
-      {/* ===== リーダーカルーセル（残り高さにフィット・中央=選択） ===== */}
-      <div className="ds-rail-wrap" style={active ? ({ ['--aura' as any]: auraOf(active) }) : undefined}>
-        <button className="ds-arrow left" aria-label="前のデッキ" onClick={() => centerTo(activeIdx - 1)}><Icon.chevronLeft size={24} /></button>
-        <div className="ds-rail" ref={railRef} onScroll={onRailScroll}>
-          {ordered.map((d, i) => (
+      {/* ===== リーダーグリッド（横4列・残り高さにフィットしてこの枠だけ縦スクロール・タップ=選択） ===== */}
+      <div className="ds-grid" ref={gridRef}>
+        {ordered.map((d) => {
+          const mine = G.sel!.me === d.id;
+          const foes = G.sel!.cpu === d.id;
+          const on = step === 'me' ? mine : foes;
+          return (
             <div
               key={d.id}
-              className={'dsc-item' + (i === activeIdx ? ' on' : '')}
+              className={'dsg-item' + (on ? ' on' : '')}
               style={{ ['--aura' as any]: auraOf(d) }}
-              onClick={() => centerTo(i)}
+              onClick={() => pickDeck(d)}
             >
               {d.tier ? <div className="dsc-tier">{d.tier}</div> : null}
-              {/* 中央カードは最大~214px表示のためw640（w320だと甘くなる） */}
-              <div className="art" style={{ backgroundImage: `url('${IMG_BIG(d.leader)}')` }}>
+              {mine || foes ? (
+                <div className="dsg-picks">
+                  {mine ? <span className="dsg-pick me">あなた</span> : null}
+                  {foes ? <span className="dsg-pick cpu">CPU</span> : null}
+                </div>
+              ) : null}
+              <div className="art" style={{ backgroundImage: `url('${IMG(d.leader)}')` }}>
                 <div className="scrim" />
                 <div className="art-nm">{d.name}</div>
               </div>
             </div>
-          ))}
-        </div>
-        <button className="ds-arrow right" aria-label="次のデッキ" onClick={() => centerTo(activeIdx + 1)}><Icon.chevronRight size={24} /></button>
+          );
+        })}
+        {!ordered.length ? <div className="ds-grid-empty">このカテゴリにデッキがありません</div> : null}
       </div>
 
-      {/* 中央デッキの操作（説明は出さない） */}
+      {/* 選択中デッキ（現在ステップ）の操作（説明は出さない） */}
       <div className="dsm-actions">
         {active ? <button className="dsm-pill" onClick={() => setListDeck(active)}>カードリスト</button> : null}
         {active?.list ? (

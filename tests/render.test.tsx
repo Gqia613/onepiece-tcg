@@ -141,8 +141,9 @@ describe('DeckSelect renders', () => {
     // 対戦前状態に
     act(() => { engine.G.inGame = false; useEngineStore.setState({ version: useEngineStore.getState().version + 1 }); });
     render(<DeckSelect />);
-    // v2: 組み込みデッキがカルーセル(.dsc-item)に一列で並ぶ（リーダー画像は背景画像=.art）
-    expect(document.querySelectorAll('.dsc-item').length).toBeGreaterThan(2);
+    // v4: 組み込みデッキが横4列のグリッド(.dsg-item)に並ぶ（リーダー画像は背景画像=.art）
+    expect(document.querySelectorAll('.ds-grid').length).toBe(1);
+    expect(document.querySelectorAll('.dsg-item').length).toBeGreaterThan(2);
     expect(document.querySelectorAll('.art').length).toBeGreaterThan(2);
     expect(document.body.textContent).toMatch(/BATTLE START|開始|スタート/i);
   });

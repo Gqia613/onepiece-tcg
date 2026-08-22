@@ -6240,7 +6240,8 @@ button.hb-chip:not(.zero):not([disabled]):hover {
   z-index: 2;
 }
 
-.dsc-item .art {
+.dsc-item .art,
+.dsg-item .art {
   width: 100%;
   height: 100%;
   border-radius: var(--cardr-lg);
@@ -6253,7 +6254,8 @@ button.hb-chip:not(.zero):not([disabled]):hover {
   transition: border-color .25s, box-shadow .25s;
 }
 
-.dsc-item.on .art {
+.dsc-item.on .art,
+.dsg-item.on .art {
   /* color-mix 非対応環境向けフォールバック → 対応環境では下の宣言が上書き */
   border-color: var(--aura, #3ec9ff);
   box-shadow: 0 18px 44px -10px rgba(0, 0, 0, .8), 0 0 44px -6px var(--aura, #3ec9ff);
@@ -6263,13 +6265,15 @@ button.hb-chip:not(.zero):not([disabled]):hover {
     0 0 44px -6px var(--aura, #3ec9ff);
 }
 
-.dsc-item .scrim {
+.dsc-item .scrim,
+.dsg-item .scrim {
   position: absolute;
   inset: 0;
   background: linear-gradient(180deg, transparent 52%, rgba(2, 6, 13, .93) 94%);
 }
 
-.dsc-item .art-nm {
+.dsc-item .art-nm,
+.dsg-item .art-nm {
   position: relative;
   z-index: 3;
   width: 100%;
@@ -6329,6 +6333,126 @@ button.hb-chip:not(.zero):not([disabled]):hover {
 
 .ds-arrow.right {
   right: 4px;
+}
+
+/* --- リーダーグリッド（横4列・残り高さにフィットして"この枠だけ"縦スクロール・タップ=選択） --- */
+.ds-grid {
+  /* basis 0 ＝ 他要素が収まらない分を最優先で縮んで吸収（下のバーを絶対に押し出さない） */
+  flex: 1 1 0;
+  min-height: 116px;
+  width: 100%;
+  max-width: 1000px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  align-content: start;
+  gap: 10px;
+  padding: 4px 2px 8px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, .22) transparent;
+}
+
+.ds-grid::-webkit-scrollbar {
+  width: 6px;
+}
+
+.ds-grid::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, .2);
+  border-radius: 999px;
+}
+
+.ds-grid-empty {
+  grid-column: 1 / -1;
+  padding: 24px 0;
+  text-align: center;
+  color: var(--muted);
+  font-size: 12.5px;
+}
+
+.dsg-item {
+  position: relative;
+  aspect-ratio: 5 / 7;
+  cursor: pointer;
+  /* 非選択は沈める（＝選択中の1枚が一目で分かる。カルーセルの明暗と同じ言語） */
+  filter: brightness(.7) saturate(.85);
+  transition: transform .18s cubic-bezier(.2, .8, .3, 1.1), filter .18s;
+}
+
+.dsg-item:hover {
+  filter: brightness(.92) saturate(.95);
+  transform: translateY(-2px);
+}
+
+.dsg-item.on {
+  filter: none;
+  transform: none;
+  z-index: 2;
+}
+
+.dsg-item .art-nm {
+  padding: 4px 7px 6px;
+  font-size: 11px;
+}
+
+/* どちら側が選んでいるかのチップ（あなた/CPU が同じデッキでも両方出る） */
+.dsg-picks {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  z-index: 4;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 3px;
+}
+
+.dsg-pick {
+  font-size: 9.5px;
+  font-weight: 800;
+  line-height: 1.5;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, .8);
+  border: 1px solid var(--surface-edge);
+}
+
+.dsg-pick.me {
+  color: var(--self-glow);
+  border-color: var(--self-line);
+}
+
+.dsg-pick.cpu {
+  color: var(--opp-glow);
+  border-color: var(--opp-line);
+}
+
+@media (max-width: 520px) {
+  .ds-grid {
+    gap: 6px;
+  }
+
+  .dsg-item .art-nm {
+    padding: 3px 5px 5px;
+    font-size: 9.5px;
+  }
+
+  .dsg-pick {
+    font-size: 8.5px;
+    padding: 0 5px;
+  }
+
+  /* 狭幅ではタイル上端に TIER と選択チップが並ばない。選択チップを優先して TIER を隠す */
+  .dsg-item:has(.dsg-picks) .dsc-tier {
+    display: none;
+  }
+
+  .dsc-tier {
+    font-size: 8.5px;
+    padding: 1px 5px;
+  }
 }
 
 /* --- 中央デッキの操作ピル（説明テキストは出さない） --- */
@@ -6508,6 +6632,11 @@ button.hb-chip:not(.zero):not([disabled]):hover {
 
   .dsm-actions {
     min-height: 30px;
+  }
+
+  .ds-grid {
+    min-height: 92px;
+    gap: 6px;
   }
 
   .dsm-pill {
