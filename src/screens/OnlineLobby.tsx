@@ -11,7 +11,7 @@ import { startReplay } from '../net/replay';
 import { seatOf, type DeckPayload, type RoomConfig } from '../net/protocol';
 import { IMG } from '../engine/img';
 import { Icon } from '../components/ui/Icon';
-import { DeckCarousel } from '../components/deck/DeckCarousel';
+import { DeckGrid } from '../components/deck/DeckGrid';
 
 const panel: React.CSSProperties = {
   background: 'linear-gradient(180deg, var(--ocean-800), var(--ocean-850))',
@@ -332,9 +332,9 @@ export default function OnlineLobby() {
                 </div>
               </div>
             ) : (
-              // CPU対戦と同じリーダーカルーセルで選ぶ（中央のデッキ＝選択）
+              // CPU対戦と同じリーダーグリッドで選ぶ（横4列・タップ＝選択）
               <div className="deckpick-embed">
-                <DeckCarousel
+                <DeckGrid
                   customList={decks.custom}
                   presetList={decks.presets}
                   selectedId={deckId}

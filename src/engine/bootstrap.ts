@@ -40,7 +40,7 @@ const EXPORTS = [
   'G', 'C', 'DECKS',
   'startGame', 'beginTurn', 'endTurn', 'uiEndTurn',
   'declareAttack', 'summon', 'koCard', 'removeCharTo',
-  'doOp', 'runFx', 'power', 'opp', 'effCost', 'checkCond',
+  'doOp', 'runFx', 'power', 'opp', 'effCost', 'boardCost', 'checkCond',
   'legalTargets', 'canCardAttack', 'canAttackThisTurn',
   'leaderActivate', 'activateAbility',
   'tryPlayHand', 'handPlayable', 'attachDonFlow', 'attachDon',

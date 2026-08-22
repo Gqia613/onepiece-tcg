@@ -1562,6 +1562,39 @@ function setupG(leaderNo){G.active='me';G.turnSeq=5;G.winner=null;const mkP=(ln,
       const P2=G.players.me; P2.leader.buffs=[]; P2.leader.base=Object.assign({},P2.leader.base,{color:['赤','緑']});
       await runFx(C['OP17-005'].fx.onPlay,{side:'me',self:mkc('OP17-005')});
       ok(power(P2.leader)===5000, '例36p: 多色リーダーには効かない'); }
+
+    /* ===== テキスト由来キーワードの誤派生（実対戦報告 2026-08-23）===== */
+    // 例37a OP16-003:「自分のリーダーは【ダブルアタック】を得て、パワー+2000」＝リーダーに付く。キャラ自身は持たない
+    //   （innateKw の除外が「を得る」だけで「を得て」を取りこぼしていた）
+    setupG('OP16-001'); { const P=G.players.me; const ng=mkc('OP16-003'); P.chars=[ng];
+      ok(ng.base.doubleAttack!==true && !hasKw(ng,'doubleAttack'), '例37a: OP16-003自身は【ダブルアタック】を持たない');
+      ok(hasKw(P.leader,'doubleAttack') && power(P.leader)===7000, '例37a: 自分のターン中はリーダーが【ダブルアタック】＋2000');
+      G.active='cpu'; ok(!hasKw(P.leader,'doubleAttack'), '例37a: 相手のターン中はリーダーも持たない'); G.active='me'; }
+    // 例37b 同型: 他者/リーダーへの付与文でキャラ自身にキーワードが付かない
+    ok(C['OP03-016'].doubleAttack!==true, '例37b: OP03-016(炎帝＝リーダーへ付与するイベント)は自身に【ダブルアタック】を持たない');
+    ok(C['OP04-118'].rush!==true, '例37b: OP04-118ビビ「このキャラ以外の〜は【速攻】を得る」は自身に【速攻】を持たない');
+    ok(C['EB04-007'].rushChar!==true, '例37b: EB04-007（起動メインで得る【速攻：キャラ】）は常時保持しない');
+    ok(C['OP03-004'].rush!==true && C['OP03-004'].rushChar!==true, '例37b: OP03-004クリエルは無条件【速攻】を持たない（ドン‼×1時のみ・リーダーへは登場ターン不可）');
+    // 逆に「このキャラは…【KW】を得て」の無条件自己付与は従来どおり保持する
+    ok(C['ST35-004'].blocker===true, '例37b: ST35-004コアラの無条件【ブロッカー】は保持');
+    ok(C['OP15-071'].doubleAttack===true, '例37b: OP15-071ホーリー（自身を含む付与）は保持');
+    // 例37c 【登場時】が全てcond包み・全不成立なら「登場時効果」カットインを出さない（発動したように見えるのを防ぐ）
+    //   OP17-090フランキー＝コスト12以上のキャラがいない盤面
+    setupG('OP17-079'); { const P=G.players.me, O=G.players.cpu; P.isCPU=true;
+      const oc=mkc('OP17-012'); oc.owner='cpu'; O.chars=[oc]; P.deck=[]; P.trash=[];
+      const notes=[]; const _fn=fxNote; fxNote=function(sd,label,name){notes.push(label+':'+name);return Promise.resolve();};
+      await summon('me', mkc('OP17-090'), false, 'hand');
+      fxNote=_fn;
+      ok(!notes.some(n=>n.indexOf('登場時効果')===0), '例37c: 条件不成立なら【登場時】カットインを出さない');
+      ok(O.chars.length===1, '例37c: 効果自体も発動しない'); }
+    setupG('OP17-079'); { const P=G.players.me, O=G.players.cpu; P.isCPU=true;
+      P.chars=[mkc('OP17-119')]; // ロキ＝コスト6+12=18
+      const oc=mkc('OP17-012'); oc.owner='cpu'; O.chars=[oc]; O.trash=[]; P.deck=[]; P.trash=[];
+      const notes=[]; const _fn=fxNote; fxNote=function(sd,label,name){notes.push(label+':'+name);return Promise.resolve();};
+      await summon('me', mkc('OP17-090'), false, 'hand');
+      fxNote=_fn;
+      ok(notes.some(n=>n.indexOf('登場時効果')===0), '例37c: 条件成立ならカットインを出す');
+      ok(O.chars.length===0, '例37c: 条件成立なら相手コスト2以下をKO'); }
   }catch(e){ console.log('EXCEPTION:', e.message); fail++; }
   console.log('ユニットテスト: pass='+pass+' fail='+fail);
   process.exit(fail?1:0);

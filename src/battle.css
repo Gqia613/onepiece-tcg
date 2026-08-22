@@ -1294,6 +1294,24 @@ button {
   box-shadow: 0 1px 4px #000a, 0 0 8px -2px var(--gold)
 }
 
+/* 盤面キャラの実効コストバッジ（印刷コストと違うときだけ表示＝「このキャラのコスト+N」を可視化） */
+.card .bcostchip {
+  position: absolute;
+  left: 2px;
+  top: 2px;
+  font-family: var(--font-num);
+  font-weight: 700;
+  font-size: 11px;
+  color: #f3f6ff;
+  background: linear-gradient(180deg, #3d5fa8, #24386b);
+  border: 1px solid #7f9fe0;
+  border-radius: 999px;
+  padding: 0 5px;
+  min-width: 16px;
+  text-align: center;
+  box-shadow: 0 1px 4px #000a
+}
+
 /* 手札のコストバッジ（ok=出せる / disc=コスト軽減中） */
 .card .costchip {
   position: absolute;
@@ -5928,16 +5946,6 @@ button.hb-chip:not(.zero):not([disabled]):hover {
   color: var(--gold-soft);
 }
 
-/* --- リーダーカルーセル（残り高さにフィット・中央=選択） --- */
-.ds-rail-wrap {
-  position: relative;
-  width: 100%;
-  max-width: 1000px;
-  /* basis 0 ＝ 他要素が収まらない分を最優先で縮んで吸収（下のバーを絶対に押し出さない） */
-  flex: 1 1 0;
-  min-height: 96px;
-}
-
 /* オンライン対戦ロビー: #screen が overflow:hidden の固定枠なので、ロビー自身を縦スクロール
    コンテナにする（戦績など可変・無制限の内容を含むため固定1画面に収められない＝スクロールが正解）。
    マイデッキ画面(.select-wrap)と同じ方式。 */
@@ -6102,9 +6110,14 @@ button.hb-chip:not(.zero):not([disabled]):hover {
   min-height: 128px;
 }
 
-/* 低背端末(SE級)ではカードがもっと縮めるように（.dsc-item の min-height 128px がフィットを妨げる）。
+/* ロビー埋め込み時のグリッド: 部屋の幅(560px)いっぱいに横4列 */
+.deckpick-embed .ds-grid {
+  flex: 1 1 auto;
+}
+
+/* 低背端末(SE級)ではグリッドがもっと縮めるように（.ds-grid の min-height がフィットを妨げる）。
    背の高い端末では flex で十分な高さが与えられるため見た目は変わらない。 */
-.online-wrap.fit .dsc-item {
+.online-wrap.fit .ds-grid {
   min-height: 92px;
 }
 
@@ -6175,72 +6188,7 @@ button.hb-chip:not(.zero):not([disabled]):hover {
   color: var(--muted);
 }
 
-.deckpick-embed .ds-rail-wrap {
-  flex: 1 1 auto;
-}
-
-/* 中央背後のオーラ（アクティブデッキの色） */
-.ds-rail-wrap::before {
-  content: "";
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  width: min(70vw, 420px);
-  height: 82%;
-  transform: translate(-50%, -50%);
-  background: radial-gradient(ellipse at center, color-mix(in srgb, var(--aura, #3ec9ff) 26%, transparent) 0%, transparent 68%);
-  pointer-events: none;
-  transition: background .3s;
-}
-
-.ds-rail {
-  height: 100%;
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  overflow-x: auto;
-  overflow-y: hidden;
-  scroll-snap-type: x mandatory;
-  padding: 6px 0;
-  scrollbar-width: none;
-  -webkit-overflow-scrolling: touch;
-}
-
-.ds-rail::-webkit-scrollbar {
-  display: none;
-}
-
-.dsc-item {
-  position: relative;
-  flex: 0 0 auto;
-  /* 高さ基準（残り高さにフィット）。幅は 5:7 比で自動 */
-  height: calc(100% - 26px);
-  max-height: 300px;
-  min-height: 128px;
-  aspect-ratio: 5 / 7;
-  scroll-snap-align: center;
-  cursor: pointer;
-  transform: scale(.86);
-  filter: brightness(.5) saturate(.75);
-  transition: transform .28s cubic-bezier(.2, .8, .3, 1.1), filter .28s;
-}
-
-/* 端のカードも中央へ来られるようにする余白（幅が動的なので margin 方式） */
-.dsc-item:first-child {
-  margin-left: 50%;
-}
-
-.dsc-item:last-child {
-  margin-right: 50%;
-}
-
-.dsc-item.on {
-  transform: scale(1);
-  filter: none;
-  z-index: 2;
-}
-
-.dsc-item .art,
+/* --- デッキタイルの見た目（デッキ選択グリッド .ds-grid の1枚。CPU対戦/オンライン共通） --- */
 .dsg-item .art {
   width: 100%;
   height: 100%;
@@ -6254,7 +6202,6 @@ button.hb-chip:not(.zero):not([disabled]):hover {
   transition: border-color .25s, box-shadow .25s;
 }
 
-.dsc-item.on .art,
 .dsg-item.on .art {
   /* color-mix 非対応環境向けフォールバック → 対応環境では下の宣言が上書き */
   border-color: var(--aura, #3ec9ff);
@@ -6265,14 +6212,12 @@ button.hb-chip:not(.zero):not([disabled]):hover {
     0 0 44px -6px var(--aura, #3ec9ff);
 }
 
-.dsc-item .scrim,
 .dsg-item .scrim {
   position: absolute;
   inset: 0;
   background: linear-gradient(180deg, transparent 52%, rgba(2, 6, 13, .93) 94%);
 }
 
-.dsc-item .art-nm,
 .dsg-item .art-nm {
   position: relative;
   z-index: 3;
@@ -6299,40 +6244,6 @@ button.hb-chip:not(.zero):not([disabled]):hover {
   color: var(--self-glow);
   padding: 1px 7px;
   border-radius: 999px;
-}
-
-/* PC用の前後送り矢印（タッチはスワイプが主導線） */
-.ds-arrow {
-  position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
-  z-index: 6;
-  width: 38px;
-  height: 54px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0;
-  line-height: 0;
-  color: var(--ink);
-  background: rgba(4, 12, 22, .72);
-  border: 1px solid var(--surface-edge);
-  border-radius: 12px;
-  cursor: pointer;
-  transition: .15s;
-}
-
-.ds-arrow:hover {
-  border-color: var(--gold);
-  color: var(--gold-soft);
-}
-
-.ds-arrow.left {
-  left: 4px;
-}
-
-.ds-arrow.right {
-  right: 4px;
 }
 
 /* --- リーダーグリッド（横4列・残り高さにフィットして"この枠だけ"縦スクロール・タップ=選択） --- */

@@ -523,12 +523,14 @@
             cost: cd.cost != null ? cd.cost : 0, power: cd.power || 0, counter: cd.counter || 0,
             text: t, dataOnly: true
           };
-          // テキスト由来のキーワード派生。ただし「他キャラへ付与(◯◯は【KW】を得る)」「相手の【KW】を持つ〜(参照)」は
+          // テキスト由来のキーワード派生。ただし「他キャラ/リーダーへ付与(◯◯は【KW】を得る/得て)」「相手の【KW】を持つ〜(参照)」は
           // 自身のキーワードではないので除外する（例 OP16-048バギー=「インペルダウンの囚人」に【ブロッカー】を付与するだけでバギー自身は非ブロッカー）。
-          // 自身のキーワード = 標準トークン(直後が を得る/を与える/を持つ でない) または 「このキャラ…(：。を跨がず)…【KW】を得る」(条件付き自己付与は現状維持)。
+          // 自身のキーワード = 標準トークン(直後が を得る/得て/得た/を与える/を持つ でない) または 「このキャラ…(：。を跨がず)…【KW】を得る/得て」。
+          // ★「を得て」の除外漏れで OP16-003「自分のリーダーは【ダブルアタック】を得て」がキャラ自身に付いていた（実対戦報告 2026-08-23）。
+          // ★「このキャラ以外の〜は【KW】を得る」(OP04-118ビビ)は他者への付与＝自身に付けない。
           const innateKw = (jp) =>
-            new RegExp('【' + jp + '】(?!を得る|を与える|を持つ|を発動)').test(t) ||
-            new RegExp('このキャラ[^。：]*【' + jp + '】を得る').test(t);
+            new RegExp('【' + jp + '】(?!を得る|を得て|を得た|を与える|を持つ|を発動)').test(t) ||
+            new RegExp('このキャラ(?!以外)[^。：]*【' + jp + '】を得(る|て)').test(t);
           if (innateKw('ブロッカー')) base.blocker = true;
           if (innateKw('速攻')) base.rush = true;
           if (innateKw('速攻：キャラ')) base.rushChar = true; // 登場ターンにキャラへのみアタック可
@@ -547,13 +549,16 @@
           if (fxe.condRush && base.condRush == null) base.condRush = fxe.condRush; // 条件付き【速攻】
           if (fxe.condBlocker && base.condBlocker == null) { base.condBlocker = fxe.condBlocker; base.blocker = false; } // 条件付き【ブロッカー】（テキスト由来の無条件blockerを打ち消す）
           if (fxe.condRush) base.rush = false;  // 条件付き【速攻】も同様にテキスト由来の無条件rushを打ち消す
-          if (fxe.static) for (const o of fxe.static) { if (o.op === 'staticKeyword' && o.cond && base[o.kw]) base[o.kw] = false; } // 条件付きキーワード(staticKeyword cond)はテキスト由来の無条件キーワードを打ち消す（hasKwがcond評価。OP13-009ダダン等）
+          if (fxe.static) for (const o of fxe.static) {
+            if (o.op === 'staticKeyword' && o.cond && base[o.kw]) base[o.kw] = false; // 条件付きキーワード(staticKeyword cond)はテキスト由来の無条件キーワードを打ち消す（hasKwがcond評価。OP13-009ダダン等）
+            if (o.op === 'staticKeyword' && o.kw === 'rushChar' && base.rush) base.rush = false; // 制限形【速攻：キャラ】を宣言したカードは、テキスト由来の無条件【速攻】を持たない（OP03-004クリエル＝「登場したターンはリーダーにアタックできない」が無効化されていた）
+          }
           const timed = {}; for (const k in fxe) if (k !== 'costMod' && k !== 'condRush' && k !== 'condBlocker') timed[k] = fxe[k];
           if (Object.keys(timed).length) base.fx = timed;
           // ★テキスト由来キーワードの誤派生打ち消し: 「（コストを払い）このキャラは…【KW】を得る」型はfxのgiveKeywordが担うため、
           //   innateKwの第2分岐（このキャラ…を得る）が立てた常時フラグを取り消す（EB04-061ブロッカー/P-005バニッシュ）。
           //   ※印刷キーワード＋同種の効果付与を両方持つ稀なカードは個別対応（現状なし）。
-          if (!wasDef && base.fx) { const fj = JSON.stringify(base.fx); for (const [flag, kwn] of [['blocker', 'blocker'], ['rush', 'rush'], ['banish', 'banish'], ['doubleAttack', 'doubleAttack']]) { if (base[flag] && fj.includes('"op":"giveKeyword"') && fj.includes('"kw":"' + kwn + '"') && fj.includes('"target":"self"')) base[flag] = false; } }
+          if (!wasDef && base.fx) { const fj = JSON.stringify(base.fx); for (const [flag, kwn] of [['blocker', 'blocker'], ['rush', 'rush'], ['rushChar', 'rushChar'], ['banish', 'banish'], ['doubleAttack', 'doubleAttack']]) { if (base[flag] && fj.includes('"op":"giveKeyword"') && fj.includes('"kw":"' + kwn + '"') && fj.includes('"target":"self"')) base[flag] = false; } }
           delete base.dataOnly;
         }
         // 属性(斬/打/射/特/知)を付与。パラレル(_rN)は本体noの属性を共有。

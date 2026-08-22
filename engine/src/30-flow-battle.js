@@ -29,7 +29,15 @@
       if (source === 'trash') checkReviveTrigger(side, card);
       // 【登場時】効果の無効化（OP09-081ティーチL: 自分の登場時は無効／起動メインで相手の登場時を一定期間無効）
       const onPlayNeg = (() => { const L = P.leader; if (L && !isNegated(L) && L.base.fx && L.base.fx.static && L.base.fx.static.some(o => o.op === 'negateOwnOnPlay')) return true; if ((P._onPlayNegatedUntil || 0) >= G.turnSeq) return true; return false; })();
-      const hasEnter = !noEnter && !onPlayNeg && card.base.fx && card.base.fx.onPlay && !isNegated(card);
+      // ★【登場時】が「全てcond包み・全check不成立」なら発動機会そのものが無い＝カットインを出さない
+      //   （出すと『条件を満たしていないのに効果が発動した』ように見える。onOppAttack の condDead と同じ扱い。
+      //    実対戦報告 2026-08-23: OP17の黒エルバフ「コスト12以上のキャラがいる場合」で多発）
+      const onPlayDead = (() => {
+        const ops = card.base.fx && card.base.fx.onPlay; if (!ops || !ops.length) return false;
+        if (!ops.every(o => o.op === 'cond' && o.check && !o.else)) return false;
+        return !ops.some(o => checkCond(o.check, side, card));
+      })();
+      const hasEnter = !noEnter && !onPlayNeg && !onPlayDead && card.base.fx && card.base.fx.onPlay && !isNegated(card);
       if (onPlayNeg && card.base.fx && card.base.fx.onPlay) flog(side, `「${card.base.name}」の登場時効果は無効になった`);
       if (hasEnter) await fxNote(side, '登場時効果', card.base.name);
       else if (G.players[side].isCPU) await fxNote(side, '登場', card.base.name);

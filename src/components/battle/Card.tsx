@@ -161,6 +161,12 @@ export function Card({ card, ctx }: { card: TCard; ctx: CardCtx }) {
           </div>
         )}
         {showPow ? <div className="cnr-power">{safePow(engine, card)}</div> : null}
+        {/* 盤面のコスト表示は「印刷コストと実効コストが違うときだけ」出す。
+            OP17のエルバフ勢は「このキャラのコスト+12」で盤面コストが跳ね上がるが、
+            盤面にはコストが出ないため『コスト12以上のキャラがいないのに条件が満たされる』ように見えていた（実対戦報告 2026-08-23）。 */}
+        {ctx !== 'hand' && b.type === 'CHAR' && boardCostShift(engine, card) !== null ? (
+          <div className="bcostchip" title="このキャラの現在のコスト（効果による増減込み）">{boardCostShift(engine, card)}</div>
+        ) : null}
         {card.attachedDon > 0 ? <div className="donbadge">+{card.attachedDon}</div> : null}
         {kwChips.length ? (
           <div className="kw">{kwChips.map((k, i) => <span key={i}>{k}</span>)}</div>
@@ -186,4 +192,14 @@ function safePow(engine: any, card: TCard): number {
 function safeEffCost(engine: any, card: TCard): number {
   try { const v = engine.effCost(card.owner, card); return typeof v === 'number' ? v : (card.base.cost || 0); }
   catch { return card.base.cost || 0; }
+}
+
+// 盤面の実効コスト（staticCost/addCostBuff 込み）。印刷コストと同じなら null＝バッジを出さない。
+function boardCostShift(engine: any, card: TCard): number | null {
+  try {
+    if (typeof engine.boardCost !== 'function') return null;
+    const v = engine.boardCost(card);
+    if (typeof v !== 'number') return null;
+    return v === (card.base.cost || 0) ? null : v;
+  } catch { return null; }
 }
