@@ -17,6 +17,28 @@ const COLOR_HEX: Record<string, string> = {
 const LEADER_COLORS = ['赤', '緑', '青', '紫', '黒', '黄'];
 const TYPE_JA: Record<string, string> = { CHAR: 'キャラ', EVENT: 'イベント', STAGE: 'ステージ', LEADER: 'リーダー' };
 const POOL_CAP = 300;
+
+// 弾（セット）の並び順＝公式の商品カテゴリ順で ブースターパック(OP) を先頭に、各カテゴリ内は新しい弾が上（降順）。
+// 例: OP17 → … → OP01 → EB04 → … → PRB02 → PRB01 → ST36 → … → ST01 → P
+// （番号の接頭辞だけで決まる。official-full.json の series と同じ区分: 5501=OP/5502=EB/5503=PRB/5500=ST/5509=P）
+const PACK_GROUPS: Array<{ key: string; label: string; test: (p: string) => boolean }> = [
+  { key: 'OP', label: 'ブースターパック', test: (p) => /^OP\d+$/.test(p) },
+  { key: 'EB', label: 'エクストラブースター', test: (p) => /^EB\d+$/.test(p) },
+  { key: 'PRB', label: 'プレミアムブースター', test: (p) => /^PRB\d+$/.test(p) },
+  { key: 'ST', label: 'スターターデッキ', test: (p) => /^ST\d+$/.test(p) },
+  { key: 'P', label: 'プロモ', test: (p) => p === 'P' },
+];
+// 小さいほど先頭。未知の弾コード（新カテゴリ）は末尾にまとめる＝新弾追加で並びが壊れない。
+const packRank = (p: string) => {
+  const gi = PACK_GROUPS.findIndex((g) => g.test(p));
+  return (gi < 0 ? PACK_GROUPS.length : gi) * 1000 - (parseInt((p.match(/\d+/) || ['0'])[0], 10) || 0);
+};
+const byPackNew = (a: string, b: string) => packRank(a) - packRank(b);
+// カード番号の新しい順: 弾が新しい方が先 → 同じ弾なら公式リストの番号順（001, 002, …）
+const byNew = (x: string, y: string) =>
+  packRank(x.split('-')[0]) - packRank(y.split('-')[0])
+  || (parseInt(x.split('-')[1] || '0', 10) || 0) - (parseInt(y.split('-')[1] || '0', 10) || 0)
+  || x.localeCompare(y, undefined, { numeric: true });
 type SortKey = 'new' | 'cost' | 'power' | 'counter';
 const SORTS: Array<[SortKey, string]> = [['new', '新しい順'], ['cost', 'コスト順'], ['power', 'パワー順'], ['counter', 'カウンター順']];
 
@@ -87,7 +109,7 @@ export default function DeckBuilder() {
 
   // リーダーが存在する弾一覧（リーダー絞り込み用）
   const leaderPacks = useMemo(() => {
-    return [...new Set(Object.keys(C).filter((no) => C[no].leader).flatMap(setsOf))].sort();
+    return [...new Set(Object.keys(C).filter((no) => C[no].leader).flatMap(setsOf))].sort(byPackNew);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -98,7 +120,7 @@ export default function DeckBuilder() {
     if (leaderPack !== 'all') ls = ls.filter((no) => setsOf(no).includes(leaderPack));
     const q = leaderSearch.trim().toLowerCase();
     if (q) ls = ls.filter((no) => hay(no).includes(q));
-    ls.sort((x, y) => y.localeCompare(x, undefined, { numeric: true }));
+    ls.sort(byNew); // 新弾（OP17…）が先頭・弾内は公式の番号順
     return ls;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [leaderSearch, leaderColorSel, leaderPack]);
@@ -106,7 +128,7 @@ export default function DeckBuilder() {
   // 使える弾（セット）
   const packs = useMemo(() => {
     if (!leaderNo) return [];
-    return [...new Set(Object.keys(C).filter((no) => cardLegalForLeader(no, leaderNo) && !/_r\d+$/.test(no)).flatMap(setsOf))].sort();
+    return [...new Set(Object.keys(C).filter((no) => cardLegalForLeader(no, leaderNo) && !/_r\d+$/.test(no)).flatMap(setsOf))].sort(byPackNew);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [leaderNo]);
 
@@ -120,11 +142,10 @@ export default function DeckBuilder() {
     if (packFilter !== 'all') cards = cards.filter((no) => setsOf(no).includes(packFilter));
     const q = search.trim().toLowerCase();
     if (q) cards = cards.filter((no) => hay(no).includes(q));
-    const byNo = (x: string, y: string) => y.localeCompare(x, undefined, { numeric: true });
-    if (sortKey === 'cost') cards.sort((x, y) => (C[x].cost ?? 99) - (C[y].cost ?? 99) || (C[y].power || 0) - (C[x].power || 0) || byNo(x, y));
-    else if (sortKey === 'power') cards.sort((x, y) => (C[y].power || 0) - (C[x].power || 0) || byNo(x, y));
-    else if (sortKey === 'counter') cards.sort((x, y) => (C[y].counter || 0) - (C[x].counter || 0) || byNo(x, y));
-    else cards.sort(byNo);
+    if (sortKey === 'cost') cards.sort((x, y) => (C[x].cost ?? 99) - (C[y].cost ?? 99) || (C[y].power || 0) - (C[x].power || 0) || byNew(x, y));
+    else if (sortKey === 'power') cards.sort((x, y) => (C[y].power || 0) - (C[x].power || 0) || byNew(x, y));
+    else if (sortKey === 'counter') cards.sort((x, y) => (C[y].counter || 0) - (C[x].counter || 0) || byNew(x, y));
+    else cards.sort(byNew);
     return cards;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [leaderNo, typeFilter, colorFilter, packFilter, search, sortKey]);
@@ -177,6 +198,24 @@ export default function DeckBuilder() {
     document.body.appendChild(a); a.click(); a.remove();
     setTimeout(() => URL.revokeObjectURL(url), 1500);
   }
+
+  // 弾セレクトの中身: カテゴリ見出し付き（ブースターパックが一番上）。list は byPackNew 済み＝各群も新しい弾が上。
+  const packOptions = (list: string[]) => {
+    const rest = list.filter((p) => !PACK_GROUPS.some((g) => g.test(p)));
+    return (
+      <>
+        {PACK_GROUPS.map((g) => {
+          const items = list.filter((p) => g.test(p));
+          return items.length ? (
+            <optgroup label={g.label} key={g.key}>
+              {items.map((p) => <option value={p} key={p}>{p}</option>)}
+            </optgroup>
+          ) : null;
+        })}
+        {rest.map((p) => <option value={p} key={p}>{p}</option>)}
+      </>
+    );
+  };
 
   const cols = leaderColors(leaderNo);
   const deckRows = Object.entries(list).filter((e) => e[1] > 0)
@@ -295,7 +334,7 @@ export default function DeckBuilder() {
             })}
             <select className="bd-fsel" value={leaderPack} onChange={(e) => setLeaderPack(e.target.value)}>
               <option value="all">全弾</option>
-              {leaderPacks.map((p) => <option value={p} key={p}>{p}</option>)}
+              {packOptions(leaderPacks)}
             </select>
           </div>
           <div className="bd-lead-row" id="bd-lead-row">
@@ -329,7 +368,7 @@ export default function DeckBuilder() {
             )) : null}
             <select className="bd-fsel" value={packFilter} onChange={(e) => setPackFilter(e.target.value)}>
               <option value="all">全弾</option>
-              {packs.map((p) => <option value={p} key={p}>{p}</option>)}
+              {packOptions(packs)}
             </select>
             <select className="bd-fsel" value={sortKey} onChange={(e) => setSortKey(e.target.value as SortKey)}>
               {SORTS.map(([k, label]) => <option value={k} key={k}>{label}</option>)}

@@ -152,4 +152,45 @@ describe('DeckBuilder', () => {
     expect(document.querySelector('.bd-save')?.textContent).toContain('保存');
     act(() => { useEngineStore.setState({ builderDeck: null }); });
   });
+
+  // 表示順の回帰: リーダー/プール/弾セレクトはすべて「新弾順」（ブースターパックが先頭・弾は降順）。
+  // 旧実装は番号の逆順ソートだったため ST36→…→P→OP17 の順になり、最新弾のリーダーが埋もれていた。
+  it('orders leaders, pool and pack select by newest set (booster first)', () => {
+    // 画面と同じ順位付け（src/screens/DeckBuilder.tsx の packRank と対）
+    const GROUPS = [/^OP\d+$/, /^EB\d+$/, /^PRB\d+$/, /^ST\d+$/, /^P$/];
+    const rank = (p: string) => {
+      const gi = GROUPS.findIndex((re) => re.test(p));
+      return (gi < 0 ? GROUPS.length : gi) * 1000 - (parseInt((p.match(/\d+/) || ['0'])[0], 10) || 0);
+    };
+    const setOfEl = (el: Element) => {
+      const src = el.querySelector('img.bd-img')?.getAttribute('src') || '';
+      return (src.match(/card\/([A-Z]+\d*)-/) || ['', ''])[1];
+    };
+
+    render(<DeckBuilder />);
+
+    // ① 弾セレクト: 最初の群が「ブースターパック」・その先頭が最新の OP 弾・プロモが最後
+    const leaderSel = document.querySelector('.bd-fsel') as HTMLSelectElement;
+    const groups = [...leaderSel.querySelectorAll('optgroup')].map((g) => g.label);
+    expect(groups[0]).toBe('ブースターパック');
+    expect(groups).toContain('スターターデッキ');
+    const vals = [...leaderSel.options].map((o) => o.value).filter((v) => v !== 'all');
+    expect(/^OP\d+$/.test(vals[0])).toBe(true);
+    const ops = vals.filter((v) => /^OP\d+$/.test(v));
+    expect(vals[0]).toBe([...ops].sort((a, b) => b.localeCompare(a, undefined, { numeric: true }))[0]);
+    expect(vals[vals.length - 1]).toBe('P');
+    // 並びが順位関数どおり（単調非減少）
+    expect(vals.map(rank)).toEqual([...vals.map(rank)].sort((a, b) => a - b));
+
+    // ② リーダー一覧の先頭は最新ブースターのリーダー
+    const leaderSets = [...document.querySelectorAll('.bd-leader')].map(setOfEl);
+    expect(leaderSets[0]).toBe(vals[0]);
+    expect(leaderSets.map(rank)).toEqual([...leaderSets.map(rank)].sort((a, b) => a - b));
+
+    // ③ プール（既定=新しい順）も新弾順
+    act(() => { fireEvent.click(document.querySelectorAll('.bd-leader')[0]); });
+    const poolSets = [...document.querySelectorAll('.bd-tile')].map(setOfEl);
+    expect(poolSets.length).toBeGreaterThan(10);
+    expect(poolSets.map(rank)).toEqual([...poolSets.map(rank)].sort((a, b) => a - b));
+  });
 });
