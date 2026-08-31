@@ -1,5 +1,7 @@
 // ホーム（タイトル/ハブ画面）。ログイン後の玄関口として BATTLE / MY DECKS / BUILDER への導線を
 // 「メニュー自体をカード（縦長パネル＋漢字ウォーターマーク＋ホロ光沢）」として並べる。
+// 並び順: CPU対戦 → オンライン対戦 → マイデッキ → デッキ作成 → 戦績
+// （デッキ系＝マイデッキとデッキ作成を隣接させ、参照系の戦績を最後に置く）。
 // タイトルは公式「ONE PIECE CARD GAME」ロゴ（白）＋背後にリーダーカード実物が浮遊する演出。
 // 視覚言語は battle.css の "ABYSS NEON"（deep ocean × gold）に従い、CSS は styles.css の .home-* が所有。
 import { useNavigate } from 'react-router-dom';
@@ -80,21 +82,21 @@ export default function Home() {
           <span className="hc-go"><Icon.chevronRight size={16} /></span>
         </button>
 
-        <button className="home-card hc-stats" onClick={() => navigate('/stats')}>
-          <img className="hc-chara" aria-hidden="true" src={IMG('OP02-001')} referrerPolicy="no-referrer" decoding="async" alt=""
-            onError={(e) => { e.currentTarget.style.display = 'none'; }} />
-          <span className="hc-icon"><Icon.award size={28} /></span>
-          <span className="hc-en">戦績</span>
-          <span className="hc-desc">グループ内のリーダーTier表・相性表・リプレイ再生。</span>
-          <span className="hc-go"><Icon.chevronRight size={16} /></span>
-        </button>
-
         <button className="home-card hc-builder" onClick={openBuilder}>
           <img className="hc-chara" aria-hidden="true" src={IMG('OP01-013')} referrerPolicy="no-referrer" decoding="async" alt=""
             onError={(e) => { e.currentTarget.style.display = 'none'; }} />
           <span className="hc-icon"><Icon.tool size={28} /></span>
           <span className="hc-en">デッキ作成</span>
           <span className="hc-desc">全カードプールから50枚を構築してクラウドに保存。</span>
+          <span className="hc-go"><Icon.chevronRight size={16} /></span>
+        </button>
+
+        <button className="home-card hc-stats" onClick={() => navigate('/stats')}>
+          <img className="hc-chara" aria-hidden="true" src={IMG('OP02-001')} referrerPolicy="no-referrer" decoding="async" alt=""
+            onError={(e) => { e.currentTarget.style.display = 'none'; }} />
+          <span className="hc-icon"><Icon.award size={28} /></span>
+          <span className="hc-en">戦績</span>
+          <span className="hc-desc">グループ内のリーダーTier表・相性表・リプレイ再生。</span>
           <span className="hc-go"><Icon.chevronRight size={16} /></span>
         </button>
       </nav>

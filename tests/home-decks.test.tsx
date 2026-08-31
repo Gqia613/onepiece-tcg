@@ -26,7 +26,7 @@ const render = (ui: ReactElement, path = '/') =>
   rtlRender(<MemoryRouter initialEntries={[path]}>{ui}</MemoryRouter>);
 
 describe('Home（タイトル/ハブ画面）', () => {
-  it('タイトルと5つのメニューカード（対戦/オンライン/マイデッキ/戦績/作成）が出る', () => {
+  it('タイトルと5つのメニューカード（対戦/オンライン/マイデッキ/作成/戦績）が出る', () => {
     render(<Home />);
     // タイトルは公式「ONE PIECE CARD GAME」ロゴ画像（白）に変更
     expect(document.querySelector('img.home-logo')).toBeTruthy();
@@ -37,6 +37,9 @@ describe('Home（タイトル/ハブ画面）', () => {
     expect(document.body.textContent).toContain('マイデッキ');
     expect(document.body.textContent).toContain('戦績');
     expect(document.body.textContent).toContain('デッキ作成');
+    // 並び順: デッキ系（マイデッキ→デッキ作成）を隣接させ、戦績は最後
+    const order = [...document.querySelectorAll('.home-card .hc-en')].map((e) => e.textContent);
+    expect(order).toEqual(['CPU対戦', 'オンライン対戦', 'マイデッキ', 'デッキ作成', '戦績']);
   });
 
   it('対戦中は復帰バナーと「対戦に戻る」表示になる', () => {
