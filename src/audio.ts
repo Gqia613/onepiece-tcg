@@ -87,8 +87,33 @@ function startKeepAlive() {
   } catch { keepAlive = null; }
 }
 
+function stopKeepAlive() {
+  if (!keepAlive) return;
+  try { keepAlive.stop(); } catch { /* ignore */ }
+  try { keepAlive.disconnect(); } catch { /* ignore */ }
+  keepAlive = null;
+}
+
+// 効果音もBGMも OFF なら「鳴らすものが何も無い」＝オーディオセッション自体を手放す。
+// （無音キープアライブを鳴らし続けると iOS では再生中扱いのままになり、他アプリの音を
+//   ダッキングしたり“バックグラウンドで再生されている”ように見える）。
+function allSilent() { return muted && !bgmEnabled; }
+function syncSession() {
+  const c = ctx;
+  if (!c) return;
+  if (allSilent()) {
+    stopKeepAlive();
+    if (c.state === 'running') { try { c.suspend(); } catch { /* ignore */ } }
+  } else if (unlocked) {
+    if (c.state !== 'running') { try { c.resume(); } catch { /* ignore */ } }
+    startKeepAlive();
+  }
+}
+
 export function unlockAudio() {
   unlocked = true;
+  // 全OFF中はセッションを起こさない（AudioContextも作らない）。ONに戻した時に作り直す。
+  if (allSilent()) return;
   const c = ac();
   if (c && c.state !== 'running') { try { c.resume(); } catch { /* ignore */ } }
   ensureBgmEl(); // 最初のユーザー操作でBGM要素も準備（自動再生アンロック）
@@ -98,6 +123,9 @@ export function unlockAudio() {
 
 export function playSfx(name: string) {
   if (!unlocked || muted) return;
+  // タブ/アプリが非表示の間は鳴らさない。suspend中の AudioContext に積むと、
+  // 復帰時に currentTime が動き出した瞬間まとめて発音される（＝バックグラウンド再生に聞こえる）。
+  if (typeof document !== 'undefined' && document.hidden) return;
   // suspended/interrupted なら復帰を試みる（保険。iOSでは操作なしだと効かないことがあるため
   //   本命は startKeepAlive によるセッション維持）。
   const c = ac();
@@ -112,7 +140,13 @@ export function buzz(pattern: number | number[]) {
   try { (navigator as any).vibrate?.(pattern); } catch { /* ignore */ }
 }
 
-export function setAudioMuted(m: boolean) { muted = m; }
+export function setAudioMuted(m: boolean) {
+  const was = muted;
+  muted = m;
+  if (was === m) return;
+  if (!m) unlockAudio();  // OFF→ON はユーザー操作中＝ここで resume できる
+  else syncSession();     // 全OFFになったならセッションごと停止
+}
 export function isAudioMuted() { return muted; }
 
 // ── BGM（ループ音源）──
@@ -194,6 +228,15 @@ export function startBgm(src: string) {
   routeBgm(); // AudioContext のグラフへ接続（unlock 後。SE とセッション統合）
   if (curSrc === src && !el.paused) { fadeTo(bgmEnabled ? bgmVol : 0, 400); return; }
   curSrc = src;
+  // ★BGM OFF のときは再生しない（曲だけ覚えておき、ONにした瞬間に setBgmEnabled が鳴らす）。
+  //   以前は「セッション維持のため無音で鳴らし続ける」実装だったが、バックグラウンドで
+  //   音が漏れる原因になっていた。セッション維持は keepAlive(無音ループ)が担う。
+  if (!bgmEnabled) {
+    clearFade();
+    applyBgmLevel(0);
+    try { el.src = src; el.pause(); } catch { /* ignore */ }
+    return;
+  }
   try {
     el.src = src;
     applyBgmLevel(0);
@@ -205,12 +248,35 @@ export function startBgm(src: string) {
   } catch { /* ignore */ }
 }
 
-// BGMの可聴/消音を切り替える。★要素は止めない（pauseするとiOSでSEも無音になるため）。
-// gain のフェードだけで音を消す＝オーディオセッションは生き続け、SEは影響を受けない。
+// BGMの可聴/消音を切り替える。
+// ★OFF は gain を絞るだけでなく要素も止める。gain=0 で鳴らし続けると、iOS でバックグラウンドに
+//   回った時に AudioContext が interrupted になり MediaElementSource を迂回して“生音”が漏れる
+//   ことがあるため（OFFなのに鳴る、の主因）。SEのオーディオセッションは keepAlive(無音ループ)
+//   が維持するので、要素を止めても SE は死なない。
 export function setBgmEnabled(on: boolean) {
+  const was = bgmEnabled;
   bgmEnabled = on;
   const el = bgmEl;
-  if (el && !el.paused) { clearFade(); fadeTo(on ? bgmVol : 0, on ? 500 : 350); }
+  if (!on) {
+    clearFade();
+    applyBgmLevel(0);
+    if (el) { try { el.pause(); } catch { /* ignore */ } }
+    syncSession(); // SEも切ってあるなら AudioContext ごと止める
+    return;
+  }
+  if (was !== on) syncSession(); // OFF→ON: セッションを起こし直す
+  if (!el || !curSrc) return;    // 盤面外＝鳴らす対象なし（次の startBgm で鳴る）
+  if (el.paused) {
+    applyBgmLevel(0);
+    try {
+      const p = el.play();
+      if (p && typeof (p as Promise<void>).catch === 'function') {
+        (p as Promise<void>).catch(() => { /* 自動再生拒否は無視（次のユーザー操作で復帰） */ });
+      }
+    } catch { /* ignore */ }
+  }
+  clearFade();
+  fadeTo(bgmVol, 500);
 }
 
 // BGM停止。fade:true でフェードアウトしてから pause。
@@ -258,11 +324,11 @@ function onPageHidden() {
 }
 
 function onPageVisible() {
-  if (unlocked && ctx && ctx.state !== 'running') { try { ctx.resume(); } catch { /* ignore */ } }
+  if (unlocked && !allSilent() && ctx && ctx.state !== 'running') { try { ctx.resume(); } catch { /* ignore */ } }
   if (!hiddenPaused) return;
   hiddenPaused = false;
   const el = bgmEl;
-  if (el && curSrc) {
+  if (el && curSrc && bgmEnabled) {
     applyBgmLevel(bgmEnabled ? bgmVol : 0); // フェード打ち切りの中途音量を確定値へ
     try {
       const p = el.play();
@@ -281,7 +347,7 @@ function teardownAudio() {
   clearFade();
   const el = bgmEl;
   if (el) { try { el.pause(); el.removeAttribute('src'); el.load(); } catch { /* ignore */ } }
-  if (keepAlive) { try { keepAlive.stop(); } catch { /* ignore */ } keepAlive = null; }
+  stopKeepAlive();
   if (ctx) { try { (ctx.close() as Promise<void>)?.catch?.(() => { /* ignore */ }); } catch { /* ignore */ } }
   ctx = null; bgmSource = null; bgmGain = null; // 万一 bfcache 復帰したら次の unlock で再構築
 }

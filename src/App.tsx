@@ -151,14 +151,15 @@ function Shell({ username, logout }: { username: string; logout: () => void }) {
     return () => { window.removeEventListener('pointerdown', unlock); window.removeEventListener('click', onClick); };
   }, []);
 
-  // BGMのライフサイクル。★要素の再生/停止は「盤面にいるか」だけで決める（BGM OFFや勝敗でも
-  //   盤面中は無音で鳴らし続ける＝オーディオセッションを維持しSEを死なせない）。可聴/消音は
-  //   setBgmEnabled(gain)で制御。盤面を離れた時だけ要素を止める。
+  // BGMのライフサイクル。曲の指定は「盤面にいるか」で決め、鳴らすかどうかは setBgmEnabled が決める。
+  //   ★BGM OFF（や勝敗表示中）は要素ごと停止する＝バックグラウンドで音が漏れない。
+  //   SEのオーディオセッションは無音キープアライブ（audio.ts startKeepAlive）が維持するので、
+  //   BGMを止めてもSEは死なない。
   // random は開始時に1回だけ抽選（version bump では再抽選しない＝ref ガードで多重startを防止）。
   useEffect(() => {
     const eng = useEngineStore.getState().engine;
     const onBattle = !!eng?.G.inGame && location.pathname === '/battle/play';
-    setBgmEnabled(bgmOn && !end); // 音は gain で消す（勝敗中も要素は動かす＝勝敗SEのセッション維持）
+    setBgmEnabled(bgmOn && !end); // OFF/勝敗中は要素ごと停止（セッションは keepAlive が維持）
     if (onBattle && !bgmActiveRef.current) {
       bgmActiveRef.current = true;
       startBgm(resolveBgmSrc(bgmTrack));
@@ -187,8 +188,8 @@ function Shell({ username, logout }: { username: string; logout: () => void }) {
   function toggleBgm() {
     const on = !bgmOn;
     setBgmOn(on);
-    // ★要素は止めない。gain で消音するだけ（pauseするとiOSでSEも無音になるため）。
-    //   盤面中は無音でBGM要素を鳴らし続けてセッションを維持する。ONは lifecycle が反映。
+    // OFF は要素ごと停止（gain=0のまま鳴らし続けると、iOSのバックグラウンドで生音が漏れる）。
+    //   ONに戻したときは setBgmEnabled が現在の曲を鳴らし直す。
     setBgmEnabled(on && !end);
     persistSettings();
   }
@@ -323,6 +324,15 @@ function Shell({ username, logout }: { username: string; logout: () => void }) {
                 <Icon.flag size={15} />{useNetStore.getState().spectating ? '観戦を終える' : useNetStore.getState().mode === 'online' ? '投了する' : '対戦を中断'}
               </button>
             ) : null}
+            {/* iOS の「ホーム画面に追加」で起動するとSafariのリロードボタンが無い＝
+                アプリ内に再読み込み導線が必要。盤面はメモリのみなので対戦中は確認を挟む。 */}
+            <button className="ham-item" style={hamItem} onClick={() => {
+              if (inGame && !window.confirm('再読み込みすると進行中の対戦は失われます。続けますか？')) return;
+              setMenuOpen(false);
+              window.location.reload();
+            }}>
+              <Icon.rotateCcw size={15} />再読み込み
+            </button>
             <button className="ham-item" style={hamItem} onClick={() => { setMenuOpen(false); logout(); }}>
               <Icon.logout size={15} />ログアウト
             </button>
