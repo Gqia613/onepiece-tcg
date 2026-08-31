@@ -5464,11 +5464,14 @@ button.hb-chip:not(.zero):not([disabled]):hover {
   border-color: rgba(255, 200, 87, .7);
 }
 
-/* 退避中に画面下へ出す「防御にもどる」FAB（盤面が見えている＝選択は保留中） */
+/* 退避中に画面下へ出す「防御にもどる」FAB（盤面が見えている＝選択は保留中）。
+   ★手札の上に出す: 下から 操作バー(.controls≒52px) + 手札(.handzone min-height 116px) + 余白8px
+   ＝176px。以前の bottom:22px は手札の下端に重なって札が読めなかった（実測: 手札は下端から
+   52〜168px を占める）。safe-area は .controls の padding が手札を押し上げる分を足し戻す。 */
 .peek-back {
   position: absolute;
   left: 50%;
-  bottom: 22px;
+  bottom: calc(176px + env(safe-area-inset-bottom, 0px));
   transform: translateX(-50%);
   z-index: 55;
   pointer-events: auto;
@@ -5598,8 +5601,9 @@ button.hb-chip:not(.zero):not([disabled]):hover {
     font-size: 13px;
   }
 
+  /* モバイルは手札が低い（.handzone min-height 94px）＝ 52+94+8 = 154px */
   .peek-back {
-    bottom: calc(18px + env(safe-area-inset-bottom, 0px));
+    bottom: calc(154px + env(safe-area-inset-bottom, 0px));
   }
 
   /* 操作バーのボタン（ターン終了/取消）もタップ高44px+ */
