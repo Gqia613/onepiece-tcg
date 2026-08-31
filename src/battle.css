@@ -4249,6 +4249,56 @@ button.hb-chip:not(.zero):not([disabled]):hover {
   padding: 12px 14px 44px
 }
 
+/* 「トップへ」FAB（.bd-wrap を下へスクロールした時だけ .on で出す）。
+   スクロール枠は .bd-wrap だが、ボタンは画面右下に固定して常に同じ位置に出す。 */
+.bd-totop {
+  position: fixed;
+  right: 18px;
+  bottom: calc(18px + env(safe-area-inset-bottom, 0px));
+  z-index: 40;
+  width: 46px;
+  height: 46px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  color: var(--gold-soft);
+  background: rgba(6, 14, 26, .86);
+  border: 1px solid rgba(255, 200, 87, .45);
+  box-shadow: var(--elev-3);
+  cursor: pointer;
+  /* 非表示時もDOMには残す（表示/非表示でレイアウトを動かさない） */
+  opacity: 0;
+  transform: translateY(10px);
+  pointer-events: none;
+  transition: opacity .18s, transform .18s, background .15s, border-color .15s;
+}
+
+.bd-totop.on {
+  opacity: 1;
+  transform: none;
+  pointer-events: auto;
+}
+
+.bd-totop:hover {
+  background: rgba(255, 200, 87, .16);
+  border-color: var(--gold);
+}
+
+.bd-totop.on:active {
+  transform: scale(.94);
+}
+
+@media (max-width: 680px) {
+  .bd-totop {
+    right: 12px;
+    bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+    width: 44px;
+    height: 44px;
+  }
+}
+
 .bd-head {
   display: flex;
   align-items: center;

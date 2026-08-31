@@ -193,4 +193,23 @@ describe('DeckBuilder', () => {
     expect(poolSets.length).toBeGreaterThan(10);
     expect(poolSets.map(rank)).toEqual([...poolSets.map(rank)].sort((a, b) => a - b));
   });
+
+  // 「トップへ」FAB: 下へスクロールしたときだけ出て、押すとスクロール枠(.bd-wrap)を先頭へ戻す。
+  it('shows a scroll-to-top button only after scrolling down', () => {
+    render(<DeckBuilder />);
+    const fab = document.querySelector('.bd-totop') as HTMLButtonElement;
+    const wrap = document.querySelector('.bd-wrap') as HTMLElement;
+    expect(fab).toBeTruthy();
+    expect(fab.className).not.toContain('on'); // 先頭では隠れている（.on が付かない＝不可視）
+
+    // スクロール枠を下へ動かす（happy-dom は scrollTo を持たないので scrollTop で代用）
+    let scrolledTo: any = null;
+    (wrap as any).scrollTo = (o: any) => { scrolledTo = o; };
+    Object.defineProperty(wrap, 'scrollTop', { value: 900, writable: true, configurable: true });
+    act(() => { fireEvent.scroll(wrap); });
+    expect(document.querySelector('.bd-totop')!.className).toContain('on');
+
+    act(() => { fireEvent.click(document.querySelector('.bd-totop') as HTMLButtonElement); });
+    expect(scrolledTo).toEqual({ top: 0, behavior: 'smooth' });
+  });
 });

@@ -2,7 +2,7 @@
 // .bd-* class は battle.css(verbatim) にあるので構造を再現すればスタイルが当たる。保存はクラウド(D1)。
 // UX: リーダーは色/弾で絞り込み・選択後はコンパクト表示に折りたたみ。デッキ内容リストは開閉トグル。
 //     カード画像タップで拡大（ZoomView共用）。プール検索は特徴/効果テキストも対象・並び替え可。
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useEngineStore } from '../state/engineStore';
@@ -86,6 +86,22 @@ export default function DeckBuilder() {
   const [zoom, setZoom] = useState<{ no: string; name: string } | null>(null);
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState<{ text: string; err?: boolean } | null>(null);
+  // 「トップへ」FAB: 実際のスクロール枠は .bd-wrap（#screen は overflow:hidden）なので
+  // window ではなくこの要素の scrollTop を見る。カードプールが長いほど効く。
+  const wrapRef = useRef<HTMLDivElement | null>(null);
+  const [showTop, setShowTop] = useState(false);
+  const onWrapScroll = () => {
+    const el = wrapRef.current;
+    if (!el) return;
+    const on = el.scrollTop > 320; // 1画面ぶん下がったら出す
+    setShowTop((cur) => (cur === on ? cur : on));
+  };
+  const scrollTop = () => {
+    const el = wrapRef.current;
+    if (!el) return;
+    if (typeof el.scrollTo === 'function') el.scrollTo({ top: 0, behavior: 'smooth' });
+    else el.scrollTop = 0;
+  };
 
   const leaderColors = (no: string | null): string[] => (no && C[no] && C[no].color) || [];
   const cardLegalForLeader = (no: string, lno: string | null) => {
@@ -262,7 +278,7 @@ export default function DeckBuilder() {
   ));
 
   return (
-    <div className="bd-wrap">
+    <div className="bd-wrap" ref={wrapRef} onScroll={onWrapScroll}>
       <div className="bd-head">
         <button className="bd-back" onClick={close} aria-label="戻る" title="戻る"><Icon.arrowLeft size={22} /></button>
         <h1>{editId ? 'デッキ編集' : 'デッキ作成'}</h1>
@@ -411,6 +427,16 @@ export default function DeckBuilder() {
       ) : (
         <div className="bd-main"><div className="bd-panel"><div className="bd-empty">まずリーダーを選んでください</div></div></div>
       )}
+
+      {/* 下へスクロールした時だけ出る「トップへ」ボタン（リーダー選択/検索へ一気に戻る） */}
+      <button
+        className={'bd-totop' + (showTop ? ' on' : '')}
+        aria-label="一番上へ戻る"
+        title="一番上へ戻る"
+        onClick={scrollTop}
+      >
+        <Icon.arrowUp size={22} />
+      </button>
 
       {/* カード拡大オーバーレイ */}
       <AnimatePresence>
