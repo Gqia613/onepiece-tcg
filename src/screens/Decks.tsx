@@ -101,6 +101,13 @@ export default function Decks() {
     navigate('/builder');
   };
 
+  // マイデッキを複製して編集（元デッキは残す）。cloud/id/shared を落として渡すと
+  // ビルダー側の editId が null になり「◯◯（コピー）」として新規保存される（プリセットのコピーと同じ経路）。
+  const openBuilderAsCopy = (deck: Deck) => {
+    const { cloud, id, shared, ...rest } = deck as any;
+    openBuilder(rest as Deck);
+  };
+
   // ビルダーで保存直後に遷移してきた場合、そのデッキをお祝いパルスでハイライト
   const savedId: string | undefined = (useLocation().state as any)?.savedId;
 
@@ -178,6 +185,13 @@ export default function Decks() {
               <button className="dsm-pill" onClick={() => toggleShare(listDeck)}>
                 {(listDeck as any)?.shared ? '共有を解除' : '友達に共有'}
               </button>
+            ) : null}
+            {(listDeck as any)?.cloud && listDeck.list ? (
+              <button
+                className="dsm-pill gold"
+                title="このデッキを複製して編集（元のデッキは残ります）"
+                onClick={() => { const d = listDeck; setListDeck(null); openBuilderAsCopy(d); }}
+              >コピーして編集</button>
             ) : null}
             {(listDeck as any)?.sharedBy ? (
               <button className="dsm-pill gold" disabled={busy} onClick={() => copyShared(listDeck)}>

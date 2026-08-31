@@ -349,6 +349,19 @@ export default function DeckSelect() {
             {(active as any).cloud ? '編集' : 'コピーして編集'}
           </button>
         ) : null}
+        {/* マイデッキ（クラウド保存）も複製して編集できる。cloud/id を落として渡す＝ビルダーは
+            上書きではなく「◯◯（コピー）」の新規保存になる（プリセットのコピーと同じ経路）。 */}
+        {active?.list && (active as any).cloud ? (
+          <button
+            className="dsm-pill gold"
+            title="このデッキを複製して編集（元のデッキは残ります）"
+            onClick={() => {
+              const { cloud, id, shared, ...rest } = active as any;
+              useEngineStore.getState().setBuilderOpen(true, rest);
+              navigate('/builder');
+            }}
+          >コピーして編集</button>
+        ) : null}
         {active && (active as any).cloud ? (
           <button className="dsm-pill danger" onClick={() => setDelDeck(active)}>削除</button>
         ) : null}

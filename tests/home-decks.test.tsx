@@ -105,4 +105,33 @@ describe('Decks（マイデッキ/デッキ管理）', () => {
     expect(document.querySelector('.modal-back')).toBeTruthy();
     expect(document.body.textContent).toContain('リーダー：');
   });
+
+  // マイデッキ（クラウド保存デッキ）も「コピーして編集」できる＝上書きではなく複製が作れる。
+  it('マイデッキのモーダルから「コピーして編集」でビルダーに複製を渡す（元デッキは残る）', () => {
+    const base = (engine.DECKS as any[])[0];
+    act(() => {
+      engine.G.customDecks = [{ ...base, id: 'cloud-9', name: '複製元デッキ', cloud: true, shared: true }];
+      useEngineStore.setState({ builderOpen: false, builderDeck: null });
+      useEngineStore.getState().bump();
+    });
+    render(<Decks />, '/decks');
+    const card = Array.from(document.querySelectorAll('.deck-card')).find((c) => (c.textContent || '').includes('複製元デッキ'))!;
+    act(() => { fireEvent.click(card); });
+    const btn = Array.from(document.querySelectorAll('.modal button')).find((b) => b.textContent === 'コピーして編集') as HTMLButtonElement;
+    expect(btn).toBeTruthy();          // クラウドデッキにも複製導線がある（従来は「編集」のみ）
+    act(() => { fireEvent.click(btn); });
+
+    // ビルダーへ渡るのは cloud/id を落とした複製＝上書き保存にならない（新規保存になる）
+    const bd = useEngineStore.getState().builderDeck as any;
+    expect(useEngineStore.getState().builderOpen).toBe(true);
+    expect(bd).toBeTruthy();
+    expect(bd.cloud).toBeUndefined();
+    expect(bd.id).toBeUndefined();
+    expect(bd.name).toBe('複製元デッキ');
+    expect(bd.leader).toBe(base.leader);
+    expect(bd.list).toEqual(base.list);
+    // 元のデッキは customDecks に残ったまま
+    expect((engine.G.customDecks as any[]).map((d) => d.id)).toContain('cloud-9');
+    act(() => { engine.G.customDecks = []; useEngineStore.setState({ builderOpen: false, builderDeck: null }); useEngineStore.getState().bump(); });
+  });
 });
