@@ -1595,6 +1595,46 @@ function setupG(leaderNo){G.active='me';G.turnSeq=5;G.winner=null;const mkP=(ln,
       fxNote=_fn;
       ok(notes.some(n=>n.indexOf('登場時効果')===0), '例37c: 条件成立ならカットインを出す');
       ok(O.chars.length===0, '例37c: 条件成立なら相手コスト2以下をKO'); }
+
+    /* ===== イベントは「発動時」にトラッシュへ置く（公式Q&A1278/1279/94・実対戦報告 2026-09-20）=====
+       自分のトラッシュ枚数を数える効果は「このカード」を含める。ただし【トリガー】で発動した場合は含めない。 */
+    // 例38a OP07-096 嵐脚: トラッシュ9枚 ＋ このイベント = 10枚 → 相手キャラ1枚 このターン中コスト-3 が発動する
+    setupG('OP07-082'); { const P=G.players.me, O=G.players.cpu;
+      G.busy=false; G.myActable=true; P.don.active=3;
+      P.trash=Array.from({length:9},()=>mkc('ST01-006')); P.deck=[mkc('ST01-006'),mkc('ST01-006')];
+      const ev=mkc('OP07-096'); P.hand=[ev];
+      const t=mkc('OP17-012'); t.owner='cpu'; O.chars=[t]; // 元々コスト2
+      await tryPlayHand(ev);
+      ok(P.trash.length===10, '例38a: イベント自身がトラッシュに入り10枚になる');
+      ok(boardCost(t)===0, '例38a: トラッシュ9→自身を含めて10枚でコスト-3が発動（Q&A1278）'); }
+    // 8枚（自身を含めても9枚）なら発動しない＝境界
+    setupG('OP07-082'); { const P=G.players.me, O=G.players.cpu;
+      G.busy=false; G.myActable=true; P.don.active=3;
+      P.trash=Array.from({length:8},()=>mkc('ST01-006')); P.deck=[mkc('ST01-006'),mkc('ST01-006')];
+      const ev=mkc('OP07-096'); P.hand=[ev];
+      const t=mkc('OP17-012'); t.owner='cpu'; O.chars=[t];
+      await tryPlayHand(ev);
+      ok(boardCost(t)===2, '例38a: 自身を含めて9枚なら発動しない（境界）'); }
+    // 例38b Q&A1279: 【トリガー】で発動した【メイン】はまだトラッシュに入っていない＝自身を含めない
+    setupG('OP07-082'); { const P=G.players.me, O=G.players.cpu;
+      P.trash=Array.from({length:9},()=>mkc('ST01-006'));
+      const t=mkc('OP17-012'); t.owner='cpu'; O.chars=[t];
+      await runFx(C['OP15-097'].fx.trigger,{side:'me',self:mkc('OP15-097')});
+      ok(t.noAtkSeq==null, '例38b: トリガー発動はトラッシュ9枚のまま＝不発（Q&A1279）'); }
+    // 例38c カウンターイベントも発動時にトラッシュへ（Q&A1278は【カウンター】も対象）
+    //   OP14-096 浸食輪廻【カウンター】自分のトラッシュが10枚以上ある場合、リーダーかキャラ+4000
+    setupG('OP13-002'); { const P=G.players.me;
+      P.trash=Array.from({length:9},()=>mkc('ST01-006'));
+      const ev=mkc('OP14-096'); P.trash.push(reset(ev)); // 発動時にトラッシュへ（フローと同じ順序）
+      const ctx={side:'me',self:ev,target:P.leader};
+      await runFx(C['OP14-096'].fx.counter.fx, ctx);
+      ok(power(P.leader)===6000+4000, '例38c: 自身を含めて10枚＝【カウンター】+4000が発動（Q&A1278）'); }
+    setupG('OP13-002'); { const P=G.players.me;
+      P.trash=Array.from({length:8},()=>mkc('ST01-006'));
+      const ev=mkc('OP14-096'); P.trash.push(reset(ev));
+      const ctx={side:'me',self:ev,target:P.leader};
+      await runFx(C['OP14-096'].fx.counter.fx, ctx);
+      ok(power(P.leader)===6000, '例38c: 自身を含めて9枚なら不発（境界）'); }
   }catch(e){ console.log('EXCEPTION:', e.message); fail++; }
   console.log('ユニットテスト: pass='+pass+' fail='+fail);
   process.exit(fail?1:0);

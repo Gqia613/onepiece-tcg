@@ -1320,7 +1320,7 @@
         case 'playEventFromHand': {
           const cands = P.hand.filter(c => matchFilter(c, op.filter) && c.base.fx && c.base.fx.main);
           const c = await chooseFromHand(side, cands, '発動するイベントを選択', null, op.optional !== false); // 「1枚まで」は任意（既定で見送り可）
-          if (c) { P.hand.splice(P.hand.indexOf(c), 1); cardReveal(side, c.base.no, c.base.name, 'イベント発動', 'event'); await runFx(c.base.fx.main.fx, { self: c, side }); P.trash.push(reset(c)); flog(side, `「${c.base.name}」を発動`); await luffyReveal(side); }
+          if (c) { P.hand.splice(P.hand.indexOf(c), 1); cardReveal(side, c.base.no, c.base.name, 'イベント発動', 'event'); P.trash.push(reset(c)); /* ★発動時にトラッシュへ */ await runFx(c.base.fx.main.fx, { self: c, side }); flog(side, `「${c.base.name}」を発動`); await luffyReveal(side); }
           break;
         }
         case 'playEventFromTrash': { // トラッシュにあるイベントの【メイン】効果を発動する（カードはトラッシュに残る＝EB03-031レイジュ）

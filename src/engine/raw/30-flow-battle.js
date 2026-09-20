@@ -803,8 +803,9 @@
             if ((c.base.cost || 0) > 0 && !payDon(dSide, c.base.cost)) { toast('ドンが足りません'); continue; }
             D.hand.splice(D.hand.indexOf(c), 1);
             sfx('counter'); cardReveal(dSide, c.base.no, c.base.name, 'カウンター発動', 'event'); // 何を使ったか見せる
+            D.trash.push(reset(c)); // ★発動時にトラッシュへ（公式Q&A1278: 【カウンター】もこのカードを含めて数える）
             await runFx(c.base.fx.counter.fx, { self: c, side: dSide, target });
-            D.trash.push(reset(c)); flog(dSide, `カウンター「${c.base.name}」`);
+            flog(dSide, `カウンター「${c.base.name}」`);
             if (c.base.type === 'EVENT') { await luffyReveal(dSide); await fireOwnEventUsed(dSide); } // OP10-003シュガーL（Q&A794: コスト辞退でも発動扱い）
           } else {
             const cv = counterVal(c, dSide);
@@ -987,8 +988,9 @@
           if (x.cost > 0 && D.don.active < x.cost) continue;
           if (x.cost > 0) payDon(dSide, x.cost);
           D.hand.splice(D.hand.indexOf(x.c), 1);
+          D.trash.push(reset(x.c)); // ★発動時にトラッシュへ（上と同じ公式裁定）
           await runFx(x.c.base.fx.counter.fx, { self: x.c, side: dSide, target });
-          D.trash.push(reset(x.c)); flog(dSide, `CPUカウンター「${x.c.base.name}」`);
+          flog(dSide, `CPUカウンター「${x.c.base.name}」`);
           if (x.c.base.type === 'EVENT') { await luffyReveal(dSide); await fireOwnEventUsed(dSide); } // OP10-003シュガーL
           await sleep(140);
         }

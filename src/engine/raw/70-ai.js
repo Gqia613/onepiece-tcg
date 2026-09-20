@@ -154,7 +154,7 @@
       if (a.k === 'stop') return;
       if (a.k === 'char') { const c = findCard(a.uid); if (!c || !P.hand.includes(c)) return; payDon(side, effCost(side, c)); P.hand.splice(P.hand.indexOf(c), 1); await summon(side, c, false); }
       else if (a.k === 'stage') { const c = findCard(a.uid); if (!c || !P.hand.includes(c)) return; payDon(side, c.base.cost || 0); P.hand.splice(P.hand.indexOf(c), 1); if (P.stage) P.trash.push(reset(P.stage)); P.stage = c; c.owner = side; c.rested = false; if (c.base.fx && c.base.fx.onPlay) await runFx(c.base.fx.onPlay, { self: c, side }); }
-      else if (a.k === 'event') { const c = findCard(a.uid); if (!c || !P.hand.includes(c)) return; payDon(side, effCost(side, c)); P.hand.splice(P.hand.indexOf(c), 1); if ((c.base.cost || 0) >= 3) P._lucyEventTurn = G.turnSeq; await runFx(c.base.fx.main.fx, { self: c, side }); P.trash.push(reset(c)); await luffyReveal(side); }
+      else if (a.k === 'event') { const c = findCard(a.uid); if (!c || !P.hand.includes(c)) return; payDon(side, effCost(side, c)); P.hand.splice(P.hand.indexOf(c), 1); if ((c.base.cost || 0) >= 3) P._lucyEventTurn = G.turnSeq; P.trash.push(reset(c)); /* ★発動時にトラッシュへ */ await runFx(c.base.fx.main.fx, { self: c, side }); await luffyReveal(side); }
       else if (a.k === 'act') { const c = findCard(a.uid); if (!c) return; const cost = c.base.fx.act.cost || {}; if (cost.don) payDon(side, cost.don); if (cost.restSelf) c.rested = true; c._actTurn = G.turnSeq; await runFx(c.base.fx.act.fx, { self: c, side }); }
       else if (a.k === 'leader') { await leaderActivate(side); }
       else if (a.k === 'attack') {
