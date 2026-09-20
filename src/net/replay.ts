@@ -58,6 +58,7 @@ export function startReplay(d: ReplayData, viewerSeat: RoomSeat): void {
   viewer = viewerSeat;
   const net = useNetStore.getState();
   net.setReplayActive(true);
+  net.setSolo(false); // 1人回しの席追従を必ず解除（リプレイの視点は viewerSeat 固定）
   net.setNames({ me: d.names.host || 'ホスト', cpu: d.names.guest || 'ゲスト' });
   net.setMySeat(seatOf(viewerSeat));
   bootReplayEngine(d);

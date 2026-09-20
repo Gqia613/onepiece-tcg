@@ -23,6 +23,7 @@ export function Controls() {
   const sending = useNetStore((s) => s.sending);
   const replay = useNetStore((s) => s.replayActive);
   const spectating = useNetStore((s) => s.spectating);
+  const solo = useNetStore((s) => s.solo); // 1人回し＝両席とも自分が操作（mySeat は手番へ追従）
   useEngineStore((s) => s.version); // 再描画トリガ（値は使わないが購読）
   if (!engine) return null;
   if (replay || spectating) return null; // リプレイ中は ReplayBar が担当・観戦中は操作UIなし
@@ -35,7 +36,7 @@ export function Controls() {
       <div className="controls">
         <button
           className="phasebtn go"
-          onClick={() => { engine.backToSelect(); useEngineStore.getState().bump(); navigate('/battle'); }}
+          onClick={() => { engine.backToSelect(); useEngineStore.getState().bump(); navigate(solo ? '/battle?solo=1' : '/battle'); }}
         >
           もう一度プレイ
         </button>
@@ -125,8 +126,9 @@ export function Controls() {
   // それ以外：CPU思考中/処理中 or あなたの応答待ち（ブロック/カウンター等の入力待ち）
   // オンラインでは相手席のプロンプト＝「相手の選択待ち」なので waitingForYou から除外する。
   const mineDeciding = (x: { side?: 'me' | 'cpu'; local?: boolean } | null) => !!x && (!!(x as any).local || ((x.side || 'me') === mySeat));
-  const waitingForYou = mineDeciding(prompt) || mineDeciding(pick as any);
-  const oppText = online ? '相手の操作待ち' : 'CPU 思考中';
+  // 1人回しは相手席の判断（ブロック/カウンター等）も自分が答える＝どの席のプロンプトも「あなたの操作待ち」。
+  const waitingForYou = solo ? (!!prompt || !!pick) : (mineDeciding(prompt) || mineDeciding(pick as any));
+  const oppText = online ? '相手の操作待ち' : solo ? '処理中' : 'CPU 思考中';
   return (
     <div className="controls">
       <span className="thinking">

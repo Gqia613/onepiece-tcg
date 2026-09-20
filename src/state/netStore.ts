@@ -2,6 +2,7 @@
 // ★エンジンの G にネット状態を混ぜない（ロックステップの状態ハッシュを汚染しないため）。
 // mySeat は「ローカルプレイヤーがエンジン上のどちらの席か」（オフライン/ホスト='me'・ゲスト='cpu'）。
 // 盤面コンポーネントの視点反転（自席=画面下段）は全て mySeat 基準で行う。
+// solo（1人回し）は両席とも自分が操作するモード＝mySeat が手番側へ自動追従する（SoloSeat.tsx）。
 import { create } from 'zustand';
 import type { Seat, PlayerInfo, RoomConfig, MatchResult } from '../net/protocol';
 import { DEFAULT_CONFIG } from '../net/protocol';
@@ -12,6 +13,7 @@ export type NetPhase = 'idle' | 'lobby' | 'playing' | 'ended';
 interface NetStore {
   mode: 'offline' | 'online';
   mySeat: Seat;                 // 既定 'me'（オフライン完全後方互換）
+  solo: boolean;                // 1人回し（CPU戦の相手ターンも自分で操作する。mySeat が手番側へ追従）
   phase: NetPhase;
   roomCode: string | null;
   players: PlayerInfo[];
@@ -37,6 +39,7 @@ interface NetStore {
   lobbyNak: number;                // 「部屋に戻る」がDOに拒否された(bad_state)たびに++。EndScreenがボタンを押し直せる状態に戻すトリガ
   setMode: (m: NetStore['mode']) => void;
   setMySeat: (s: Seat) => void;
+  setSolo: (b: boolean) => void;
   setPhase: (p: NetPhase) => void;
   setRoomCode: (c: string | null) => void;
   setPlayers: (p: PlayerInfo[]) => void;
@@ -64,6 +67,7 @@ interface NetStore {
 const DEFAULTS = {
   mode: 'offline' as const,
   mySeat: 'me' as Seat,
+  solo: false,
   phase: 'idle' as NetPhase,
   roomCode: null,
   players: [] as PlayerInfo[],
@@ -92,6 +96,7 @@ export const useNetStore = create<NetStore>((set) => ({
   ...DEFAULTS,
   setMode: (mode) => set({ mode }),
   setMySeat: (mySeat) => set({ mySeat }),
+  setSolo: (solo) => set({ solo }),
   setPhase: (phase) => set({ phase }),
   setRoomCode: (roomCode) => set({ roomCode }),
   setPlayers: (players) => set({ players }),
@@ -121,6 +126,9 @@ export const useNetStore = create<NetStore>((set) => ({
 export function seatLabel(side: Seat): string {
   const s = useNetStore.getState();
   if (s.spectating) return (s.names && s.names[side]) || (side === 'me' ? 'ホスト' : 'ゲスト');
+  // 1人回し: mySeat は手番ごとに反転するため、それ基準だと両席とも「あなた」になってしまう。
+  // ラベルは席固定（me=あなた側のデッキ / cpu=相手側のデッキ）にする。
+  if (s.solo) return side === 'me' ? 'あなた' : '相手';
   if (side === s.mySeat) return 'あなた';
   if (s.mode === 'online' || s.replayActive) return (s.names && s.names[side]) || '相手';
   return 'CPU';

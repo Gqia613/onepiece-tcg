@@ -45,11 +45,13 @@ export function Banner() {
     // 初回観測（prev===null）はバナーを出さない＝盤面初期化のチラ出し防止
     if (prev === null || prev === curKey) return;
 
-    const mySeat = useNetStore.getState().mySeat;
-    const text = active === mySeat ? 'あなたのターン' : '相手のターン';
+    // 1人回しは mySeat が手番へ追従する（＝常に自席）ので、席固定のラベルで出す。
+    const net = useNetStore.getState();
+    const lblSeat = net.solo ? 'me' : net.mySeat;
+    const text = active === lblSeat ? 'あなたのターン' : '相手のターン';
     const key = ++seqRef.current;
     setItem({ key, text, side: active });
-    if (active === mySeat) playSfx('turnstart'); // 自分のターン開始ジングル（muted/未unlockはplaySfx側で無音）
+    if (active === lblSeat) playSfx('turnstart'); // 自分のターン開始ジングル（muted/未unlockはplaySfx側で無音）
 
     if (toRef.current) clearTimeout(toRef.current);
     toRef.current = setTimeout(() => {
@@ -64,7 +66,7 @@ export function Banner() {
   if (!item) return null;
   // key で毎回 remount＝.flash の CSS アニメ(tbnrFade/Band/Txt)が先頭から再生される。
   return (
-    <div key={item.key} className={'turnbanner flash ' + (item.side === useNetStore.getState().mySeat ? 'mine' : 'opp')}>
+    <div key={item.key} className={'turnbanner flash ' + (item.side === (useNetStore.getState().solo ? 'me' : useNetStore.getState().mySeat) ? 'mine' : 'opp')}>
       <span className="tb-band" />
       <span className="tb-txt">{item.text}</span>
     </div>

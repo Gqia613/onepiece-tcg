@@ -74,6 +74,7 @@ npm run d1:remote  # 本番 D1 へ schema.sql 適用
 - **web を変更したら**: `npm run build` と `npm test` を通す。React コンポーネント（screens/components）と CSS（`src/styles.css`＝静的シェル / `src/battle.css`＝盤面・デッキ選択・演出）を編集。
 - `src/engine/raw/` は手編集せず sync で更新する。
 - **localStorage/sessionStorage を使わない**。状態は engine の `G` / web の zustand ストアに持つ。
+- **1人回し（`/battle?solo=1`）**: CPU戦と同じ画面のまま、相手ターンも自分で操作するモード。実体は `startGame({cpuHuman:true})`（両席とも人間）＋ `netStore.solo` で **mySeat を手番側の席へ自動追従**（`components/battle/SoloSeat.tsx`）。**mySeat がオフラインでも動く**ので、席を跨ぐ表示（ラベル/勝敗）は `solo ? 'me' : mySeat` の固定席で出す。
 - **オンライン対戦（ロックステップ）を壊さないための不変条件**: ①ゲーム結果に効く乱数は必ず `rng()`（Math.random は演出専用） ②人間/CPU の分岐は `isCPU` のみ ③エンジンのプロンプトには `side`（決定者の席）を付ける ④UI専用の確認は `local:true` ⑤G に非対称なフィールドを足すときは `hashGameState` の `_HASH_SKIP`（engine/src/70-ai.js）を確認。回帰は `tests/lockstep.test.ts`（2エンジン並走のhash一致）が検出する。
 - PM・実験の一次資料は **`engine/docs/pm/`**（experiments.md＝実験台帳・current-status.md）と **`engine/docs/ai-design.md`**。ルート直下の `docs/` は web UI 仕様（phase3-ui-spec.md 等）。
 - 応答は日本語・簡潔。

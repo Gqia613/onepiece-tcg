@@ -1,6 +1,6 @@
 // ホーム（タイトル/ハブ画面）。ログイン後の玄関口として BATTLE / MY DECKS / BUILDER への導線を
 // 「メニュー自体をカード（縦長パネル＋漢字ウォーターマーク＋ホロ光沢）」として並べる。
-// 並び順: CPU対戦 → オンライン対戦 → マイデッキ → デッキ作成 → 戦績
+// 並び順: CPU対戦 → 1人回し → オンライン対戦 → マイデッキ → デッキ作成 → 戦績
 // （デッキ系＝マイデッキとデッキ作成を隣接させ、参照系の戦績を最後に置く）。
 // タイトルは公式「ONE PIECE CARD GAME」ロゴ（白）＋背後にリーダーカード実物が浮遊する演出。
 // 視覚言語は battle.css の "ABYSS NEON"（deep ocean × gold）に従い、CSS は styles.css の .home-* が所有。
@@ -61,6 +61,16 @@ export default function Home() {
           <span className="hc-icon"><Icon.swords size={28} /></span>
           <span className="hc-en">{inGame ? '対戦に戻る' : 'CPU対戦'}</span>
           <span className="hc-desc">デッキを選んで出航。先読みで手を選ぶCPUと対戦。</span>
+          <span className="hc-go"><Icon.chevronRight size={16} /></span>
+        </button>
+
+        {/* 1人回し: 相手のターンも自分で操作する（CPU は動かない）。デッキ選択・盤面は CPU 対戦と同じ */}
+        <button className="home-card hc-solo" onClick={() => navigate('/battle?solo=1')}>
+          <img className="hc-chara" aria-hidden="true" src={IMG('OP01-016')} referrerPolicy="no-referrer" decoding="async" alt=""
+            onError={(e) => { e.currentTarget.style.display = 'none'; }} />
+          <span className="hc-icon"><Icon.repeat size={28} /></span>
+          <span className="hc-en">1人回し</span>
+          <span className="hc-desc">両方のデッキを自分で操作して回す。手札の確認・練習用。</span>
           <span className="hc-go"><Icon.chevronRight size={16} /></span>
         </button>
 

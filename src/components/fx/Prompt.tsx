@@ -60,12 +60,15 @@ function AttackHead() {
 
 // マリガン専用: スタートの手札5枚を中央で1枚ずつフリップ公開（開封のワクワク演出）。
 // ボトムシートだと手札が隠れて引いたカードが分からないため、モーダル内に大きく見せる。
-function MulliganHand() {
+// seat = 表示する手札の席。通常は「このマリガンを判断する席」（＝prompt.side）。
+// ★mySeat 固定にはできない: 1人回し（両席とも自分が操作）では cpu 席のマリガンを
+//   me 席の手札を見ながら判断することになってしまう。オンラインの先行入力だけは
+//   相手席のプロンプト表示中に「自分の手札」を見せるので、呼び出し側が mySeat を渡す。
+function MulliganHand({ seat }: { seat: 'me' | 'cpu' }) {
   const engine = useEngineStore((s) => s.engine);
-  const mySeat = useNetStore((s) => s.mySeat);
   useEngineStore((s) => s.version); // 引き直し後の手札更新を拾う
   if (!engine) return null;
-  const hand: Card[] = (engine.G?.players?.[mySeat]?.hand || []) as Card[];
+  const hand: Card[] = (engine.G?.players?.[seat]?.hand || []) as Card[];
   const onErr = (e: React.SyntheticEvent<HTMLImageElement>) => { e.currentTarget.style.visibility = 'hidden'; };
   const mid = (hand.length - 1) / 2;
   // マリガンのカードは選択アクションが無いので「タップ」で大写し（全カード共通の zoomCard へ）。
@@ -214,7 +217,7 @@ export function Prompt() {
         <div className="prompt show mulligan">
           <h3>マリガン</h3>
           <p>最初の手札を引き直しますか？（相手も同時に選んでいます。決定は相手の選択後に送信されます）</p>
-          <MulliganHand />
+          <MulliganHand seat={mySeat} />
           <div className="opts">
             <button className="opt" onClick={() => useNetStore.getState().setEarlyMulligan(true)}>引き直す</button>
             <button className="opt primary" onClick={() => useNetStore.getState().setEarlyMulligan(false)}>この手札でいく</button>
@@ -317,7 +320,7 @@ function PromptCard({
       )}
 
       {/* マリガン: スタートの手札5枚をフリップ公開 */}
-      {isMulligan && <MulliganHand />}
+      {isMulligan && <MulliganHand seat={(prompt.side || 'me') as 'me' | 'cpu'} />}
 
       {/* 盤面/手札を見たい時：選択を保留してプロンプトを退避（盤面・手札が見える）。 */}
       {canPeek && (

@@ -10,7 +10,7 @@ import { useMemo, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useEngineStore } from '../../state/engineStore';
-import { useNetStore } from '../../state/netStore';
+import { useNetStore, seatLabel } from '../../state/netStore';
 import { requestRematch, requestLobby, leaveOnline } from '../../net/onlineGame';
 import { leaveSpectate } from '../../net/spectate';
 
@@ -41,6 +41,7 @@ export function EndScreen() {
   const online = useNetStore((s) => s.mode) === 'online';
   const replayActive = useNetStore((s) => s.replayActive);
   const spectating = useNetStore((s) => s.spectating);
+  const solo = useNetStore((s) => s.solo);
   const [rematchAsked, setRematchAsked] = useState(false);
   const [lobbyAsked, setLobbyAsked] = useState(false);
   useEffect(() => { if (!end) { setRematchAsked(false); setLobbyAsked(false); } }, [end]); // 成立（end消滅）でリセット
@@ -48,7 +49,9 @@ export function EndScreen() {
   const lobbyNak = useNetStore((s) => s.lobbyNak);
   useEffect(() => { setLobbyAsked(false); }, [lobbyNak]);
 
-  const win = !!end?.win;
+  // 1人回しは勝者も敗者も自分＝勝敗ではなく「決着」として出す（演出は勝利側のレイヤを使う）。
+  const soloWinner: 'me' | 'cpu' | null = solo ? ((engine?.G?.winner as 'me' | 'cpu') || null) : null;
+  const win = solo ? true : !!end?.win;
   // 粒子/雨は end が出ている間は固定（再生成でチラつかせない）。win 切替で作り直す。
   const motes = useMemo(makeMotes, [win, !!end]);
   const rain = useMemo(makeRain, [win, !!end]);
@@ -57,7 +60,7 @@ export function EndScreen() {
     try { engine?.backToSelect(); } catch { /* ignore */ }
     useEngineStore.getState().setEnd(null);
     useEngineStore.getState().bump(); // backToSelect は render フックを呼ばないので明示再描画
-    navigate('/battle'); // 対戦セットアップへ
+    navigate(useNetStore.getState().solo ? '/battle?solo=1' : '/battle'); // 対戦セットアップへ（1人回しはモード維持）
   };
   const onRematch = () => { requestRematch(); setRematchAsked(true); };
   // 部屋（ロビー）へ戻る＝デッキと対戦設定を選び直して再戦する。片方が押せば両者が戻る（退室して作り直す必要はない）
@@ -122,8 +125,10 @@ export function EndScreen() {
           )}
 
           <div className="es-core">
-            <div className="es-title">{spectating ? 'GAME SET' : win ? 'VICTORY' : 'DEFEAT'}</div>
-            <div className="es-sub">{spectating ? '対戦終了' : win ? '勝利' : '敗北'}</div>
+            <div className="es-title">{spectating || solo ? 'GAME SET' : win ? 'VICTORY' : 'DEFEAT'}</div>
+            <div className="es-sub">
+              {solo ? (soloWinner ? `${seatLabel(soloWinner)}の勝ち` : '対戦終了') : spectating ? '対戦終了' : win ? '勝利' : '敗北'}
+            </div>
             {end.reason && <div className="es-reason">{end.reason}</div>}
             {spectating ? (
               // 観戦の終局: 盤面確認 or 退出（次の対戦が始まれば自動で観戦が続く）

@@ -26,20 +26,21 @@ const render = (ui: ReactElement, path = '/') =>
   rtlRender(<MemoryRouter initialEntries={[path]}>{ui}</MemoryRouter>);
 
 describe('Home（タイトル/ハブ画面）', () => {
-  it('タイトルと5つのメニューカード（対戦/オンライン/マイデッキ/作成/戦績）が出る', () => {
+  it('タイトルと6つのメニューカード（対戦/1人回し/オンライン/マイデッキ/作成/戦績）が出る', () => {
     render(<Home />);
     // タイトルは公式「ONE PIECE CARD GAME」ロゴ画像（白）に変更
     expect(document.querySelector('img.home-logo')).toBeTruthy();
-    expect(document.querySelectorAll('.home-card').length).toBe(5);
+    expect(document.querySelectorAll('.home-card').length).toBe(6);
     // メインラベルは日本語1行に統合（旧BATTLE/MY DECKS/BUILDERの英語は撤去）
     expect(document.body.textContent).toContain('CPU対戦');
+    expect(document.body.textContent).toContain('1人回し');
     expect(document.body.textContent).toContain('オンライン対戦');
     expect(document.body.textContent).toContain('マイデッキ');
     expect(document.body.textContent).toContain('戦績');
     expect(document.body.textContent).toContain('デッキ作成');
     // 並び順: デッキ系（マイデッキ→デッキ作成）を隣接させ、戦績は最後
     const order = [...document.querySelectorAll('.home-card .hc-en')].map((e) => e.textContent);
-    expect(order).toEqual(['CPU対戦', 'オンライン対戦', 'マイデッキ', 'デッキ作成', '戦績']);
+    expect(order).toEqual(['CPU対戦', '1人回し', 'オンライン対戦', 'マイデッキ', 'デッキ作成', '戦績']);
   });
 
   it('対戦中は復帰バナーと「対戦に戻る」表示になる', () => {

@@ -36,6 +36,7 @@ import { NetSideEffects } from './components/fx/NetSideEffects';
 import { ReplayBar } from './components/fx/ReplayBar';
 import { LethalCutIn } from './components/fx/LethalCutIn';
 import { SummonCutIn } from './components/fx/SummonCutIn';
+import { SoloSeat } from './components/battle/SoloSeat';
 import { CardReveal } from './components/fx/CardReveal';
 import { Icon } from './components/ui/Icon';
 import { loadCloudDecks } from './state/decks';
@@ -81,8 +82,11 @@ function TurnPill({ engine }: { engine: any }) {
   const G = engine.G;
   const mySeat = useNetStore((s) => s.mySeat);
   const spectating = useNetStore((s) => s.spectating);
+  const solo = useNetStore((s) => s.solo);
   const active: 'me' | 'cpu' | undefined = G.active;
-  const mine = active === mySeat;
+  // 1人回しは mySeat が手番ごとに反転する＝ラベルは席固定（me='あなた'側 / cpu='相手'側）で出す
+  const lblSeat = solo ? 'me' : mySeat;
+  const mine = active === lblSeat;
   const cur = PHASE_STEPS.indexOf(G.phase);
   return (
     <div className={'turnpill' + (active ? (mine ? ' mine' : ' opp') : '')}>
@@ -97,9 +101,9 @@ function TurnPill({ engine }: { engine: any }) {
         <span
           className="tp-first"
           title="この対戦の先攻/後攻"
-          style={{ fontSize: 11, fontWeight: 700, padding: '1px 7px', borderRadius: 999, border: '1px solid var(--surface-edge)', color: G.firstPlayer === mySeat ? 'var(--self-accent)' : 'var(--opp-accent)' }}
+          style={{ fontSize: 11, fontWeight: 700, padding: '1px 7px', borderRadius: 999, border: '1px solid var(--surface-edge)', color: G.firstPlayer === lblSeat ? 'var(--self-accent)' : 'var(--opp-accent)' }}
         >
-          {spectating ? `先攻: ${seatLabel(G.firstPlayer)}` : `あなた${G.firstPlayer === mySeat ? '先攻' : '後攻'}`}
+          {spectating ? `先攻: ${seatLabel(G.firstPlayer)}` : `あなた${G.firstPlayer === lblSeat ? '先攻' : '後攻'}`}
         </span>
       ) : null}
       <span
@@ -231,7 +235,7 @@ function Shell({ username, logout }: { username: string; logout: () => void }) {
     s.setEnd(null);
     s.bump();
     setMenuOpen(false);
-    navigate('/battle');
+    navigate(net.solo ? '/battle?solo=1' : '/battle'); // 1人回しはモードを保ったままデッキ選択へ
   }
 
   const go = (to: string) => { setMenuOpen(false); navigate(to); };
@@ -357,6 +361,7 @@ function Shell({ username, logout }: { username: string; logout: () => void }) {
       </div>
 
       {/* 演出オーバーレイ（#screen の外＝body相当。position:fixed で全画面。クリップされない） */}
+      <SoloSeat />
       <Prompt />
       <FxLayer />
       <AtkAnnounce />

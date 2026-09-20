@@ -42,6 +42,7 @@ export async function joinRoom(code: string): Promise<void> {
 async function enterRoom(code: string): Promise<void> {
   const net = useNetStore.getState();
   net.setMode('online');
+  net.setSolo(false); // 1人回しの席追従を必ず解除（mySeat は以降サーバの席割り当てが持つ）
   net.setPhase('lobby');
   net.setRoomCode(code);
   net.setDesync(false);

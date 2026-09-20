@@ -23,6 +23,7 @@ export async function spectateRoom(code: string): Promise<void> {
   const c = code.trim().toUpperCase();
   const net = useNetStore.getState();
   net.setMode('online');
+  net.setSolo(false); // 1人回しの席追従を必ず解除（観戦の視点はホスト固定）
   net.setSpectating(true);
   net.setPhase('lobby');
   net.setRoomCode(c);

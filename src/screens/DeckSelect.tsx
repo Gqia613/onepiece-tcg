@@ -4,8 +4,10 @@
 // - カスタムデッキとプリセットはタブで切替（カスタムがあればカスタムを先に表示）
 // - 下部アクションバー: おまかせ即対戦 + 対戦開始（常時同じ位置＝親指域）
 // 選択状態は従来どおり engine.G.sel に持つ（start() のロジックは不変）。
+// ?solo=1 で「1人回し」モード（相手ターンも自分で操作）。画面構成は同じで、ラベルと
+// startGame のオプション（cpuHuman）だけが変わる。
 import { useEffect, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useEngineStore } from '../state/engineStore';
 import { unlockAudio } from '../audio';
@@ -17,6 +19,7 @@ import { deleteCloudDeck, sharedToDeck } from '../state/decks';
 import { api } from '../api/client';
 import { beginCpuRecording } from '../net/cpuRecorder';
 import { useAuth } from '../state/auth';
+import { useNetStore } from '../state/netStore';
 
 type DeckCat = 'custom' | 'shared' | 'preset';
 const CAT_LABEL: Record<DeckCat, string> = { custom: 'マイデッキ', shared: '共有デッキ', preset: 'プリセット' };
@@ -33,13 +36,14 @@ function deckColors(d: Deck): string[] { return (d.colors || d.color || []) as s
 function auraOf(d: Deck): string { return AURA_HEX[deckColors(d)[0]] || '#3ec9ff'; }
 
 // VS ステージの片側スロット。デッキ未選択はプレースホルダ、選択済みはリーダー画像がスラムイン。
-function VsSlot({ side, deck, active, onClick }: {
+function VsSlot({ side, deck, active, oppLabel, onClick }: {
   side: 'me' | 'cpu';
   deck: Deck | undefined;
   active: boolean; // 現在このスロットのデッキを選んでいるステップか
+  oppLabel: string; // 相手側スロットの呼び名（CPU対戦='CPU' / 1人回し='相手'）
   onClick: () => void;
 }) {
-  const label = side === 'me' ? 'あなた' : 'CPU';
+  const label = side === 'me' ? 'あなた' : oppLabel;
   return (
     <button className={'vs-slot' + (active ? ' focus' : '')} onClick={onClick} title={label + 'のデッキを選ぶ'}>
       <div className="vs-card" style={deck ? ({ ['--aura' as any]: auraOf(deck) }) : undefined}>
@@ -71,6 +75,8 @@ function VsSlot({ side, deck, active, onClick }: {
 
 export default function DeckSelect() {
   const navigate = useNavigate();
+  const solo = new URLSearchParams(useLocation().search).get('solo') === '1'; // 1人回し
+  const oppLabel = solo ? '相手' : 'CPU';
   const engine = useEngineStore((s) => s.engine);
   useEngineStore((s) => s.version); // 再描画トリガ（値は使わないが購読）
   const [listDeck, setListDeck] = useState<Deck | null>(null); // カードリスト表示中のデッキ
@@ -179,6 +185,12 @@ export default function DeckSelect() {
     const e = engine!;
     // 進行中の対戦が残っていたら破棄してから開始（/battle へ直接来た場合の保険）
     if (e.G.inGame) { try { e.backToSelect?.(); } catch { /* ignore */ } }
+    // モード確定: 1人回しは両席とも人間（CPU AI を一切走らせない）＝盤面の席は手番側へ追従する。
+    const net = useNetStore.getState();
+    net.setSolo(solo);
+    net.setMySeat('me'); // 開始時は必ず me 席から（以降 SoloSeat が手番に合わせて反転）
+    // ログの席名（エンジンの sideName）。オンライン対戦の残留名を必ず上書きする。
+    e.G.names = solo ? { me: 'あなた', cpu: '相手' } : null;
     // CPUの強さ段階は撤去済み＝常に「強い」(ローカル探索puct)。
     e.G.cpuMode = 'strong';
     e.G.aiOn = false;
@@ -207,22 +219,29 @@ export default function DeckSelect() {
     }
     // startGame は同期部で盤面を立ち上げ(inGame=true)→そのままマリガンのモーダルを出して待機する。
     // 先に /battle/play へ遷移して盤面を表示してから解決を待つ（マリガンは盤面の上に出る）。
-    const started = e.startGame(e.G.sel!.me as string, e.G.sel!.cpu as string);
+    // ★1人回し: cpuHuman=true で cpu 席も人間として構築（CPU AI・自動マリガンが走らない）。
+    //   オンライン対戦と同じ構成なので、あとは席（mySeat）を手番へ追従させるだけで両席を操作できる。
+    const started = solo
+      ? e.startGame(e.G.sel!.me as string, e.G.sel!.cpu as string, { cpuHuman: true })
+      : e.startGame(e.G.sel!.me as string, e.G.sel!.cpu as string);
     if (temp.length) e.G.customDecks = (e.G.customDecks || []).filter((x: any) => !temp.includes(x.id));
     // デッキ名は id から引き直す（randomStart は G.sel を書き換えた直後に呼ぶ＝render時の meDeck/cpuDeck が古い）
     const nameOf = (id: unknown) => allDecks.find((d) => d.id === id)?.name || String(id);
-    beginCpuRecording(e, {
-      seed,
-      firstPref,
-      deckIds: { me: String(e.G.sel!.me), cpu: String(e.G.sel!.cpu) },
-      deckNames: { me: nameOf(e.G.sel!.me), cpu: nameOf(e.G.sel!.cpu) },
-      playerName: useAuth.getState().user?.username || '',
-    });
+    // リプレイ内部収集は「人間 vs CPU」の解析用。1人回しは相手もこちらの操作なので記録しない。
+    if (!solo) {
+      beginCpuRecording(e, {
+        seed,
+        firstPref,
+        deckIds: { me: String(e.G.sel!.me), cpu: String(e.G.sel!.cpu) },
+        deckNames: { me: nameOf(e.G.sel!.me), cpu: nameOf(e.G.sel!.cpu) },
+        playerName: useAuth.getState().user?.username || '',
+      });
+    }
     useEngineStore.getState().bump();
     navigate('/battle/play');
     await started;
-    // 常に「強い」= ローカル探索(puct)。players は startGame で生成済み。
-    if (e.G.players && e.G.players.cpu) e.G.players.cpu.agent = 'puct';
+    // 常に「強い」= ローカル探索(puct)。players は startGame で生成済み（1人回しは CPU を動かさない）。
+    if (!solo && e.G.players && e.G.players.cpu) e.G.players.cpu.agent = 'puct';
     useEngineStore.getState().bump();
   }
 
@@ -267,23 +286,23 @@ export default function DeckSelect() {
         <button className="bd-back" onClick={() => navigate('/')} aria-label="戻る" title="戻る">
           <Icon.arrowLeft size={22} />
         </button>
-        <span className="bd-title">対戦</span>
-        <span className="bd-note">デッキをタップで選択</span>
+        <span className="bd-title">{solo ? '1人回し' : '対戦'}</span>
+        <span className="bd-note">{solo ? '両方のデッキを自分で操作' : 'デッキをタップで選択'}</span>
       </div>
 
       {/* ===== VS ステージ: 選んだリーダー同士が向き合う ===== */}
       <div className={'vs-stage' + (ready ? ' ready' : '')}>
-        <VsSlot side="me" deck={meDeck} active={step === 'me'} onClick={() => setStep('me')} />
+        <VsSlot side="me" deck={meDeck} active={step === 'me'} oppLabel={oppLabel} onClick={() => setStep('me')} />
         <div className="vs-mid">
           <div className="vs-emblem">VS</div>
           {ready ? <Icon.zap size={14} /> : null}
         </div>
-        <VsSlot side="cpu" deck={cpuDeck} active={step === 'cpu'} onClick={() => setStep('cpu')} />
+        <VsSlot side="cpu" deck={cpuDeck} active={step === 'cpu'} oppLabel={oppLabel} onClick={() => setStep('cpu')} />
       </div>
 
       {/* 設定（先攻）— 整列グリッド */}
       <div className="ds-controls">
-        {seg('先攻', [['random', 'ランダム'], ['me', 'あなた'], ['cpu', 'CPU']] as Array<['random' | 'me' | 'cpu', string]>, (G.firstPref || 'random') as 'random' | 'me' | 'cpu', setFirstPref)}
+        {seg('先攻', [['random', 'ランダム'], ['me', 'あなた'], ['cpu', oppLabel]] as Array<['random' | 'me' | 'cpu', string]>, (G.firstPref || 'random') as 'random' | 'me' | 'cpu', setFirstPref)}
       </div>
 
       {/* ===== ステップタブ（アンダーライン・金＝VSステージの選択中スロットと対応） + カテゴリ切替 ===== */}
@@ -293,7 +312,7 @@ export default function DeckSelect() {
             ① あなたのデッキ{meDeck ? <Icon.check size={13} /> : null}
           </button>
           <button className={'ds-step-tab' + (step === 'cpu' ? ' on' : '')} onClick={() => setStep('cpu')}>
-            ② CPU のデッキ{cpuDeck ? <Icon.check size={13} /> : null}
+            ② {oppLabel} のデッキ{cpuDeck ? <Icon.check size={13} /> : null}
           </button>
         </div>
         {cats.length > 1 ? (
@@ -325,7 +344,7 @@ export default function DeckSelect() {
               {mine || foes ? (
                 <div className="dsg-picks">
                   {mine ? <span className="dsg-pick me">あなた</span> : null}
-                  {foes ? <span className="dsg-pick cpu">CPU</span> : null}
+                  {foes ? <span className="dsg-pick cpu">{oppLabel}</span> : null}
                 </div>
               ) : null}
               <div className="art" style={{ backgroundImage: `url('${IMG(d.leader)}')` }}>
@@ -373,7 +392,7 @@ export default function DeckSelect() {
           <Icon.zap size={15} />おまかせ
         </button>
         <button className="btn-primary ds-start" disabled={!ready} onClick={() => void start()}>
-          <Icon.swords size={22} />対戦開始
+          <Icon.swords size={22} />{solo ? '1人回し開始' : '対戦開始'}
         </button>
       </div>
 
