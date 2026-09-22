@@ -759,11 +759,17 @@
     // 手札のカードの実効カウンター値（盤面の handCounterBuff static を加味。例: 手札のP8000キャラのカウンター+2000）
     function counterVal(c, side) {
       let v = c.base.counter || 0;
-      for (const src of [G.players[side].leader, ...G.players[side].chars]) { if (!src || isNegated(src)) continue; const st = src.base.fx && src.base.fx.static; if (!st) continue; for (const o of st) { if (o.op === 'handCounterBuff' && (!o.cond || checkCond(o.cond, side, src)) && matchFilter(c, o.filter || {})) v += o.amount || 0; } }
+      // ★「カウンター+Nを持つ」(set未指定)＝加算 ／「カウンター+Nになる」(set:true)＝上書き。
+      //   公式Q&A1387: カウンター+1000のパワー8000キャラは OP16-118 下では「+2000として使用」＝加算でなく上書き。
+      //   公式Q&A1388: OP16-118 が2枚あっても「+2000」＝同じ上書きは重複しない。
+      //   OP17-063のQ&A: OP16-118 と併用してもカウンター+2000＝上書きが他の付与にも勝つ。
+      let setTo = null;
+      const applySet = (amt) => { const a = amt || 0; setTo = (setTo == null || a > setTo) ? a : setTo; };
+      for (const src of [G.players[side].leader, ...G.players[side].chars]) { if (!src || isNegated(src)) continue; const st = src.base.fx && src.base.fx.static; if (!st) continue; for (const o of st) { if (o.op === 'handCounterBuff' && (!o.cond || checkCond(o.cond, side, src)) && matchFilter(c, o.filter || {})) { if (o.set) applySet(o.amount); else v += o.amount || 0; } } }
       // 手札のカード自身が持つ条件付きカウンター（「手札のこのカードは、〜の場合、カウンター+N を持つ」OP17-118ジーベック）。
       //   盤面のカードではなく手札のカード自身が供給元なので上のループでは拾えない。
-      { const st = c.base.fx && c.base.fx.static; if (st) for (const o of st) { if (o.op === 'selfHandCounterBuff' && (!o.cond || checkCond(o.cond, side, c))) v += o.amount || 0; } }
-      return v;
+      { const st = c.base.fx && c.base.fx.static; if (st) for (const o of st) { if (o.op === 'selfHandCounterBuff' && (!o.cond || checkCond(o.cond, side, c))) { if (o.set) applySet(o.amount); else v += o.amount || 0; } } }
+      return setTo != null ? setTo : v;
     }
     async function counterStep(dSide, attacker, target) {
       const D = G.players[dSide];

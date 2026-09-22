@@ -1635,6 +1635,32 @@ function setupG(leaderNo){G.active='me';G.turnSeq=5;G.winner=null;const mkP=(ln,
       const ctx={side:'me',self:ev,target:P.leader};
       await runFx(C['OP14-096'].fx.counter.fx, ctx);
       ok(power(P.leader)===6000, '例38c: 自身を含めて9枚なら不発（境界）'); }
+
+    /* ===== 「カウンター+Nになる」は上書き（加算ではない）＝OP16-118（実対戦報告 2026-09-22）=====
+       公式Q&A1387: カウンター+1000のパワー8000キャラは OP16-118 下では「+2000として使用」
+       公式Q&A1388: OP16-118 が2枚あっても「+2000」（重複しない） */
+    setupG('OP16-001'); { const P=G.players.me; P.chars=[mkc('OP16-118')];
+      const c2000=mkc('OP17-035'); // パワー8000 / カウンター2000
+      const c1000=mkc('EB01-041'); // パワー8000 / カウンター1000
+      const c0=mkc('EB03-026');    // パワー8000 / カウンター0
+      const other=mkc('OP17-012'); // パワー1000（対象外）
+      ok(counterVal(c2000,'me')===2000, '例39a: 元々カウンター2000のパワー8000キャラは2000のまま（4000にならない）');
+      ok(counterVal(c1000,'me')===2000, '例39a: 元々1000は2000に上書き（Q&A1387）');
+      ok(counterVal(c0,'me')===2000, '例39a: 元々0も2000に上書き');
+      ok(counterVal(other,'me')===1000, '例39a: パワー8000以外は影響を受けない');
+      P.chars=[mkc('OP16-118'),mkc('OP16-118')];
+      ok(counterVal(c2000,'me')===2000 && counterVal(c1000,'me')===2000, '例39a: OP16-118が2枚でも2000（Q&A1388・重複しない）');
+      P.chars=[]; ok(counterVal(c2000,'me')===2000 && counterVal(c1000,'me')===1000, '例39a: OP16-118が場を離れれば元のカウンターに戻る'); }
+    // 上書きは他の「カウンター+Nを持つ」付与にも勝つ（OP17-063のQ&A: OP16-118併用でカウンター+2000）
+    setupG('OP16-001'); { const P=G.players.me; P.chars=[mkc('OP16-118'),mkc('OP17-063')];
+      const c0=mkc('EB03-026'); // パワー8000 / カウンター0（OP17-063の「カウンターを持たない」対象でもある）
+      ok(counterVal(c0,'me')===2000, '例39b: 上書き(になる)は加算付与(を持つ)に勝つ＝3000にならない'); }
+    // 加算型（「カウンター+1000を持つ」）は従来どおり加算
+    setupG('OP16-001'); { const P=G.players.me; P.chars=[mkc('OP17-063')];
+      const c0=mkc('EB03-026');  // カウンター0 → +1000
+      const c1000=mkc('EB01-041'); // カウンター1000（「カウンターを持たない」ではない＝対象外）
+      ok(counterVal(c0,'me')===1000, '例39b: OP17-063はカウンター無しキャラに+1000');
+      ok(counterVal(c1000,'me')===1000, '例39b: カウンターを持つキャラは対象外'); }
   }catch(e){ console.log('EXCEPTION:', e.message); fail++; }
   console.log('ユニットテスト: pass='+pass+' fail='+fail);
   process.exit(fail?1:0);
