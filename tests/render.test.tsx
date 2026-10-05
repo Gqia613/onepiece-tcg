@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 import { describe, it, expect, beforeAll, afterEach } from 'vitest';
-import { render as rtlRender, cleanup, act } from '@testing-library/react';
+import { render as rtlRender, cleanup, act, fireEvent } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import type { ReactElement } from 'react';
 import { createEngine } from '../src/engine/bootstrap';
@@ -146,5 +146,24 @@ describe('DeckSelect renders', () => {
     expect(document.querySelectorAll('.dsg-item').length).toBeGreaterThan(2);
     expect(document.querySelectorAll('.art').length).toBeGreaterThan(2);
     expect(document.body.textContent).toMatch(/BATTLE START|開始|スタート/i);
+  });
+
+  it('リーダー絵柄（パラレル）を選ぶとデッキ画像が絵柄番号に変わる', async () => {
+    act(() => { engine.G.inGame = false; useEngineStore.setState({ version: useEngineStore.getState().version + 1 }); });
+    const d = engine.DECKS.find((x: any) => engine.artsOf(x.leader).length);
+    expect(d).toBeTruthy();
+    const orig = d.leader;
+    act(() => { engine.G.sel = { me: d.id, cpu: undefined }; useEngineStore.setState({ version: useEngineStore.getState().version + 1 }); });
+    render(<DeckSelect />);
+    const pill = [...document.querySelectorAll('.dsm-pill')].find((b) => b.textContent === 'リーダー絵柄') as HTMLButtonElement;
+    expect(pill).toBeTruthy();
+    act(() => { fireEvent.click(pill); });
+    const items = document.querySelectorAll('.art-pick-item');
+    expect(items.length).toBeGreaterThanOrEqual(2);
+    const v = engine.artsOf(orig)[0][0];
+    await act(async () => { fireEvent.click(items[1].querySelector('button') as HTMLButtonElement); });
+    expect(d.leader).toBe(v);
+    expect([...document.querySelectorAll('.art')].some((el) => (el as HTMLElement).style.backgroundImage.includes(v))).toBe(true);
+    d.leader = orig; // 他テストへ持ち越さない
   });
 });

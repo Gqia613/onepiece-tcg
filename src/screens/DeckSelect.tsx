@@ -14,8 +14,9 @@ import { unlockAudio } from '../audio';
 import type { Deck } from '../engine/types';
 import { IMG } from '../engine/img';
 import { DeckListModal } from '../components/deck/DeckListModal';
+import { ArtPicker, artOptions } from '../components/deck/ArtPicker';
 import { Icon } from '../components/ui/Icon';
-import { deleteCloudDeck, sharedToDeck } from '../state/decks';
+import { deleteCloudDeck, sharedToDeck, saveBuilderDeck } from '../state/decks';
 import { api } from '../api/client';
 import { beginCpuRecording } from '../net/cpuRecorder';
 import { useAuth } from '../state/auth';
@@ -81,6 +82,7 @@ export default function DeckSelect() {
   useEngineStore((s) => s.version); // 再描画トリガ（値は使わないが購読）
   const [listDeck, setListDeck] = useState<Deck | null>(null); // カードリスト表示中のデッキ
   const [delDeck, setDelDeck] = useState<Deck | null>(null);   // 削除確認モーダル
+  const [artDeck, setArtDeck] = useState<Deck | null>(null);   // リーダー絵柄（パラレル等）の選択モーダル
   const [step, setStep] = useState<'me' | 'cpu'>('me');        // ①あなた → ②CPU
   const [cat, setCat] = useState<DeckCat>('preset');           // グリッドの表示カテゴリ
   const [sharedList, setSharedList] = useState<Deck[]>([]);    // 友達の共有デッキ（CPUに持たせて練習できる）
@@ -381,6 +383,9 @@ export default function DeckSelect() {
             }}
           >コピーして編集</button>
         ) : null}
+        {active && engine.artsOf && engine.artsOf(active.leader).length ? (
+          <button className="dsm-pill" title="リーダーの絵柄（パラレル等）を変える" onClick={() => setArtDeck(active)}>リーダー絵柄</button>
+        ) : null}
         {active && (active as any).cloud ? (
           <button className="dsm-pill danger" onClick={() => setDelDeck(active)}>削除</button>
         ) : null}
@@ -418,6 +423,29 @@ export default function DeckSelect() {
           </div>
         </div>
       ) : null}
+
+      {/* リーダー絵柄の変更: マイデッキはクラウドへ上書き保存／プリセット・共有デッキは今回の起動中のみ */}
+      <AnimatePresence>
+        {artDeck ? (
+          <ArtPicker key="ds-artpick" mode="leader"
+            name={(engine.C[artDeck.leader] && engine.C[artDeck.leader].name) || artDeck.leader}
+            options={artOptions(engine.artBaseNo(artDeck.leader), engine.artsOf(artDeck.leader))}
+            selected={artDeck.leader}
+            onPick={async (no) => {
+              const d = artDeck as any; setArtDeck(null);
+              if (no === d.leader) return;
+              if (d.cloud) {
+                const r = await saveBuilderDeck(engine, { leaderNo: no, list: d.list, name: d.name }, d.id);
+                if (!r.ok) { window.alert(r.error || '保存に失敗しました'); return; }
+                if (r.deck) { r.deck.shared = d.shared; }
+              } else {
+                d.leader = no;
+              }
+              useEngineStore.getState().bump();
+            }}
+            onClose={() => setArtDeck(null)} />
+        ) : null}
+      </AnimatePresence>
 
       <DeckListModal deck={listDeck} C={engine.C || {}} onClose={() => setListDeck(null)} />
     </div>
