@@ -18,10 +18,10 @@ beforeAll(() => {
 
 const chip = (root: Element, label: string) =>
   Array.from(root.querySelectorAll('button.bd-fbtn')).find((b) => (b.textContent || '') === label) as HTMLButtonElement;
-// DeckBuilder と同じ数え方（全 leader、パラレル含む）
+// DeckBuilder と同じ数え方（本体 leader ＋ その絵違い _pN/_rN）
 const leaderCount = (pred: (color: string[]) => boolean) => {
   const C = engine.C; let n = 0;
-  for (const no in C) { const c = C[no]; if (c.leader && pred(c.color || [])) n++; }
+  for (const no in C) { const c = C[no]; if (c.leader && engine.artBaseNo(no) === no && pred(c.color || [])) n += 1 + engine.artsOf(no).length; }
   return n;
 };
 

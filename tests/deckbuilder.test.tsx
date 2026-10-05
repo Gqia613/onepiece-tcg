@@ -84,7 +84,7 @@ describe('DeckBuilder', () => {
     expect(document.querySelector('.bd-lead-cur')).toBeNull();
   });
 
-  it('絵違い（パラレル）を絵柄ピッカーで追加でき、本体と合算で4枚まで', () => {
+  it('絵違い（パラレル）が一覧に本体と並んで表示され、本体と合算で4枚まで', () => {
     render(<DeckBuilder />);
     const C = useEngineStore.getState().engine!.C;
     const col = C['OP16-063'].color[0];
@@ -95,18 +95,20 @@ describe('DeckBuilder', () => {
     act(() => { fireEvent.click(lead); });
     const search = document.querySelector('.bd-filters .bd-search') as HTMLInputElement;
     act(() => { fireEvent.change(search, { target: { value: 'OP16-063' } }); }); // クザン（_p1/_p2 を持つ）
-    const tile = [...document.querySelectorAll('.bd-tile')].find((t) => t.querySelector('.bd-artbtn'));
-    expect(tile).toBeTruthy();
-    if (!tile) return;
-    act(() => { fireEvent.click(tile.querySelector('.bd-artbtn') as HTMLButtonElement); });
-    const items = document.querySelectorAll('.art-pick-item');
-    expect(items.length).toBeGreaterThanOrEqual(2); // 通常 + 絵違い
-    const plus = (i: number) => items[i].querySelector('.bd-pl') as HTMLButtonElement;
-    act(() => { fireEvent.click(plus(0)); fireEvent.click(plus(1)); fireEvent.click(plus(1)); fireEvent.click(plus(1)); });
-    act(() => { fireEvent.click(plus(1)); }); // 5枚目は拒否
+    // 本体の直後に絵違いのタイルが並ぶ（モーダル無し）
+    const tiles = [...document.querySelectorAll('.bd-tile')];
+    const srcs = tiles.map((t) => (t.querySelector('.bd-img') as HTMLImageElement).src);
+    const iBase = srcs.findIndex((u) => /OP16-063\.png/.test(u));
+    expect(iBase).toBeGreaterThanOrEqual(0);
+    expect(srcs[iBase + 1]).toMatch(/OP16-063_p1\.png/);
+    expect(srcs[iBase + 2]).toMatch(/OP16-063_p2\.png/);
+    expect(document.querySelector('.bd-artbtn')).toBeNull();
+    const plus = (i: number) => tiles[iBase + i].querySelector('.bd-pl') as HTMLButtonElement;
+    act(() => { fireEvent.click(plus(0)); fireEvent.click(plus(1)); fireEvent.click(plus(1)); fireEvent.click(plus(2)); });
+    act(() => { fireEvent.click(plus(2)); }); // 5枚目は拒否（本体+絵違いの合算）
     expect(document.querySelector('.bd-st-count')?.textContent).toMatch(/^4/);
-    expect(tile.querySelector('.bd-num')?.textContent).toBe('4'); // タイルは合算表示
-    expect(document.querySelectorAll('.bd-panel .bd-row').length).toBe(2); // デッキ内容は絵柄ごとの行
+    expect(tiles[iBase + 1].querySelector('.bd-num')?.textContent).toBe('2'); // タイルは絵柄ごとの枚数
+    expect(document.querySelectorAll('.bd-panel .bd-row').length).toBe(3); // デッキ内容は絵柄ごとの行
   });
 
   it('toggles deck list panel visibility', () => {

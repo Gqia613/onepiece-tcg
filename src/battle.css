@@ -7284,22 +7284,6 @@ button.hb-chip:not(.zero):not([disabled]):hover {
 }
 
 /* ===== 絵違い（パラレル等）選択 ===== */
-.bd-artbtn {
-  position: absolute;
-  z-index: 2;
-  right: 3px;
-  bottom: 3px;
-  padding: 2px 7px;
-  min-height: 22px;
-  border-radius: 999px;
-  background: rgba(0, 0, 0, .82);
-  border: 1px solid var(--gold);
-  color: var(--gold-soft);
-  font-size: 10.5px;
-  font-weight: 700;
-  cursor: pointer
-}
-
 .art-pick-back {
   position: fixed;
   inset: 0;
