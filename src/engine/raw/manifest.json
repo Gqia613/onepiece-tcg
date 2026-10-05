@@ -4,6 +4,7 @@
   "cards-attr.js",
   "cards-trigger.js",
   "cards-sets.js",
+  "cards-arts.js",
   "00-data.js",
   "10-engine-core.js",
   "20-targeting-fx.js",

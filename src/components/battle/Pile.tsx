@@ -76,7 +76,7 @@ export function Pile({ side, kind }: { side: Side; kind: 'deck' | 'dondeck' | 't
       <div className="trashtop" data-no={top.base.no} style={{ cursor: 'pointer' }} onClick={openTrash} title={`最新: ${top.base.name}（クリック/タップで全表示）`}>
         <img
           className="tt-img"
-          src={IMG(top.base.no)}
+          src={IMG(top.no || top.base.no)}
           referrerPolicy="no-referrer"
           decoding="async"
           alt={top.base.name}
@@ -92,7 +92,7 @@ export function Pile({ side, kind }: { side: Side; kind: 'deck' | 'dondeck' | 't
             {fan.map((c, i) => (
               <div className="tf-card" key={c.uid ?? i} title={c.base.name}>
                 <img
-                  src={IMG(c.base.no)}
+                  src={IMG(c.no || c.base.no)}
                   referrerPolicy="no-referrer"
                   decoding="async"
                   alt={c.base.name}

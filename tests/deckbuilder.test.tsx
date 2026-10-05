@@ -84,6 +84,31 @@ describe('DeckBuilder', () => {
     expect(document.querySelector('.bd-lead-cur')).toBeNull();
   });
 
+  it('絵違い（パラレル）を絵柄ピッカーで追加でき、本体と合算で4枚まで', () => {
+    render(<DeckBuilder />);
+    const C = useEngineStore.getState().engine!.C;
+    const col = C['OP16-063'].color[0];
+    const lead = [...document.querySelectorAll('.bd-leader')].find((el) => {
+      const no = Object.keys(C).find((k) => C[k].leader && C[k].name === el.getAttribute('title'));
+      return no && C[no].color.includes(col);
+    }) as HTMLElement;
+    act(() => { fireEvent.click(lead); });
+    const search = document.querySelector('.bd-filters .bd-search') as HTMLInputElement;
+    act(() => { fireEvent.change(search, { target: { value: 'OP16-063' } }); }); // クザン（_p1/_p2 を持つ）
+    const tile = [...document.querySelectorAll('.bd-tile')].find((t) => t.querySelector('.bd-artbtn'));
+    expect(tile).toBeTruthy();
+    if (!tile) return;
+    act(() => { fireEvent.click(tile.querySelector('.bd-artbtn') as HTMLButtonElement); });
+    const items = document.querySelectorAll('.art-pick-item');
+    expect(items.length).toBeGreaterThanOrEqual(2); // 通常 + 絵違い
+    const plus = (i: number) => items[i].querySelector('.bd-pl') as HTMLButtonElement;
+    act(() => { fireEvent.click(plus(0)); fireEvent.click(plus(1)); fireEvent.click(plus(1)); fireEvent.click(plus(1)); });
+    act(() => { fireEvent.click(plus(1)); }); // 5枚目は拒否
+    expect(document.querySelector('.bd-st-count')?.textContent).toMatch(/^4/);
+    expect(tile.querySelector('.bd-num')?.textContent).toBe('4'); // タイルは合算表示
+    expect(document.querySelectorAll('.bd-panel .bd-row').length).toBe(2); // デッキ内容は絵柄ごとの行
+  });
+
   it('toggles deck list panel visibility', () => {
     render(<DeckBuilder />);
     act(() => { fireEvent.click(document.querySelectorAll('.bd-leader')[0]); });

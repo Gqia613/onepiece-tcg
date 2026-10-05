@@ -44,7 +44,7 @@ export function LifeStack({ side }: { side: Side }) {
                     transition={{ type: 'spring', stiffness: 420, damping: 30 }}
                   >
                     <img
-                      src={IMG_ROT(c.base.no)}
+                      src={IMG_ROT(c.no || c.base.no)}
                       referrerPolicy="no-referrer"
                       decoding="async"
                       alt={c.base.name}

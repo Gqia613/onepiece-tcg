@@ -46,7 +46,7 @@ function TmCard({ card }: { card: Card }) {
       onTouchMove={onTouchMove}
       onTouchEnd={onTouchEnd}
     >
-      <img src={IMG(b.no)} referrerPolicy="no-referrer" decoding="async" alt={b.name}
+      <img src={IMG(card.no || b.no)} referrerPolicy="no-referrer" decoding="async" alt={b.name}
         onError={(e) => { const t = e.currentTarget as HTMLImageElement; t.style.display = 'none'; t.parentElement?.classList.add('noimg'); }} />
       <span className="tm-fb">{b.name}</span>
     </div>

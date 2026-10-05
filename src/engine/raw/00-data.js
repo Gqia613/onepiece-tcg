@@ -29,6 +29,10 @@
        ========================================================================= */
     const C = {}; // card library keyed by no
     function def(c) { C[c.no] = c; return c; }
+    // 絵違い番号 → 本体番号（cards-arts.js 由来・mergeCardDB が充填）。枚数制限（同一カード4枚）は本体番号で数える。
+    const ART_BASE = {};
+    function artBaseNo(no) { return ART_BASE[no] || no; }
+    function artsOf(no) { const A = (typeof window !== 'undefined' && window.CARD_ARTS) || (typeof CARD_ARTS !== 'undefined' ? CARD_ARTS : null); return (A && A[artBaseNo(no)]) || []; }
 
     /* 効果(fx)は cards-fx.js に一元化済み。def() はメタ情報（コスト/パワー/特徴/リーダーキー/キーワード等）のみを定義する。 */
 
@@ -572,5 +576,16 @@
         // 別名（「カード名を「X」としても扱う」。OP04-099おリン=シャーロット・リンリン）
         { const m = /カード名を「(.+?)」としても扱う/.exec(base.text || ''); if (m) base.aliasName = m[1]; }
         if (!wasDef) C[cd.no] = base;
+      }
+      // ★絵違い（パラレル _pN / 再録別イラスト _rN。cards-arts.js）: 効果・数値は本体と同一＝C[絵柄番号] を本体への「非列挙エイリアス」にする。
+      //   C[v] === C[base]（base.no は本体番号のまま＝番号キーの効果/AI判定は不変）。Object.keys(C) に出ない＝プール/一覧の重複なし。
+      //   インスタンスの inst.no だけが絵柄番号を保持し、画像（IMG(card.no)）に使われる。_rN で cards.js に実体がある番号は実体を優先。
+      const ARTS = (typeof window !== 'undefined' && window.CARD_ARTS) || (typeof CARD_ARTS !== 'undefined' ? CARD_ARTS : null);
+      if (ARTS) for (const b in ARTS) {
+        if (!C[b]) continue;
+        for (const [v] of ARTS[b]) {
+          ART_BASE[v] = b;
+          if (!Object.prototype.hasOwnProperty.call(C, v)) Object.defineProperty(C, v, { value: C[b], enumerable: false, configurable: true, writable: true });
+        }
       }
     })();

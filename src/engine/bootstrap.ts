@@ -11,6 +11,7 @@ import cardsfx from './raw/cards-fx.js?raw';
 import cardsattr from './raw/cards-attr.js?raw';
 import cardstrigger from './raw/cards-trigger.js?raw';
 import cardssets from './raw/cards-sets.js?raw';
+import cardsarts from './raw/cards-arts.js?raw';
 import d00 from './raw/00-data.js?raw';
 import e10 from './raw/10-engine-core.js?raw';
 import t20 from './raw/20-targeting-fx.js?raw';
@@ -23,7 +24,7 @@ import aip from './raw/ai-policy.js?raw';
 import ais from './raw/ai-strategy.js?raw';
 import ai70 from './raw/70-ai.js?raw';
 
-const PARTS = [cards, cardsfx, cardsattr, cardstrigger, cardssets, d00, e10, t20, b30, u40, i50, s60, aiw, aip, ais, ai70];
+const PARTS = [cards, cardsfx, cardsattr, cardstrigger, cardssets, cardsarts, d00, e10, t20, b30, u40, i50, s60, aiw, aip, ais, ai70];
 
 // footer で注入アダプタへ差し替えるUIフック束縛（全て function 宣言＝再代入可能）。
 const HOOKS = [
@@ -48,7 +49,7 @@ const EXPORTS = [
   'chooseCard', 'humanPick', 'confirmUse',
   'cpuTurn', 'aiThink', 'predictCPU',
   'inst', 'buildPlayer', 'findDeck', 'escapeHTML', 'IMG',
-  'builderToDeck', 'builderValidate', 'leaderColors', // デッキ検証/生成（クラウド保存の整合に再利用）
+  'builderToDeck', 'builderValidate', 'leaderColors', 'artBaseNo', 'artsOf', 'sameCardCount', // デッキ検証/生成（クラウド保存の整合に再利用）
   // オンライン対戦（ロックステップ）: 決定論シード・uid解決・投了・同期ハッシュ・状態複製
   'seedRng', 'rngState', 'findCard', 'lose', 'hashGameState', 'canonGameState', 'cloneGameState', 'loadGameState', 'promptPick',
 ];
@@ -118,6 +119,9 @@ export interface EngineAPI {
   humanPick: (...a: any[]) => Promise<any>;
   confirmUse: (...a: any[]) => Promise<boolean>;
   cpuTurn: (side: 'me' | 'cpu') => Promise<void>;
+  artBaseNo: (no: string) => string; // 絵違い番号 → 本体番号
+  artsOf: (no: string) => Array<[string, string]>; // 本体の絵違い一覧 [[絵柄番号, 収録弾]]
+  sameCardCount: (list: Record<string, number>, no: string) => number; // 絵違いを合算した同一カード枚数
   [k: string]: any;
 }
 

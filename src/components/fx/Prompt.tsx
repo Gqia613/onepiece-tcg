@@ -44,13 +44,13 @@ function AttackHead() {
   return (
     <div className={'prompt-atkhead' + (opp ? '' : ' own')}>
       <span className="pah-side pah-atk">
-        <img className="pah-card" src={IMG(attacker.base.no)} referrerPolicy="no-referrer" decoding="async" alt="" onError={hideImg} />
+        <img className="pah-card" src={IMG(attacker.no || attacker.base.no)} referrerPolicy="no-referrer" decoding="async" alt="" onError={hideImg} />
         <span className="pah-nm">{attacker.base.name}</span>
         <b className="pah-pw">P{pw(attacker)}</b>
       </span>
       <span className="pah-arrow"><Icon.swords size={20} /></span>
       <span className="pah-side pah-def">
-        <img className="pah-card" src={IMG(target.base.no)} referrerPolicy="no-referrer" decoding="async" alt="" onError={hideImg} />
+        <img className="pah-card" src={IMG(target.no || target.base.no)} referrerPolicy="no-referrer" decoding="async" alt="" onError={hideImg} />
         <span className="pah-nm">{toN}</span>
         <b className="pah-pw def">P{pw(target)}</b>
       </span>

@@ -9,6 +9,7 @@ import { useEngineStore } from '../state/engineStore';
 import { IMG } from '../engine/img';
 import { saveBuilderDeck } from '../state/decks';
 import { ZoomView } from '../components/deck/CardZoom';
+import { ArtPicker, artOptions } from '../components/deck/ArtPicker';
 import { Icon } from '../components/ui/Icon';
 
 const COLOR_HEX: Record<string, string> = {
@@ -84,6 +85,7 @@ export default function DeckBuilder() {
   const [leaderOpen, setLeaderOpen] = useState(!builderDeck?.leader); // リーダー選択セクションの展開状態（選択後は自動で畳む）
   const [showList, setShowList] = useState(true); // デッキ内容リスト（右パネル/モバイルのstickyバー内）の表示
   const [zoom, setZoom] = useState<{ no: string; name: string } | null>(null);
+  const [artPick, setArtPick] = useState<{ base: string; mode: 'deck' | 'leader' } | null>(null); // 絵違い選択モーダル
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState<{ text: string; err?: boolean } | null>(null);
   // 「トップへ」FAB: 実際のスクロール枠は .bd-wrap（#screen は overflow:hidden）なので
@@ -110,6 +112,13 @@ export default function DeckBuilder() {
     return (c.color || []).some((col: string) => lc.includes(col));
   };
   const isUnlimited = (no: string) => !!(C[no] && /何枚でも入れることができる/.test(C[no].text || ''));
+  // 絵違い（パラレル _pN / 再録別イラスト _rN）。C[絵柄番号] は本体へのエイリアス（効果同一）。枚数制限は本体番号で合算。
+  const artBase = (no: string) => (engine.artBaseNo ? engine.artBaseNo(no) : no);
+  const artsOf = (no: string): Array<[string, string]> => (engine.artsOf ? engine.artsOf(no) : []);
+  const sameCount = (no: string) => (engine.sameCardCount ? engine.sameCardCount(list, no) : (list[no] || 0));
+  // デッキ内でこのカード（本体）に使っている絵柄番号（枚数の多い順）
+  const artsInDeck = (base: string) => Object.keys(list).filter((k) => list[k] > 0 && artBase(k) === base)
+    .sort((x, y) => list[y] - list[x]);
   const total = Object.values(list).reduce((a, b) => a + b, 0);
   const kinds = Object.values(list).filter((n) => n > 0).length;
 
@@ -182,7 +191,7 @@ export default function DeckBuilder() {
   function add(no: string) {
     if (!leaderNo) { setMsg({ text: '先にリーダーを選択', err: true }); return; }
     if (!cardLegalForLeader(no, leaderNo)) return;
-    if (!isUnlimited(no) && (list[no] || 0) >= 4) { setMsg({ text: '同じカードは4枚まで', err: true }); return; }
+    if (!isUnlimited(no) && sameCount(no) >= 4) { setMsg({ text: '同じカードは4枚まで', err: true }); return; }
     if (total >= 50) { setMsg({ text: 'デッキは50枚まで', err: true }); return; }
     setList((p) => ({ ...p, [no]: (p[no] || 0) + 1 }));
   }
@@ -330,6 +339,9 @@ export default function DeckBuilder() {
             <div className="bd-lc-sub">{leaderNo}・ライフ{C[leaderNo].life}・P{C[leaderNo].power}</div>
           </div>
           <button className="bd-fbtn" onClick={() => setLeaderOpen(true)}>リーダー変更</button>
+          {artsOf(leaderNo).length ? (
+            <button className="bd-fbtn" onClick={() => setArtPick({ base: artBase(leaderNo), mode: 'leader' })}>絵柄変更</button>
+          ) : null}
         </div>
       ) : (
         <>
@@ -355,7 +367,7 @@ export default function DeckBuilder() {
           </div>
           <div className="bd-lead-row" id="bd-lead-row">
             {leaders.length === 0 ? <div className="bd-empty">該当リーダーなし</div> : leaders.map((no) => (
-              <div className={'bd-leader' + (leaderNo === no ? ' sel' : '')} key={no} title={C[no].name} onClick={() => pickLeader(no)}>
+              <div className={'bd-leader' + (leaderNo && artBase(leaderNo) === no ? ' sel' : '')} key={no} title={C[no].name} onClick={() => pickLeader(no)}>
                 <div className="bd-lart">
                   <BdImg no={no} name={C[no].name} />
                   <button className="bd-zoom" title="拡大" onClick={(e) => { e.stopPropagation(); setZoom({ no, name: C[no].name }); }} style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}><Icon.search size={13} /></button>
@@ -397,19 +409,26 @@ export default function DeckBuilder() {
           <div className={'bd-main' + (showList ? '' : ' nolist')}>
             <div className="bd-pool" id="bd-pool">
               {pool.length === 0 ? <div className="bd-empty">該当するカードがありません</div> : pool.slice(0, POOL_CAP).map((no) => {
-                const c = C[no]; const cnt = list[no] || 0;
+                const c = C[no]; const cnt = sameCount(no);
+                const used = artsInDeck(no); const shown = used[0] || no; // 画像はデッキで使っている絵柄
+                const nArts = artsOf(no).length;
                 return (
                   <div className={'bd-tile' + (cnt > 0 ? ' has' : '')} key={no}>
-                    <div className="bd-art" onClick={() => setZoom({ no, name: c.name })}>
-                      <BdImg no={no} name={c.name} />
+                    <div className="bd-art" onClick={() => setZoom({ no: shown, name: c.name })}>
+                      <BdImg no={shown} name={c.name} />
                       <span className="bd-cost">{c.cost != null ? c.cost : '-'}</span>
+                      {nArts ? (
+                        <button className="bd-artbtn" title="絵柄（パラレル等）を選ぶ" onClick={(e) => { e.stopPropagation(); setArtPick({ base: no, mode: 'deck' }); }}>
+                          絵柄{nArts + 1}
+                        </button>
+                      ) : null}
                     </div>
                     <div className="bd-nm" title={c.name}>{c.name}</div>
                     <div className="bd-sub">{TYPE_JA[c.type] || c.type}{c.power ? ' P' + c.power : ''}{c.counter ? ' +' + c.counter : ''}</div>
                     <div className="bd-ctl">
-                      <button className="bd-mn" onClick={() => remove(no)}>−</button>
+                      <button className="bd-mn" onClick={() => remove(used[used.length - 1] || no)}>−</button>
                       <span className="bd-num">{cnt}</span>
-                      <button className="bd-pl" onClick={() => add(no)}>＋</button>
+                      <button className="bd-pl" onClick={() => add(shown)}>＋</button>
                     </div>
                   </div>
                 );
@@ -437,6 +456,19 @@ export default function DeckBuilder() {
       >
         <Icon.arrowUp size={22} />
       </button>
+
+      {/* 絵違い（パラレル等）の選択 */}
+      <AnimatePresence>
+        {artPick ? (
+          <ArtPicker key="artpick" name={C[artPick.base].name} mode={artPick.mode}
+            options={artOptions(artPick.base, artsOf(artPick.base))}
+            counts={list} selected={leaderNo}
+            onAdd={add} onRemove={remove}
+            onPick={(no) => { setLeaderNo(no); setArtPick(null); }}
+            onZoom={(no) => setZoom({ no, name: C[artPick.base].name })}
+            onClose={() => setArtPick(null)} />
+        ) : null}
+      </AnimatePresence>
 
       {/* カード拡大オーバーレイ */}
       <AnimatePresence>

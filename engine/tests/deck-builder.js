@@ -57,6 +57,22 @@ toast = function () {}; renderSelect = function () {}; backToSelect = function (
       const pool = poolCards();
       ok(pool.length > 0 && !pool.some(no => /_r\d+$/.test(no)), 'poolCards: パラレル(_rN)を一覧に含まない（重複表示防止）');
       ok(pool.includes('ST14-017') && !pool.includes('ST14-017_r1'), 'poolCards: 黒サウザンド・サニー号は本体のみ（パラレル除外）'); }
+    // ★絵違い（パラレル _pN。cards-arts.js）: C[絵柄] は本体への非列挙エイリアス・枚数制限は本体で合算・inst は絵柄番号を保持
+    { const v = 'OP16-063_p2', bn = 'OP16-063';
+      ok(C[v] === C[bn] && C[v].no === bn, '絵違い: C[絵柄] は本体と同一オブジェクト（base.no は本体番号）');
+      ok(!Object.keys(C).includes(v), '絵違い: Object.keys(C) に出ない（プール重複なし）');
+      ok(artBaseNo(v) === bn && artsOf(bn).some(a => a[0] === v), '絵違い: artBaseNo/artsOf');
+      const kz = Object.keys(C).find(no => C[no].leader && (C[no].color || []).includes(C[bn].color[0]));
+      const fill = Object.keys(C).filter(no => no !== bn && cardLegalForLeader(no, kz) && !/何枚でも/.test(C[no].text || '')).slice(0, 12);
+      const lst = {}; fill.forEach(no => lst[no] = 4); lst[bn] = 1; lst['OP16-063_p1'] = 1; // 4×11 + 1 + 1 + 4枚目以降で合計50
+      lst[fill[11]] = 0; delete lst[fill[11]]; lst[v] = 4; // 本体1+p1 1+p2 4 = 6枚 → 5枚以上エラー
+      const tot = Object.values(lst).reduce((a, b) => a + b, 0);
+      ok(builderValidate({ leaderNo: kz, list: lst }).errors.some(e => /5枚以上/.test(e)), '絵違い: 本体+絵違いの合算で4枚超はエラー (total=' + tot + ')');
+      lst[v] = 2; ok(!builderValidate({ leaderNo: kz, list: lst }).errors.some(e => /5枚以上/.test(e)), '絵違い: 合算4枚はOK');
+      ok(sameCardCount(lst, bn) === 4, '絵違い: sameCardCount 合算');
+      const ci = inst(v, 'me'); ok(ci.no === v && ci.base === C[bn], '絵違い: inst は絵柄番号を保持し base は本体');
+      const lv = (artsOf(kz)[0] || [])[0];
+      if (lv) ok(!builderValidate({ leaderNo: lv, list: lst }).errors.some(e => /色不一致|未定義/.test(e)), '絵違いリーダーでも構築可'); }
     // ★イム(OP13-079): コスト2以上のイベントはデッキに入れられない
     { const im = Object.keys(C).find(no => C[no] && C[no].name === 'イム' && C[no].leader);
       if (im) {

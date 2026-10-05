@@ -29,14 +29,14 @@ export function CardPreview() {
 
   if (!hover) return null;
   const b = hover.base;
-  if (lastNo.current !== b.no) { lastNo.current = b.no; if (!imgOk) setImgOk(true); }
+  if (lastNo.current !== (hover.no || b.no)) { lastNo.current = hover.no || b.no; if (!imgOk) setImgOk(true); }
 
   const showPow = b.type === 'CHAR' || b.type === 'LEADER';
 
   return (
     <div id="preview" style={{ display: 'block', left: pos.x, top: pos.y, width: 200 }}>
       {imgOk ? (
-        <img src={IMG(b.no)} referrerPolicy="no-referrer" decoding="async" alt={b.name} onError={() => setImgOk(false)} />
+        <img src={IMG(hover.no || b.no)} referrerPolicy="no-referrer" decoding="async" alt={b.name} onError={() => setImgOk(false)} />
       ) : null}
       <div style={{ padding: '8px 10px 10px' }}>
         <div style={{ fontWeight: 800, fontSize: 14, color: 'var(--gold-soft)' }}>{b.name}</div>

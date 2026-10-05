@@ -117,6 +117,8 @@
     }
     function deckTotal(list) { return Object.values(list || G.builder.list).reduce((a, b) => a + b, 0); }
     // 「ルール上、このカードはデッキに何枚でも入れることができる」カード（例 OP16-042 インペルダウンの囚人）は4枚制限の対象外
+    // 同一カードの枚数（絵違い _pN/_rN を本体番号で合算）
+    function sameCardCount(list, no) { const bn = artBaseNo(no); let n = 0; for (const k in list) if (artBaseNo(k) === bn) n += list[k] || 0; return n; }
     function isUnlimitedCard(no) { return !!(C[no] && /何枚でも入れることができる/.test(C[no].text || '')); }
     function ensureSel() { return (G.sel = G.sel || { me: null, cpu: null }); } // デッキ選択状態を初期化して返す
     function openBuilder() { G.builder = { leaderNo: null, list: {}, name: '', filter: 'all' }; renderDeckBuilder(); }
@@ -132,7 +134,7 @@
     function builderAdd(no) {
       const b = G.builder; if (!b.leaderNo) { toast('先にリーダーを選択'); return; }
       if (!cardLegalForLeader(no, b.leaderNo)) { toast('リーダーの色と合いません'); return; }
-      if (!isUnlimitedCard(no) && (b.list[no] || 0) >= 4) { toast('同じカードは4枚まで'); return; }
+      if (!isUnlimitedCard(no) && sameCardCount(b.list, no) >= 4) { toast('同じカードは4枚まで'); return; }
       if (deckTotal() >= 50) { toast('デッキは50枚まで'); return; }
       b.list[no] = (b.list[no] || 0) + 1; renderPool(); renderPanel(); renderStatus();
     }
@@ -144,8 +146,10 @@
       b = b || G.builder; const errors = []; const total = deckTotal(b.list);
       if (!b.leaderNo) errors.push('リーダー未選択');
       if (total !== 50) errors.push('合計' + total + '枚（50枚必要）');
+      const seenBase = new Set();
       for (const [no, n] of Object.entries(b.list || {})) {
-        if (n > 4 && !isUnlimitedCard(no)) errors.push((C[no] ? C[no].name : no) + 'が5枚以上');
+        const bn = artBaseNo(no); // 絵違い（パラレル等）は本体と同じカードとして合算で4枚まで
+        if (!seenBase.has(bn)) { seenBase.add(bn); if (sameCardCount(b.list, no) > 4 && !isUnlimitedCard(no)) errors.push((C[no] ? C[no].name : no) + 'が5枚以上'); }
         if (!C[no]) errors.push('未定義カード: ' + no);
         if (b.leaderNo && !cardLegalForLeader(no, b.leaderNo)) errors.push((C[no] ? C[no].name : no) + 'が色不一致');
       }
